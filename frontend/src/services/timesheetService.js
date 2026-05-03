@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://mediumaquamarine-eel-186314.hostingersite.com/api/timesheet";
+const API_URL = "https://bharatspecialsteels.bharatspecialsteels.com/api/timesheet";
 
 const getToken = () => localStorage.getItem("token");
 

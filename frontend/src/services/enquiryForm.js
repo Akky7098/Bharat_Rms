@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://mediumaquamarine-eel-186314.hostingersite.com/api/enquiry";
+const API_URL = "https://bharatspecialsteels.bharatspecialsteels.com/api/enquiry";
 export const createEnquiry = async (data) => {
   const token = localStorage.getItem("token");
 

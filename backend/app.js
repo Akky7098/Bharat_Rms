@@ -11,7 +11,17 @@ const cors = require("cors")
 const app = express();
 app.use(express.json());
 app.use(bodyParser.json());
-app.use(cors())
+app.use(cors({
+  origin: [
+    "https://mediumaquamarine-eel-186314.hostingersite.com",
+    "https://bharatspecialsteels.com",
+    "https://www.bharatspecialsteels.com"
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  credentials: true
+}));
+
+app.options("*", cors());
 app.use("/api/auth", authRoutes);
 app.use("/api/enquiry", enquiryRoutes);
 app.use("/api/sales-order", salesOrderRoutes);

@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const API_URL = "https://mediumaquamarine-eel-186314.hostingersite.com/api/sales-order";
-const ENQUIRY_API_URL = "https://mediumaquamarine-eel-186314.hostingersite.com/api/enquiry";
+const API_URL = "https://bharatspecialsteels.bharatspecialsteels.com/api/sales-order";
+const ENQUIRY_API_URL = "https://bharatspecialsteels.bharatspecialsteels.com/api/enquiry";
 
 const getToken = () => localStorage.getItem("token");
 
@@ -40,7 +40,7 @@ export const getSalesPersons = async () => {
   const token = localStorage.getItem("token");
 
   const response = await axios.get(
-    "https://mediumaquamarine-eel-186314.hostingersite.com/api/user/sales-persons",
+    "https://bharatspecialsteels.bharatspecialsteels.com/api/user/sales-persons",
     {
       headers: {
         Authorization: `Bearer ${token}`,
