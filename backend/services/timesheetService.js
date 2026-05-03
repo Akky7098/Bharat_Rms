@@ -1,7 +1,7 @@
 const Timesheet = require("../model/timesheetModel");
 const transporter = require("../util/mailTransporter");
-
-const ADMIN_EMAIL = "info@bharatspecialsteels.com";
+require('dotenv').config();
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL
 
 /* =========================
    DATE RANGE
