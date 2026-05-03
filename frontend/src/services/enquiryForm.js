@@ -1,0 +1,42 @@
+import axios from "axios";
+
+const API_URL = "http://localhost:3000/api/enquiry";
+
+export const createEnquiry = async (data) => {
+  const token = localStorage.getItem("token");
+
+  const response = await axios.post(`${API_URL}/create`, data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+export const getProductConfig = async () => {
+  const token = localStorage.getItem("token");
+
+  const response = await axios.get(`${API_URL}/product-config`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data.data;
+};
+export const updateEnquiryWorkflow = async (id, data) => {
+  const token = localStorage.getItem("token");
+
+  const response = await axios.post(
+    `${API_URL}/${id}/update-workflow`,
+    data,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+};

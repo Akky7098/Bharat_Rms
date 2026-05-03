@@ -1,0 +1,584 @@
+.sales-order-container {
+  padding: 14px;
+  width: 100%;
+  height: calc(100vh - 40px);
+  overflow: hidden;
+  background: #f4f7fb;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sales-order-header {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #111827, #166534);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.2);
+}
+
+.sales-order-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.sales-order-header p {
+  margin: 3px 0 0;
+  color: #dcfce7;
+  font-size: 12px;
+}
+
+.new-sales-btn {
+  padding: 9px 16px;
+  border: none;
+  cursor: pointer;
+  border-radius: 10px;
+  background: #facc15;
+  color: #111827;
+  font-weight: 800;
+  font-size: 13px;
+  box-shadow: 0 6px 16px rgba(250, 204, 21, 0.35);
+}
+
+.new-sales-btn:hover {
+  background: #fde047;
+  transform: translateY(-1px);
+}
+
+/* FILTER */
+.sales-filter-card {
+  flex-shrink: 0;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.sales-filter-grid {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-field label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  margin-bottom: 5px;
+}
+
+.filter-field select,
+.filter-field input {
+  height: 36px;
+  width: 170px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  outline: none;
+  font-size: 12px;
+  background: #f8fafc;
+  color: #111827;
+}
+
+.filter-field input[type="date"] {
+  width: 145px;
+}
+
+.filter-field input:focus,
+.filter-field select:focus {
+  border-color: #16a34a;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.14);
+}
+
+.filter-field input:disabled {
+  background: #e5e7eb;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.clear-btn {
+  height: 36px;
+  min-width: 78px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.clear-btn:hover {
+  background: #d1d5db;
+  transform: translateY(-1px);
+}
+
+/* TABLE */
+.sales-table-wrapper {
+  overflow: auto;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
+}
+
+.sales-order-table {
+  min-width: 1750px;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  zoom: 0.86;
+}
+
+.sales-order-table th,
+.sales-order-table td {
+  padding: 8px 10px;
+  white-space: nowrap;
+  font-size: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #eef2f7;
+  background: #fff;
+  color: #1f2937;
+}
+
+.sales-order-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #111827;
+  color: #fff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 800;
+}
+
+.sales-order-table tbody tr:nth-child(even) td {
+  background: #f9fafb;
+}
+
+.sales-order-table tbody tr:hover td {
+  background: #ecfdf5;
+}
+
+/* FREEZE COLUMNS */
+/* FREEZE ONLY SALES PERSON + COMPANY */
+.sticky-col {
+  position: sticky !important;
+  z-index: 30;
+  background: #ffffff !important;
+  box-shadow: 4px 0 8px rgba(15, 23, 42, 0.08);
+}
+
+.sticky-head {
+  position: sticky !important;
+  top: 0;
+  z-index: 60 !important;
+  background: #0f172a !important;
+  color: #fff !important;
+}
+
+.col-sales {
+  left: 0;
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
+.col-company {
+  left: 150px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+}
+
+.sales-order-table tbody tr:nth-child(even) .sticky-col {
+  background: #f9fafb !important;
+}
+
+.sales-order-table tbody tr:hover .sticky-col {
+  background: #ecfdf5 !important;
+}
+.size-cell {
+  max-width: 230px;
+  min-width: 220px;
+  white-space: pre-line !important;
+  line-height: 1.25;
+}
+
+.no-data {
+  text-align: center;
+  padding: 24px !important;
+  font-weight: 700;
+  color: #64748b !important;
+}
+
+/* PAGINATION */
+.sales-pagination {
+  flex-shrink: 0;
+  height: 46px;
+  margin-top: 10px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.sales-pagination button {
+  height: 32px;
+  min-width: 36px;
+  padding: 0 11px;
+  border: none;
+  border-radius: 9px;
+  background: #166534;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sales-pagination button:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.page-numbers button {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.page-numbers .active-page {
+  background: #166534;
+  color: #fff;
+}
+
+.dots {
+  font-weight: 800;
+  color: #64748b;
+}
+
+.total-records {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+}
+
+/* SCROLLBAR */
+.sales-table-wrapper::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+.sales-table-wrapper::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+
+.sales-table-wrapper::-webkit-scrollbar-thumb {
+  background: #64748b;
+  border-radius: 10px;
+}
+
+.sales-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+@media (max-width: 1100px) {
+  .sales-filter-grid {
+    flex-wrap: wrap;
+  }
+
+  .filter-buttons {
+    margin-left: 0;
+  }
+}
+.sales-order-table th:nth-child(1),
+.sales-order-table td:nth-child(1) {
+  min-width: 120px;
+}
+
+.sales-order-table th,
+.sales-order-table td {
+  vertical-align: top;
+}
+/* FINAL STICKY FIX - solid background, no overlap */
+.sales-order-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.sales-order-table th,
+.sales-order-table td {
+  vertical-align: top;
+}
+
+/* Sales Person sticky */
+.sales-order-table .col-sales {
+  position: sticky !important;
+  left: 0 !important;
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  background: #ffffff !important;
+  z-index: 40 !important;
+  border-right: 2px solid #cbd5e1 !important;
+}
+
+/* Company sticky */
+.sales-order-table .col-company {
+  position: sticky !important;
+  left: 160px !important;
+  width: 260px !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
+  background: #ffffff !important;
+  z-index: 39 !important;
+  border-right: 3px solid #94a3b8 !important;
+  box-shadow: 8px 0 12px rgba(15, 23, 42, 0.12) !important;
+}
+
+/* Sticky header */
+.sales-order-table thead .col-sales,
+.sales-order-table thead .col-company {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  z-index: 90 !important;
+}
+
+/* Even row sticky background */
+.sales-order-table tbody tr:nth-child(even) .col-sales,
+.sales-order-table tbody tr:nth-child(even) .col-company {
+  background: #f9fafb !important;
+}
+
+/* Hover sticky background */
+.sales-order-table tbody tr:hover .col-sales,
+.sales-order-table tbody tr:hover .col-company {
+  background: #ecfdf5 !important;
+}
+
+/* Remove unwanted transparent sticky behavior */
+.sales-order-table .sticky-col {
+  backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Make non-sticky first column normal */
+.sales-order-table th:first-child,
+.sales-order-table td:first-child {
+  min-width: 120px;
+}
+
+/* ============================= */
+/* USER VIEW FIX (NO GAP ISSUE) */
+/* ============================= */
+
+.sales-order-container.user-view .col-company {
+  left: 0 !important;
+  min-width: 220px;
+  max-width: 220px;
+}
+
+.sales-order-container.user-view .col-customer {
+  left: 220px !important;
+  min-width: 200px;
+}
+
+.sales-order-container.user-view .col-sales {
+  display: none !important;
+}
+
+/* ============================= */
+/* ADMIN VIEW (NORMAL FLOW) */
+/* ============================= */
+
+.sales-order-container.admin-view .col-sales {
+  left: 0 !important;
+  min-width: 160px;
+}
+
+.sales-order-container.admin-view .col-company {
+  left: 160px !important;
+  min-width: 220px;
+}
+
+.sales-order-container.admin-view .col-customer {
+  left: 380px !important;
+  min-width: 200px;
+}
+/* BASE STICKY FIX */
+.sticky-col {
+  position: sticky;
+  z-index: 15;
+  background: #ffffff !important; /* prevents overlap */
+}
+
+/* ================= USER ================= */
+.sales-order-container.user-view .col-date {
+  left: 0;
+  min-width: 130px;
+}
+
+.sales-order-container.user-view .col-company {
+  left: 130px;
+  min-width: 220px;
+}
+
+/* ================= ADMIN ================= */
+.sales-order-container.admin-view .col-date {
+  left: 0;
+  min-width: 130px;
+}
+
+.sales-order-container.admin-view .col-sales {
+  left: 130px;
+  min-width: 160px;
+}
+
+.sales-order-container.admin-view .col-company {
+  left: 290px;
+  min-width: 220px;
+}
+
+/* FINAL SALES ORDER STICKY FIX */
+
+.sales-order-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.sales-order-table th,
+.sales-order-table td {
+  vertical-align: top !important;
+}
+
+/* BASE */
+.sales-order-table .sticky-col {
+  position: sticky !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  z-index: 40 !important;
+  box-shadow: 4px 0 8px rgba(15, 23, 42, 0.12) !important;
+}
+
+.sales-order-table thead .sticky-col {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  z-index: 90 !important;
+}
+
+/* USER VIEW: Order Date + Company */
+.sales-order-container.user-view .col-date {
+  left: 0 !important;
+  width: 130px !important;
+  min-width: 130px !important;
+  max-width: 130px !important;
+  border-right: 2px solid #cbd5e1 !important;
+}
+
+.sales-order-container.user-view .col-company {
+  left: 130px !important;
+  width: 260px !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
+  border-right: 3px solid #94a3b8 !important;
+}
+
+/* ADMIN VIEW: Order Date + Sales Person + Company */
+.sales-order-container.admin-view .col-date {
+  left: 0 !important;
+  width: 130px !important;
+  min-width: 130px !important;
+  max-width: 130px !important;
+  border-right: 2px solid #cbd5e1 !important;
+}
+
+.sales-order-container.admin-view .col-sales {
+  left: 130px !important;
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  border-right: 2px solid #cbd5e1 !important;
+}
+
+.sales-order-container.admin-view .col-company {
+  left: 290px !important;
+  width: 260px !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
+  border-right: 3px solid #94a3b8 !important;
+}
+
+/* ROW COLORS FOR STICKY */
+.sales-order-table tbody tr:nth-child(even) .sticky-col {
+  background: #f9fafb !important;
+}
+
+.sales-order-table tbody tr:hover .sticky-col {
+  background: #ecfdf5 !important;
+}
+/* CLEAN WORD WRAP (NO WORD BREAKING) */
+.enquiry-table th,
+.enquiry-table td,
+.sales-order-table th,
+.sales-order-table td,
+.cold-table th,
+.cold-table td {
+  white-space: normal !important;
+  word-break: normal !important;        /* ❌ stop breaking words */
+  overflow-wrap: break-word !important; /* ✅ wrap only when needed */
+  line-height: 1.35;
+  vertical-align: top;
+}
+
+/* LIMIT WIDTH FOR BETTER WRAP */
+.enquiry-table td,
+.sales-order-table td,
+.cold-table td {
+  max-width: 240px;
+}
+
+/* IMPORTANT COLUMNS */
+.col-company,
+.size-cell {
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}

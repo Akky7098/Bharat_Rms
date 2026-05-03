@@ -1,0 +1,51 @@
+const productGrades = {
+  tool_steel: [
+    "DIN 1.2714/DB6",
+    "DIN 1.2714/DB6 (NLMK)",
+    "DIN 1.2344/H13",
+    "DIN 1.2343/H11",
+    "DIN 1.2379/D2",
+    "DIN 1.2080/D3",
+  ],
+
+  die_steel: [
+    "DIN 1.2714/DB6",
+    "DIN 1.2344/H13",
+    "DIN 1.2343/H11",
+    "DIN 1.2379/D2",
+  ],
+
+  plastic_mould_steel: [
+    "DIN 1.2311/P20",
+    "DIN 1.2738/P20+Ni",
+    "P20+HH",
+  ],
+
+  high_speed_steel: [
+    "M2",
+    "M35",
+    "M42",
+  ],
+
+  alloy_steel: [
+    "EN19",
+    "EN24",
+    "EN25",
+    "EN26",
+    "4140",
+    "4130",
+    "4145",
+  ],
+
+  carbon_steel: [
+    "EN8/C45",
+    "EN9",
+    "1018",
+    "1010",
+    "C45",
+  ],
+  other:[]
+};
+
+module.exports = productGrades;
+

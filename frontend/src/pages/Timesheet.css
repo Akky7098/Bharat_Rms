@@ -1,0 +1,602 @@
+.timesheet-container {
+  padding: 18px;
+  width: 100%;
+  min-height: calc(100vh - 40px);
+  background: #f4f7fb;
+  border-radius: 18px;
+}
+
+/* HEADER */
+.timesheet-header {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a);
+  color: #fff;
+  padding: 16px 20px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timesheet-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.timesheet-header p {
+  margin: 4px 0 0;
+  color: #dbeafe;
+  font-size: 13px;
+}
+
+.fill-btn {
+  border: none;
+  padding: 11px 18px;
+  border-radius: 12px;
+  background: #facc15;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(250, 204, 21, 0.35);
+}
+
+.fill-btn.disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* COMMON CARDS */
+.timesheet-filter-card,
+.reports-card,
+.calendar-card,
+.updates-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+/* FILTER */
+.timesheet-filter-card {
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.filter-title h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #0f172a;
+}
+
+.filter-title p {
+  margin: 3px 0 10px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.timesheet-filter-grid {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-field label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  margin-bottom: 5px;
+}
+
+.filter-field select {
+  height: 38px;
+  width: 190px;
+  padding: 0 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  outline: none;
+  font-size: 13px;
+}
+
+/* MAIN GRID */
+.timesheet-main-grid {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.timesheet-right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* SECTION HEADING */
+.section-heading {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-heading h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.section-heading span {
+  background: #eef2ff;
+  color: #1e3a8a;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* REPORT CARDS */
+.report-list {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.report-item {
+  background: #f8fafc;
+  border: 1px solid #dbe3ee;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  height: auto;
+  align-self: start;
+}
+
+.report-item:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.report-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.report-top strong {
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.report-top span {
+  color: #2563eb;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.report-item p {
+  margin: 7px 0;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.45;
+  white-space: pre-line;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.report-item p b {
+  color: #0f172a;
+}
+
+/* CALENDAR */
+.calendar-card .section-heading {
+  padding: 12px 16px;
+}
+
+.calendar-legend {
+  padding: 10px 16px 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.calendar-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.dot.green {
+  background: #16a34a;
+}
+
+.dot.red {
+  background: #dc2626;
+}
+
+.dot.gray {
+  background: #94a3b8;
+}
+
+.calendar-grid {
+  padding: 12px 14px 14px;
+  display: grid;
+  grid-template-columns: repeat(7, 42px);
+  gap: 8px;
+  justify-content: center;
+}
+
+.week-name {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 900;
+  color: #475569;
+  height: 18px;
+}
+
+.empty-day {
+  width: 42px;
+  height: 42px;
+}
+
+.calendar-day {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  border-radius: 50%;
+  padding: 0;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #0f172a;
+  transition: 0.2s ease;
+  font-weight: 900;
+}
+
+.calendar-day strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.calendar-day span {
+  display: none;
+}
+
+.calendar-day:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+}
+
+.calendar-day.submitted {
+  background: #15803d;
+  border-color: #166534;
+  color: #ffffff;
+}
+
+.calendar-day.missing {
+  background: #991b1b;
+  border-color: #7f1d1d;
+  color: #ffffff;
+}
+
+.calendar-day.off {
+  background: #e5e7eb;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+
+.calendar-day.future {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+/* UPDATES */
+.updates-list {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.update-item {
+  padding: 13px;
+  border-radius: 14px;
+}
+
+.update-item strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.update-item p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.update-item.danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border-left: 5px solid #dc2626;
+}
+
+.update-item.warning {
+  background: #ffedd5;
+  color: #9a3412;
+  border-left: 5px solid #f97316;
+}
+
+.update-item.success {
+  background: #dcfce7;
+  color: #166534;
+  border-left: 5px solid #16a34a;
+}
+
+.update-item.neutral {
+  background: #f8fafc;
+  color: #334155;
+  border-left: 5px solid #2563eb;
+}
+
+.empty-state {
+  padding: 30px;
+  text-align: center;
+  font-weight: 800;
+  color: #64748b;
+}
+
+/* MODAL */
+.timesheet-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(6px);
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.timesheet-modal {
+  width: 760px;
+  max-width: 96vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a);
+  color: white;
+  padding: 18px 22px;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.modal-header p {
+  margin: 4px 0 0;
+  color: #dbeafe;
+  font-size: 13px;
+}
+
+.modal-header button {
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 16px;
+}
+
+.modal-report {
+  margin-bottom: 12px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1200px) {
+  .timesheet-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* TIMESHEET FORM POPUP */
+.timesheet-form-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(6px);
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.timesheet-form-card {
+  width: 720px;
+  max-width: 96vw;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+}
+
+.timesheet-form-header {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a);
+  color: #ffffff;
+  padding: 22px 26px;
+  border-radius: 22px 22px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timesheet-form-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.timesheet-form-header p {
+  margin: 5px 0 0;
+  color: #dbeafe;
+  font-size: 13px;
+}
+
+.timesheet-form-header button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.timesheet-form {
+  padding: 24px 26px 26px;
+}
+
+.today-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 5px solid #2563eb;
+  border-radius: 14px;
+  padding: 13px 15px;
+  margin-bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.today-box span {
+  font-size: 13px;
+  color: #475569;
+  font-weight: 800;
+}
+
+.today-box strong {
+  color: #1e3a8a;
+  font-size: 15px;
+}
+
+.timesheet-form-group {
+  margin-bottom: 16px;
+}
+
+.timesheet-form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  color: #334155;
+  margin-bottom: 7px;
+}
+
+.timesheet-form-group textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 95px;
+  padding: 13px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  outline: none;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111827;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.timesheet-form-group textarea:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+}
+
+.timesheet-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ts-cancel-btn,
+.ts-submit-btn {
+  height: 44px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ts-cancel-btn {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.ts-submit-btn {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+
+.ts-submit-btn:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  box-shadow: none;
+}

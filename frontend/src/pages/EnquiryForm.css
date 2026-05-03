@@ -1,0 +1,198 @@
+.enquiry-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  padding: 14px;
+}
+
+.enquiry-form-card {
+  width: 980px;
+  max-width: 98vw;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+  overflow: hidden;
+}
+
+.enquiry-form-header {
+  background: linear-gradient(135deg, #0f172a, #1e40af);
+  color: #ffffff;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.enquiry-form-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.enquiry-form-header p {
+  margin: 4px 0 0;
+  color: #dbeafe;
+  font-size: 13px;
+}
+
+.close-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.enquiry-form-card form {
+  padding: 18px 22px 20px;
+}
+
+.enquiry-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 13px 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  outline: none;
+  font-size: 13px;
+  color: #111827;
+  background: #f8fafc;
+  box-sizing: border-box;
+  transition: 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.form-group select:disabled {
+  background: #e5e7eb;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 18px;
+  margin-top: 18px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cancel-btn,
+.submit-btn {
+  height: 40px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.cancel-btn:hover {
+  background: #d1d5db;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+
+.submit-btn:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 1000px) {
+  .enquiry-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .enquiry-form-card {
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .enquiry-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .cancel-btn,
+  .submit-btn {
+    width: 100%;
+  }
+}
+/* OTHER PRODUCT - BIG GRADE TEXT BOX */
+.enquiry-form-grid .grade-text-box {
+  grid-column: span 2;
+}
+
+.enquiry-form-grid .grade-text-box textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  padding: 13px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  outline: none;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111827;
+  background: #f8fafc;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.enquiry-form-grid .grade-text-box textarea:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+}
