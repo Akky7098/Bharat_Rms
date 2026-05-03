@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/cold-call";
-const USER_API_URL = "http://localhost:3000/api/user";
+const API_URL = "https://mediumaquamarine-eel-186314.hostingersite.com/api/cold-call";
+const USER_API_URL = "https://mediumaquamarine-eel-186314.hostingersite.com/api/user";
 
 const getToken = () => localStorage.getItem("token");
 

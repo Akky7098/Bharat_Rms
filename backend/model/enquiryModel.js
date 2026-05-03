@@ -42,7 +42,7 @@ const enquirySchema = new mongoose.Schema(
         "high_speed_steel",
         "alloy_steel",
         "carbon_steel",
-        "others"
+        "other"
       ],
       required: true,
     },

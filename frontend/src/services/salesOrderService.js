@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/sales-order";
-const ENQUIRY_API_URL = "http://localhost:3000/api/enquiry";
+const API_URL = "https://mediumaquamarine-eel-186314.hostingersite.com/api/sales-order";
+const ENQUIRY_API_URL = "https://mediumaquamarine-eel-186314.hostingersite.com/api/enquiry";
 
 const getToken = () => localStorage.getItem("token");
 
@@ -40,7 +40,7 @@ export const getSalesPersons = async () => {
   const token = localStorage.getItem("token");
 
   const response = await axios.get(
-    "http://localhost:3000/api/user/sales-persons",
+    "https://mediumaquamarine-eel-186314.hostingersite.com/api/user/sales-persons",
     {
       headers: {
         Authorization: `Bearer ${token}`,

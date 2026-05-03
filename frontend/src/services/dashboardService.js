@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/dashboard";
-
+const API_URL = "https://mediumaquamarine-eel-186314.hostingersite.com/api/dashboard";
 const getToken = () => localStorage.getItem("token");
 
 export const getDashboardSummary = async (params = {}) => {
