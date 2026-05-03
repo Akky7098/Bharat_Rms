@@ -36,7 +36,9 @@ app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 app.use(bodyParser.json());
-
+app.get("/api/cors-test", (req, res) => {
+  res.json({ message: "cors working" });
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/enquiry", enquiryRoutes);
 app.use("/api/sales-order", salesOrderRoutes);
