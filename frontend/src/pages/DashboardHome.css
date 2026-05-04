@@ -229,3 +229,54 @@
   color: #0f172a;
   background: white;
 }
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+  .dashboard-home {
+    padding: 10px;
+  }
+
+  .dashboard-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .dashboard-topbar h2 {
+    font-size: 18px;
+  }
+
+  .month-filter {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .month-filter select {
+    flex: 1;
+    height: 38px;
+    font-size: 12px;
+  }
+
+  /* Cards */
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .dashboard-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  /* Charts */
+  .dashboard-charts {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .chart-card {
+    width: 100%;
+    height: 260px;
+  }
+}

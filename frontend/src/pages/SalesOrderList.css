@@ -582,3 +582,73 @@
   word-break: normal !important;
   overflow-wrap: break-word !important;
 }
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+
+  .sales-order-container {
+    padding: 10px;
+  }
+
+  .sales-order-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .new-sales-btn {
+    width: 100%;
+    height: 40px;
+  }
+
+  /* FILTER */
+  .sales-filter-grid {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-field input,
+  .filter-field select {
+    width: 100%;
+  }
+
+  .filter-buttons {
+    width: 100%;
+  }
+
+  /* TABLE → CARD */
+  .sales-order-table {
+    display: none;
+  }
+
+  .sales-table-wrapper {
+    box-shadow: none;
+    border: none;
+  }
+
+  .sales-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+  }
+
+  .sales-card p {
+    font-size: 13px;
+    margin: 4px 0;
+  }
+
+  .sales-card strong {
+    color: #166534;
+  }
+
+  .sales-pagination {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sales-pagination button {
+    width: 100%;
+  }
+}

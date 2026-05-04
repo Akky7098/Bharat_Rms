@@ -335,3 +335,69 @@
   word-break: normal !important;
   overflow-wrap: break-word !important;
 }
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+
+  .cold-container {
+    padding: 10px;
+  }
+
+  .cold-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .cold-header button {
+    width: 100%;
+    height: 40px;
+  }
+
+  /* FILTER */
+  .cold-filter-grid {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cold-filter-grid input,
+  .cold-filter-grid select {
+    width: 100%;
+  }
+
+  /* TABLE → CARD */
+  .cold-table {
+    display: none;
+  }
+
+  .cold-table-wrapper {
+    box-shadow: none;
+    border: none;
+  }
+
+  .cold-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+  }
+
+  .cold-card p {
+    font-size: 13px;
+    margin: 4px 0;
+  }
+
+  .cold-card strong {
+    color: #7c3aed;
+  }
+
+  .cold-pagination {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cold-pagination button {
+    width: 100%;
+  }
+}

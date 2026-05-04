@@ -776,3 +776,83 @@
   word-break: normal !important;
   overflow-wrap: break-word !important;
 }
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+
+  .enquiry-container {
+    padding: 10px;
+  }
+
+  .enquiry-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .enquiry-header h2 {
+    font-size: 18px;
+  }
+
+  .new-btn {
+    width: 100%;
+    height: 40px;
+  }
+
+  /* FILTER */
+  .enquiry-filter-grid {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-field input,
+  .filter-field select {
+    width: 100%;
+  }
+
+  .filter-buttons {
+    width: 100%;
+  }
+
+  .filter-btn,
+  .clear-btn {
+    width: 100%;
+  }
+
+  /* TABLE → CARD */
+  .enquiry-table {
+    display: none;
+  }
+
+  .enquiry-table-wrapper {
+    box-shadow: none;
+    border: none;
+  }
+
+  .enquiry-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+  }
+
+  .enquiry-card p {
+    font-size: 13px;
+    margin: 4px 0;
+  }
+
+  .enquiry-card strong {
+    color: #1e3a8a;
+  }
+
+  /* Pagination */
+  .enquiry-pagination {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .enquiry-pagination button {
+    width: 100%;
+  }
+}

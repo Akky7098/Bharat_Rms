@@ -91,9 +91,44 @@
   transform: translateY(-2px);
 }
 
-@media (max-width: 500px) {
-  .login-card {
-    width: 90%;
-    padding: 30px;
+/* ================= MOBILE - LOGIN ================= */
+@media (max-width: 768px) {
+  .login-page,
+  .login-container {
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  .login-card,
+  .login-box {
+    width: 100%;
+    max-width: 100%;
+    padding: 22px 18px;
+    border-radius: 18px;
+  }
+
+  .login-card h2,
+  .login-box h2 {
+    font-size: 22px;
+    text-align: center;
+  }
+
+  .login-card p,
+  .login-box p {
+    text-align: center;
+    font-size: 13px;
+  }
+
+  .login-card input,
+  .login-box input {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .login-card button,
+  .login-box button {
+    width: 100%;
+    height: 44px;
+    font-size: 14px;
   }
 }
