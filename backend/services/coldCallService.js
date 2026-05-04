@@ -65,7 +65,7 @@ const getAllColdCalls = async (query, user) => {
 
   const coldCalls = await ColdCall.find(filter)
     .populate("salesPersonId", "name email role")
-    .sort({ createdAt: -1 })
+    .sort({ date: -1, createdAt: -1 })
     .skip(skip)
     .limit(Number(limit));
 

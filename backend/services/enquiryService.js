@@ -18,13 +18,18 @@ const createEnquiry = async (body, user) => {
     modeOfEnquiry,
   } = body;
 
-  // Validate product category
-  if (!productGrades[productCategory]) {
+  if (!Object.prototype.hasOwnProperty.call(productGrades, productCategory)) {
     throw new Error("Invalid product category");
   }
 
-  // Validate grade against selected category
-  if (!productGrades[productCategory].includes(grade)) {
+  if (!grade || !String(grade).trim()) {
+    throw new Error("Grade is required");
+  }
+
+  if (
+    productCategory !== "other" &&
+    !productGrades[productCategory].includes(grade)
+  ) {
     throw new Error("Invalid grade selected for this product category");
   }
 
@@ -219,7 +224,7 @@ const getAllEnquiries = async (query, user) => {
 
   const enquiries = await Enquiry.find(filter)
     .populate("salesPersonId", "name email role")
-    .sort({ createdAt: -1 })
+    .sort({ enquiryDate: -1, createdAt: -1 })
     .skip(skip)
     .limit(Number(limit));
 

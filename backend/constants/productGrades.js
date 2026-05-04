@@ -38,7 +38,7 @@ const productGrades = {
   ],
 
   carbon_steel: [
-    "EN8/C45",
+    "EN8",
     "EN9",
     "1018",
     "1010",

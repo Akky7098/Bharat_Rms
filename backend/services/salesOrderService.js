@@ -99,7 +99,7 @@ const getAllSalesOrders = async (query, user) => {
 
   const salesOrders = await SalesOrder.find(filter)
     .populate("salesPersonId", "name email role")
-    .sort({ createdAt: -1 })
+    .sort({ orderDate: -1, createdAt: -1 })
     .skip(skip)
     .limit(Number(limit));
 
