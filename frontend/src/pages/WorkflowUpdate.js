@@ -3,16 +3,51 @@ import { updateEnquiryWorkflow } from "../services/enquiryForm";
 import "./WorkflowUpdate.css";
 
 const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
+  const formatForDateTimeInput = (date) => {
+    if (!date) return "";
+
+    const d = new Date(date);
+
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const toISOStringOrUndefined = (value) => {
+    if (!value) return undefined;
+    return new Date(value).toISOString();
+  };
+
+  const formatDisplayDateTime = (date) => {
+    if (!date) return "-";
+
+    return new Date(date).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   const [form, setForm] = useState({
-    feasibilityActualDate: enquiry.feasibility?.actualDate?.slice(0, 16) || "",
+    feasibilityActualDate: formatForDateTimeInput(
+      enquiry.feasibility?.actualDate
+    ),
     feasibilityStatus: enquiry.feasibility?.status || "pending",
     feasibilityCompleted: enquiry.feasibility?.completed || false,
 
-    quotationActualDate: enquiry.quotation?.actualDate?.slice(0, 16) || "",
+    quotationActualDate: formatForDateTimeInput(enquiry.quotation?.actualDate),
     quotationLink: enquiry.quotation?.quotationLink || "",
     quotationCompleted: enquiry.quotation?.completed || false,
 
-    closureActualDate: enquiry.closure?.actualDate?.slice(0, 16) || "",
+    closureActualDate: formatForDateTimeInput(enquiry.closure?.actualDate),
     closureStatus: enquiry.closure?.status || "pending",
     lostRemark: enquiry.closure?.lostRemark || "",
     closureCompleted: enquiry.closure?.completed || false,
@@ -27,63 +62,63 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
     });
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const payload = {};
+    const payload = {};
 
-  if (
-    form.feasibilityActualDate ||
-    form.feasibilityStatus !== (enquiry.feasibility?.status || "pending") ||
-    form.feasibilityCompleted !== (enquiry.feasibility?.completed || false)
-  ) {
-    payload.feasibility = {
-      actualDate: form.feasibilityActualDate || undefined,
-      status: form.feasibilityStatus,
-      completed: form.feasibilityCompleted,
-    };
-  }
+    if (
+      form.feasibilityActualDate ||
+      form.feasibilityStatus !== (enquiry.feasibility?.status || "pending") ||
+      form.feasibilityCompleted !== (enquiry.feasibility?.completed || false)
+    ) {
+      payload.feasibility = {
+        actualDate: toISOStringOrUndefined(form.feasibilityActualDate),
+        status: form.feasibilityStatus,
+        completed: form.feasibilityCompleted,
+      };
+    }
 
-  if (
-    form.quotationActualDate ||
-    form.quotationLink ||
-    form.quotationCompleted !== (enquiry.quotation?.completed || false)
-  ) {
-    payload.quotation = {
-      actualDate: form.quotationActualDate || undefined,
-      quotationLink: form.quotationLink || undefined,
-      completed: form.quotationCompleted,
-    };
-  }
+    if (
+      form.quotationActualDate ||
+      form.quotationLink ||
+      form.quotationCompleted !== (enquiry.quotation?.completed || false)
+    ) {
+      payload.quotation = {
+        actualDate: toISOStringOrUndefined(form.quotationActualDate),
+        quotationLink: form.quotationLink || undefined,
+        completed: form.quotationCompleted,
+      };
+    }
 
-  if (
-    form.closureActualDate ||
-    form.closureStatus !== (enquiry.closure?.status || "pending") ||
-    form.lostRemark ||
-    form.closureCompleted !== (enquiry.closure?.completed || false)
-  ) {
-    payload.closure = {
-      actualDate: form.closureActualDate || undefined,
-      status: form.closureStatus,
-      lostRemark: form.lostRemark || undefined,
-      completed: form.closureCompleted,
-    };
-  }
+    if (
+      form.closureActualDate ||
+      form.closureStatus !== (enquiry.closure?.status || "pending") ||
+      form.lostRemark ||
+      form.closureCompleted !== (enquiry.closure?.completed || false)
+    ) {
+      payload.closure = {
+        actualDate: toISOStringOrUndefined(form.closureActualDate),
+        status: form.closureStatus,
+        lostRemark: form.lostRemark || undefined,
+        completed: form.closureCompleted,
+      };
+    }
 
-  if (Object.keys(payload).length === 0) {
-    alert("No update added");
-    return;
-  }
+    if (Object.keys(payload).length === 0) {
+      alert("No update added");
+      return;
+    }
 
-  try {
-    await updateEnquiryWorkflow(enquiry._id, payload);
-    alert("Workflow updated successfully");
-    refresh();
-    onClose();
-  } catch (error) {
-    alert(error.response?.data?.message || "Failed to update workflow");
-  }
-};
+    try {
+      await updateEnquiryWorkflow(enquiry._id, payload);
+      alert("Workflow updated successfully");
+      refresh();
+      onClose();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to update workflow");
+    }
+  };
 
   return (
     <div className="workflow-overlay">
@@ -91,7 +126,9 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
         <div className="workflow-header">
           <div>
             <h2>Update Enquiry Workflow</h2>
-            <p>{enquiry.companyName} - {enquiry.customerName}</p>
+            <p>
+              {enquiry.companyName} - {enquiry.customerName}
+            </p>
           </div>
 
           <button className="workflow-close" onClick={onClose}>
@@ -106,11 +143,7 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
 
               <label>Plan Date</label>
               <input
-                value={
-                  enquiry.feasibility?.planDate
-                    ? new Date(enquiry.feasibility.planDate).toLocaleString()
-                    : "-"
-                }
+                value={formatDisplayDateTime(enquiry.feasibility?.planDate)}
                 disabled
               />
 
@@ -149,11 +182,7 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
 
               <label>Plan Date</label>
               <input
-                value={
-                  enquiry.quotation?.planDate
-                    ? new Date(enquiry.quotation.planDate).toLocaleString()
-                    : "-"
-                }
+                value={formatDisplayDateTime(enquiry.quotation?.planDate)}
                 disabled
               />
 
@@ -189,11 +218,7 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
 
               <label>Plan Date</label>
               <input
-                value={
-                  enquiry.closure?.planDate
-                    ? new Date(enquiry.closure.planDate).toLocaleString()
-                    : "-"
-                }
+                value={formatDisplayDateTime(enquiry.closure?.planDate)}
                 disabled
               />
 
