@@ -149,21 +149,25 @@
 .enquiry-table {
   min-width: 2850px;
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
   zoom: 0.86;
 }
 
 .enquiry-table th,
 .enquiry-table td {
   padding: 8px 10px;
-  white-space: nowrap;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  line-height: 1.35;
   font-size: 12px;
   border-bottom: 1px solid #e5e7eb;
   border-right: 1px solid #eef2f7;
   background: #fff;
   color: #1f2937;
   vertical-align: top;
+  max-width: 240px;
 }
 
 .enquiry-table thead th {
@@ -178,12 +182,14 @@
   font-weight: 800;
 }
 
-/* FREEZE: Enquiry Date + Sales Person + Company */
+/* STICKY COLUMNS */
 .sticky-col {
   position: sticky !important;
   z-index: 30;
   background: #ffffff !important;
   box-shadow: 4px 0 8px rgba(15, 23, 42, 0.08);
+  opacity: 1 !important;
+  backdrop-filter: none !important;
 }
 
 .sticky-head {
@@ -194,27 +200,77 @@
   color: #ffffff !important;
 }
 
-.col-date {
-  left: 0;
-  width: 125px;
-  min-width: 125px;
-  max-width: 125px;
+.enquiry-table .col-date {
+  position: sticky !important;
+  left: 0 !important;
+  width: 125px !important;
+  min-width: 125px !important;
+  max-width: 125px !important;
+  z-index: 45 !important;
+  background: #ffffff !important;
+  border-right: 2px solid #cbd5e1 !important;
 }
 
-.col-sales {
-  left: 125px;
-  width: 150px;
-  min-width: 150px;
-  max-width: 150px;
+.enquiry-table .col-sales {
+  position: sticky !important;
+  left: 125px !important;
+  width: 150px !important;
+  min-width: 150px !important;
+  max-width: 150px !important;
+  z-index: 44 !important;
+  background: #ffffff !important;
+  border-right: 2px solid #cbd5e1 !important;
 }
 
-.col-company {
-  left: 275px;
-  width: 240px;
-  min-width: 240px;
-  max-width: 240px;
+.enquiry-table .col-company {
+  position: sticky !important;
+  left: 275px !important;
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  z-index: 43 !important;
+  background: #ffffff !important;
   border-right: 3px solid #94a3b8 !important;
-  box-shadow: 8px 0 12px rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 8px 0 12px rgba(15, 23, 42, 0.14) !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+.enquiry-table thead .col-date,
+.enquiry-table thead .col-sales,
+.enquiry-table thead .col-company {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  z-index: 90 !important;
+}
+
+/* USER VIEW FIX - no sales person gap */
+.enquiry-container.user-view .col-date {
+  left: 0 !important;
+  width: 125px !important;
+  min-width: 125px !important;
+  max-width: 125px !important;
+}
+
+.enquiry-container.user-view .col-company {
+  left: 125px !important;
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+}
+
+/* ADMIN VIEW FIX */
+.enquiry-container.admin-view .col-date {
+  left: 0 !important;
+}
+
+.enquiry-container.admin-view .col-sales {
+  left: 125px !important;
+}
+
+.enquiry-container.admin-view .col-company {
+  left: 275px !important;
 }
 
 /* Remove old customer sticky if class exists */
@@ -232,67 +288,117 @@
   min-width: 220px;
   white-space: pre-line !important;
   line-height: 1.25;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
 }
 
-/* ROW COLORS */
-.row-feasible td {
+/* ================= FINAL ROW STATUS COLORS ================= */
+
+/* Feasible = light green */
+.enquiry-table tbody tr.row-feasible > td {
   background: #dcfce7 !important;
+  color: #064e3b !important;
 }
 
-.row-quotation td {
+/* Quotation done = stronger green */
+.enquiry-table tbody tr.row-quotation > td {
   background: #bbf7d0 !important;
+  color: #064e3b !important;
 }
 
-.row-delay td {
-  background: #fed7aa !important;
+/* Overdue / delayed = strong orange */
+.enquiry-table tbody tr.row-overdue > td {
+  background: #fb923c !important;
+  color: #111827 !important;
 }
 
-.row-won td {
+/* Not feasible = light red */
+.enquiry-table tbody tr.row-not-feasible > td {
+  background: #fecaca !important;
+  color: #7f1d1d !important;
+}
+
+/* Won = proper green */
+.enquiry-table tbody tr.row-won > td {
   background: #15803d !important;
   color: #ffffff !important;
 }
 
-.row-lost td {
-  background: #991b1b !important;
+/* Lost = proper red + strike */
+.enquiry-table tbody tr.row-lost > td {
+  background: #dc2626 !important;
   color: #ffffff !important;
-  text-decoration: line-through;
+  text-decoration: line-through !important;
 }
 
-/* Sticky row colors must match */
-.row-feasible .sticky-col {
+/* Sticky columns must match row color */
+.enquiry-table tbody tr.row-feasible > td.sticky-col,
+.enquiry-table tbody tr.row-feasible > td.col-date,
+.enquiry-table tbody tr.row-feasible > td.col-sales,
+.enquiry-table tbody tr.row-feasible > td.col-company {
   background: #dcfce7 !important;
+  color: #064e3b !important;
 }
 
-.row-quotation .sticky-col {
+.enquiry-table tbody tr.row-quotation > td.sticky-col,
+.enquiry-table tbody tr.row-quotation > td.col-date,
+.enquiry-table tbody tr.row-quotation > td.col-sales,
+.enquiry-table tbody tr.row-quotation > td.col-company {
   background: #bbf7d0 !important;
+  color: #064e3b !important;
 }
 
-.row-delay .sticky-col {
-  background: #fed7aa !important;
+.enquiry-table tbody tr.row-overdue > td.sticky-col,
+.enquiry-table tbody tr.row-overdue > td.col-date,
+.enquiry-table tbody tr.row-overdue > td.col-sales,
+.enquiry-table tbody tr.row-overdue > td.col-company {
+  background: #fb923c !important;
+  color: #111827 !important;
 }
 
-.row-won .sticky-col {
+.enquiry-table tbody tr.row-not-feasible > td.sticky-col,
+.enquiry-table tbody tr.row-not-feasible > td.col-date,
+.enquiry-table tbody tr.row-not-feasible > td.col-sales,
+.enquiry-table tbody tr.row-not-feasible > td.col-company {
+  background: #fecaca !important;
+  color: #7f1d1d !important;
+}
+
+.enquiry-table tbody tr.row-won > td.sticky-col,
+.enquiry-table tbody tr.row-won > td.col-date,
+.enquiry-table tbody tr.row-won > td.col-sales,
+.enquiry-table tbody tr.row-won > td.col-company {
   background: #15803d !important;
   color: #ffffff !important;
 }
 
-.row-lost .sticky-col {
-  background: #991b1b !important;
+.enquiry-table tbody tr.row-lost > td.sticky-col,
+.enquiry-table tbody tr.row-lost > td.col-date,
+.enquiry-table tbody tr.row-lost > td.col-sales,
+.enquiry-table tbody tr.row-lost > td.col-company {
+  background: #dc2626 !important;
   color: #ffffff !important;
-  text-decoration: line-through;
-}
-
-.row-won a,
-.row-lost a {
-  color: #ffffff !important;
+  text-decoration: line-through !important;
 }
 
 /* Normal alternating rows */
-.enquiry-table tbody tr:nth-child(even):not(.row-feasible):not(.row-quotation):not(.row-delay):not(.row-won):not(.row-lost) td {
+.enquiry-table tbody tr:nth-child(even):not(.row-feasible):not(.row-quotation):not(.row-overdue):not(.row-not-feasible):not(.row-won):not(.row-lost) td {
   background: #f9fafb;
 }
 
-.enquiry-table tbody tr:nth-child(even):not(.row-feasible):not(.row-quotation):not(.row-delay):not(.row-won):not(.row-lost) .sticky-col {
+.enquiry-table tbody tr:nth-child(even):not(.row-feasible):not(.row-quotation):not(.row-overdue):not(.row-not-feasible):not(.row-won):not(.row-lost) .sticky-col {
+  background: #f9fafb !important;
+}
+
+.enquiry-table tbody tr:not(.row-feasible):not(.row-quotation):not(.row-overdue):not(.row-not-feasible):not(.row-won):not(.row-lost) .col-date,
+.enquiry-table tbody tr:not(.row-feasible):not(.row-quotation):not(.row-overdue):not(.row-not-feasible):not(.row-won):not(.row-lost) .col-sales,
+.enquiry-table tbody tr:not(.row-feasible):not(.row-quotation):not(.row-overdue):not(.row-not-feasible):not(.row-won):not(.row-lost) .col-company {
+  background: #ffffff !important;
+}
+
+.enquiry-table tbody tr:nth-child(even):not(.row-feasible):not(.row-quotation):not(.row-overdue):not(.row-not-feasible):not(.row-won):not(.row-lost) .col-date,
+.enquiry-table tbody tr:nth-child(even):not(.row-feasible):not(.row-quotation):not(.row-overdue):not(.row-not-feasible):not(.row-won):not(.row-lost) .col-sales,
+.enquiry-table tbody tr:nth-child(even):not(.row-feasible):not(.row-quotation):not(.row-overdue):not(.row-not-feasible):not(.row-won):not(.row-lost) .col-company {
   background: #f9fafb !important;
 }
 
@@ -313,6 +419,11 @@
 
 .enquiry-table a:hover {
   text-decoration: underline;
+}
+
+.enquiry-table tbody tr.row-won a,
+.enquiry-table tbody tr.row-lost a {
+  color: #ffffff !important;
 }
 
 /* BUTTONS */
@@ -567,6 +678,7 @@
   transform: translateY(-1px);
 }
 
+/* RESPONSIVE - OLD SUPPORT */
 @media (max-width: 900px) {
   .enquiry-filter-grid {
     flex-wrap: wrap;
@@ -578,208 +690,6 @@
 }
 
 @media (max-width: 768px) {
-  .enquiry-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-group.full-width {
-    grid-column: span 1;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .cancel-btn,
-  .submit-btn {
-    width: 100%;
-  }
-}
-
-/* FINAL ENQUIRY STICKY FIX */
-
-.enquiry-table {
-  border-collapse: separate !important;
-  border-spacing: 0 !important;
-}
-
-.enquiry-table .col-date {
-  position: sticky !important;
-  left: 0 !important;
-  width: 125px !important;
-  min-width: 125px !important;
-  max-width: 125px !important;
-  z-index: 45 !important;
-  background: #ffffff !important;
-  border-right: 2px solid #cbd5e1 !important;
-}
-
-.enquiry-table .col-sales {
-  position: sticky !important;
-  left: 125px !important;
-  width: 150px !important;
-  min-width: 150px !important;
-  max-width: 150px !important;
-  z-index: 44 !important;
-  background: #ffffff !important;
-  border-right: 2px solid #cbd5e1 !important;
-}
-
-.enquiry-table .col-company {
-  position: sticky !important;
-  left: 275px !important;
-  width: 240px !important;
-  min-width: 240px !important;
-  max-width: 240px !important;
-  z-index: 43 !important;
-  background: #ffffff !important;
-  border-right: 3px solid #94a3b8 !important;
-  box-shadow: 8px 0 12px rgba(15, 23, 42, 0.14) !important;
-}
-
-.enquiry-table thead .col-date,
-.enquiry-table thead .col-sales,
-.enquiry-table thead .col-company {
-  background: #0f172a !important;
-  color: #ffffff !important;
-  z-index: 90 !important;
-}
-
-/* Conditional row colors */
-.row-feasible td {
-  background: #dcfce7 !important;
-}
-
-.row-quotation td {
-  background: #bbf7d0 !important;
-}
-
-.row-delay td {
-  background: #fed7aa !important;
-}
-
-.row-won td {
-  background: #15803d !important;
-  color: #ffffff !important;
-}
-
-.row-lost td {
-  background: #991b1b !important;
-  color: #ffffff !important;
-  text-decoration: line-through;
-}
-
-/* Sticky columns must match row color */
-.row-feasible .col-date,
-.row-feasible .col-sales,
-.row-feasible .col-company {
-  background: #dcfce7 !important;
-}
-
-.row-quotation .col-date,
-.row-quotation .col-sales,
-.row-quotation .col-company {
-  background: #bbf7d0 !important;
-}
-
-.row-delay .col-date,
-.row-delay .col-sales,
-.row-delay .col-company {
-  background: #fed7aa !important;
-}
-
-.row-won .col-date,
-.row-won .col-sales,
-.row-won .col-company {
-  background: #15803d !important;
-  color: #ffffff !important;
-}
-
-.row-lost .col-date,
-.row-lost .col-sales,
-.row-lost .col-company {
-  background: #991b1b !important;
-  color: #ffffff !important;
-  text-decoration: line-through;
-}
-
-/* Normal row fallback */
-.enquiry-table tbody tr:not(.row-feasible):not(.row-quotation):not(.row-delay):not(.row-won):not(.row-lost) .col-date,
-.enquiry-table tbody tr:not(.row-feasible):not(.row-quotation):not(.row-delay):not(.row-won):not(.row-lost) .col-sales,
-.enquiry-table tbody tr:not(.row-feasible):not(.row-quotation):not(.row-delay):not(.row-won):not(.row-lost) .col-company {
-  background: #ffffff !important;
-}
-
-.enquiry-table tbody tr:nth-child(even):not(.row-feasible):not(.row-quotation):not(.row-delay):not(.row-won):not(.row-lost) .col-date,
-.enquiry-table tbody tr:nth-child(even):not(.row-feasible):not(.row-quotation):not(.row-delay):not(.row-won):not(.row-lost) .col-sales,
-.enquiry-table tbody tr:nth-child(even):not(.row-feasible):not(.row-quotation):not(.row-delay):not(.row-won):not(.row-lost) .col-company {
-  background: #f9fafb !important;
-}
-
-.enquiry-table .sticky-col {
-  opacity: 1 !important;
-  backdrop-filter: none !important;
-}
-/* USER VIEW FIX - no sales person gap */
-.enquiry-container.user-view .col-date {
-  left: 0 !important;
-  width: 125px !important;
-  min-width: 125px !important;
-  max-width: 125px !important;
-}
-
-.enquiry-container.user-view .col-company {
-  left: 125px !important;
-  width: 240px !important;
-  min-width: 240px !important;
-  max-width: 240px !important;
-}
-
-/* ADMIN VIEW FIX */
-.enquiry-container.admin-view .col-date {
-  left: 0 !important;
-}
-
-.enquiry-container.admin-view .col-sales {
-  left: 125px !important;
-}
-
-.enquiry-container.admin-view .col-company {
-  left: 275px !important;
-}
-
-/* CLEAN WORD WRAP (NO WORD BREAKING) */
-.enquiry-table th,
-.enquiry-table td,
-.sales-order-table th,
-.sales-order-table td,
-.cold-table th,
-.cold-table td {
-  white-space: normal !important;
-  word-break: normal !important;        /* ❌ stop breaking words */
-  overflow-wrap: break-word !important; /* ✅ wrap only when needed */
-  line-height: 1.35;
-  vertical-align: top;
-}
-
-/* LIMIT WIDTH FOR BETTER WRAP */
-.enquiry-table td,
-.sales-order-table td,
-.cold-table td {
-  max-width: 240px;
-}
-
-/* IMPORTANT COLUMNS */
-.col-company,
-.size-cell {
-  white-space: normal !important;
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
-}
-
-/* ================= MOBILE ================= */
-@media (max-width: 768px) {
-
   .enquiry-container {
     padding: 10px;
   }
@@ -799,7 +709,6 @@
     height: 40px;
   }
 
-  /* FILTER */
   .enquiry-filter-grid {
     flex-direction: column;
     gap: 8px;
@@ -819,7 +728,6 @@
     width: 100%;
   }
 
-  /* TABLE → CARD */
   .enquiry-table {
     display: none;
   }
@@ -846,13 +754,29 @@
     color: #1e3a8a;
   }
 
-  /* Pagination */
   .enquiry-pagination {
     flex-direction: column;
     gap: 8px;
   }
 
   .enquiry-pagination button {
+    width: 100%;
+  }
+
+  .enquiry-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group.full-width {
+    grid-column: span 1;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .cancel-btn,
+  .submit-btn {
     width: 100%;
   }
 }

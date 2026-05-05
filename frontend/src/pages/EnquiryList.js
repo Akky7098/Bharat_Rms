@@ -124,7 +124,6 @@ const EnquiryList = () => {
     }
   };
 
-  /* ✅ PAGE NUMBERS LIKE COLD CALL */
   const renderPages = () => {
     const pages = [];
     const total = pagination.totalPages;
@@ -145,10 +144,7 @@ const EnquiryList = () => {
             {i}
           </button>
         );
-      } else if (
-        i === current - 2 ||
-        i === current + 2
-      ) {
+      } else if (i === current - 2 || i === current + 2) {
         pages.push(<span key={i}>...</span>);
       }
     }
@@ -170,27 +166,45 @@ const EnquiryList = () => {
     if (!date) return "-";
     return new Date(date).toLocaleString();
   };
-  const isDelayed = (planDate, actualDate) => {
-  if (!planDate || !actualDate) return false;
-  return new Date(actualDate) > new Date(planDate);
+
+  /* =========================
+     ✅ NEW SMART STATUS LOGIC
+  ========================== */
+
+ const isOverdue = (planDate, completed) => {
+  if (!planDate) return false;
+
+  const now = new Date();
+  const plan = new Date(planDate);
+
+  return !completed && now > plan;
 };
 
 const getRowClass = (enquiry) => {
-  const feasibilityDelayed = isDelayed(
+  const closureStatus = enquiry.closure?.status;
+  const feasibilityStatus = enquiry.feasibility?.status;
+
+  const feasibilityCompleted = enquiry.feasibility?.completed === true;
+  const quotationCompleted = enquiry.quotation?.completed === true;
+
+  const feasibilityOverdue = isOverdue(
     enquiry.feasibility?.planDate,
-    enquiry.feasibility?.actualDate
+    feasibilityCompleted
   );
 
-  const quotationDelayed = isDelayed(
+  const quotationOverdue = isOverdue(
     enquiry.quotation?.planDate,
-    enquiry.quotation?.actualDate
+    quotationCompleted
   );
 
-  if (enquiry.closure?.status === "lost") return "row-lost";
-  if (enquiry.closure?.status === "won") return "row-won";
-  if (feasibilityDelayed || quotationDelayed) return "row-delay";
-  if (enquiry.quotation?.completed) return "row-quotation";
-  if (enquiry.feasibility?.completed) return "row-feasible";
+  if (closureStatus === "lost") return "row-lost";
+  if (closureStatus === "won") return "row-won";
+  if (feasibilityStatus === "not_feasible") return "row-not-feasible";
+
+  if (feasibilityOverdue || quotationOverdue) return "row-overdue";
+
+  if (quotationCompleted) return "row-quotation";
+  if (feasibilityCompleted) return "row-feasible";
 
   return "";
 };
@@ -267,9 +281,7 @@ const getRowClass = (enquiry) => {
         <table className="enquiry-table">
           <thead>
             <tr>
-              <th className="sticky-col sticky-head col-date">
-                Enquiry Date
-              </th>
+              <th className="sticky-col sticky-head col-date">Enquiry Date</th>
 
               {isAdmin && (
                 <th className="sticky-col sticky-head col-sales">
@@ -277,11 +289,8 @@ const getRowClass = (enquiry) => {
                 </th>
               )}
 
-              <th className="sticky-col sticky-head col-company">
-                Company
-              </th>
+              <th className="sticky-col sticky-head col-company">Company</th>
 
-              {/* ❌ removed sticky from customer */}
               <th>Customer Name</th>
 
               <th>Contact</th>
@@ -394,12 +403,8 @@ const getRowClass = (enquiry) => {
         </table>
       </div>
 
-      {/* ✅ NEW PAGINATION */}
       <div className="enquiry-pagination">
-        <button
-          onClick={prevPage}
-          disabled={pagination.currentPage <= 1}
-        >
+        <button onClick={prevPage} disabled={pagination.currentPage <= 1}>
           Prev
         </button>
 

@@ -260,3 +260,47 @@
     width: 100%;
   }
 }
+/* SALES FORM FIELD ERROR */
+.sales-field-error {
+  margin-top: 5px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* OTHER PRODUCT - BIG GRADE TEXT BOX */
+.sales-form-grid .sales-grade-text-box {
+  grid-column: span 2;
+}
+
+.sales-form-grid .sales-grade-text-box textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  padding: 13px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  outline: none;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111827;
+  background: #f8fafc;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.sales-form-grid .sales-grade-text-box textarea:focus {
+  border-color: #16a34a;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.14);
+}
+
+@media (max-width: 768px) {
+  .sales-form-grid .sales-grade-text-box {
+    grid-column: span 1;
+  }
+
+  .sales-form-grid .sales-grade-text-box textarea {
+    min-height: 95px;
+  }
+}
