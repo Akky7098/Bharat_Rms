@@ -5,7 +5,7 @@ const productGrades = {
     "DIN 1.2344/H13",
     "DIN 1.2343/H11",
     "DIN 1.2379/D2",
-    "DIN 1.2080/D3",
+    "DIN 1.2080/D3 (HCHCR)",
   ],
 
   die_steel: [
@@ -18,7 +18,7 @@ const productGrades = {
   plastic_mould_steel: [
     "DIN 1.2311/P20",
     "DIN 1.2738/P20+Ni",
-    "P20+HH",
+    "DIN 1.2738/P20+HH",
   ],
 
   high_speed_steel: [
@@ -32,9 +32,21 @@ const productGrades = {
     "EN24",
     "EN25",
     "EN26",
+    "EN31",
+    "EN36C (M)",
+    "EN353",
+    "EN354",
+    "EN47",
+    "EN1A",
     "4140",
     "4130",
-    "4145",
+    "4150",
+    "20MnCr5",
+    "16MnCr5",
+    "SCM420",
+    "8620",
+    "8630",
+    "8640",
   ],
 
   carbon_steel: [
@@ -42,10 +54,14 @@ const productGrades = {
     "EN9",
     "1018",
     "1010",
+    "1024",
     "C45",
+    "S355J2",
+    "ST52.3",
+    "52100",
   ],
-  other:[]
+
+  other: []
 };
 
 module.exports = productGrades;
-
