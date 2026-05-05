@@ -17,13 +17,20 @@ const createSalesOrder = async (body, user) => {
     paymentTerms,
   } = body;
 
-  if (!productGrades[productCategory]) {
-    throw new Error("Invalid product category");
-  }
-
-  if (!productGrades[productCategory].includes(grade)) {
-    throw new Error("Invalid grade selected for this product category");
-  }
+  if (!Object.prototype.hasOwnProperty.call(productGrades, productCategory)) {
+     throw new Error("Invalid product category");
+   }
+ 
+   if (!grade || !String(grade).trim()) {
+     throw new Error("Grade is required");
+   }
+ 
+   if (
+     productCategory !== "other" &&
+     !productGrades[productCategory].includes(grade)
+   ) {
+     throw new Error("Invalid grade selected for this product category");
+   }
 
   const salesOrder = await SalesOrder.create({
     salesPersonId: user.id,
