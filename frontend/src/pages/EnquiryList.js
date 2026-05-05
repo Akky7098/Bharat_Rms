@@ -186,6 +186,7 @@ const getRowClass = (enquiry) => {
 
   const feasibilityCompleted = enquiry.feasibility?.completed === true;
   const quotationCompleted = enquiry.quotation?.completed === true;
+  const closureCompleted = enquiry.closure?.completed === true;
 
   const feasibilityOverdue = isOverdue(
     enquiry.feasibility?.planDate,
@@ -196,15 +197,20 @@ const getRowClass = (enquiry) => {
     enquiry.quotation?.planDate,
     quotationCompleted
   );
+   const closureOverdue = isOverdue(
+    enquiry.closure?.planDate,
+    closureCompleted
+  );
 
   if (closureStatus === "lost") return "row-lost";
   if (closureStatus === "won") return "row-won";
   if (feasibilityStatus === "not_feasible") return "row-not-feasible";
 
-  if (feasibilityOverdue || quotationOverdue) return "row-overdue";
+  if (feasibilityOverdue || quotationOverdue || closureOverdue) return "row-overdue";
 
   if (quotationCompleted) return "row-quotation";
   if (feasibilityCompleted) return "row-feasible";
+  if(closureCompleted) return "row-closure"
 
   return "";
 };
