@@ -230,53 +230,258 @@
   background: white;
 }
 
-/* ================= MOBILE ================= */
-@media (max-width: 768px) {
+/* ================================
+   DASHBOARD HOME - MOBILE ONLY
+================================ */
+
+.mobile-pie-fix {
+  width: 100%;
+  height: 260px;
+  min-height: 260px;
+}
+
+@media (max-width: 900px) {
   .dashboard-home {
-    padding: 10px;
+    width: 100%;
+    padding: 0;
+    overflow-x: hidden;
   }
 
   .dashboard-topbar {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: stretch;
+    gap: 16px;
+    padding: 22px;
+    border-radius: 22px;
+    margin-bottom: 16px;
   }
 
   .dashboard-topbar h2 {
-    font-size: 18px;
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  .dashboard-topbar p {
+    font-size: 13px;
   }
 
   .month-filter {
     width: 100%;
-    display: flex;
-    gap: 8px;
-  }
-
-  .month-filter select {
-    flex: 1;
-    height: 38px;
-    font-size: 12px;
-  }
-
-  /* Cards */
-  .dashboard-cards {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
 
-  .dashboard-card {
-    padding: 12px;
+  .month-filter select {
+    width: 100%;
+    height: 44px;
     border-radius: 12px;
+    font-size: 13px;
   }
 
-  /* Charts */
-  .dashboard-charts {
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    min-width: 0;
+    height: auto;
+    min-height: 118px;
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .card h3 {
+    font-size: 15px;
+    line-height: 1.25;
+  }
+
+  .card p {
+    font-size: 22px;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
+  .dashboard-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .chart-card,
+  .insight-card {
+    width: 100%;
+    min-width: 0;
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .chart-card h3,
+  .insight-card h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  .pie-card {
+    overflow: visible;
+  }
+
+  .pie-layout {
+    display: flex;
     flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  .pie-box {
+    width: 100%;
+    height: 260px;
+    min-height: 260px;
+    display: block;
+    overflow: visible;
+  }
+
+  .pie-box .recharts-responsive-container {
+    width: 100% !important;
+    height: 260px !important;
+    min-height: 260px !important;
+  }
+
+  .pie-box .recharts-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 260px !important;
+  }
+
+  .pie-box svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 260px !important;
+    overflow: visible;
+  }
+
+  .pie-legend {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .legend-row {
+    width: 100%;
+    padding: 12px;
+    border-radius: 14px;
+    background: #f8fafc;
+  }
+
+  .legend-row strong {
+    font-size: 14px;
+  }
+
+  .legend-row p {
+    font-size: 12px;
+  }
+
+  .insight-card {
+    display: grid;
     gap: 12px;
   }
 
-  .chart-card {
+  .insight-box {
+    border-radius: 16px;
+    padding: 18px;
+    min-height: 110px;
+  }
+
+  .insight-box span {
+    font-size: 12px;
+  }
+
+  .insight-box h4 {
+    font-size: 20px;
+  }
+
+  .insight-box p {
+    font-size: 13px;
+  }
+
+  .grade-row {
+    padding: 12px 0;
+    gap: 10px;
+  }
+
+  .grade-row span {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-topbar {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .dashboard-topbar h2 {
+    font-size: 20px;
+  }
+
+  .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .card {
+    min-height: 108px;
+    padding: 14px;
+    border-radius: 15px;
+  }
+
+  .card h3 {
+    font-size: 14px;
+  }
+
+  .card p {
+    font-size: 20px;
+  }
+
+  .chart-card,
+  .insight-card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .pie-box,
+  .mobile-pie-fix {
+    height: 250px;
+    min-height: 250px;
+  }
+
+  .pie-box .recharts-responsive-container,
+  .pie-box .recharts-wrapper,
+  .pie-box svg {
+    height: 250px !important;
+  }
+
+  .month-filter select {
+    height: 42px;
+    font-size: 12px;
+  }
+}
+@media (max-width: 900px) {
+  .pie-box {
     width: 100%;
-    height: 260px;
+    min-height: 270px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .pie-box .recharts-wrapper {
+    margin: 0 auto;
   }
 }

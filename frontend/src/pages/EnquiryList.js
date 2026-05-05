@@ -11,6 +11,7 @@ const EnquiryList = () => {
 
   const [enquiries, setEnquiries] = useState([]);
   const [salesPersons, setSalesPersons] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const [showForm, setShowForm] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
@@ -30,6 +31,13 @@ const EnquiryList = () => {
     fromDate: "",
     toDate: "",
   });
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const fetchEnquiries = useCallback(async () => {
     try {
@@ -167,53 +175,53 @@ const EnquiryList = () => {
     return new Date(date).toLocaleString();
   };
 
-  /* =========================
-     ✅ NEW SMART STATUS LOGIC
-  ========================== */
+  const isOverdue = (planDate, completed) => {
+    if (!planDate) return false;
 
- const isOverdue = (planDate, completed) => {
-  if (!planDate) return false;
+    const now = new Date();
+    const plan = new Date(planDate);
 
-  const now = new Date();
-  const plan = new Date(planDate);
+    return !completed && now > plan;
+  };
 
-  return !completed && now > plan;
-};
+  const getRowClass = (enquiry) => {
+    const closureStatus = enquiry.closure?.status;
+    const feasibilityStatus = enquiry.feasibility?.status;
 
-const getRowClass = (enquiry) => {
-  const closureStatus = enquiry.closure?.status;
-  const feasibilityStatus = enquiry.feasibility?.status;
+    const feasibilityCompleted = enquiry.feasibility?.completed === true;
+    const quotationCompleted = enquiry.quotation?.completed === true;
+    const closureCompleted = enquiry.closure?.completed === true;
 
-  const feasibilityCompleted = enquiry.feasibility?.completed === true;
-  const quotationCompleted = enquiry.quotation?.completed === true;
-  const closureCompleted = enquiry.closure?.completed === true;
+    const feasibilityOverdue = isOverdue(
+      enquiry.feasibility?.planDate,
+      feasibilityCompleted
+    );
 
-  const feasibilityOverdue = isOverdue(
-    enquiry.feasibility?.planDate,
-    feasibilityCompleted
-  );
+    const quotationOverdue = isOverdue(
+      enquiry.quotation?.planDate,
+      quotationCompleted
+    );
 
-  const quotationOverdue = isOverdue(
-    enquiry.quotation?.planDate,
-    quotationCompleted
-  );
-   const closureOverdue = isOverdue(
-    enquiry.closure?.planDate,
-    closureCompleted
-  );
+    const closureOverdue = isOverdue(
+      enquiry.closure?.planDate,
+      closureCompleted
+    );
 
-  if (closureStatus === "lost") return "row-lost";
-  if (closureStatus === "won") return "row-won";
-  if (feasibilityStatus === "not_feasible") return "row-not-feasible";
+    if (closureStatus === "lost") return "row-lost";
+    if (closureStatus === "won") return "row-won";
+    if (feasibilityStatus === "not_feasible") return "row-not-feasible";
 
-  if (feasibilityOverdue || quotationOverdue || closureOverdue) return "row-overdue";
+    if (feasibilityOverdue || quotationOverdue || closureOverdue) {
+      return "row-overdue";
+    }
 
-  if (quotationCompleted) return "row-quotation";
-  if (feasibilityCompleted) return "row-feasible";
-  if(closureCompleted) return "row-closure"
+    if (quotationCompleted) return "row-quotation";
+    if (feasibilityCompleted) return "row-feasible";
+    if (closureCompleted) return "row-closure";
 
-  return "";
-};
+    return "";
+  };
+
   return (
     <div className={`enquiry-container ${isAdmin ? "admin-view" : "user-view"}`}>
       <div className="enquiry-header">
@@ -227,7 +235,6 @@ const getRowClass = (enquiry) => {
         </button>
       </div>
 
-      {/* FILTER */}
       <div className="enquiry-filter-card">
         <div className="enquiry-filter-grid">
           {isAdmin && (
@@ -282,132 +289,209 @@ const getRowClass = (enquiry) => {
         </div>
       </div>
 
-      {/* TABLE */}
-      <div className="enquiry-table-wrapper">
-        <table className="enquiry-table">
-          <thead>
-            <tr>
-              <th className="sticky-col sticky-head col-date">Enquiry Date</th>
-
-              {isAdmin && (
-                <th className="sticky-col sticky-head col-sales">
-                  Sales Person
-                </th>
-              )}
-
-              <th className="sticky-col sticky-head col-company">Company</th>
-
-              <th>Customer Name</th>
-
-              <th>Contact</th>
-              <th>Email</th>
-              <th>Address</th>
-              <th>Product</th>
-              <th>Grade</th>
-              <th>Shape</th>
-              <th>Size</th>
-              <th>Qty</th>
-              <th>Supply</th>
-              <th>Mode</th>
-
-              <th>Feasibility Plan</th>
-              <th>Feasibility Actual</th>
-              <th>Feasibility Status</th>
-              <th>Done</th>
-
-              <th>Quotation Plan</th>
-              <th>Quotation Actual</th>
-              <th>Quotation Link</th>
-              <th>Done</th>
-
-              <th>Closure Plan</th>
-              <th>Closure Actual</th>
-              <th>Status</th>
-              <th>Lost Remark</th>
-              <th>Done</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {enquiries.length === 0 ? (
+      {!isMobile ? (
+        <div className="enquiry-table-wrapper">
+          <table className="enquiry-table">
+            <thead>
               <tr>
-                <td colSpan={28} className="no-data">
-                  No enquiries found
-                </td>
+                <th className="sticky-col sticky-head col-date">
+                  Enquiry Date
+                </th>
+
+                {isAdmin && (
+                  <th className="sticky-col sticky-head col-sales">
+                    Sales Person
+                  </th>
+                )}
+
+                <th className="sticky-col sticky-head col-company">Company</th>
+
+                <th>Customer Name</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Address</th>
+                <th>Product</th>
+                <th>Grade</th>
+                <th>Shape</th>
+                <th>Size</th>
+                <th>Qty</th>
+                <th>Supply</th>
+                <th>Mode</th>
+
+                <th>Feasibility Plan</th>
+                <th>Feasibility Actual</th>
+                <th>Feasibility Status</th>
+                <th>Done</th>
+
+                <th>Quotation Plan</th>
+                <th>Quotation Actual</th>
+                <th>Quotation Link</th>
+                <th>Done</th>
+
+                <th>Closure Plan</th>
+                <th>Closure Actual</th>
+                <th>Status</th>
+                <th>Lost Remark</th>
+                <th>Done</th>
+                <th>Action</th>
               </tr>
-            ) : (
-              enquiries.map((enquiry) => (
-                <tr key={enquiry._id} className={getRowClass(enquiry)}>
-                  <td className="sticky-col col-date">
-                    {formatDate(enquiry.enquiryDate)}
-                  </td>
+            </thead>
 
-                  {isAdmin && (
-                    <td className="sticky-col col-sales">
-                      {enquiry.salesPersonId?.name || "-"}
-                    </td>
-                  )}
-
-                  <td className="sticky-col col-company">
-                    {enquiry.companyName}
-                  </td>
-
-                  <td>{enquiry.customerName}</td>
-
-                  <td>{enquiry.customerContactNo}</td>
-                  <td>{enquiry.customerEmailId || "-"}</td>
-                  <td>{enquiry.customerAddress || "-"}</td>
-                  <td>{enquiry.productCategory}</td>
-                  <td>{enquiry.grade}</td>
-                  <td>{enquiry.shape}</td>
-                  <td className="size-cell">{enquiry.size}</td>
-                  <td>{enquiry.quantityInKg}</td>
-                  <td>{enquiry.supplyCondition || "-"}</td>
-                  <td>{enquiry.modeOfEnquiry}</td>
-
-                  <td>{formatDateTime(enquiry.feasibility?.planDate)}</td>
-                  <td>{formatDateTime(enquiry.feasibility?.actualDate)}</td>
-                  <td>{enquiry.feasibility?.status || "-"}</td>
-                  <td>{enquiry.feasibility?.completed ? "Yes" : "No"}</td>
-
-                  <td>{formatDateTime(enquiry.quotation?.planDate)}</td>
-                  <td>{formatDateTime(enquiry.quotation?.actualDate)}</td>
-                  <td>
-                    {enquiry.quotation?.quotationLink ? (
-                      <a
-                        href={enquiry.quotation.quotationLink}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        View
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                  <td>{enquiry.quotation?.completed ? "Yes" : "No"}</td>
-
-                  <td>{formatDateTime(enquiry.closure?.planDate)}</td>
-                  <td>{formatDateTime(enquiry.closure?.actualDate)}</td>
-                  <td>{enquiry.closure?.status || "-"}</td>
-                  <td>{enquiry.closure?.lostRemark || "-"}</td>
-                  <td>{enquiry.closure?.completed ? "Yes" : "No"}</td>
-
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => openWorkflowModal(enquiry)}
-                    >
-                      Edit
-                    </button>
+            <tbody>
+              {enquiries.length === 0 ? (
+                <tr>
+                  <td colSpan={28} className="no-data">
+                    No enquiries found
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                enquiries.map((enquiry) => (
+                  <tr key={enquiry._id} className={getRowClass(enquiry)}>
+                    <td className="sticky-col col-date">
+                      {formatDate(enquiry.enquiryDate)}
+                    </td>
+
+                    {isAdmin && (
+                      <td className="sticky-col col-sales">
+                        {enquiry.salesPersonId?.name || "-"}
+                      </td>
+                    )}
+
+                    <td className="sticky-col col-company">
+                      {enquiry.companyName}
+                    </td>
+
+                    <td>{enquiry.customerName}</td>
+                    <td>{enquiry.customerContactNo}</td>
+                    <td>{enquiry.customerEmailId || "-"}</td>
+                    <td>{enquiry.customerAddress || "-"}</td>
+                    <td>{enquiry.productCategory}</td>
+                    <td>{enquiry.grade}</td>
+                    <td>{enquiry.shape}</td>
+                    <td className="size-cell">{enquiry.size}</td>
+                    <td>{enquiry.quantityInKg}</td>
+                    <td>{enquiry.supplyCondition || "-"}</td>
+                    <td>{enquiry.modeOfEnquiry}</td>
+
+                    <td>{formatDateTime(enquiry.feasibility?.planDate)}</td>
+                    <td>{formatDateTime(enquiry.feasibility?.actualDate)}</td>
+                    <td>{enquiry.feasibility?.status || "-"}</td>
+                    <td>{enquiry.feasibility?.completed ? "Yes" : "No"}</td>
+
+                    <td>{formatDateTime(enquiry.quotation?.planDate)}</td>
+                    <td>{formatDateTime(enquiry.quotation?.actualDate)}</td>
+                    <td>
+                      {enquiry.quotation?.quotationLink ? (
+                        <a
+                          href={enquiry.quotation.quotationLink}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td>{enquiry.quotation?.completed ? "Yes" : "No"}</td>
+
+                    <td>{formatDateTime(enquiry.closure?.planDate)}</td>
+                    <td>{formatDateTime(enquiry.closure?.actualDate)}</td>
+                    <td>{enquiry.closure?.status || "-"}</td>
+                    <td>{enquiry.closure?.lostRemark || "-"}</td>
+                    <td>{enquiry.closure?.completed ? "Yes" : "No"}</td>
+
+                    <td>
+                      <button
+                        className="edit-btn"
+                        onClick={() => openWorkflowModal(enquiry)}
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="enquiry-mobile-list">
+          {enquiries.length === 0 ? (
+            <div className="no-data">No enquiries found</div>
+          ) : (
+            enquiries.map((enquiry) => (
+              <div
+                key={enquiry._id}
+                className={`mobile-card ${getRowClass(enquiry)}`}
+              >
+                <div className="mobile-card-top">
+                  <div>
+                    <strong>{enquiry.companyName}</strong>
+                    <span>{enquiry.customerName || "-"}</span>
+                  </div>
+                  <small>{formatDate(enquiry.enquiryDate)}</small>
+                </div>
+
+                <div className="mobile-card-tags">
+                  <span>{enquiry.productCategory || "-"}</span>
+                  <span>{enquiry.grade || "-"}</span>
+                  <span>{enquiry.quantityInKg || 0} Kg</span>
+                </div>
+
+                <div className="mobile-card-body">
+                  {isAdmin && (
+                    <p>
+                      <b>Sales:</b> {enquiry.salesPersonId?.name || "-"}
+                    </p>
+                  )}
+                  <p>
+                    <b>Contact:</b> {enquiry.customerContactNo || "-"}
+                  </p>
+                  <p>
+                    <b>Shape / Size:</b> {enquiry.shape || "-"} /{" "}
+                    {enquiry.size || "-"}
+                  </p>
+                  <p>
+                    <b>Mode:</b> {enquiry.modeOfEnquiry || "-"}
+                  </p>
+                  <p>
+                    <b>Feasibility:</b>{" "}
+                    {enquiry.feasibility?.completed ? "Done" : "Pending"}
+                  </p>
+                  <p>
+                    <b>Quotation:</b>{" "}
+                    {enquiry.quotation?.completed ? "Done" : "Pending"}
+                  </p>
+                  <p>
+                    <b>Closure:</b> {enquiry.closure?.status || "Pending"}
+                  </p>
+                </div>
+
+                <div className="mobile-card-actions">
+                  {enquiry.quotation?.quotationLink && (
+                    <a
+                      href={enquiry.quotation.quotationLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mobile-view-link"
+                    >
+                      View Quote
+                    </a>
+                  )}
+
+                  <button
+                    className="edit-btn"
+                    onClick={() => openWorkflowModal(enquiry)}
+                  >
+                    Update
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       <div className="enquiry-pagination">
         <button onClick={prevPage} disabled={pagination.currentPage <= 1}>

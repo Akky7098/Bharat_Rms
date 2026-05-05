@@ -10,6 +10,8 @@ const ColdCallList = () => {
   const [coldCalls, setColdCalls] = useState([]);
   const [salesPersons, setSalesPersons] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -26,10 +28,15 @@ const ColdCallList = () => {
     activityType: "",
   });
 
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const fetchColdCalls = useCallback(async () => {
     try {
       const cleanFilters = {};
-
       Object.keys(filters).forEach((key) => {
         if (filters[key]) cleanFilters[key] = filters[key];
       });
@@ -58,25 +65,15 @@ const ColdCallList = () => {
   }, [fetchColdCalls]);
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchSalesPersons();
-    }
+    if (isAdmin) fetchSalesPersons();
   }, [isAdmin, fetchSalesPersons]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
 
     setFilters((prev) => {
-      const updated = {
-        ...prev,
-        [name]: value,
-        page: 1,
-      };
-
-      if (name === "fromDate") {
-        updated.toDate = "";
-      }
-
+      const updated = { ...prev, [name]: value, page: 1 };
+      if (name === "fromDate") updated.toDate = "";
       return updated;
     });
   };
@@ -93,22 +90,16 @@ const ColdCallList = () => {
   };
 
   const goToPage = (page) => {
-    setFilters((prev) => ({
-      ...prev,
-      page,
-    }));
+    setFilters((prev) => ({ ...prev, page }));
   };
 
   const prevPage = () => {
-    if (pagination.currentPage > 1) {
-      goToPage(pagination.currentPage - 1);
-    }
+    if (pagination.currentPage > 1) goToPage(pagination.currentPage - 1);
   };
 
   const nextPage = () => {
-    if (pagination.currentPage < pagination.totalPages) {
+    if (pagination.currentPage < pagination.totalPages)
       goToPage(pagination.currentPage + 1);
-    }
   };
 
   const getPageNumbers = () => {
@@ -130,10 +121,8 @@ const ColdCallList = () => {
     return [1, "...", current - 1, current, current + 1, "...", total];
   };
 
-  const formatDate = (date) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString();
-  };
+  const formatDate = (date) =>
+    date ? new Date(date).toLocaleDateString() : "-";
 
   const formatActivity = (value) => {
     if (value === "calling") return "Calling";
@@ -147,12 +136,12 @@ const ColdCallList = () => {
       <div className="cold-header">
         <div>
           <h2>Cold Call / Visit Sheet</h2>
-          <p>Track calling, visits and email follow-ups</p>
+          <p>Track calling, visits and follow-ups</p>
         </div>
 
         <button className="cold-new-btn" onClick={() => setShowForm(true)}>
-  + New Entry
-</button>
+          + New Entry
+        </button>
       </div>
 
       <div className="cold-filter-card">
@@ -165,10 +154,10 @@ const ColdCallList = () => {
                 value={filters.salesPersonId}
                 onChange={handleFilterChange}
               >
-                <option value="">All Sales Persons</option>
-                {salesPersons.map((person) => (
-                  <option key={person._id} value={person._id}>
-                    {person.name}
+                <option value="">All</option>
+                {salesPersons.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name}
                   </option>
                 ))}
               </select>
@@ -182,7 +171,7 @@ const ColdCallList = () => {
               value={filters.activityType}
               onChange={handleFilterChange}
             >
-              <option value="">All Types</option>
+              <option value="">All</option>
               <option value="calling">Calling</option>
               <option value="visit">Visit</option>
               <option value="email">Email</option>
@@ -190,7 +179,7 @@ const ColdCallList = () => {
           </div>
 
           <div className="filter-field">
-            <label>Start Date</label>
+            <label>Start</label>
             <input
               type="date"
               name="fromDate"
@@ -200,7 +189,7 @@ const ColdCallList = () => {
           </div>
 
           <div className="filter-field">
-            <label>End Date</label>
+            <label>End</label>
             <input
               type="date"
               name="toDate"
@@ -219,38 +208,34 @@ const ColdCallList = () => {
         </div>
       </div>
 
-      <div className="cold-table-wrapper">
-        <table className="cold-table">
-          <thead>
-            <tr>
-              <th className="sticky-col sticky-head col-date">Date</th>
-
-              {isAdmin && (
-                <th className="sticky-col sticky-head col-sales">
-                  Sales Person
-                </th>
-              )}
-
-              <th>Type</th>
-              <th className="sticky-col sticky-head col-company">Company</th>
-              <th className="sticky-col sticky-head col-contact">
-                Contact Person
-              </th>
-              <th>Contact Number</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {coldCalls.length === 0 ? (
+      {!isMobile ? (
+        <div className="cold-table-wrapper">
+          <table className="cold-table">
+            <thead>
               <tr>
-                <td colSpan={isAdmin ? 6 : 5} className="no-data">
-                  No records found
-                </td>
+                <th className="sticky-col sticky-head col-date">Date</th>
+
+                {isAdmin && (
+                  <th className="sticky-col sticky-head col-sales">
+                    Sales Person
+                  </th>
+                )}
+
+                <th>Type</th>
+                <th className="sticky-col sticky-head col-company">Company</th>
+                <th className="sticky-col sticky-head col-contact">
+                  Contact Person
+                </th>
+                <th>Contact Number</th>
               </tr>
-            ) : (
-              coldCalls.map((item) => (
+            </thead>
+
+            <tbody>
+              {coldCalls.map((item) => (
                 <tr key={item._id}>
-                  <td className="sticky-col col-date">{formatDate(item.date)}</td>
+                  <td className="sticky-col col-date">
+                    {formatDate(item.date)}
+                  </td>
 
                   {isAdmin && (
                     <td className="sticky-col col-sales">
@@ -264,7 +249,9 @@ const ColdCallList = () => {
                     </span>
                   </td>
 
-                  <td className="sticky-col col-company">{item.companyName}</td>
+                  <td className="sticky-col col-company">
+                    {item.companyName}
+                  </td>
 
                   <td className="sticky-col col-contact">
                     {item.contactPersonName}
@@ -272,11 +259,42 @@ const ColdCallList = () => {
 
                   <td>{item.contactPersonNumber}</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="cold-mobile-list">
+          {coldCalls.map((item) => (
+            <div key={item._id} className="cold-card">
+              <div className="cold-card-top">
+                <strong>{item.companyName}</strong>
+                <small>{formatDate(item.date)}</small>
+              </div>
+
+              <div className="cold-card-tags">
+                <span className={`type-badge ${item.activityType}`}>
+                  {formatActivity(item.activityType)}
+                </span>
+              </div>
+
+              <div className="cold-card-body">
+                {isAdmin && (
+                  <p>
+                    <b>Sales:</b> {item.salesPersonId?.name || "-"}
+                  </p>
+                )}
+                <p>
+                  <b>Contact:</b> {item.contactPersonName}
+                </p>
+                <p>
+                  <b>Phone:</b> {item.contactPersonNumber}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="cold-pagination">
         <button onClick={prevPage} disabled={pagination.currentPage <= 1}>
@@ -284,18 +302,16 @@ const ColdCallList = () => {
         </button>
 
         <div className="page-numbers">
-          {getPageNumbers().map((page, index) =>
-            page === "..." ? (
-              <span key={index} className="dots">
-                ...
-              </span>
+          {getPageNumbers().map((p, i) =>
+            p === "..." ? (
+              <span key={i}>...</span>
             ) : (
               <button
-                key={page}
-                className={pagination.currentPage === page ? "active-page" : ""}
-                onClick={() => goToPage(page)}
+                key={p}
+                className={pagination.currentPage === p ? "active-page" : ""}
+                onClick={() => goToPage(p)}
               >
-                {page}
+                {p}
               </button>
             )
           )}
@@ -312,12 +328,13 @@ const ColdCallList = () => {
           Total: {pagination.totalRecords}
         </span>
       </div>
+
       {showForm && (
-  <ColdCallForm
-    onClose={() => setShowForm(false)}
-    refresh={fetchColdCalls}
-  />
-)}
+        <ColdCallForm
+          onClose={() => setShowForm(false)}
+          refresh={fetchColdCalls}
+        />
+      )}
     </div>
   );
 };

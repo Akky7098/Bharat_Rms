@@ -20,6 +20,7 @@ const EnquiryForm = ({ onClose, refresh }) => {
   });
 
   const [productConfig, setProductConfig] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     loadProductConfig();
@@ -93,7 +94,10 @@ const EnquiryForm = ({ onClose, refresh }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (isSubmitting) return;
     if (!validateForm()) return;
+
+    setIsSubmitting(true);
 
     try {
       await createEnquiry({
@@ -106,6 +110,8 @@ const EnquiryForm = ({ onClose, refresh }) => {
       onClose();
     } catch (error) {
       alert(error.response?.data?.message || "Failed to create enquiry");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -124,6 +130,12 @@ const EnquiryForm = ({ onClose, refresh }) => {
         </div>
 
         <form onSubmit={handleSubmit}>
+          <div className="mobile-form-note">
+            Fill customer details first, then product requirement.
+          </div>
+
+          <h3 className="form-section-title">Customer Details</h3>
+
           <div className="enquiry-form-grid">
             <div className="form-group">
               <label>Enquiry Date</label>
@@ -143,6 +155,7 @@ const EnquiryForm = ({ onClose, refresh }) => {
                 value={form.companyName}
                 onChange={handleChange}
                 placeholder="Enter company name"
+                autoFocus
                 required
               />
             </div>
@@ -161,6 +174,8 @@ const EnquiryForm = ({ onClose, refresh }) => {
             <div className="form-group">
               <label>Contact No</label>
               <input
+                type="tel"
+                inputMode="numeric"
                 name="customerContactNo"
                 value={form.customerContactNo}
                 onChange={handleChange}
@@ -190,7 +205,11 @@ const EnquiryForm = ({ onClose, refresh }) => {
                 placeholder="City, State"
               />
             </div>
+          </div>
 
+          <h3 className="form-section-title">Product Requirement</h3>
+
+          <div className="enquiry-form-grid">
             <div className="form-group">
               <label>Product</label>
               <select
@@ -228,7 +247,6 @@ const EnquiryForm = ({ onClose, refresh }) => {
                   required
                 >
                   <option value="">Select Grade</option>
-
                   {(productConfig[form.productCategory] || []).map((grade) => (
                     <option key={grade} value={grade}>
                       {grade}
@@ -264,10 +282,12 @@ const EnquiryForm = ({ onClose, refresh }) => {
               <label>Quantity Kg</label>
               <input
                 type="number"
+                inputMode="decimal"
                 name="quantityInKg"
                 value={form.quantityInKg}
                 onChange={handleChange}
                 placeholder="Enter quantity"
+                min="1"
                 required
               />
             </div>
@@ -282,7 +302,7 @@ const EnquiryForm = ({ onClose, refresh }) => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group full-width">
               <label>Mode Of Enquiry</label>
               <select
                 name="modeOfEnquiry"
@@ -306,8 +326,8 @@ const EnquiryForm = ({ onClose, refresh }) => {
               Cancel
             </button>
 
-            <button type="submit" className="submit-btn">
-              Create Enquiry
+            <button type="submit" className="submit-btn" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Enquiry"}
             </button>
           </div>
         </form>

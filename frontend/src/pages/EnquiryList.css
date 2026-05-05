@@ -245,7 +245,7 @@
   z-index: 90 !important;
 }
 
-/* USER VIEW FIX - no sales person gap */
+/* USER VIEW FIX */
 .enquiry-container.user-view .col-date {
   left: 0 !important;
   width: 125px !important;
@@ -273,7 +273,6 @@
   left: 275px !important;
 }
 
-/* Remove old customer sticky if class exists */
 .col-customer {
   position: static !important;
   left: auto !important;
@@ -292,46 +291,39 @@
   overflow-wrap: break-word !important;
 }
 
-/* ================= FINAL ROW STATUS COLORS ================= */
-
-/* Feasible = light green */
+/* ROW STATUS COLORS */
 .enquiry-table tbody tr.row-feasible > td {
   background: #dcfce7 !important;
   color: #064e3b !important;
 }
 
-/* Quotation done = stronger green */
 .enquiry-table tbody tr.row-quotation > td {
   background: #bbf7d0 !important;
   color: #064e3b !important;
 }
 
-/* Overdue / delayed = strong orange */
 .enquiry-table tbody tr.row-overdue > td {
   background: #fb923c !important;
   color: #111827 !important;
 }
 
-/* Not feasible = light red */
 .enquiry-table tbody tr.row-not-feasible > td {
   background: #fecaca !important;
   color: #7f1d1d !important;
 }
 
-/* Won = proper green */
 .enquiry-table tbody tr.row-won > td {
   background: #15803d !important;
   color: #ffffff !important;
 }
 
-/* Lost = proper red + strike */
 .enquiry-table tbody tr.row-lost > td {
   background: #dc2626 !important;
   color: #ffffff !important;
   text-decoration: line-through !important;
 }
 
-/* Sticky columns must match row color */
+/* Sticky columns match row color */
 .enquiry-table tbody tr.row-feasible > td.sticky-col,
 .enquiry-table tbody tr.row-feasible > td.col-date,
 .enquiry-table tbody tr.row-feasible > td.col-sales,
@@ -402,10 +394,7 @@
   background: #f9fafb !important;
 }
 
-.enquiry-table tbody tr:hover td {
-  filter: brightness(0.96);
-}
-
+.enquiry-table tbody tr:hover td,
 .enquiry-table tbody tr:hover .sticky-col {
   filter: brightness(0.96);
 }
@@ -512,7 +501,7 @@
   background: #475569;
 }
 
-/* MODAL FORM OLD SUPPORT */
+/* MODAL FORM */
 .enquiry-modal-overlay {
   position: fixed;
   inset: 0;
@@ -678,7 +667,19 @@
   transform: translateY(-1px);
 }
 
-/* RESPONSIVE - OLD SUPPORT */
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* DEFAULT MOBILE LIST HIDDEN ON DESKTOP */
+.enquiry-mobile-list {
+  display: none;
+}
+
+/* TABLET */
 @media (max-width: 900px) {
   .enquiry-filter-grid {
     flex-wrap: wrap;
@@ -689,82 +690,243 @@
   }
 }
 
+/* FINAL MOBILE UI */
 @media (max-width: 768px) {
   .enquiry-container {
     padding: 10px;
+    height: auto;
+    min-height: calc(100vh - 84px);
+    overflow: visible;
+    border-radius: 14px;
   }
 
   .enquiry-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 16px;
   }
 
   .enquiry-header h2 {
-    font-size: 18px;
+    font-size: 19px;
+  }
+
+  .enquiry-header p {
+    font-size: 11px;
   }
 
   .new-btn {
     width: 100%;
-    height: 40px;
+    height: 42px;
+  }
+
+  .enquiry-filter-card {
+    padding: 12px;
+    border-radius: 16px;
   }
 
   .enquiry-filter-grid {
-    flex-direction: column;
-    gap: 8px;
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .filter-field input,
-  .filter-field select {
+  .filter-field select,
+  .filter-field input[type="date"] {
     width: 100%;
+    height: 40px;
   }
 
   .filter-buttons {
     width: 100%;
+    margin-left: 0;
+    display: flex;
+    gap: 10px;
   }
 
   .filter-btn,
   .clear-btn {
-    width: 100%;
-  }
-
-  .enquiry-table {
-    display: none;
+    flex: 1;
+    width: auto;
+    height: 40px;
   }
 
   .enquiry-table-wrapper {
-    box-shadow: none;
-    border: none;
+    display: none;
   }
 
-  .enquiry-card {
-    background: #fff;
-    border-radius: 14px;
-    padding: 12px;
-    margin-bottom: 10px;
-    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+  .enquiry-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 10px;
   }
 
-  .enquiry-card p {
-    font-size: 13px;
-    margin: 4px 0;
+  .mobile-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    border-left: 5px solid #2563eb;
   }
 
-  .enquiry-card strong {
+  .mobile-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .mobile-card-top strong {
+    display: block;
+    font-size: 14px;
+    color: #0f172a;
+    line-height: 1.3;
+  }
+
+  .mobile-card-top span {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+
+  .mobile-card small {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 800;
+  }
+
+  .mobile-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+  }
+
+  .mobile-card-tags span {
+    background: #eef2ff;
     color: #1e3a8a;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: 800;
+  }
+
+  .mobile-card-body {
+    margin-top: 6px;
+  }
+
+  .mobile-card-body p {
+    font-size: 12px;
+    margin: 4px 0;
+    color: #334155;
+    line-height: 1.35;
+  }
+
+  .mobile-card-body b {
+    color: #0f172a;
+  }
+
+  .mobile-card-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mobile-view-link {
+    font-size: 12px;
+    font-weight: 800;
+    color: #2563eb;
+    text-decoration: none;
+  }
+
+  .mobile-view-link:hover {
+    text-decoration: underline;
+  }
+
+  .mobile-card .edit-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+    border-radius: 10px;
+  }
+
+  .mobile-card.row-won {
+    border-left-color: #16a34a;
+  }
+
+  .mobile-card.row-lost {
+    border-left-color: #dc2626;
+  }
+
+  .mobile-card.row-overdue {
+    border-left-color: #f97316;
+  }
+
+  .mobile-card.row-feasible {
+    border-left-color: #2563eb;
+  }
+
+  .mobile-card.row-quotation {
+    border-left-color: #22c55e;
+  }
+
+  .mobile-card.row-not-feasible {
+    border-left-color: #ef4444;
+  }
+
+  .mobile-card.row-closure {
+    border-left-color: #7c3aed;
   }
 
   .enquiry-pagination {
     flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    height: auto;
     gap: 8px;
+    padding: 10px;
+    margin-top: 12px;
   }
 
   .enquiry-pagination button {
     width: 100%;
+    height: 36px;
+  }
+
+  .enquiry-pagination span {
+    text-align: center;
+  }
+
+  .enquiry-form-card {
+    width: 100%;
+    max-width: 96vw;
+    max-height: 92vh;
+    border-radius: 18px;
+  }
+
+  .enquiry-form-header {
+    padding: 18px;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .enquiry-form-header h2 {
+    font-size: 20px;
+  }
+
+  .enquiry-form-card form {
+    padding: 18px;
   }
 
   .enquiry-form-grid {
     grid-template-columns: 1fr;
+    row-gap: 14px;
   }
 
   .form-group.full-width {
@@ -778,5 +940,84 @@
   .cancel-btn,
   .submit-btn {
     width: 100%;
+  }
+}
+/* ================= HOVER READABILITY IMPROVEMENT ================= */
+
+@media (min-width: 769px) {
+
+  .enquiry-table tbody tr {
+    transition: all 0.18s ease;
+  }
+
+  /* Make hovered row stand out */
+  .enquiry-table tbody tr:hover td {
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  /* Slight lift effect (subtle, professional) */
+  .enquiry-table tbody tr:hover {
+    transform: scale(1.002);
+    z-index: 5;
+  }
+
+  /* Keep colors intact for status rows */
+  .enquiry-table tbody tr.row-won:hover td,
+  .enquiry-table tbody tr.row-lost:hover td {
+    color: #ffffff !important;
+    font-weight: 800;
+  }
+
+  .enquiry-table tbody tr.row-overdue:hover td {
+    color: #111827 !important;
+    font-weight: 800;
+  }
+
+  /* Sticky columns should also respond */
+  .enquiry-table tbody tr:hover .sticky-col {
+    font-weight: 500;
+  }
+
+}
+/* ================= MOBILE PAGINATION HORIZONTAL FIX ================= */
+@media (max-width: 768px) {
+  .enquiry-pagination {
+    display: flex;
+    flex-direction: row !important;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    height: auto;
+    padding: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+  }
+
+  .enquiry-pagination::-webkit-scrollbar {
+    height: 0;
+    display: none;
+  }
+
+  .enquiry-pagination > button {
+    width: auto !important;
+    min-width: 68px;
+    flex: 0 0 auto;
+  }
+
+  .enquiry-pagination > button:not(:disabled) {
+    background: #1e3a8a;
+    color: #ffffff;
+  }
+
+  .enquiry-pagination .active {
+    background: #facc15 !important;
+    color: #111827 !important;
+  }
+
+  .enquiry-pagination span {
+    flex: 0 0 auto;
+    margin-left: 0;
   }
 }

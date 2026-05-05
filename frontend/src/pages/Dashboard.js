@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "./Dashboard.css";
-import { LogOut } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import EnquiryList from "./EnquiryList";
 import SalesOrderList from "./SalesOrderList";
 import DashboardHome from "./DashboardHome";
@@ -22,6 +22,7 @@ function Dashboard() {
   };
 
   const [active, setActive] = useState(getInitialActive);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const hashMap = {
@@ -51,14 +52,89 @@ function Dashboard() {
     { key: "timesheet", label: "Timesheet", icon: "⏱️" },
   ];
 
+  const activeItem = menuItems.find((item) => item.key === active);
+
+  const handleMenuClick = (key) => {
+    setActive(key);
+    setMobileMenuOpen(false);
+  };
+
   return (
     <div className="dashboard">
+      <div className="mobile-topbar">
+        <div className="mobile-brand">
+          <div className="mobile-logo">
+            <img src="/logo.png" alt="BSSPL Logo" />
+          </div>
+          <div>
+            <strong>{activeItem?.label || "Dashboard"}</strong>
+            <span>Bharat Special Steels RMS</span>
+          </div>
+        </div>
+
+        <button
+          className="mobile-menu-btn"
+          onClick={() => setMobileMenuOpen(true)}
+          type="button"
+        >
+          <Menu size={22} />
+        </button>
+      </div>
+
+      {mobileMenuOpen && (
+        <div
+          className="mobile-menu-overlay"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      <div className={`mobile-menu-panel ${mobileMenuOpen ? "open" : ""}`}>
+        <div className="mobile-menu-header">
+          <div className="mobile-user">
+            <div className="user-avatar">
+              {(user?.name || "U").charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <strong>{user?.name || "User"}</strong>
+              <span>{user?.role || "Employee"}</span>
+            </div>
+          </div>
+
+          <button
+            className="mobile-close-btn"
+            onClick={() => setMobileMenuOpen(false)}
+            type="button"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className="mobile-menu-list">
+          {menuItems.map((item) => (
+            <button
+              key={item.key}
+              className={active === item.key ? "active" : ""}
+              onClick={() => handleMenuClick(item.key)}
+              type="button"
+            >
+              <span>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <button className="mobile-logout-btn" onClick={handleLogout}>
+          <LogOut size={18} />
+          Logout
+        </button>
+      </div>
+
       <div className="dashboard-layout">
         <aside className="sidebar">
           <div className="brand-box">
             <div className="brand-logo">
-  <img src="/logo.png" alt="BSSPL Logo" />
-</div>
+              <img src="/logo.png" alt="BSSPL Logo" />
+            </div>
             <div>
               <h2>Bharat Special</h2>
               <p>Steels RMS</p>
@@ -89,11 +165,11 @@ function Dashboard() {
           </nav>
 
           <div className="sidebar-footer">
-  <button className="logout-btn" onClick={handleLogout}>
-    <LogOut size={18} />
-    <span>Logout</span>
-  </button>
-</div>
+            <button className="logout-btn" onClick={handleLogout}>
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
         </aside>
 
         <main className="main">

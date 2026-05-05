@@ -582,73 +582,271 @@
   word-break: normal !important;
   overflow-wrap: break-word !important;
 }
+/* ================= FINAL DESKTOP HOVER + STICKY FIX ================= */
 
-/* ================= MOBILE ================= */
+/* Header must stay above body sticky columns */
+.sales-order-table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  background: #111827 !important;
+  color: #ffffff !important;
+  z-index: 200 !important;
+}
+
+/* Sticky header columns highest */
+.sales-order-table thead th.sticky-col,
+.sales-order-table thead .sticky-head,
+.sales-order-table thead .col-date,
+.sales-order-table thead .col-sales,
+.sales-order-table thead .col-company {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  z-index: 300 !important;
+}
+
+/* Body sticky columns solid background */
+.sales-order-table tbody td.sticky-col,
+.sales-order-table tbody td.col-date,
+.sales-order-table tbody td.col-sales,
+.sales-order-table tbody td.col-company {
+  background: #ffffff !important;
+  z-index: 80 !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+}
+
+/* Even row sticky background */
+.sales-order-table tbody tr:nth-child(even) td.sticky-col,
+.sales-order-table tbody tr:nth-child(even) td.col-date,
+.sales-order-table tbody tr:nth-child(even) td.col-sales,
+.sales-order-table tbody tr:nth-child(even) td.col-company {
+  background: #f9fafb !important;
+}
+
+/* Hover readable row */
+.sales-order-table tbody tr:hover td {
+  background: #ecfdf5 !important;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Hover sticky background */
+.sales-order-table tbody tr:hover td.sticky-col,
+.sales-order-table tbody tr:hover td.col-date,
+.sales-order-table tbody tr:hover td.col-sales,
+.sales-order-table tbody tr:hover td.col-company {
+  background: #dcfce7 !important;
+  font-weight: 800;
+}
+
+/* Strong sticky separation */
+.sales-order-table tbody td.col-company {
+  box-shadow: 10px 0 16px rgba(15, 23, 42, 0.18) !important;
+}
+
+
+/* ================= FINAL MOBILE CARD VIEW ================= */
+
+.sales-mobile-list {
+  display: none;
+}
+
 @media (max-width: 768px) {
-
   .sales-order-container {
     padding: 10px;
+    height: auto;
+    overflow: visible;
   }
 
   .sales-order-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .sales-order-header h2 {
+    font-size: 19px;
   }
 
   .new-sales-btn {
     width: 100%;
-    height: 40px;
+    height: 42px;
   }
 
-  /* FILTER */
   .sales-filter-grid {
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
 
   .filter-field input,
   .filter-field select {
-    width: 100%;
+    width: 100% !important;
+    height: 40px;
   }
 
   .filter-buttons {
     width: 100%;
+    margin-left: 0;
   }
 
-  /* TABLE → CARD */
-  .sales-order-table {
-    display: none;
+  .clear-btn {
+    width: 100%;
+    height: 40px;
   }
 
+  /* hide desktop table on mobile */
   .sales-table-wrapper {
-    box-shadow: none;
-    border: none;
+    display: none !important;
+  }
+
+  .sales-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 10px;
   }
 
   .sales-card {
-    background: #fff;
-    border-radius: 14px;
-    padding: 12px;
-    margin-bottom: 10px;
-    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    border-left: 5px solid #16a34a;
   }
 
-  .sales-card p {
-    font-size: 13px;
-    margin: 4px 0;
+  .sales-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
   }
 
-  .sales-card strong {
+  .sales-card-top strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 900;
+    color: #0f172a;
+  }
+
+  .sales-card-top span {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+
+  .sales-card small {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 800;
+    color: #64748b;
+  }
+
+  .sales-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+  }
+
+  .sales-card-tags span {
+    background: #ecfdf5;
     color: #166534;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: 800;
+  }
+
+  .sales-card-body p {
+    font-size: 12px;
+    margin: 4px 0;
+    color: #334155;
+    line-height: 1.35;
+  }
+
+  .sales-card-body b {
+    color: #0f172a;
   }
 
   .sales-pagination {
     flex-direction: column;
+    align-items: stretch;
+    height: auto;
     gap: 8px;
+    padding: 10px;
   }
 
   .sales-pagination button {
     width: 100%;
+  }
+
+  .page-numbers {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .total-records {
+    text-align: center;
+    margin-left: 0;
+  }
+}
+
+/* ================= MOBILE PAGINATION HORIZONTAL FIX ================= */
+@media (max-width: 768px) {
+  .sales-pagination {
+    display: flex;
+    flex-direction: row !important;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    height: auto;
+    padding: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+  }
+
+  .sales-pagination::-webkit-scrollbar {
+    height: 0;
+    display: none;
+  }
+
+  .sales-pagination > button {
+    width: auto !important;
+    min-width: 68px;
+    flex: 0 0 auto;
+  }
+
+  .sales-pagination > button:not(:disabled) {
+    background: #166534;
+    color: #ffffff;
+  }
+
+  .sales-pagination .page-numbers {
+    display: flex;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+
+  .sales-pagination .page-numbers button {
+    width: 38px !important;
+    min-width: 38px;
+    flex: 0 0 auto;
+  }
+
+  .sales-pagination .page-numbers .active-page {
+    background: #facc15 !important;
+    color: #111827 !important;
+  }
+
+  .sales-pagination .dots,
+  .sales-pagination .total-records {
+    flex: 0 0 auto;
+    margin-left: 0;
   }
 }

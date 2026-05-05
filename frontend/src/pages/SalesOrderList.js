@@ -13,6 +13,7 @@ const SalesOrderList = () => {
   const [salesOrders, setSalesOrders] = useState([]);
   const [salesPersons, setSalesPersons] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -28,6 +29,15 @@ const SalesOrderList = () => {
     toDate: "",
     salesPersonId: "",
   });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const fetchSalesOrders = useCallback(async () => {
     try {
@@ -205,76 +215,131 @@ const SalesOrderList = () => {
         </div>
       </div>
 
-      <div className="sales-table-wrapper">
-        <table className="sales-order-table">
-          <thead>
-            <tr>
-             <th className="sticky-col sticky-head col-date">Order Date</th>
-
-{isAdmin && (
-  <th className="sticky-col sticky-head col-sales">
-    Sales Person
-  </th>
-)}
-
-<th className="sticky-col sticky-head col-company">Company</th>
-              <th>Location</th>
-
-              <th>
-                Contact Person
-              </th>
-
-              <th>Contact No</th>
-              <th>Email</th>
-              <th>Product</th>
-              <th>Grade</th>
-              <th>Size</th>
-              <th>Qty Kg</th>
-              <th>Value ₹</th>
-              <th>Payment Terms</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {salesOrders.length === 0 ? (
+      {!isMobile ? (
+        <div className="sales-table-wrapper">
+          <table className="sales-order-table">
+            <thead>
               <tr>
-                <td colSpan={isAdmin ? 13 : 12} className="no-data">
-                  No sales orders found
-                </td>
+                <th className="sticky-col sticky-head col-date">Order Date</th>
+
+                {isAdmin && (
+                  <th className="sticky-col sticky-head col-sales">
+                    Sales Person
+                  </th>
+                )}
+
+                <th className="sticky-col sticky-head col-company">Company</th>
+                <th>Location</th>
+                <th>Contact Person</th>
+                <th>Contact No</th>
+                <th>Email</th>
+                <th>Product</th>
+                <th>Grade</th>
+                <th>Size</th>
+                <th>Qty Kg</th>
+                <th>Value ₹</th>
+                <th>Payment Terms</th>
               </tr>
-            ) : (
-              salesOrders.map((order) => (
-                <tr key={order._id}>
-                 <td className="sticky-col col-date">
-  {formatDate(order.orderDate)}
-</td>
+            </thead>
 
-{isAdmin && (
-  <td className="sticky-col col-sales">
-    {order.salesPersonId?.name || "-"}
-  </td>
-)}
-
-<td className="sticky-col col-company">
-  {order.companyName}
-</td>
-
-<td>{order.location}</td>
-<td>{order.contactPersonName}</td>
-<td>{order.contactPersonNumber}</td>
-<td>{order.contactPersonEmailId || "-"}</td>
-                  <td>{order.productCategory}</td>
-                  <td>{order.grade}</td>
-                  <td className="size-cell">{order.size}</td>
-                  <td>{order.quantityInKg}</td>
-                  <td>₹ {formatCurrency(order.valueInRupees)}</td>
-                  <td>{order.paymentTerms}</td>
+            <tbody>
+              {salesOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={isAdmin ? 13 : 12} className="no-data">
+                    No sales orders found
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                salesOrders.map((order) => (
+                  <tr key={order._id}>
+                    <td className="sticky-col col-date">
+                      {formatDate(order.orderDate)}
+                    </td>
+
+                    {isAdmin && (
+                      <td className="sticky-col col-sales">
+                        {order.salesPersonId?.name || "-"}
+                      </td>
+                    )}
+
+                    <td className="sticky-col col-company">
+                      {order.companyName}
+                    </td>
+
+                    <td>{order.location}</td>
+                    <td>{order.contactPersonName}</td>
+                    <td>{order.contactPersonNumber}</td>
+                    <td>{order.contactPersonEmailId || "-"}</td>
+                    <td>{order.productCategory}</td>
+                    <td>{order.grade}</td>
+                    <td className="size-cell">{order.size}</td>
+                    <td>{order.quantityInKg}</td>
+                    <td>₹ {formatCurrency(order.valueInRupees)}</td>
+                    <td>{order.paymentTerms}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="sales-mobile-list">
+          {salesOrders.length === 0 ? (
+            <div className="no-data">No sales orders found</div>
+          ) : (
+            salesOrders.map((order) => (
+              <div key={order._id} className="sales-card">
+                <div className="sales-card-top">
+                  <div>
+                    <strong>{order.companyName}</strong>
+                    <span>{order.contactPersonName || "-"}</span>
+                  </div>
+
+                  <small>{formatDate(order.orderDate)}</small>
+                </div>
+
+                <div className="sales-card-tags">
+                  <span>{order.productCategory || "-"}</span>
+                  <span>{order.grade || "-"}</span>
+                  <span>{order.quantityInKg || 0} Kg</span>
+                </div>
+
+                <div className="sales-card-body">
+                  {isAdmin && (
+                    <p>
+                      <b>Sales:</b> {order.salesPersonId?.name || "-"}
+                    </p>
+                  )}
+
+                  <p>
+                    <b>Contact:</b> {order.contactPersonNumber || "-"}
+                  </p>
+
+                  <p>
+                    <b>Email:</b> {order.contactPersonEmailId || "-"}
+                  </p>
+
+                  <p>
+                    <b>Location:</b> {order.location || "-"}
+                  </p>
+
+                  <p>
+                    <b>Size:</b> {order.size || "-"}
+                  </p>
+
+                  <p>
+                    <b>Value:</b> ₹ {formatCurrency(order.valueInRupees)}
+                  </p>
+
+                  <p>
+                    <b>Payment:</b> {order.paymentTerms || "-"}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       <div className="sales-pagination">
         <button onClick={prevPage} disabled={pagination.currentPage <= 1}>

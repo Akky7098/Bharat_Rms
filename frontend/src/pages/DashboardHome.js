@@ -4,7 +4,6 @@ import {
   Pie,
   Cell,
   Tooltip,
-  ResponsiveContainer,
 } from "recharts";
 import { getDashboardSummary } from "../services/dashboardService";
 import "./DashboardHome.css";
@@ -21,7 +20,20 @@ const COLORS = [
 ];
 const DashboardHome = () => {
   const [data, setData] = useState(null);
+ const [chartWidth, setChartWidth] = useState(
+  window.innerWidth <= 480 ? window.innerWidth - 80 : 420
+);
 
+useEffect(() => {
+  const handleResize = () => {
+    setChartWidth(window.innerWidth <= 480 ? window.innerWidth - 80 : 420);
+  };
+
+  handleResize();
+  window.addEventListener("resize", handleResize);
+
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const today = new Date();
 
@@ -152,33 +164,34 @@ const DashboardHome = () => {
     <h3>Sales Person Revenue Share</h3>
 
     <div className="pie-layout">
-      <div className="pie-box">
-        <ResponsiveContainer width="100%" height={260}>
-          <PieChart>
-            <Pie
-              data={data.salesPersonRevenue}
-              dataKey="revenue"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={95}
-              label={({ percentage }) => `${percentage}%`}
-            >
-              {data.salesPersonRevenue.map((entry, index) => (
-                <Cell
-                  key={entry.salesPersonId}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value) =>
-                `₹ ${Number(value).toLocaleString("en-IN")}`
-              }
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+     <div className="pie-box">
+  
+   <PieChart width={chartWidth} height={260}>
+  <Pie
+    data={data.salesPersonRevenue}
+    dataKey="revenue"
+    nameKey="name"
+    cx="50%"
+    cy="50%"
+    outerRadius={85}
+    label={({ percentage }) => `${percentage}%`}
+  >
+    {data.salesPersonRevenue.map((entry, index) => (
+      <Cell
+        key={entry.salesPersonId}
+        fill={COLORS[index % COLORS.length]}
+      />
+    ))}
+  </Pie>
+
+  <Tooltip
+    formatter={(value) =>
+      `₹ ${Number(value).toLocaleString("en-IN")}`
+    }
+  />
+</PieChart>
+ 
+</div>
 
       <div className="pie-legend">
         {data.salesPersonRevenue.map((sp, index) => (
