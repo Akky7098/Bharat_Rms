@@ -943,81 +943,193 @@
   }
 }
 /* ================= HOVER READABILITY IMPROVEMENT ================= */
-
 @media (min-width: 769px) {
-
   .enquiry-table tbody tr {
-    transition: all 0.18s ease;
+    transition: background 0.18s ease, box-shadow 0.18s ease;
   }
 
-  /* Make hovered row stand out */
+  /* Normal rows hover */
   .enquiry-table tbody tr:hover td {
-    font-weight: 700;
+    font-weight: 800;
     color: #0f172a;
+    box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.08),
+                inset 0 -1px 0 rgba(15, 23, 42, 0.08);
   }
 
-  /* Slight lift effect (subtle, professional) */
+  /* Remove ziggle */
   .enquiry-table tbody tr:hover {
-    transform: scale(1.002);
-    z-index: 5;
+    transform: none !important;
   }
 
-  /* Keep colors intact for status rows */
-  .enquiry-table tbody tr.row-won:hover td,
-  .enquiry-table tbody tr.row-lost:hover td {
-    color: #ffffff !important;
-    font-weight: 800;
+  /* Feasible - light green */
+  .enquiry-table tbody tr.row-feasible:hover td {
+    background: #bbf7d0 !important;
+    color: #064e3b !important;
+    font-weight: 900;
   }
 
+  /* Quotation - stronger green */
+  .enquiry-table tbody tr.row-quotation:hover td {
+    background: #86efac !important;
+    color: #052e16 !important;
+    font-weight: 900;
+  }
+
+  /* Overdue - softer but readable orange */
   .enquiry-table tbody tr.row-overdue:hover td {
+    background: #fdba74 !important;
     color: #111827 !important;
-    font-weight: 800;
+    font-weight: 900;
   }
 
-  /* Sticky columns should also respond */
-  .enquiry-table tbody tr:hover .sticky-col {
-    font-weight: 500;
+  /* Not feasible */
+  .enquiry-table tbody tr.row-not-feasible:hover td {
+    background: #fca5a5 !important;
+    color: #7f1d1d !important;
+    font-weight: 900;
   }
 
+  /* Won */
+  .enquiry-table tbody tr.row-won:hover td {
+    background: #166534 !important;
+    color: #ffffff !important;
+    font-weight: 900;
+  }
+
+  /* Lost */
+  .enquiry-table tbody tr.row-lost:hover td {
+    background: #991b1b !important;
+    color: #ffffff !important;
+    font-weight: 900;
+    text-decoration: line-through !important;
+  }
+
+  /* Sticky columns follow row hover */
+  .enquiry-table tbody tr:hover .sticky-col,
+  .enquiry-table tbody tr:hover .col-date,
+  .enquiry-table tbody tr:hover .col-sales,
+  .enquiry-table tbody tr:hover .col-company {
+    font-weight: 900;
+  }
+
+  /* Clear focus line on left edge */
+  .enquiry-table tbody tr:hover td:first-child {
+    box-shadow: inset 4px 0 0 #2563eb;
+  }
 }
-/* ================= MOBILE PAGINATION HORIZONTAL FIX ================= */
+/* ================= FINAL ENQUIRY MOBILE PAGINATION FIX ================= */
 @media (max-width: 768px) {
-  .enquiry-pagination {
-    display: flex;
+  .enquiry-container .enquiry-pagination {
+    display: flex !important;
     flex-direction: row !important;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    height: auto;
-    padding: 10px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    white-space: nowrap;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+
+    width: 100% !important;
+    height: auto !important;
+    min-height: 52px !important;
+    padding: 10px !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap !important;
   }
 
-  .enquiry-pagination::-webkit-scrollbar {
-    height: 0;
-    display: none;
+  .enquiry-container .enquiry-pagination::-webkit-scrollbar {
+    display: none !important;
+    height: 0 !important;
   }
 
-  .enquiry-pagination > button {
+  .enquiry-container .enquiry-pagination button {
     width: auto !important;
-    min-width: 68px;
-    flex: 0 0 auto;
+    min-width: 42px !important;
+    height: 34px !important;
+    flex: 0 0 auto !important;
   }
 
-  .enquiry-pagination > button:not(:disabled) {
-    background: #1e3a8a;
-    color: #ffffff;
+  .enquiry-container .enquiry-pagination > button {
+    min-width: 68px !important;
+    background: #1e3a8a !important;
+    color: #ffffff !important;
   }
 
-  .enquiry-pagination .active {
+  .enquiry-container .enquiry-pagination button:disabled {
+    background: #cbd5e1 !important;
+    color: #64748b !important;
+  }
+
+  .enquiry-container .enquiry-pagination button.active {
     background: #facc15 !important;
     color: #111827 !important;
   }
 
+  .enquiry-container .enquiry-pagination span {
+    flex: 0 0 auto !important;
+    margin-left: 0 !important;
+  }
+}
+/* ================= ENQUIRY DESKTOP PAGINATION PREMIUM ================= */
+
+@media (min-width: 901px) {
+  .enquiry-pagination {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 8px 12px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  }
+
+  .enquiry-pagination button {
+    height: 34px;
+    min-width: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
+    transition: all 0.18s ease;
+  }
+
+  /* Prev / Next blue */
+  .enquiry-pagination > button {
+    background: #1e3a8a;
+    color: #ffffff;
+  }
+
+  .enquiry-pagination > button:hover:not(:disabled) {
+    background: #2563eb;
+    transform: translateY(-1px);
+  }
+
+  /* Page numbers */
+  .enquiry-pagination button:not(:first-child):not(:last-of-type) {
+    background: #e5e7eb;
+    color: #111827;
+  }
+
+  /* Yellow hover */
+  .enquiry-pagination button:not(:first-child):not(:last-of-type):hover {
+    background: #fde047;
+    color: #111827;
+    transform: translateY(-1px);
+  }
+
+  /* Active page yellow */
+  .enquiry-pagination button.active {
+    background: #facc15 !important;
+    color: #111827 !important;
+    box-shadow: 0 4px 12px rgba(250, 204, 21, 0.35);
+  }
+
+  .enquiry-pagination button:disabled {
+    background: #cbd5e1 !important;
+    color: #64748b !important;
+    cursor: not-allowed;
+    transform: none;
+  }
+
   .enquiry-pagination span {
-    flex: 0 0 auto;
-    margin-left: 0;
+    background: #fef9c3;
+    color: #111827;
+    padding: 4px 10px;
+    border-radius: 8px;
   }
 }
