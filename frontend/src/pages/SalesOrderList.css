@@ -850,3 +850,9 @@
     margin-left: 0;
   }
 }
+.rate-readonly {
+  background: #ecfdf5 !important;
+  color: #166534 !important;
+  font-weight: 900 !important;
+  cursor: not-allowed;
+}

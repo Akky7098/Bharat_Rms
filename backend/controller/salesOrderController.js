@@ -39,8 +39,26 @@ const getAllSalesOrders = async (req, res) => {
     });
   }
 };
-
+const searchPendingDispatchSalesOrders = async (req, res) => {
+  try {
+    const data = await salesOrderService.searchPendingDispatchSalesOrders(
+      req.query,
+      req.user
+    );
+    
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 module.exports = {
   createSalesOrder,
   getAllSalesOrders,
+  searchPendingDispatchSalesOrders,
 };

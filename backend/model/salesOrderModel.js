@@ -40,7 +40,16 @@ const salesOrderSchema = new mongoose.Schema(
     contactPersonEmailId: {
       type: String,
       trim: true,
+      lowercase: true,
     },
+
+    additionalEmails: [
+      {
+        type: String,
+        trim: true,
+        lowercase: true,
+      },
+    ],
 
     productCategory: {
       type: String,
@@ -51,6 +60,7 @@ const salesOrderSchema = new mongoose.Schema(
         "high_speed_steel",
         "alloy_steel",
         "carbon_steel",
+        "other",
       ],
       required: true,
     },
@@ -77,10 +87,31 @@ const salesOrderSchema = new mongoose.Schema(
       required: true,
     },
 
+    ratePerKg: {
+      type: Number,
+      required: true,
+    },
+
     paymentTerms: {
       type: String,
       required: true,
       trim: true,
+    },
+
+    totalDispatchedQty: {
+      type: Number,
+      default: 0,
+    },
+
+    pendingDispatchQty: {
+      type: Number,
+      default: 0,
+    },
+
+    orderStatus: {
+      type: String,
+      enum: ["pending_dispatch", "partial_dispatch", "fully_dispatched"],
+      default: "pending_dispatch",
     },
   },
   {

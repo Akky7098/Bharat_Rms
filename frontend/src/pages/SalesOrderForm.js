@@ -18,6 +18,7 @@ const SalesOrderForm = ({ onClose, refresh }) => {
     size: "",
     quantityInKg: "",
     valueInRupees: "",
+    ratePerKg: "",
     paymentTerms: "",
   });
 
@@ -40,6 +41,33 @@ const SalesOrderForm = ({ onClose, refresh }) => {
   };
 
   const isOtherProduct = form.productCategory === "other";
+
+  const calculateRatePerKg = (quantity, value) => {
+    const qty = Number(quantity || 0);
+    const total = Number(value || 0);
+
+    if (qty > 0 && total > 0) {
+      return Number((total / qty).toFixed(2));
+    }
+
+    return "";
+  };
+
+  const updateFormWithRate = (updatedFields) => {
+    setForm((prev) => {
+      const updated = {
+        ...prev,
+        ...updatedFields,
+      };
+
+      updated.ratePerKg = calculateRatePerKg(
+        updated.quantityInKg,
+        updated.valueInRupees
+      );
+
+      return updated;
+    });
+  };
 
   const validateField = (name, value) => {
     let error = "";
@@ -70,6 +98,19 @@ const SalesOrderForm = ({ onClose, refresh }) => {
       }
     }
 
+    if (name === "quantityInKg") {
+      if (Number(value) <= 0) {
+        error = "Quantity must be greater than 0";
+      }
+    }
+
+    if (name === "valueInRupees") {
+      if (Number(value) <= 0) {
+        error = "Value must be greater than 0";
+      }
+    }
+
+
     setErrors((prev) => ({
       ...prev,
       [name]: error,
@@ -83,26 +124,26 @@ const SalesOrderForm = ({ onClose, refresh }) => {
 
     if (name === "productCategory") {
       setGrades(productConfig[value] || []);
-      setForm((prev) => ({
-        ...prev,
+
+      updateFormWithRate({
         productCategory: value,
         grade: "",
-      }));
+      });
 
       setErrors((prev) => ({
         ...prev,
         grade: "",
       }));
+
       return;
     }
 
     if (name === "contactPersonNumber") {
       const onlyNumbers = value.replace(/\D/g, "").slice(0, 10);
 
-      setForm((prev) => ({
-        ...prev,
+      updateFormWithRate({
         contactPersonNumber: onlyNumbers,
-      }));
+      });
 
       validateField(name, onlyNumbers);
       return;
@@ -111,25 +152,35 @@ const SalesOrderForm = ({ onClose, refresh }) => {
     if (name === "contactPersonName") {
       const onlyLetters = value.replace(/[0-9]/g, "");
 
-      setForm((prev) => ({
-        ...prev,
+      updateFormWithRate({
         contactPersonName: onlyLetters,
-      }));
+      });
 
       validateField(name, onlyLetters);
       return;
     }
 
-    setForm((prev) => ({
-      ...prev,
+    updateFormWithRate({
       [name]: value,
-    }));
+    });
 
     validateField(name, value);
   };
 
   const validateForm = () => {
     const newErrors = {};
+
+    if (!form.orderDate) {
+      newErrors.orderDate = "Order date is required";
+    }
+
+    if (!form.companyName.trim()) {
+      newErrors.companyName = "Company name is required";
+    }
+
+    if (!form.location.trim()) {
+      newErrors.location = "Location is required";
+    }
 
     if (!form.contactPersonName.trim()) {
       newErrors.contactPersonName = "Contact person name is required";
@@ -148,8 +199,16 @@ const SalesOrderForm = ({ onClose, refresh }) => {
       newErrors.contactPersonEmailId = "Please enter a valid email address";
     }
 
+    if (!form.productCategory) {
+      newErrors.productCategory = "Product is required";
+    }
+
     if (!form.grade.trim()) {
       newErrors.grade = "Grade is required";
+    }
+
+    if (!form.size.trim()) {
+      newErrors.size = "Size is required";
     }
 
     if (Number(form.quantityInKg) <= 0) {
@@ -158,6 +217,15 @@ const SalesOrderForm = ({ onClose, refresh }) => {
 
     if (Number(form.valueInRupees) <= 0) {
       newErrors.valueInRupees = "Value must be greater than 0";
+    }
+
+    if (Number(form.ratePerKg) <= 0) {
+      newErrors.ratePerKg = "Rate per kg could not be calculated";
+    }
+
+
+    if (!form.paymentTerms.trim()) {
+      newErrors.paymentTerms = "Payment terms are required";
     }
 
     setErrors(newErrors);
@@ -175,11 +243,12 @@ const SalesOrderForm = ({ onClose, refresh }) => {
 
     try {
       await createSalesOrder({
-        ...form,
-        grade: form.grade.trim(),
-        quantityInKg: Number(form.quantityInKg),
-        valueInRupees: Number(form.valueInRupees),
-      });
+  ...form,
+  grade: form.grade.trim(),
+  quantityInKg: Number(form.quantityInKg),
+  valueInRupees: Number(form.valueInRupees),
+  ratePerKg: Number(form.ratePerKg),
+});
 
       alert("Sales order created successfully");
       refresh();
@@ -216,6 +285,9 @@ const SalesOrderForm = ({ onClose, refresh }) => {
                 onChange={handleChange}
                 required
               />
+              {errors.orderDate && (
+                <small className="sales-field-error">{errors.orderDate}</small>
+              )}
             </div>
 
             <div className="sales-form-group">
@@ -227,6 +299,11 @@ const SalesOrderForm = ({ onClose, refresh }) => {
                 placeholder="Enter company name"
                 required
               />
+              {errors.companyName && (
+                <small className="sales-field-error">
+                  {errors.companyName}
+                </small>
+              )}
             </div>
 
             <div className="sales-form-group">
@@ -238,6 +315,9 @@ const SalesOrderForm = ({ onClose, refresh }) => {
                 placeholder="City, State"
                 required
               />
+              {errors.location && (
+                <small className="sales-field-error">{errors.location}</small>
+              )}
             </div>
 
             <div className="sales-form-group">
@@ -304,6 +384,11 @@ const SalesOrderForm = ({ onClose, refresh }) => {
                   </option>
                 ))}
               </select>
+              {errors.productCategory && (
+                <small className="sales-field-error">
+                  {errors.productCategory}
+                </small>
+              )}
             </div>
 
             <div
@@ -352,6 +437,9 @@ const SalesOrderForm = ({ onClose, refresh }) => {
                 placeholder="Example: Round 50mm x 1000mm, Flat 100 x 25mm"
                 required
               />
+              {errors.size && (
+                <small className="sales-field-error">{errors.size}</small>
+              )}
             </div>
 
             <div className="sales-form-group">
@@ -388,15 +476,34 @@ const SalesOrderForm = ({ onClose, refresh }) => {
               )}
             </div>
 
+            <div className="sales-form-group">
+              <label>Rate Per Kg</label>
+              <input
+                type="number"
+                name="ratePerKg"
+                value={form.ratePerKg}
+                readOnly
+                placeholder="Auto calculated"
+                className="rate-readonly"
+              />
+              {errors.ratePerKg && (
+                <small className="sales-field-error">{errors.ratePerKg}</small>
+              )}
+            </div>
             <div className="sales-form-group sales-full-width">
               <label>Payment Terms</label>
               <textarea
                 name="paymentTerms"
                 value={form.paymentTerms}
                 onChange={handleChange}
-                placeholder="Example: 50% advance, 50% before dispatch"
+                placeholder="Example: 50% advance, 50% before dispatch / 45 days PDC"
                 required
               />
+              {errors.paymentTerms && (
+                <small className="sales-field-error">
+                  {errors.paymentTerms}
+                </small>
+              )}
             </div>
           </div>
 

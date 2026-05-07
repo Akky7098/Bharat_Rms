@@ -9,7 +9,8 @@ const userRoutes = require("./routes/userRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const coldCallRoutes = require("./routes/coldCallRoutes");
 const timesheetRoutes = require("./routes/timesheetRoutes");
-
+const notificationRoutes = require("./routes/notificationRoutes");
+const dispatchRoutes = require("./routes/dispatchRoutes");
 const app = express();
 
 // OPEN CORS - temporary for testing
@@ -41,5 +42,6 @@ app.use("/api/user", userRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/cold-call", coldCallRoutes);
 app.use("/api/timesheet", timesheetRoutes);
-
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/dispatch", dispatchRoutes);
 module.exports = app;

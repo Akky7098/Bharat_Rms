@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 
 const loginUser = async (email, password) => {
   const user = await User.findOne({ email });
+  console.log(user)
   if (!user) {
     throw new Error("Invalid email or password");
   }

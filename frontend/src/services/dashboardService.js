@@ -13,3 +13,13 @@ export const getDashboardSummary = async (params = {}) => {
 
   return response.data;
 };
+export const getCashflowSummary = async (params = {}) => {
+  const response = await axios.get(`${API_URL}/cashflow`, {
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+    params,
+  });
+
+  return response.data;
+};

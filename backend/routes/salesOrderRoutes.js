@@ -15,5 +15,9 @@ router.get(
   authMiddleware,
   salesOrderController.getAllSalesOrders
 );
-
+router.get(
+  "/pending-dispatch-search",
+  authMiddleware,
+  salesOrderController.searchPendingDispatchSalesOrders
+);
 module.exports = router;

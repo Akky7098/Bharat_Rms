@@ -6,6 +6,7 @@ import SalesOrderList from "./SalesOrderList";
 import DashboardHome from "./DashboardHome";
 import ColdCallList from "./ColdCallList";
 import TimesheetPage from "./TimesheetPage";
+import DispatchPage from "./DispatchPage";
 
 function Dashboard() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -17,6 +18,7 @@ function Dashboard() {
     if (hash === "sales-order") return "salesOrder";
     if (hash === "cold-call") return "coldCall";
     if (hash === "timesheet") return "timesheet";
+    if (hash === "dispatch") return "dispatch";
 
     return "dashboard";
   };
@@ -31,6 +33,7 @@ function Dashboard() {
       salesOrder: "sales-order",
       coldCall: "cold-call",
       timesheet: "timesheet",
+      dispatch: "dispatch",
     };
 
     window.history.replaceState(null, "", `/dashboard#${hashMap[active]}`);
@@ -44,13 +47,19 @@ function Dashboard() {
     window.location.href = "/";
   };
 
-  const menuItems = [
-    { key: "dashboard", label: "Dashboard", icon: "📊" },
-    { key: "sheet", label: "Enquiry Sheet", icon: "📝" },
-    { key: "salesOrder", label: "Sales Order", icon: "💼" },
-    { key: "coldCall", label: "Cold Call / Visit", icon: "📞" },
-    { key: "timesheet", label: "Timesheet", icon: "⏱️" },
-  ];
+const menuItems = [
+  { key: "dashboard", label: "Dashboard", icon: "📊" },
+
+  { key: "sheet", label: "Enquiry Sheet", icon: "📝" },
+
+  { key: "salesOrder", label: "Sales Order", icon: "💼" },
+
+  { key: "dispatch", label: "Dispatch", icon: "🚚" },
+
+  { key: "coldCall", label: "Cold Call / Visit", icon: "📞" },
+
+  { key: "timesheet", label: "Timesheet", icon: "⏱️" },
+];
 
   const activeItem = menuItems.find((item) => item.key === active);
 
@@ -173,11 +182,17 @@ function Dashboard() {
         </aside>
 
         <main className="main">
-          {active === "dashboard" && <DashboardHome user={user} />}
-          {active === "sheet" && <EnquiryList />}
-          {active === "salesOrder" && <SalesOrderList />}
-          {active === "coldCall" && <ColdCallList />}
-          {active === "timesheet" && <TimesheetPage />}
+         {active === "dashboard" && <DashboardHome user={user} />}
+
+{active === "sheet" && <EnquiryList />}
+
+{active === "salesOrder" && <SalesOrderList />}
+
+{active === "dispatch" && <DispatchPage />}
+
+{active === "coldCall" && <ColdCallList />}
+
+{active === "timesheet" && <TimesheetPage />}
         </main>
       </div>
     </div>

@@ -47,6 +47,19 @@ export const getSalesPersons = async () => {
       },
     }
   );
-
   return response.data.data;
+};
+
+export const searchPendingDispatchSalesOrders = async (params = {}) => {
+  const response = await axios.get(
+    `${API_URL}/pending-dispatch-search`,
+    {
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+      params,
+    }
+  );
+
+  return response.data;
 };

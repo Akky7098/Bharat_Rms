@@ -74,6 +74,7 @@ const enquirySchema = new mongoose.Schema(
         "whatsapp",
         "website",
         "walk-in",
+        "google-ads",
         "reference"
       ],
       required: true,
