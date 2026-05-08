@@ -37,11 +37,13 @@ app.get("/api/cors-test", (req, res) => {
 
 
 app.use(
-  "/uploads",
+  "/uploads/sales-orders",
   express.static(
-    path.join(__dirname, "uploads")
+    process.env.PDF_STORAGE_PATH ||
+      path.join(__dirname, "uploads", "sales-orders")
   )
 );
+
 
 app.use(
   "/logo.png",
