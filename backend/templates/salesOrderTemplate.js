@@ -40,10 +40,17 @@ const salesOrderTemplate = (salesOrder) => {
   return `
 <!DOCTYPE html>
 <html>
+
 <head>
 <meta charset="UTF-8" />
 
+<link
+  href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+  rel="stylesheet"
+/>
+
 <style>
+
 @page {
   size: A4 portrait;
   margin: 8mm;
@@ -54,11 +61,14 @@ const salesOrderTemplate = (salesOrder) => {
 }
 
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Roboto', 'DejaVu Sans', Arial, sans-serif;
   margin: 0;
   padding: 0;
   color: #000;
   background: #fff;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
 }
 
 .main-container {
@@ -89,13 +99,14 @@ td {
 .logo-section img {
   width: 145px;
   height: auto;
+  object-fit: contain;
 }
 
 .heading {
   text-align: center;
   font-size: 19px;
   line-height: 1.1;
-  font-weight: bold;
+  font-weight: 700;
   color: #06429c;
   margin-top: 3px;
 }
@@ -109,12 +120,12 @@ td {
 }
 
 .bold {
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .red {
   color: red;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .yellow {
@@ -133,13 +144,13 @@ td {
 .sno {
   width: 5%;
   text-align: center;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .label-col {
   width: 30%;
   text-align: center;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .value-col {
@@ -156,7 +167,7 @@ td {
 
 .supply-title {
   color: red;
-  font-weight: bold;
+  font-weight: 700;
   text-align: center;
   font-size: 13px;
   margin-bottom: 6px;
@@ -180,11 +191,11 @@ td {
   font-size: 82px;
   color: rgba(255, 0, 0, 0.08);
   z-index: -1;
-  font-weight: bold;
+  font-weight: 700;
 }
+
 </style>
 </head>
-
 <body>
 
 <div class="watermark">${getWatermark(salesOrder.approvalStatus)}</div>
@@ -201,7 +212,9 @@ td {
 
 <tr>
   <td colspan="3" class="logo-section">
-    <img src="http://localhost:5000/logo.png" />
+    <img src="${process.env.BACKEND_URL}/logo.png"
+       crossorigin="anonymous"
+    />
     <div class="heading">SALES ORDER FORM</div>
   </td>
 </tr>

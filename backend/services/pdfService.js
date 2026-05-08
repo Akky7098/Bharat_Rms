@@ -35,9 +35,17 @@ const browser = await puppeteer.launch({
 });
     const page = await browser.newPage();
 
-    await page.setContent(html, {
-      waitUntil: "networkidle0",
-    });
+   await page.setContent(html, {
+  waitUntil: [
+    "load",
+    "domcontentloaded",
+    "networkidle0",
+  ],
+});
+
+await page.emulateMediaType("screen");
+
+await page.evaluateHandle("document.fonts.ready");
 
     await page.pdf({
       path: filePath,
