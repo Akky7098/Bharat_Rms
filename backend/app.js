@@ -12,7 +12,7 @@ const timesheetRoutes = require("./routes/timesheetRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const dispatchRoutes = require("./routes/dispatchRoutes");
 const app = express();
-
+const path = require("path");
 // OPEN CORS - temporary for testing
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -35,6 +35,20 @@ app.get("/api/cors-test", (req, res) => {
   res.json({ message: "cors working" });
 });
 
+
+app.use(
+  "/uploads",
+  express.static(
+    path.join(__dirname, "uploads")
+  )
+);
+
+app.use(
+  "/logo.png",
+  express.static(
+    path.join(__dirname, "public/logo.png")
+  )
+);
 app.use("/api/auth", authRoutes);
 app.use("/api/enquiry", enquiryRoutes);
 app.use("/api/sales-order", salesOrderRoutes);
