@@ -1,3 +1,5 @@
+const path = require("path");
+
 const formatDate = (date) => {
   if (!date) return "";
 
@@ -37,6 +39,13 @@ const getWatermark = (status) => {
 };
 
 const salesOrderTemplate = (salesOrder) => {
+  const logoPath = `file://${path.join(
+    __dirname,
+    "..",
+    "public",
+    "logo.png"
+  )}`;
+
   return `
 <!DOCTYPE html>
 <html>
@@ -196,9 +205,12 @@ td {
 
 </style>
 </head>
+
 <body>
 
-<div class="watermark">${getWatermark(salesOrder.approvalStatus)}</div>
+<div class="watermark">
+  ${getWatermark(salesOrder.approvalStatus)}
+</div>
 
 <div class="main-container">
 
@@ -212,10 +224,11 @@ td {
 
 <tr>
   <td colspan="3" class="logo-section">
-    <img src="${process.env.BACKEND_URL}/logo.png"
-       crossorigin="anonymous"
-    />
-    <div class="heading">SALES ORDER FORM</div>
+    <img src="${logoPath}" />
+
+    <div class="heading">
+      SALES ORDER FORM
+    </div>
   </td>
 </tr>
 
@@ -233,18 +246,25 @@ td {
   </td>
 
   <td class="small-text bold">
+
     <table style="width:100%; border-collapse:collapse;">
+
       <tr>
+
         <td style="border:none; width:60%;">
           PO No - ${salesOrder.poNumber || ""}
           <br/>
           PO Checklist Number - ${salesOrder.checklistNumber || ""}
         </td>
+
         <td style="border:none; width:40%; text-align:center;">
           Dated - ${formatDate(salesOrder.orderDate)}
         </td>
+
       </tr>
+
     </table>
+
   </td>
 </tr>
 
@@ -267,35 +287,47 @@ td {
 <tr>
   <td class="sno">1.</td>
   <td class="label-col">Payment Terms</td>
-  <td class="value-col">${formatText(salesOrder.paymentTerms)}</td>
+  <td class="value-col">
+    ${formatText(salesOrder.paymentTerms)}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">2.</td>
   <td class="label-col">Order Value</td>
-  <td class="value-col large-text">₹ ${salesOrder.orderValue || 0}</td>
+  <td class="value-col large-text">
+    ₹ ${salesOrder.orderValue || 0}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">3.</td>
+
   <td class="label-col">
     Customer Type
     <br/>
     (Existing/New)
   </td>
-  <td class="value-col">${formatText(salesOrder.customerType)}</td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.customerType)}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">4.</td>
+
   <td class="label-col small-text">
     Is payment terms approved by management,
     if yes then name of approved person
   </td>
+
   <td class="value-col">
     ${
       salesOrder.isPaymentTermsApprovedByManagement
-        ? `Yes, By ${formatText(salesOrder.paymentTermsApprovedBy)}`
+        ? `Yes, By ${formatText(
+            salesOrder.paymentTermsApprovedBy
+          )}`
         : "No"
     }
   </td>
@@ -303,38 +335,63 @@ td {
 
 <tr>
   <td class="sno">5.</td>
+
   <td class="label-col small-text">
     Previous payment due if any Yes/No
     <br/>
     (Invoice details/Invoice date/amount/Due date)
   </td>
-  <td class="value-col">${salesOrder.previousPaymentStatus || "NO"}</td>
+
+  <td class="value-col">
+    ${salesOrder.previousPaymentStatus || "NO"}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">6.</td>
+
   <td class="label-col">
     PO is as per quotation
     <br/>
     (Yes/No)
   </td>
-  <td class="value-col">${formatText(salesOrder.poAsPerQuotation)}</td>
-</tr>
 
-<tr>
-  <td class="sno">7.</td>
-  <td class="label-col">Size/Grade/Qty/Rate</td>
-  <td class="supply-size-box">
-    <div class="supply-title">Supply Size</div>
-    <div class="size-rate-text">
-      ${formatSizeGradeText(salesOrder.sizeGradeQuantityRate)}
-    </div>
+  <td class="value-col">
+    ${formatText(salesOrder.poAsPerQuotation)}
   </td>
 </tr>
 
 <tr>
+
+  <td class="sno">7.</td>
+
+  <td class="label-col">
+    Size/Grade/Qty/Rate
+  </td>
+
+  <td class="supply-size-box">
+
+    <div class="supply-title">
+      Supply Size
+    </div>
+
+    <div class="size-rate-text">
+      ${formatSizeGradeText(
+        salesOrder.sizeGradeQuantityRate
+      )}
+    </div>
+
+  </td>
+
+</tr>
+
+<tr>
   <td class="sno">8.</td>
-  <td class="label-col">Supply Condition</td>
+
+  <td class="label-col">
+    Supply Condition
+  </td>
+
   <td class="value-col">
     ${
       salesOrder.supplyCondition === "as_per_standard"
@@ -346,41 +403,57 @@ td {
 
 <tr>
   <td class="sno">9.</td>
+
   <td class="label-col">
     Cut Length
     <br/>
     (Yes/No)
   </td>
-  <td class="value-col">${formatText(salesOrder.cutLengthRequired)}</td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.cutLengthRequired)}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">10.</td>
+
   <td class="label-col">
     Cutting cost
     <br/>
     (Extra/Inclusive)
   </td>
-  <td class="value-col">${formatText(salesOrder.cuttingCost)}</td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.cuttingCost)}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">11.</td>
+
   <td class="label-col">
     Freight
     <br/>
     (Extra/Self)
   </td>
-  <td class="value-col">${formatText(salesOrder.freight)}</td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.freight)}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">12.</td>
+
   <td class="label-col">
     Billing Address
     <br/>
-    <span class="small-text">(As per PO, if different then mention)</span>
+    <span class="small-text">
+      (As per PO, if different then mention)
+    </span>
   </td>
+
   <td class="value-col">
     ${
       salesOrder.billingAddress?.sameAsCompanyAddress
@@ -392,11 +465,15 @@ td {
 
 <tr>
   <td class="sno">13.</td>
+
   <td class="label-col">
     Shipping Address
     <br/>
-    <span class="small-text">(As per PO, if different then mention)</span>
+    <span class="small-text">
+      (As per PO, if different then mention)
+    </span>
   </td>
+
   <td class="value-col">
     ${
       salesOrder.shippingAddress?.sameAsCompanyAddress
@@ -408,47 +485,81 @@ td {
 
 <tr>
   <td class="sno">14.</td>
+
   <td class="label-col">
     Tolerance
     <br/>
-    <span class="small-text">(diameter and cut length)</span>
+    <span class="small-text">
+      (diameter and cut length)
+    </span>
   </td>
-  <td class="value-col">${salesOrder.tolerance || ""}</td>
+
+  <td class="value-col">
+    ${salesOrder.tolerance || ""}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">15.</td>
+
   <td class="label-col">
     End use of customer
     <br/>
-    <span class="small-text">(Machining/Forging)</span>
+    <span class="small-text">
+      (Machining/Forging)
+    </span>
   </td>
-  <td class="value-col">${formatText(salesOrder.endUseOfCustomer)}</td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.endUseOfCustomer)}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">16.</td>
+
   <td class="label-col">
     Standard Delivery Time/committed
     <br/>
-    <span class="small-text">by the sales person</span>
+    <span class="small-text">
+      by the sales person
+    </span>
   </td>
-  <td class="value-col yellow red">${salesOrder.deliveryTime || ""}</td>
+
+  <td class="value-col yellow red">
+    ${salesOrder.deliveryTime || ""}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">17.</td>
-  <td class="label-col">Test Certificate (TC)</td>
-  <td class="value-col yellow red">${formatText(salesOrder.testCertificateRequired)}</td>
+
+  <td class="label-col">
+    Test Certificate (TC)
+  </td>
+
+  <td class="value-col yellow red">
+    ${formatText(
+      salesOrder.testCertificateRequired
+    )}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">18.</td>
-  <td class="label-col">Enquiry Form Fill or Not</td>
+
+  <td class="label-col">
+    Enquiry Form Fill or Not
+  </td>
+
   <td class="value-col">
     ${
       salesOrder.enquiryFormFilled === "yes"
-        ? `YES ${salesOrder.enquiryNumber ? `- ${salesOrder.enquiryNumber}` : ""}`
+        ? `YES ${
+            salesOrder.enquiryNumber
+              ? `- ${salesOrder.enquiryNumber}`
+              : ""
+          }`
         : "NO"
     }
   </td>
@@ -456,12 +567,16 @@ td {
 
 <tr>
   <td colspan="3">
-    Contact Person - ${salesOrder.contactPersonName || ""}
+
+    Contact Person -
+    ${salesOrder.contactPersonName || ""}
     (${salesOrder.contactPersonNumber || ""})
+
   </td>
 </tr>
 
 <tr class="footer-signature">
+
   <td colspan="2" class="center bold">
     Prepared By
     <br/>
@@ -473,6 +588,7 @@ td {
     <br/>
     ${salesOrder.checkedByAdminName || ""}
   </td>
+
 </tr>
 
 </table>
