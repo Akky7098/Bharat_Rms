@@ -1,3 +1,4 @@
+const fs = require("fs");
 const path = require("path");
 
 const formatDate = (date) => {
@@ -38,13 +39,32 @@ const getWatermark = (status) => {
   return "DRAFT";
 };
 
+const getLogoBase64 = () => {
+  try {
+    const logoPath = path.join(
+      __dirname,
+      "..",
+      "public",
+      "logo.png"
+    );
+
+    const logoBuffer = fs.readFileSync(logoPath);
+
+    return `data:image/png;base64,${logoBuffer.toString(
+      "base64"
+    )}`;
+  } catch (error) {
+    console.log(
+      "LOGO LOAD ERROR =>",
+      error.message
+    );
+
+    return "";
+  }
+};
+
 const salesOrderTemplate = (salesOrder) => {
-  const logoPath = `file://${path.join(
-    __dirname,
-    "..",
-    "public",
-    "logo.png"
-  )}`;
+  const logoBase64 = getLogoBase64();
 
   return `
 <!DOCTYPE html>
@@ -224,11 +244,17 @@ td {
 
 <tr>
   <td colspan="3" class="logo-section">
-    <img src="${logoPath}" />
+
+    ${
+      logoBase64
+        ? `<img src="${logoBase64}" />`
+        : ""
+    }
 
     <div class="heading">
       SALES ORDER FORM
     </div>
+
   </td>
 </tr>
 
