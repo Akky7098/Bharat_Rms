@@ -73,11 +73,6 @@ const salesOrderTemplate = (salesOrder) => {
 <head>
 <meta charset="UTF-8" />
 
-<link
-  href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
-  rel="stylesheet"
-/>
-
 <style>
 
 @page {
@@ -90,14 +85,11 @@ const salesOrderTemplate = (salesOrder) => {
 }
 
 body {
-  font-family: 'Roboto', 'DejaVu Sans', Arial, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   margin: 0;
   padding: 0;
   color: #000;
   background: #fff;
-
-  -webkit-font-smoothing: antialiased;
-  text-rendering: geometricPrecision;
 }
 
 .main-container {
@@ -135,7 +127,7 @@ td {
   text-align: center;
   font-size: 19px;
   line-height: 1.1;
-  font-weight: 700;
+  font-weight: bold;
   color: #06429c;
   margin-top: 3px;
 }
@@ -149,12 +141,12 @@ td {
 }
 
 .bold {
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .red {
   color: red;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .yellow {
@@ -173,13 +165,13 @@ td {
 .sno {
   width: 5%;
   text-align: center;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .label-col {
   width: 30%;
   text-align: center;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .value-col {
@@ -196,7 +188,7 @@ td {
 
 .supply-title {
   color: red;
-  font-weight: 700;
+  font-weight: bold;
   text-align: center;
   font-size: 13px;
   margin-bottom: 6px;
@@ -220,7 +212,7 @@ td {
   font-size: 82px;
   color: rgba(255, 0, 0, 0.08);
   z-index: -1;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 </style>

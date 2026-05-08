@@ -5,52 +5,50 @@ const path = require("path");
 const salesOrderTemplate = require("../templates/salesOrderTemplate");
 
 const generateSalesOrderPdf = async (salesOrder) => {
+  let browser;
+
   try {
     const pdfDirectory =
       process.env.PDF_STORAGE_PATH ||
       path.join(__dirname, "..", "uploads", "sales-orders");
 
     if (!fs.existsSync(pdfDirectory)) {
-      fs.mkdirSync(pdfDirectory, {
-        recursive: true,
-      });
+      fs.mkdirSync(pdfDirectory, { recursive: true });
     }
 
     const fileName = `SO-${salesOrder._id}.pdf`;
-
     const filePath = path.join(pdfDirectory, fileName);
-
     const html = salesOrderTemplate(salesOrder);
-const browser = await puppeteer.launch({
-  headless: "new",
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--single-process",
-    "--no-zygote",
-    "--disable-extensions",
-  ],
-});
+
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--single-process",
+        "--no-zygote",
+        "--disable-extensions",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-sync",
+      ],
+    });
+
     const page = await browser.newPage();
 
-   await page.setContent(html, {
-  waitUntil: [
-    "load",
-    "domcontentloaded",
-    "networkidle0",
-  ],
-});
+    await page.setContent(html, {
+      waitUntil: "domcontentloaded",
+    });
 
-await page.emulateMediaType("screen");
-
-await page.evaluateHandle("document.fonts.ready");
+    await page.emulateMediaType("screen");
 
     await page.pdf({
       path: filePath,
       format: "A4",
       printBackground: true,
+      preferCSSPageSize: true,
       margin: {
         top: "8mm",
         right: "8mm",
@@ -58,8 +56,6 @@ await page.evaluateHandle("document.fonts.ready");
         left: "8mm",
       },
     });
-
-    await browser.close();
 
     return {
       generated: true,
@@ -70,6 +66,10 @@ await page.evaluateHandle("document.fonts.ready");
   } catch (error) {
     console.log("PDF GENERATION ERROR =>", error);
     throw error;
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
   }
 };
 
