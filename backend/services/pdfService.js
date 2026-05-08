@@ -21,17 +21,18 @@ const generateSalesOrderPdf = async (salesOrder) => {
     const filePath = path.join(pdfDirectory, fileName);
 
     const html = salesOrderTemplate(salesOrder);
-
-    const browser = await puppeteer.launch({
-  headless: true,
-
+const browser = await puppeteer.launch({
+  headless: "new",
   args: [
     "--no-sandbox",
     "--disable-setuid-sandbox",
     "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--single-process",
+    "--no-zygote",
+    "--disable-extensions",
   ],
 });
-
     const page = await browser.newPage();
 
     await page.setContent(html, {
