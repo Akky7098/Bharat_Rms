@@ -72,8 +72,9 @@ const salesOrderService = require("../services/salesOrderService");
 const createSalesOrder = async (req, res) => {
   try {
     const salesOrder = await salesOrderService.createSalesOrder(
-      req.body,
-      req.user
+     JSON.parse(req.body.data),
+      req.user,
+      req.file,
     );
 
     return res.status(201).json({
@@ -88,7 +89,25 @@ const createSalesOrder = async (req, res) => {
     });
   }
 };
+const generateSalesOrderPdf = async (req, res) => {
+  try {
+    const salesOrder =
+      await salesOrderService.generateSalesOrderPdfById(
+        req.params.id
+      );
 
+    return res.status(200).json({
+      success: true,
+      message: "Sales order PDF generated successfully",
+      data: salesOrder,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 // ===============================
 // GET ALL SALES ORDERS
 // Admin gets all
@@ -453,6 +472,7 @@ const handleWhatsappWebhook = async (req, res) => {
 };
 module.exports = {
   createSalesOrder,
+  generateSalesOrderPdf,
   getAllSalesOrders,
   getSalesOrderById,
   updateSalesOrder,

@@ -355,7 +355,7 @@ td {
   <td class="sno">2.</td>
   <td class="label-col">Order Value</td>
   <td class="value-col large-text">
-    ₹ ${salesOrder.orderValue || 0}
+    Rs. ${salesOrder.orderValue || 0}
   </td>
 </tr>
 

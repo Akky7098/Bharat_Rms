@@ -360,51 +360,100 @@ const emailService = require("./emailService");
 // ========================================
 // CREATE SALES ORDER
 // ========================================
-const createSalesOrder = async (payload, loggedInUser) => {
+const createSalesOrder = async (
+  payload,
+  loggedInUser,
+  uploadedPOFile
+) => {
   try {
     const salesOrder = new SalesOrder({
       ...payload,
 
-      // AUTO FROM TOKEN
       salesPersonId: loggedInUser._id,
       salesPersonName: loggedInUser.name,
       salesPersonEmail: loggedInUser.email,
       salesPersonMobile: loggedInUser.mobileNumber,
+
+      customerPOFile: uploadedPOFile
+        ? {
+            originalName: uploadedPOFile.originalname,
+            fileName: uploadedPOFile.filename,
+            filePath: uploadedPOFile.path,
+            fileUrl: `/uploads/customer-po/${uploadedPOFile.filename}`,
+            uploadedAt: new Date(),
+          }
+        : undefined,
 
       approvalHistory: [
         {
           actionBy: loggedInUser._id,
           role: "salesperson",
           action: "created",
-          comment: "Sales order created",
+          comment: uploadedPOFile
+            ? "Sales order created with customer PO file"
+            : "Sales order created without customer PO file",
         },
       ],
     });
 
     const savedOrder = await salesOrder.save();
-    // =========================
-// GENERATE PDF
-// =========================
-const pdfDetails =
-  await pdfService.generateSalesOrderPdf(
-    savedOrder
-  );
 
-savedOrder.pdf = {
-  generated: true,
-  fileName: pdfDetails.fileName,
-  filePath: pdfDetails.filePath,
-  fileUrl: pdfDetails.fileUrl,
-  generatedAt: new Date(),
-};
-
-await savedOrder.save();
     return savedOrder;
   } catch (error) {
     throw error;
   }
 };
+const generateSalesOrderPdfById = async (salesOrderId) => {
+  try {
+    const salesOrder = await SalesOrder.findById(salesOrderId);
 
+    if (!salesOrder) {
+      throw new Error("Sales order not found");
+    }
+
+    if (!salesOrder.customerPOFile?.filePath) {
+      throw new Error("Customer PO file is required before generating final PDF");
+    }
+
+    const pdfDetails = await pdfService.generateSalesOrderPdf(salesOrder);
+
+    salesOrder.pdf = {
+      generated: true,
+      fileName: pdfDetails.fileName,
+      filePath: pdfDetails.filePath,
+      fileUrl: pdfDetails.fileUrl,
+      generatedAt: new Date(),
+    };
+
+    salesOrder.finalSalesOrderPackage = {
+      generated: true,
+      fileName: pdfDetails.fileName,
+      filePath: pdfDetails.filePath,
+      fileUrl: pdfDetails.fileUrl,
+      generatedAt: new Date(),
+    };
+
+    salesOrder.preShipmentInspectionPdf = {
+      generated: true,
+      fileName: pdfDetails.fileName,
+      filePath: pdfDetails.filePath,
+      fileUrl: pdfDetails.fileUrl,
+      generatedAt: new Date(),
+    };
+
+    salesOrder.approvalHistory.push({
+      role: "system",
+      action: "pdf_generated",
+      comment: "Final sales order package PDF generated",
+    });
+
+    await salesOrder.save();
+
+    return salesOrder;
+  } catch (error) {
+    throw error;
+  }
+};
 // ========================================
 // GET ALL SALES ORDERS
 // ========================================
@@ -927,6 +976,7 @@ const deleteSalesOrder = async (salesOrderId) => {
 
 module.exports = {
   createSalesOrder,
+  generateSalesOrderPdfById,
   getAllSalesOrders,
   getSalesOrderById,
   updateSalesOrder,

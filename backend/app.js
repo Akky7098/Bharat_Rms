@@ -51,6 +51,13 @@ app.use(
     path.join(__dirname, "public/logo.png")
   )
 );
+app.use(
+  "/uploads/customer-po",
+  express.static(
+    process.env.CUSTOMER_PO_STORAGE_PATH ||
+      path.join(__dirname, "uploads", "customer-po")
+  )
+);
 app.use("/api/auth", authRoutes);
 app.use("/api/enquiry", enquiryRoutes);
 app.use("/api/sales-order", salesOrderRoutes);

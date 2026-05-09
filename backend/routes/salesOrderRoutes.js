@@ -3,15 +3,20 @@ const router = express.Router();
 
 const salesOrderController = require("../controller/salesOrderController");
 const authMiddleware = require("../util/auth");
-
+const uploadSalesOrderFiles = require("../util/uploadSalesOrderFiles");
 // CREATE
 
 router.post(
   "/create",
   authMiddleware,
+  uploadSalesOrderFiles.single("customerPOFile"),
   salesOrderController.createSalesOrder
 );
-
+router.post(
+  "/:id/generate-pdf",
+  authMiddleware,
+  salesOrderController.generateSalesOrderPdf
+);
 // GET ALL
 router.get(
   "/",

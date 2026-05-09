@@ -537,6 +537,34 @@ const salesOrderSchema = new mongoose.Schema(
       default: Date.now,
     },
 
+    customerPOFile: {
+  originalName: String,
+  fileName: String,
+  filePath: String,
+  fileUrl: String,
+  uploadedAt: Date,
+},
+
+preShipmentInspectionPdf: {
+  generated: {
+    type: Boolean,
+    default: false,
+  },
+  fileName: String,
+  filePath: String,
+  fileUrl: String,
+  generatedAt: Date,
+},
+ finalSalesOrderPackage: {
+  generated: {
+    type: Boolean,
+    default: false,
+  },
+  fileName: String,
+  filePath: String,
+  fileUrl: String,
+  generatedAt: Date,
+},
     approvalHistory: [approvalHistorySchema],
   },
   {
