@@ -457,32 +457,200 @@ const generateSalesOrderPdfById = async (salesOrderId) => {
 // ========================================
 // GET ALL SALES ORDERS
 // ========================================
-const getAllSalesOrders = async (filters = {}) => {
+
+
+const getAllSalesOrders = async (query, user) => {
   try {
-    const query = {};
+    const {
+      page = 1,
+      limit = 10,
+      salesPersonId,
+      fromDate,
+      toDate,
+      approvalStatus,
+      customerType,
+      companyName,
+      poNumber,
+    } = query;
 
-    if (filters.approvalStatus) {
-      query.approvalStatus = filters.approvalStatus;
+    const filter = {};
+
+    // ROLE FILTER
+    if (user.role === "admin" || user.role === "super_admin") {
+      if (salesPersonId) {
+        filter.salesPersonId = new mongoose.Types.ObjectId(
+          salesPersonId
+        );
+      }
+    } else {
+      filter.salesPersonId = new mongoose.Types.ObjectId(user.id);
     }
 
-    if (filters.customerType) {
-      query.customerType = filters.customerType;
+    // STATUS
+    if (approvalStatus) {
+      filter.approvalStatus = approvalStatus;
     }
 
-    if (filters.salesPersonId) {
-      query.salesPersonId = filters.salesPersonId;
+    // CUSTOMER TYPE
+    if (customerType) {
+      filter.customerType = customerType;
     }
 
-    const salesOrders = await SalesOrder.find(query)
-      .populate("salesPersonId", "name email mobileNumber")
-      .populate("checkedByAdminId", "name email")
-      .sort({ createdAt: -1 });
+    // COMPANY SEARCH
+    if (companyName) {
+      filter.companyName = {
+        $regex: companyName,
+        $options: "i",
+      };
+    }
 
-    return salesOrders;
+    // PO SEARCH
+    if (poNumber) {
+      filter.poNumber = {
+        $regex: poNumber,
+        $options: "i",
+      };
+    }
+
+    // DATE FILTER
+    if (fromDate || toDate) {
+      filter.orderDate = {};
+
+      if (fromDate) {
+        filter.orderDate.$gte = new Date(fromDate);
+      }
+
+      if (toDate) {
+        const endDate = new Date(toDate);
+        endDate.setHours(23, 59, 59, 999);
+        filter.orderDate.$lte = endDate;
+      }
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const totalRecords =
+      await SalesOrder.countDocuments(filter);
+
+    const salesOrders = await SalesOrder.aggregate([
+      {
+        $match: filter,
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "salesPersonId",
+          foreignField: "_id",
+          as: "salesPersonId",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$salesPersonId",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "checkedByAdminId",
+          foreignField: "_id",
+          as: "checkedByAdminId",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$checkedByAdminId",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+
+      {
+        $skip: skip,
+      },
+
+      {
+        $limit: Number(limit),
+      },
+
+      {
+        $project: {
+          orderDate: 1,
+          createdAt: 1,
+          updatedAt: 1,
+
+          companyName: 1,
+          companyAddress: 1,
+          gstinNumber: 1,
+
+          poNumber: 1,
+          checklistNumber: 1,
+
+          customerType: 1,
+          paymentTerms: 1,
+          orderValue: 1,
+
+          sizeGradeQuantityRate: 1,
+          supplyCondition: 1,
+          cutLengthRequired: 1,
+          cuttingCost: 1,
+          freight: 1,
+          tolerance: 1,
+          deliveryTime: 1,
+          endUseOfCustomer: 1,
+          approvalStatus: 1,
+          isEditableBySalesPerson: 1,
+
+          contactPersonName: 1,
+          contactPersonNumber: 1,
+          contactPersonEmailId: 1,
+
+          pdf: 1,
+          finalSalesOrderPackage: 1,
+          preShipmentInspectionPdf: 1,
+          customerPOFile: 1,
+
+          managerApproval: 1,
+          adminApproval: 1,
+
+          "salesPersonId._id": 1,
+          "salesPersonId.name": 1,
+          "salesPersonId.email": 1,
+          "salesPersonId.mobileNumber": 1,
+
+          "checkedByAdminId._id": 1,
+          "checkedByAdminId.name": 1,
+          "checkedByAdminId.email": 1,
+        },
+      },
+    ]);
+
+    return {
+      salesOrders,
+      pagination: {
+        totalRecords,
+        currentPage: Number(page),
+        totalPages: Math.ceil(
+          totalRecords / Number(limit)
+        ),
+        limit: Number(limit),
+      },
+    };
   } catch (error) {
     throw error;
   }
 };
+
 
 // ========================================
 // GET SINGLE SALES ORDER

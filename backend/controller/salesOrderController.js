@@ -115,18 +115,19 @@ const generateSalesOrderPdf = async (req, res) => {
 // ===============================
 const getAllSalesOrders = async (req, res) => {
   try {
-    const result = await salesOrderService.getAllSalesOrders(
-      req.query,
-      req.user
-    );
+    const result =
+      await salesOrderService.getAllSalesOrders(
+        req.query,
+        req.user
+      );
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      data: result.salesOrders || result,
-      pagination: result.pagination || null,
+      data: result.salesOrders,
+      pagination: result.pagination,
     });
   } catch (error) {
-    return res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message,
     });
