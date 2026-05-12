@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+     "prestart": "node scripts/ensureChromium.js",
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "postinstall": "node node_modules/puppeteer/install.js && chmod -R 755 node_modules/puppeteer/.local-chromium || true"
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
