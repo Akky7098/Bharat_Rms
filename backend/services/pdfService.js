@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const html_to_pdf = require("html-pdf-node");
+const ensureChromium = require("../util/ensureChromium");
 const {
   PDFDocument,
   StandardFonts,
@@ -127,6 +128,7 @@ const formatDate = (date) => {
 };
 
 const generateSalesOrderPdfBuffer = async (salesOrder) => {
+   await ensureChromium();
   const html = salesOrderTemplate(salesOrder);
 
   const file = {
@@ -143,7 +145,6 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
       left: "8mm",
     },
   };
-
   return await html_to_pdf.generatePdf(file, options);
 };
 
