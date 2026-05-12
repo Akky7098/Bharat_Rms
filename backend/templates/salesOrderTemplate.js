@@ -37,9 +37,40 @@ const getLogoBase64 = () => {
 
     const logoBuffer = fs.readFileSync(logoPath);
 
-    return `data:image/png;base64,${logoBuffer.toString("base64")}`;
+    return `data:image/png;base64,${logoBuffer.toString(
+      "base64"
+    )}`;
   } catch (error) {
-    console.log("LOGO LOAD ERROR =>", error.message);
+    console.log(
+      "LOGO LOAD ERROR =>",
+      error.message
+    );
+
+    return "";
+  }
+};
+
+const getFontBase64 = (fileName) => {
+  try {
+    const fontPath = path.join(
+      __dirname,
+      "..",
+      "node_modules",
+      "@fontsource",
+      "roboto",
+      "files",
+      fileName
+    );
+
+    const fontBuffer = fs.readFileSync(fontPath);
+
+    return fontBuffer.toString("base64");
+  } catch (error) {
+    console.log(
+      "FONT LOAD ERROR =>",
+      error.message
+    );
+
     return "";
   }
 };
@@ -47,13 +78,35 @@ const getLogoBase64 = () => {
 const salesOrderTemplate = (salesOrder) => {
   const logoBase64 = getLogoBase64();
 
+  const robotoRegular = getFontBase64(
+    "roboto-latin-400-normal.woff2"
+  );
+
+  const robotoBold = getFontBase64(
+    "roboto-latin-700-normal.woff2"
+  );
+
   return `
 <!DOCTYPE html>
 <html>
+
 <head>
 <meta charset="UTF-8" />
 
 <style>
+
+@font-face {
+  font-family: "RobotoEmbedded";
+  src: url("data:font/woff2;base64,${robotoRegular}") format("woff2");
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "RobotoEmbedded";
+  src: url("data:font/woff2;base64,${robotoBold}") format("woff2");
+  font-weight: 700;
+}
+
 @page {
   size: A4 portrait;
   margin: 8mm;
@@ -64,13 +117,11 @@ const salesOrderTemplate = (salesOrder) => {
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "RobotoEmbedded", Arial, sans-serif;
   margin: 0;
   padding: 0;
-  color: #000000;
-  background: #ffffff;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+  color: #000;
+  background: #fff;
 }
 
 .main-container {
@@ -91,7 +142,6 @@ td {
   vertical-align: middle;
   word-wrap: break-word;
   word-break: break-word;
-  color: #000000;
 }
 
 .logo-section {
@@ -109,7 +159,7 @@ td {
   text-align: center;
   font-size: 19px;
   line-height: 1.1;
-  font-weight: bold;
+  font-weight: 700;
   color: #06429c;
   margin-top: 3px;
 }
@@ -119,16 +169,16 @@ td {
 }
 
 .bold {
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .red {
-  color: #ff0000;
-  font-weight: bold;
+  color: red;
+  font-weight: 700;
 }
 
 .yellow {
-  background-color: #ffff00;
+  background-color: yellow;
 }
 
 .small-text {
@@ -143,13 +193,13 @@ td {
 .sno {
   width: 5%;
   text-align: center;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .label-col {
   width: 30%;
   text-align: center;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .value-col {
@@ -165,8 +215,8 @@ td {
 }
 
 .supply-title {
-  color: #ff0000;
-  font-weight: bold;
+  color: red;
+  font-weight: 700;
   text-align: center;
   font-size: 13px;
   margin-bottom: 6px;
@@ -181,6 +231,7 @@ td {
 .footer-signature {
   height: 42px;
 }
+
 </style>
 </head>
 
@@ -198,8 +249,17 @@ td {
 
 <tr>
   <td colspan="3" class="logo-section">
-    ${logoBase64 ? `<img src="${logoBase64}" />` : ""}
-    <div class="heading">SALES ORDER FORM</div>
+
+    ${
+      logoBase64
+        ? `<img src="${logoBase64}" />`
+        : ""
+    }
+
+    <div class="heading">
+      SALES ORDER FORM
+    </div>
+
   </td>
 </tr>
 
@@ -217,8 +277,11 @@ td {
   </td>
 
   <td class="small-text bold">
+
     <table style="width:100%; border-collapse:collapse;">
+
       <tr>
+
         <td style="border:none; width:60%;">
           PO No - ${salesOrder.poNumber || ""}
           <br/>
@@ -228,8 +291,11 @@ td {
         <td style="border:none; width:40%; text-align:center;">
           Dated - ${formatDate(salesOrder.orderDate)}
         </td>
+
       </tr>
+
     </table>
+
   </td>
 </tr>
 
@@ -252,33 +318,47 @@ td {
 <tr>
   <td class="sno">1.</td>
   <td class="label-col">Payment Terms</td>
-  <td class="value-col">${formatText(salesOrder.paymentTerms)}</td>
+  <td class="value-col">
+    ${formatText(salesOrder.paymentTerms)}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">2.</td>
   <td class="label-col">Order Value</td>
-  <td class="value-col large-text">Rs. ${salesOrder.orderValue || 0}</td>
+  <td class="value-col large-text">
+    Rs. ${salesOrder.orderValue || 0}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">3.</td>
+
   <td class="label-col">
-    Customer Type<br/>(Existing/New)
+    Customer Type
+    <br/>
+    (Existing/New)
   </td>
-  <td class="value-col">${formatText(salesOrder.customerType)}</td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.customerType)}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">4.</td>
+
   <td class="label-col small-text">
     Is payment terms approved by management,
     if yes then name of approved person
   </td>
+
   <td class="value-col">
     ${
       salesOrder.isPaymentTermsApprovedByManagement
-        ? `Yes, By ${formatText(salesOrder.paymentTermsApprovedBy)}`
+        ? `Yes, By ${formatText(
+            salesOrder.paymentTermsApprovedBy
+          )}`
         : "No"
     }
   </td>
@@ -286,36 +366,63 @@ td {
 
 <tr>
   <td class="sno">5.</td>
+
   <td class="label-col small-text">
     Previous payment due if any Yes/No
     <br/>
     (Invoice details/Invoice date/amount/Due date)
   </td>
-  <td class="value-col">${salesOrder.previousPaymentStatus || "NO"}</td>
+
+  <td class="value-col">
+    ${salesOrder.previousPaymentStatus || "NO"}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">6.</td>
+
   <td class="label-col">
-    PO is as per quotation<br/>(Yes/No)
+    PO is as per quotation
+    <br/>
+    (Yes/No)
   </td>
-  <td class="value-col">${formatText(salesOrder.poAsPerQuotation)}</td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.poAsPerQuotation)}
+  </td>
 </tr>
 
 <tr>
+
   <td class="sno">7.</td>
-  <td class="label-col">Size/Grade/Qty/Rate</td>
-  <td class="supply-size-box">
-    <div class="supply-title">Supply Size</div>
-    <div class="size-rate-text">
-      ${formatSizeGradeText(salesOrder.sizeGradeQuantityRate)}
-    </div>
+
+  <td class="label-col">
+    Size/Grade/Qty/Rate
   </td>
+
+  <td class="supply-size-box">
+
+    <div class="supply-title">
+      Supply Size
+    </div>
+
+    <div class="size-rate-text">
+      ${formatSizeGradeText(
+        salesOrder.sizeGradeQuantityRate
+      )}
+    </div>
+
+  </td>
+
 </tr>
 
 <tr>
   <td class="sno">8.</td>
-  <td class="label-col">Supply Condition</td>
+
+  <td class="label-col">
+    Supply Condition
+  </td>
+
   <td class="value-col">
     ${
       salesOrder.supplyCondition === "as_per_standard"
@@ -327,40 +434,192 @@ td {
 
 <tr>
   <td class="sno">9.</td>
-  <td class="label-col">Cut Length<br/>(Yes/No)</td>
-  <td class="value-col">${formatText(salesOrder.cutLengthRequired)}</td>
+
+  <td class="label-col">
+    Cut Length
+    <br/>
+    (Yes/No)
+  </td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.cutLengthRequired)}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">10.</td>
-  <td class="label-col">Cutting cost<br/>(Extra/Inclusive)</td>
-  <td class="value-col">${formatText(salesOrder.cuttingCost)}</td>
+
+  <td class="label-col">
+    Cutting cost
+    <br/>
+    (Extra/Inclusive)
+  </td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.cuttingCost)}
+  </td>
 </tr>
 
 <tr>
   <td class="sno">11.</td>
-  <td class="label-col">Freight<br/>(Extra/Self)</td>
-  <td class="value-col">${formatText(salesOrder.freight)}</td>
+
+  <td class="label-col">
+    Freight
+    <br/>
+    (Extra/Self)
+  </td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.freight)}
+  </td>
+</tr>
+
+<tr>
+  <td class="sno">12.</td>
+
+  <td class="label-col">
+    Billing Address
+    <br/>
+    <span class="small-text">
+      (As per PO, if different then mention)
+    </span>
+  </td>
+
+  <td class="value-col">
+    ${
+      salesOrder.billingAddress?.sameAsCompanyAddress
+        ? salesOrder.companyAddress
+        : salesOrder.billingAddress?.address || ""
+    }
+  </td>
+</tr>
+
+<tr>
+  <td class="sno">13.</td>
+
+  <td class="label-col">
+    Shipping Address
+    <br/>
+    <span class="small-text">
+      (As per PO, if different then mention)
+    </span>
+  </td>
+
+  <td class="value-col">
+    ${
+      salesOrder.shippingAddress?.sameAsCompanyAddress
+        ? salesOrder.companyAddress
+        : salesOrder.shippingAddress?.address || ""
+    }
+  </td>
+</tr>
+
+<tr>
+  <td class="sno">14.</td>
+
+  <td class="label-col">
+    Tolerance
+    <br/>
+    <span class="small-text">
+      (diameter and cut length)
+    </span>
+  </td>
+
+  <td class="value-col">
+    ${salesOrder.tolerance || ""}
+  </td>
+</tr>
+
+<tr>
+  <td class="sno">15.</td>
+
+  <td class="label-col">
+    End use of customer
+    <br/>
+    <span class="small-text">
+      (Machining/Forging)
+    </span>
+  </td>
+
+  <td class="value-col">
+    ${formatText(salesOrder.endUseOfCustomer)}
+  </td>
+</tr>
+
+<tr>
+  <td class="sno">16.</td>
+
+  <td class="label-col">
+    Standard Delivery Time/committed
+    <br/>
+    <span class="small-text">
+      by the sales person
+    </span>
+  </td>
+
+  <td class="value-col yellow red">
+    ${salesOrder.deliveryTime || ""}
+  </td>
+</tr>
+
+<tr>
+  <td class="sno">17.</td>
+
+  <td class="label-col">
+    Test Certificate (TC)
+  </td>
+
+  <td class="value-col yellow red">
+    ${formatText(
+      salesOrder.testCertificateRequired
+    )}
+  </td>
+</tr>
+
+<tr>
+  <td class="sno">18.</td>
+
+  <td class="label-col">
+    Enquiry Form Fill or Not
+  </td>
+
+  <td class="value-col">
+    ${
+      salesOrder.enquiryFormFilled === "yes"
+        ? `YES ${
+            salesOrder.enquiryNumber
+              ? `- ${salesOrder.enquiryNumber}`
+              : ""
+          }`
+        : "NO"
+    }
+  </td>
 </tr>
 
 <tr>
   <td colspan="3">
+
     Contact Person -
     ${salesOrder.contactPersonName || ""}
     (${salesOrder.contactPersonNumber || ""})
+
   </td>
 </tr>
 
 <tr class="footer-signature">
+
   <td colspan="2" class="center bold">
-    Prepared By<br/>
+    Prepared By
+    <br/>
     (${salesOrder.salesPersonName || ""})
   </td>
 
   <td class="center bold">
-    Checked By<br/>
+    Checked By
+    <br/>
     ${salesOrder.checkedByAdminName || ""}
   </td>
+
 </tr>
 
 </table>
