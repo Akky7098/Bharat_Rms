@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const html_to_pdf = require("html-pdf-node");
+const puppeteer = require("puppeteer");
 const ensureChromium = require("../util/ensureChromium");
 const {
   PDFDocument,
