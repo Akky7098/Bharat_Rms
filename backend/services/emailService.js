@@ -268,9 +268,9 @@ const sendManagerApprovalRequestEmail = async (salesOrder) => {
   const baseUrl =
     process.env.BACKEND_URL || "http://localhost:5000";
 
-  const approveLink = `${baseUrl}/app/sales-order/email-approve/${salesOrder._id}/${salesOrder.managerEmailApproval.token}`;
+  const approveLink = `${baseUrl}/api/sales-order/email-approve/${salesOrder._id}/${salesOrder.managerEmailApproval.token}`;
 
-  const rejectLink = `${baseUrl}/app/sales-order/email-reject-form/${salesOrder._id}/${salesOrder.managerEmailApproval.token}`;
+  const rejectLink = `${baseUrl}/api/sales-order/email-reject-form/${salesOrder._id}/${salesOrder.managerEmailApproval.token}`;
 
   const pdfLink = salesOrder.pdf?.fileUrl
     ? `${baseUrl}${salesOrder.pdf.fileUrl}`

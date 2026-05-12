@@ -559,6 +559,9 @@ const crypto = require("crypto");
 // ========================================
 // ADMIN APPROVE
 // ========================================
+// ========================================
+// ADMIN APPROVE
+// ========================================
 const approveSalesOrderByAdmin = async (
   salesOrderId,
   loggedInAdmin
@@ -584,7 +587,6 @@ const approveSalesOrderByAdmin = async (
       approvedAt: new Date(),
     };
 
-    // secure token for manager email approve/reject buttons
     const approvalToken = crypto.randomBytes(32).toString("hex");
 
     salesOrder.managerEmailApproval = {
@@ -602,7 +604,36 @@ const approveSalesOrderByAdmin = async (
 
     await salesOrder.save();
 
-    // send approval request mail to manager
+    // 1. Mail to salesperson
+    try {
+      await emailService.sendSalesOrderApprovedEmail(
+        salesOrder,
+        "Admin. It is now sent for manager approval"
+      );
+
+      salesOrder.approvalHistory.push({
+        role: "system",
+        action: "email_sent",
+        comment: "Admin approval notification sent to salesperson",
+      });
+
+      await salesOrder.save();
+    } catch (emailError) {
+      console.log(
+        "SALESPERSON ADMIN APPROVAL EMAIL ERROR =>",
+        emailError.message
+      );
+
+      salesOrder.approvalHistory.push({
+        role: "system",
+        action: "failed",
+        comment: `Salesperson admin approval email failed: ${emailError.message}`,
+      });
+
+      await salesOrder.save();
+    }
+
+    // 2. Mail to manager with approve/reject buttons
     try {
       await emailService.sendManagerApprovalRequestEmail(salesOrder);
 
@@ -633,7 +664,6 @@ const approveSalesOrderByAdmin = async (
     throw error;
   }
 };
-
 // ========================================
 // ADMIN REJECT
 // ========================================
