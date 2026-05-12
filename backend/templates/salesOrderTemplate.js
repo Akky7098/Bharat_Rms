@@ -107,7 +107,7 @@ const salesOrderTemplate = (salesOrder) => {
 }
 
 body {
-  font-family: "Times New Roman", serif !important;
+  font-family: Arial, Helvetica, sans-serif !important;
   margin: 0;
   padding: 0;
   color: #000000 !important;
@@ -133,7 +133,7 @@ td {
   word-wrap: break-word;
   word-break: break-word;
     color: #000000 !important;
-  font-family: "Times New Roman", serif !important;
+  font-family: Arial, Helvetica, sans-serif !important;
 }
 
 .logo-section {

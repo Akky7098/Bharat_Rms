@@ -139,42 +139,15 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
   const options = {
     format: "A4",
     printBackground: true,
-    preferCSSPageSize: true,
-
     margin: {
       top: "8mm",
       right: "8mm",
       bottom: "8mm",
       left: "8mm",
     },
-
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--font-render-hinting=none",
-    ],
-
-    timeout: 300000,
   };
 
-  // allow embedded base64 logo/font to initialize in Chromium
-  const stableHtml = html.replace(
-    "</body>",
-    `
-      <script>
-        setTimeout(function () {
-          window.__PDF_READY__ = true;
-        }, 800);
-      </script>
-    </body>`
-  );
-
-  return await html_to_pdf.generatePdf(
-    { content: stableHtml },
-    options
-  );
+  return await html_to_pdf.generatePdf(file, options);
 };
 const addSalesOrderHtmlPages = async (mergedPdf, salesOrder) => {
   const salesOrderPdfBuffer = await generateSalesOrderPdfBuffer(salesOrder);
