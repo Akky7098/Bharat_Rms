@@ -50,41 +50,41 @@ const getLogoBase64 = () => {
   }
 };
 
-// const getFontBase64 = (fileName) => {
-//   try {
-//     const fontPath = path.join(
-//       __dirname,
-//       "..",
-//       "node_modules",
-//       "@fontsource",
-//       "roboto",
-//       "files",
-//       fileName
-//     );
+const getFontBase64 = (fileName) => {
+  try {
+    const fontPath = path.join(
+      __dirname,
+      "..",
+      "node_modules",
+      "@fontsource",
+      "roboto",
+      "files",
+      fileName
+    );
 
-//     const fontBuffer = fs.readFileSync(fontPath);
+    const fontBuffer = fs.readFileSync(fontPath);
 
-//     return fontBuffer.toString("base64");
-//   } catch (error) {
-//     console.log(
-//       "FONT LOAD ERROR =>",
-//       error.message
-//     );
+    return fontBuffer.toString("base64");
+  } catch (error) {
+    console.log(
+      "FONT LOAD ERROR =>",
+      error.message
+    );
 
-//     return "";
-//   }
-// };
+    return "";
+  }
+};
 
 const salesOrderTemplate = (salesOrder) => {
   const logoBase64 = getLogoBase64();
 
-  // const robotoRegular = getFontBase64(
-  //   "roboto-latin-400-normal.woff2"
-  // );
+  const robotoRegular = getFontBase64(
+    "roboto-latin-400-normal.woff2"
+  );
 
-  // const robotoBold = getFontBase64(
-  //   "roboto-latin-700-normal.woff2"
-  // );
+  const robotoBold = getFontBase64(
+    "roboto-latin-700-normal.woff2"
+  );
 
   return `
 <!DOCTYPE html>
@@ -95,7 +95,17 @@ const salesOrderTemplate = (salesOrder) => {
 
 <style>
 
+@font-face {
+  font-family: "RobotoEmbedded";
+  src: url("data:font/woff2;base64,${robotoRegular}") format("woff2");
+  font-weight: 400;
+}
 
+@font-face {
+  font-family: "RobotoEmbedded";
+  src: url("data:font/woff2;base64,${robotoBold}") format("woff2");
+  font-weight: 700;
+}
 
 @page {
   size: A4 portrait;
@@ -107,11 +117,11 @@ const salesOrderTemplate = (salesOrder) => {
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif !important;
+  font-family: "RobotoEmbedded", Arial, sans-serif;
   margin: 0;
   padding: 0;
-  color: #000000 !important;
-  background: #ffffff;
+  color: #000;
+  background: #fff;
 }
 
 .main-container {
@@ -132,8 +142,6 @@ td {
   vertical-align: middle;
   word-wrap: break-word;
   word-break: break-word;
-    color: #000000 !important;
-  font-family: Arial, Helvetica, sans-serif !important;
 }
 
 .logo-section {
