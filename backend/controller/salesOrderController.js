@@ -493,7 +493,7 @@ const approveSalesOrderFromEmail = async (req, res) => {
 
 const showRejectForm = async (req, res) => {
   return res.send(`
-    <form method="POST" action="/app/sales-order/email-reject/${req.params.id}/${req.params.token}" style="font-family:Arial;max-width:500px;margin:40px auto;">
+    <form method="POST" action="/api/sales-order/email-reject/${req.params.id}/${req.params.token}" style="font-family:Arial;max-width:500px;margin:40px auto;">
       <h2>Reject Sales Order</h2>
 
       <textarea name="rejectionComment" required placeholder="Enter rejection reason" style="width:100%;height:120px;padding:10px;"></textarea>
