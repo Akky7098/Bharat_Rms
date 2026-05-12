@@ -182,7 +182,6 @@ const mergeExistingPdf = async (mergedPdf, pdfPath) => {
 
   copiedPages.forEach((page) => mergedPdf.addPage(page));
 };
-
 const extractUniqueGrades = (sizeGradeQuantityRate = "") => {
   const lines = String(sizeGradeQuantityRate)
     .split(/\r?\n/)
@@ -191,16 +190,26 @@ const extractUniqueGrades = (sizeGradeQuantityRate = "") => {
   const grades = [];
 
   lines.forEach((line) => {
-    const cleaned = line
+    let cleaned = line
       .replace(/^\d+\.\s*/, "")
       .split("-")[0]
       .trim();
 
+    // skip notes like Make SBE, MTC etc.
+    const lower = cleaned.toLowerCase();
+
     if (
-      cleaned &&
-      cleaned.toLowerCase().includes("din") &&
-      !grades.includes(cleaned)
+      !cleaned ||
+      lower.includes("make ") ||
+      lower.includes("mtc") ||
+      lower.includes("required") ||
+      lower.includes("test") ||
+      lower.includes("material")
     ) {
+      return;
+    }
+
+    if (!grades.some((g) => g.toLowerCase() === cleaned.toLowerCase())) {
       grades.push(cleaned);
     }
   });
@@ -447,7 +456,31 @@ const generateSalesOrderPdf = async (salesOrder) => {
       fs.mkdirSync(pdfDirectory, { recursive: true });
     }
 
-    const finalFileName = `SO-${salesOrder._id}.pdf`;
+    const sanitizeFileName = (value = "") => {
+  return String(value)
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+    .replace(/\s+/g, "_")
+    .trim();
+};
+
+const formatFileDate = (date) => {
+  const d = new Date(date || new Date());
+
+  return `${String(d.getDate()).padStart(2, "0")}-${String(
+    d.getMonth() + 1
+  ).padStart(2, "0")}-${d.getFullYear()}`;
+};
+
+const companyName = sanitizeFileName(
+  salesOrder.companyName || "Customer"
+);
+
+const createdDate = formatFileDate(
+  salesOrder.createdAt || new Date()
+);
+
+const finalFileName =
+  `Sales_Order_Form_${companyName}_${createdDate}.pdf`;
     const finalFilePath = path.join(pdfDirectory, finalFileName);
 
     const mergedPdf = await PDFDocument.create();

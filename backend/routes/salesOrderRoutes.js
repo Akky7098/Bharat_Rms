@@ -12,6 +12,20 @@ router.post(
   uploadSalesOrderFiles.single("customerPOFile"),
   salesOrderController.createSalesOrder
 );
+router.get(
+  "/email-approve/:id/:token",
+  salesOrderController.approveSalesOrderFromEmail
+);
+
+router.get(
+  "/email-reject-form/:id/:token",
+  salesOrderController.showRejectForm
+);
+
+router.post(
+  "/email-reject/:id/:token",
+  salesOrderController.rejectSalesOrderFromEmail
+);
 router.post(
   "/:id/generate-pdf",
   authMiddleware,

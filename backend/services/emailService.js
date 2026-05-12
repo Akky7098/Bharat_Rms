@@ -258,9 +258,63 @@ const sendAdminRejectionNotification = async (
 
   return transporter.sendMail(mailOptions);
 };
+const sendManagerApprovalRequestEmail = async (salesOrder) => {
+  const managerEmail = process.env.MANAGER_EMAIL;
+
+  if (!managerEmail) {
+    throw new Error("MANAGER_EMAIL missing in env");
+  }
+
+  const baseUrl =
+    process.env.BACKEND_URL || "http://localhost:5000";
+
+  const approveLink = `${baseUrl}/app/sales-order/email-approve/${salesOrder._id}/${salesOrder.managerEmailApproval.token}`;
+
+  const rejectLink = `${baseUrl}/app/sales-order/email-reject-form/${salesOrder._id}/${salesOrder.managerEmailApproval.token}`;
+
+  const pdfLink = salesOrder.pdf?.fileUrl
+    ? `${baseUrl}${salesOrder.pdf.fileUrl}`
+    : "";
+
+  return transporter.sendMail({
+    from: `"Bharat Special Steel" <bsspl97@gmail.com>`,
+    to: managerEmail,
+    subject: `Manager Approval Required - ${salesOrder.companyName}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;color:#111;">
+        <h2>Sales Order Approval Required</h2>
+
+        <table cellpadding="8" cellspacing="0" border="1" style="border-collapse:collapse;width:100%;max-width:700px;">
+          <tr><td><b>Company Name</b></td><td>${salesOrder.companyName || ""}</td></tr>
+          <tr><td><b>Sales Person</b></td><td>${salesOrder.salesPersonName || ""}</td></tr>
+          <tr><td><b>Order Date</b></td><td>${new Date(salesOrder.orderDate).toLocaleDateString("en-IN")}</td></tr>
+          <tr><td><b>PO Number</b></td><td>${salesOrder.poNumber || ""}</td></tr>
+          <tr><td><b>Order Value</b></td><td>Rs. ${salesOrder.orderValue || 0}</td></tr>
+          <tr><td><b>Size / Grade / Qty / Rate</b></td><td style="white-space:pre-line;">${salesOrder.sizeGradeQuantityRate || ""}</td></tr>
+          <tr><td><b>Payment Terms</b></td><td>${salesOrder.paymentTerms || ""}</td></tr>
+        </table>
+
+        ${pdfLink ? `<p><b>PDF:</b><br/><a href="${pdfLink}">Open Sales Order PDF</a></p>` : ""}
+
+        <p style="margin-top:25px;">
+          <a href="${approveLink}" style="background:#16a34a;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;">
+            Approve
+          </a>
+
+          &nbsp;&nbsp;
+
+          <a href="${rejectLink}" style="background:#dc2626;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;">
+            Reject
+          </a>
+        </p>
+      </div>
+    `,
+  });
+};
 module.exports = {
   sendSalesOrderApprovedEmail,
   sendSalesOrderRejectedEmail,
   sendAdminRejectionNotification,
   sendAdminApprovalNotification,
+  sendManagerApprovalRequestEmail
 };

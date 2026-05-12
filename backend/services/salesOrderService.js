@@ -554,6 +554,11 @@ const updateSalesOrder = async (
 // ========================================
 // ADMIN APPROVE
 // ========================================
+const crypto = require("crypto");
+
+// ========================================
+// ADMIN APPROVE
+// ========================================
 const approveSalesOrderByAdmin = async (
   salesOrderId,
   loggedInAdmin
@@ -579,35 +584,45 @@ const approveSalesOrderByAdmin = async (
       approvedAt: new Date(),
     };
 
+    // secure token for manager email approve/reject buttons
+    const approvalToken = crypto.randomBytes(32).toString("hex");
+
+    salesOrder.managerEmailApproval = {
+      token: approvalToken,
+      tokenCreatedAt: new Date(),
+    };
+
     salesOrder.approvalHistory.push({
       actionBy: loggedInAdmin._id,
       role: "admin",
       action: "admin_approved",
-      comment: "Sales order approved by admin and sent for manager approval",
+      comment:
+        "Sales order approved by admin and sent for manager approval",
     });
 
     await salesOrder.save();
 
+    // send approval request mail to manager
     try {
-      await emailService.sendSalesOrderApprovedEmail(
-        salesOrder,
-        "Admin. It is now sent for manager approval"
-      );
+      await emailService.sendManagerApprovalRequestEmail(salesOrder);
 
       salesOrder.approvalHistory.push({
         role: "system",
         action: "email_sent",
-        comment: "Admin approval email sent to salesperson",
+        comment: "Manager approval request email sent",
       });
 
       await salesOrder.save();
     } catch (emailError) {
-      console.log("ADMIN APPROVAL EMAIL ERROR =>", emailError.message);
+      console.log(
+        "MANAGER APPROVAL REQUEST EMAIL ERROR =>",
+        emailError.message
+      );
 
       salesOrder.approvalHistory.push({
         role: "system",
         action: "failed",
-        comment: `Admin approval email failed: ${emailError.message}`,
+        comment: `Manager approval request email failed: ${emailError.message}`,
       });
 
       await salesOrder.save();
@@ -973,7 +988,90 @@ const deleteSalesOrder = async (salesOrderId) => {
     throw error;
   }
 };
+const approveSalesOrderFromEmail = async (salesOrderId, token) => {
+  const salesOrder = await SalesOrder.findById(salesOrderId);
 
+  if (!salesOrder) {
+    throw new Error("Sales order not found");
+  }
+
+  if (salesOrder.approvalStatus !== "pending_manager_approval") {
+    throw new Error("Sales order is not pending manager approval");
+  }
+
+  if (salesOrder.managerEmailApproval?.token !== token) {
+    throw new Error("Invalid approval link");
+  }
+
+  salesOrder.approvalStatus = "approved";
+  salesOrder.isEditableBySalesPerson = false;
+
+  salesOrder.managerApproval.approvedAt = new Date();
+  salesOrder.managerApproval.managerName = "Manager";
+  salesOrder.managerApproval.managerEmail = process.env.MANAGER_EMAIL;
+
+  salesOrder.managerEmailApproval.approvedByEmailLinkAt = new Date();
+
+  salesOrder.approvalHistory.push({
+    role: "manager",
+    action: "manager_approved",
+    comment: "Sales order approved from email link",
+  });
+
+  await salesOrder.save();
+
+  await emailService.sendSalesOrderApprovedEmail(
+    salesOrder,
+    "Manager"
+  );
+
+  return salesOrder;
+};
+
+const rejectSalesOrderFromEmail = async (
+  salesOrderId,
+  token,
+  rejectionComment
+) => {
+  const salesOrder = await SalesOrder.findById(salesOrderId);
+
+  if (!salesOrder) {
+    throw new Error("Sales order not found");
+  }
+
+  if (salesOrder.approvalStatus !== "pending_manager_approval") {
+    throw new Error("Sales order is not pending manager approval");
+  }
+
+  if (salesOrder.managerEmailApproval?.token !== token) {
+    throw new Error("Invalid rejection link");
+  }
+
+  salesOrder.approvalStatus = "rejected_by_manager";
+  salesOrder.isEditableBySalesPerson = true;
+
+  salesOrder.managerApproval.rejectedAt = new Date();
+  salesOrder.managerApproval.managerName = "Manager";
+  salesOrder.managerApproval.managerEmail = process.env.MANAGER_EMAIL;
+  salesOrder.managerApproval.rejectionComment = rejectionComment;
+
+  salesOrder.managerEmailApproval.rejectedByEmailLinkAt = new Date();
+
+  salesOrder.approvalHistory.push({
+    role: "manager",
+    action: "manager_rejected",
+    comment: rejectionComment,
+  });
+
+  await salesOrder.save();
+
+  await emailService.sendSalesOrderRejectedEmail(
+    salesOrder,
+    rejectionComment
+  );
+
+  return salesOrder;
+};
 module.exports = {
   createSalesOrder,
   generateSalesOrderPdfById,
@@ -987,4 +1085,6 @@ module.exports = {
   updatePdfDetails,
   updateWhatsappGroupStatus,
   deleteSalesOrder,
+   approveSalesOrderFromEmail,
+   rejectSalesOrderFromEmail,
 };

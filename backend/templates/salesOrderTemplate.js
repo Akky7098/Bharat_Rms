@@ -26,39 +26,13 @@ const formatSizeGradeText = (value) => {
     .join("");
 };
 
-const getWatermark = (status) => {
-  if (status === "approved") return "APPROVED";
-
-  if (
-    status === "rejected_by_admin" ||
-    status === "rejected_by_manager"
-  ) {
-    return "REJECTED";
-  }
-
-  return "DRAFT";
-};
-
 const getLogoBase64 = () => {
   try {
-    const logoPath = path.join(
-      __dirname,
-      "..",
-      "public",
-      "logo.png"
-    );
-
+    const logoPath = path.join(__dirname, "..", "public", "logo.png");
     const logoBuffer = fs.readFileSync(logoPath);
-
-    return `data:image/png;base64,${logoBuffer.toString(
-      "base64"
-    )}`;
+    return `data:image/png;base64,${logoBuffer.toString("base64")}`;
   } catch (error) {
-    console.log(
-      "LOGO LOAD ERROR =>",
-      error.message
-    );
-
+    console.log("LOGO LOAD ERROR =>", error.message);
     return "";
   }
 };
@@ -75,15 +49,9 @@ const getFontBase64 = (fileName) => {
       fileName
     );
 
-    const fontBuffer = fs.readFileSync(fontPath);
-
-    return fontBuffer.toString("base64");
+    return fs.readFileSync(fontPath).toString("base64");
   } catch (error) {
-    console.log(
-      "FONT LOAD ERROR =>",
-      error.message
-    );
-
+    console.log("FONT LOAD ERROR =>", error.message);
     return "";
   }
 };
@@ -102,12 +70,10 @@ const salesOrderTemplate = (salesOrder) => {
   return `
 <!DOCTYPE html>
 <html>
-
 <head>
 <meta charset="UTF-8" />
 
 <style>
-
 @font-face {
   font-family: "RobotoEmbedded";
   src: url("data:font/woff2;base64,${robotoRegular}") format("woff2");
@@ -244,26 +210,10 @@ td {
 .footer-signature {
   height: 42px;
 }
-
-.watermark {
-  position: fixed;
-  top: 42%;
-  left: 19%;
-  transform: rotate(-30deg);
-  font-size: 82px;
-  color: rgba(255, 0, 0, 0.08);
-  z-index: -1;
-  font-weight: 700;
-}
-
 </style>
 </head>
 
 <body>
-
-<div class="watermark">
-  ${getWatermark(salesOrder.approvalStatus)}
-</div>
 
 <div class="main-container">
 
@@ -277,17 +227,11 @@ td {
 
 <tr>
   <td colspan="3" class="logo-section">
-
-    ${
-      logoBase64
-        ? `<img src="${logoBase64}" />`
-        : ""
-    }
+    ${logoBase64 ? `<img src="${logoBase64}" />` : ""}
 
     <div class="heading">
       SALES ORDER FORM
     </div>
-
   </td>
 </tr>
 
@@ -305,11 +249,8 @@ td {
   </td>
 
   <td class="small-text bold">
-
     <table style="width:100%; border-collapse:collapse;">
-
       <tr>
-
         <td style="border:none; width:60%;">
           PO No - ${salesOrder.poNumber || ""}
           <br/>
@@ -319,11 +260,8 @@ td {
         <td style="border:none; width:40%; text-align:center;">
           Dated - ${formatDate(salesOrder.orderDate)}
         </td>
-
       </tr>
-
     </table>
-
   </td>
 </tr>
 
@@ -384,9 +322,7 @@ td {
   <td class="value-col">
     ${
       salesOrder.isPaymentTermsApprovedByManagement
-        ? `Yes, By ${formatText(
-            salesOrder.paymentTermsApprovedBy
-          )}`
+        ? `Yes, By ${formatText(salesOrder.paymentTermsApprovedBy)}`
         : "No"
     }
   </td>
@@ -421,7 +357,6 @@ td {
 </tr>
 
 <tr>
-
   <td class="sno">7.</td>
 
   <td class="label-col">
@@ -429,19 +364,14 @@ td {
   </td>
 
   <td class="supply-size-box">
-
     <div class="supply-title">
       Supply Size
     </div>
 
     <div class="size-rate-text">
-      ${formatSizeGradeText(
-        salesOrder.sizeGradeQuantityRate
-      )}
+      ${formatSizeGradeText(salesOrder.sizeGradeQuantityRate)}
     </div>
-
   </td>
-
 </tr>
 
 <tr>
@@ -598,9 +528,7 @@ td {
   </td>
 
   <td class="value-col yellow red">
-    ${formatText(
-      salesOrder.testCertificateRequired
-    )}
+    ${formatText(salesOrder.testCertificateRequired)}
   </td>
 </tr>
 
@@ -615,9 +543,7 @@ td {
     ${
       salesOrder.enquiryFormFilled === "yes"
         ? `YES ${
-            salesOrder.enquiryNumber
-              ? `- ${salesOrder.enquiryNumber}`
-              : ""
+            salesOrder.enquiryNumber ? `- ${salesOrder.enquiryNumber}` : ""
           }`
         : "NO"
     }
@@ -626,16 +552,13 @@ td {
 
 <tr>
   <td colspan="3">
-
     Contact Person -
     ${salesOrder.contactPersonName || ""}
     (${salesOrder.contactPersonNumber || ""})
-
   </td>
 </tr>
 
 <tr class="footer-signature">
-
   <td colspan="2" class="center bold">
     Prepared By
     <br/>
@@ -647,7 +570,6 @@ td {
     <br/>
     ${salesOrder.checkedByAdminName || ""}
   </td>
-
 </tr>
 
 </table>

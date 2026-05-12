@@ -544,6 +544,12 @@ const salesOrderSchema = new mongoose.Schema(
   fileUrl: String,
   uploadedAt: Date,
 },
+managerEmailApproval: {
+  token: String,
+  tokenCreatedAt: Date,
+  approvedByEmailLinkAt: Date,
+  rejectedByEmailLinkAt: Date,
+},
 
 preShipmentInspectionPdf: {
   generated: {
