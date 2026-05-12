@@ -132,22 +132,53 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
 
   const html = salesOrderTemplate(salesOrder);
 
-  const file = {
-    content: html,
-  };
+  let browser;
+  let page;
 
-  const options = {
-    format: "A4",
-    printBackground: true,
-    margin: {
-      top: "8mm",
-      right: "8mm",
-      bottom: "8mm",
-      left: "8mm",
-    },
-  };
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--disable-extensions",
+      ],
+    });
 
-  return await html_to_pdf.generatePdf(file, options);
+    page = await browser.newPage();
+
+    await page.setContent(html, {
+      waitUntil: "domcontentloaded",
+      timeout: 300000,
+    });
+
+    await page.emulateMediaType("screen");
+
+    // IMPORTANT: wait until embedded base64 fonts are loaded
+    await page.evaluateHandle("document.fonts.ready");
+
+    // small extra wait for Chromium PDF renderer
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+      margin: {
+        top: "8mm",
+        right: "8mm",
+        bottom: "8mm",
+        left: "8mm",
+      },
+    });
+
+    return pdfBuffer;
+  } finally {
+    if (page) await page.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
+  }
 };
 const addSalesOrderHtmlPages = async (mergedPdf, salesOrder) => {
   const salesOrderPdfBuffer = await generateSalesOrderPdfBuffer(salesOrder);
