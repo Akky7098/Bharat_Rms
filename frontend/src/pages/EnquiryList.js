@@ -297,6 +297,9 @@ const EnquiryList = () => {
               <span className="remark-dot not-feasible"></span> Not Feasible
             </div>
             <div>
+              <span className="remark-dot won"></span> Won
+            </div>
+            <div>
               <span className="remark-dot lost"></span> Lost
             </div>
           </div>

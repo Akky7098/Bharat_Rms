@@ -7,11 +7,11 @@ import {
 import "./SalesOrderForm.css";
 
 const paymentTermOptions = [
-  "10_percent_advance",
-  "20_percent_advance",
-  "30_percent_advance",
-  "40_percent_advance",
-  "50_percent_advance",
+  "10_percent_advance_balance_on_readiness_of_material",
+  "20_percent_advance_balance_on_readiness_of_material",
+  "30_percent_advance_balance_on_readiness_of_material",
+  "40_percent_advance_balance_on_readiness_of_material",
+  "50_percent_advance_balance_on_readiness_of_material",
 
   "30_days_pdc_against_invoice",
   "45_days_pdc_against_invoice",
@@ -19,19 +19,18 @@ const paymentTermOptions = [
   "75_days_pdc_against_invoice",
   "90_days_pdc_against_invoice",
 
-  "30_days_from_invoice",
-  "45_days_from_invoice",
-  "60_days_from_invoice",
-  "75_days_from_invoice",
-  "90_days_from_invoice",
+  "30_days_from_date_of_invoice",
+  "45_days_from_date_of_invoice",
+  "60_days_from_date_of_invoice",
+  "75_days_from_date_of_invoice",
+  "90_days_from_date_of_invoice",
 
-  "30_days_pdc_from_po_date",
-  "45_days_pdc_from_po_date",
-  "60_days_pdc_from_po_date",
-  "75_days_pdc_from_po_date",
-  "90_days_pdc_from_po_date",
+  "30_days_from_date_of_po_received",
+  "45_days_from_date_of_po_received",
+  "60_days_from_date_of_po_received",
+  "75_days_from_date_of_po_received",
+  "90_days_from_date_of_po_received",
 ];
-
 const approverOptions = ["nilesh_sir", "jatin_sir", "mayank_sir"];
 
 const formatLabel = (value = "") =>
@@ -702,7 +701,8 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
               <select name="freight" value={form.freight} onChange={handleChange}>
                 <option value="">Select</option>
                 <option value="extra">Extra</option>
-                <option value="self">Self</option>
+                <option value="self">Self-Pickup</option>
+                <option value = "inclusive">Inclusive</option>
               </select>
               {errorText("freight")}
             </div>

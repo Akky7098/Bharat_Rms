@@ -1207,7 +1207,10 @@
   background: #fecaca;
   border: 1px solid #ef4444;
 }
-
+.remark-dot.won {
+  background: #028532;
+  border: 1px solid #149142;
+}
 .remark-dot.lost {
   background: #dc2626;
 }
