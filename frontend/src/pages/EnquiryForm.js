@@ -2,9 +2,35 @@ import React, { useEffect, useState } from "react";
 import { createEnquiry, getProductConfig } from "../services/enquiryForm";
 import "./EnquiryForm.css";
 
+const shapeOptions = [
+  { value: "round", label: "Round" },
+  { value: "flat", label: "Flat" },
+  { value: "square", label: "Square" },
+];
+
+const supplyConditionOptions = [
+  { value: "as_per_standard", label: "As Per Standard" },
+  { value: "as_rolled_annealed", label: "As Rolled + Annealed" },
+  { value: "as_forged_annealed", label: "As Forged + Annealed" },
+  { value: "as_rolled", label: "As Rolled" },
+  { value: "as_forged", label: "As Forged" },
+];
+
+const modeOfEnquiryOptions = [
+  { value: "phone", label: "Phone" },
+  { value: "email", label: "Email" },
+  { value: "whatsapp", label: "Whatsapp" },
+  { value: "website", label: "Website" },
+  { value: "walk-in", label: "Walk-In" },
+  { value: "google-ads", label: "Google Ads" },
+  { value: "reference", label: "Reference" },
+];
+
+const RequiredStar = () => <span className="required-star">*</span>;
+const today = new Date().toISOString().split("T")[0];
 const EnquiryForm = ({ onClose, refresh }) => {
   const [form, setForm] = useState({
-    enquiryDate: "",
+    enquiryDate: today,
     companyName: "",
     customerName: "",
     customerContactNo: "",
@@ -19,6 +45,7 @@ const EnquiryForm = ({ onClose, refresh }) => {
     modeOfEnquiry: "",
   });
 
+  const [sizePdf, setSizePdf] = useState(null);
   const [productConfig, setProductConfig] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -64,12 +91,47 @@ const EnquiryForm = ({ onClose, refresh }) => {
     });
   };
 
+  const handlePdfChange = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) {
+      setSizePdf(null);
+      return;
+    }
+
+    if (file.type !== "application/pdf") {
+      alert("Only PDF file is allowed");
+      e.target.value = "";
+      setSizePdf(null);
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("PDF size should not be more than 5MB");
+      e.target.value = "";
+      setSizePdf(null);
+      return;
+    }
+
+    setSizePdf(file);
+  };
+
   const validateForm = () => {
     const phoneRegex = /^[0-9]{10}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!form.grade.trim()) {
-      alert("Please enter/select grade");
+    if (!form.enquiryDate) {
+      alert("Please select enquiry date");
+      return false;
+    }
+
+    if (!form.companyName.trim()) {
+      alert("Please enter company name");
+      return false;
+    }
+
+    if (!form.customerName.trim()) {
+      alert("Please enter customer name");
       return false;
     }
 
@@ -78,13 +140,53 @@ const EnquiryForm = ({ onClose, refresh }) => {
       return false;
     }
 
-    if (form.customerEmailId && !emailRegex.test(form.customerEmailId)) {
+    if (!form.customerEmailId.trim()) {
+      alert("Please enter email id");
+      return false;
+    }
+
+    if (!emailRegex.test(form.customerEmailId)) {
       alert("Please enter a valid email id");
+      return false;
+    }
+
+    if (!form.customerAddress.trim()) {
+      alert("Please enter city / state");
+      return false;
+    }
+
+    if (!form.productCategory) {
+      alert("Please select product");
+      return false;
+    }
+
+    if (!form.grade.trim()) {
+      alert("Please enter/select grade");
+      return false;
+    }
+
+    if (!form.shape) {
+      alert("Please select shape");
+      return false;
+    }
+
+    if (!form.size.trim()) {
+      alert("Please enter size");
       return false;
     }
 
     if (Number(form.quantityInKg) <= 0) {
       alert("Quantity must be greater than 0");
+      return false;
+    }
+
+    if (!form.supplyCondition) {
+      alert("Please select supply condition");
+      return false;
+    }
+
+    if (!form.modeOfEnquiry) {
+      alert("Please select mode of enquiry");
       return false;
     }
 
@@ -100,10 +202,19 @@ const EnquiryForm = ({ onClose, refresh }) => {
     setIsSubmitting(true);
 
     try {
-      await createEnquiry({
+      const payload = {
         ...form,
         quantityInKg: Number(form.quantityInKg),
-      });
+      };
+
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(payload));
+
+      if (sizePdf) {
+        formData.append("sizePdf", sizePdf);
+      }
+
+      await createEnquiry(formData);
 
       alert("Enquiry created successfully");
       refresh();
@@ -131,25 +242,28 @@ const EnquiryForm = ({ onClose, refresh }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="mobile-form-note">
-            Fill customer details first, then product requirement.
+            Fields marked with <span className="required-star">*</span> are mandatory.
           </div>
 
           <h3 className="form-section-title">Customer Details</h3>
 
           <div className="enquiry-form-grid">
-            <div className="form-group">
-              <label>Enquiry Date</label>
-              <input
-                type="date"
-                name="enquiryDate"
-                value={form.enquiryDate}
-                onChange={handleChange}
-                required
-              />
-            </div>
+           <div className="form-group">
+  <label>
+    Enquiry Date <RequiredStar />
+  </label>
+
+  <div className="readonly-date-box">
+    {new Date(form.enquiryDate).toLocaleDateString("en-GB").replaceAll("/", "-")}
+  </div>
+
+  <small className="auto-date-note">Auto set on submission</small>
+</div>
 
             <div className="form-group">
-              <label>Company Name</label>
+              <label>
+                Company Name <RequiredStar />
+              </label>
               <input
                 name="companyName"
                 value={form.companyName}
@@ -161,7 +275,9 @@ const EnquiryForm = ({ onClose, refresh }) => {
             </div>
 
             <div className="form-group">
-              <label>Customer Name</label>
+              <label>
+                Customer Name <RequiredStar />
+              </label>
               <input
                 name="customerName"
                 value={form.customerName}
@@ -172,7 +288,9 @@ const EnquiryForm = ({ onClose, refresh }) => {
             </div>
 
             <div className="form-group">
-              <label>Contact No</label>
+              <label>
+                Contact No <RequiredStar />
+              </label>
               <input
                 type="tel"
                 inputMode="numeric"
@@ -186,23 +304,29 @@ const EnquiryForm = ({ onClose, refresh }) => {
             </div>
 
             <div className="form-group">
-              <label>Email ID</label>
+              <label>
+                Email ID <RequiredStar />
+              </label>
               <input
                 type="email"
                 name="customerEmailId"
                 value={form.customerEmailId}
                 onChange={handleChange}
                 placeholder="Enter email id"
+                required
               />
             </div>
 
             <div className="form-group">
-              <label>City / State</label>
+              <label>
+                City / State <RequiredStar />
+              </label>
               <input
                 name="customerAddress"
                 value={form.customerAddress}
                 onChange={handleChange}
                 placeholder="City, State"
+                required
               />
             </div>
           </div>
@@ -211,7 +335,9 @@ const EnquiryForm = ({ onClose, refresh }) => {
 
           <div className="enquiry-form-grid">
             <div className="form-group">
-              <label>Product</label>
+              <label>
+                Product <RequiredStar />
+              </label>
               <select
                 name="productCategory"
                 value={form.productCategory}
@@ -228,7 +354,9 @@ const EnquiryForm = ({ onClose, refresh }) => {
             </div>
 
             <div className={`form-group ${isOtherProduct ? "grade-text-box" : ""}`}>
-              <label>Grade</label>
+              <label>
+                Grade <RequiredStar />
+              </label>
 
               {isOtherProduct ? (
                 <textarea
@@ -246,7 +374,7 @@ const EnquiryForm = ({ onClose, refresh }) => {
                   disabled={!form.productCategory}
                   required
                 >
-                  <option value="">Select Grade</option>
+                  <option value="">Select grade</option>
                   {(productConfig[form.productCategory] || []).map((grade) => (
                     <option key={grade} value={grade}>
                       {grade}
@@ -257,29 +385,41 @@ const EnquiryForm = ({ onClose, refresh }) => {
             </div>
 
             <div className="form-group">
-              <label>Shape</label>
-              <input
+              <label>
+                Shape <RequiredStar />
+              </label>
+              <select
                 name="shape"
                 value={form.shape}
                 onChange={handleChange}
-                placeholder="Round / Flat / Plate"
                 required
-              />
+              >
+                <option value="">Select shape</option>
+                {shapeOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">
-              <label>Size</label>
+              <label>
+                Size <RequiredStar />
+              </label>
               <input
                 name="size"
                 value={form.size}
                 onChange={handleChange}
-                placeholder="Example: 50mm"
+                placeholder="Example: 50 Dia x 5000 Long"
                 required
               />
             </div>
 
             <div className="form-group">
-              <label>Quantity Kg</label>
+              <label>
+                Quantity Kg <RequiredStar />
+              </label>
               <input
                 type="number"
                 inputMode="decimal"
@@ -293,17 +433,28 @@ const EnquiryForm = ({ onClose, refresh }) => {
             </div>
 
             <div className="form-group">
-              <label>Supply Condition</label>
-              <input
+              <label>
+                Supply Condition <RequiredStar />
+              </label>
+              <select
                 name="supplyCondition"
                 value={form.supplyCondition}
                 onChange={handleChange}
-                placeholder="Annealed / Hardened"
-              />
+                required
+              >
+                <option value="">Select supply condition</option>
+                {supplyConditionOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="form-group full-width">
-              <label>Mode Of Enquiry</label>
+            <div className="form-group">
+              <label>
+                Mode Of Enquiry <RequiredStar />
+              </label>
               <select
                 name="modeOfEnquiry"
                 value={form.modeOfEnquiry}
@@ -311,13 +462,44 @@ const EnquiryForm = ({ onClose, refresh }) => {
                 required
               >
                 <option value="">Select mode</option>
-                <option value="phone">Phone</option>
-                <option value="email">Email</option>
-                <option value="whatsapp">Whatsapp</option>
-                <option value="website">Website</option>
-                <option value="walk-in">Walk-In</option>
-                <option value="reference">Reference</option>
+                {modeOfEnquiryOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
               </select>
+            </div>
+
+            <div className="form-group full-width">
+              <label>Size PDF Upload</label>
+
+              <div className="size-pdf-upload-box">
+                <input
+                  type="file"
+                  id="sizePdf"
+                  accept="application/pdf"
+                  onChange={handlePdfChange}
+                />
+
+                <label htmlFor="sizePdf" className="size-pdf-label">
+                  <span className="upload-title">
+                    {sizePdf ? sizePdf.name : "Upload size PDF if size details are long"}
+                  </span>
+                  <span className="upload-subtitle">
+                    Optional field · PDF only · Max 5MB
+                  </span>
+                </label>
+
+                {sizePdf && (
+                  <button
+                    type="button"
+                    className="remove-file-btn"
+                    onClick={() => setSizePdf(null)}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

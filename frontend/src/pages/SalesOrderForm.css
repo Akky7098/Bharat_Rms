@@ -304,3 +304,718 @@
     min-height: 95px;
   }
 }
+/* =====================================================
+   PREMIUM SALES ORDER FORM — FINAL ADD-ON
+===================================================== */
+
+.premium-sales-form {
+  width: 1120px;
+  max-width: 98vw;
+  max-height: 94vh;
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.premium-sales-form form {
+  max-height: calc(94vh - 82px);
+  overflow-y: auto;
+  padding: 20px 24px 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.premium-sales-form form::-webkit-scrollbar {
+  width: 9px;
+}
+
+.premium-sales-form form::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+
+.premium-sales-form form::-webkit-scrollbar-thumb {
+  background: #64748b;
+  border-radius: 10px;
+}
+
+.form-section-title {
+  grid-column: 1 / -1;
+  margin: 20px 0 14px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0f172a, #166534);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+.form-section-title:first-of-type {
+  margin-top: 0;
+}
+
+.required-star {
+  color: #dc2626;
+  font-weight: 900;
+}
+
+.sales-form-group.has-error input,
+.sales-form-group.has-error select,
+.sales-form-group.has-error textarea {
+  border-color: #dc2626 !important;
+  background: #fff7f7 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+
+.sales-form-group input[type="file"] {
+  padding: 8px;
+  height: auto;
+  min-height: 42px;
+  cursor: pointer;
+  background: #f8fafc;
+}
+
+.sales-form-group input[type="file"]::file-selector-button {
+  border: none;
+  margin-right: 10px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.file-selected {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #166534;
+}
+
+.pdf-generation-box,
+.pdf-ready-box {
+  margin-top: 16px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pdf-generation-box {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #facc15;
+}
+
+.pdf-ready-box {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.pdf-ready-box a {
+  color: #14532d;
+  font-weight: 900;
+}
+
+.sales-form-actions {
+  position: sticky;
+  bottom: -22px;
+  background: #ffffff;
+  z-index: 20;
+  padding: 16px 0 0;
+}
+
+.sales-submit-btn {
+  min-width: 190px;
+}
+
+.sales-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Bigger textarea for material details */
+textarea[name="sizeGradeQuantityRate"] {
+  min-height: 145px;
+  line-height: 1.45;
+  font-family: "Consolas", "Courier New", monospace;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .sales-form-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .premium-sales-form {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .premium-sales-form form {
+    max-height: calc(100vh - 78px);
+    padding: 14px;
+  }
+
+  .sales-form-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    border-radius: 0;
+  }
+
+  .sales-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sales-full-width {
+    grid-column: span 1 !important;
+  }
+
+  .form-section-title {
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+
+  .sales-form-group input,
+  .sales-form-group select {
+    height: 43px;
+  }
+
+  .sales-form-group textarea {
+    min-height: 90px;
+  }
+
+  textarea[name="sizeGradeQuantityRate"] {
+    min-height: 160px;
+  }
+
+  .sales-form-actions {
+    flex-direction: column;
+    bottom: -14px;
+    padding: 12px 0 0;
+  }
+
+  .sales-cancel-btn,
+  .sales-submit-btn {
+    width: 100%;
+    height: 44px;
+  }
+}
+/* =====================================================
+   PREMIUM CRM SALES ORDER FORM — VISUAL FINAL OVERRIDE
+===================================================== */
+
+.sales-form-overlay {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.28), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.22), transparent 35%),
+    rgba(2, 6, 23, 0.72) !important;
+  backdrop-filter: blur(10px) saturate(130%) !important;
+}
+
+.premium-sales-form {
+  width: 1180px !important;
+  max-width: 96vw !important;
+  max-height: 94vh !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(148, 163, 184, 0.45) !important;
+  box-shadow:
+    0 30px 90px rgba(2, 6, 23, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+  background: #ffffff !important;
+}
+
+.sales-premium-header,
+.sales-form-header {
+  background:
+    linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #4f46e5 100%) !important;
+  padding: 22px 28px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+
+.sales-form-header h2 {
+  font-size: 26px !important;
+  letter-spacing: -0.5px !important;
+  color: #ffffff !important;
+}
+
+.sales-form-header p {
+  font-size: 14px !important;
+  color: #dbeafe !important;
+  margin-top: 6px !important;
+}
+
+.sales-close-btn {
+  width: 42px !important;
+  height: 42px !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  font-size: 28px !important;
+  transition: 0.2s ease !important;
+}
+
+.sales-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  transform: rotate(90deg) scale(1.04);
+}
+
+.premium-sales-form form {
+  background:
+    linear-gradient(180deg, #f8fafc 0%, #ffffff 35%, #f8fafc 100%) !important;
+  padding: 24px 28px 24px !important;
+}
+
+/* Section heading: premium card bar */
+.premium-section-title,
+.form-section-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 18px !important;
+  padding: 15px 18px !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(135deg, #111827 0%, #1e3a8a 52%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.45px !important;
+  box-shadow:
+    0 14px 28px rgba(30, 58, 138, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  overflow: hidden;
+}
+
+.premium-section-title::after,
+.form-section-title::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.14),
+    transparent
+  );
+  transform: translateX(-100%);
+}
+
+.premium-section-title:hover::after,
+.form-section-title:hover::after {
+  animation: salesShine 1.1s ease;
+}
+
+@keyframes salesShine {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.premium-section-title span,
+.form-section-title span {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #facc15;
+  color: #111827;
+  font-weight: 1000;
+  box-shadow: 0 8px 18px rgba(250, 204, 21, 0.28);
+}
+
+/* Form grid spacing */
+.sales-form-grid {
+  gap: 18px 20px !important;
+}
+
+/* Labels */
+.sales-form-group label {
+  font-size: 12.5px !important;
+  font-weight: 850 !important;
+  color: #1e293b !important;
+  margin-bottom: 7px !important;
+}
+
+.required-star {
+  color: #ef4444 !important;
+  font-weight: 1000 !important;
+}
+
+/* Inputs premium */
+.sales-form-group input,
+.sales-form-group select,
+.sales-form-group textarea {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.03),
+    0 8px 18px rgba(15, 23, 42, 0.04) !important;
+}
+
+.sales-form-group input,
+.sales-form-group select {
+  height: 48px !important;
+  padding: 0 15px !important;
+}
+
+.sales-form-group textarea {
+  min-height: 82px !important;
+  padding: 13px 15px !important;
+  line-height: 1.45 !important;
+  resize: vertical !important;
+}
+
+.sales-form-group input::placeholder,
+.sales-form-group textarea::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
+.sales-form-group input:focus,
+.sales-form-group select:focus,
+.sales-form-group textarea:focus {
+  border-color: #2563eb !important;
+  background: #ffffff !important;
+  box-shadow:
+    0 0 0 4px rgba(37, 99, 235, 0.15),
+    0 14px 28px rgba(37, 99, 235, 0.08) !important;
+}
+
+.sales-form-group input:disabled,
+.sales-form-group select:disabled {
+  background: linear-gradient(180deg, #f1f5f9, #e2e8f0) !important;
+  color: #475569 !important;
+  cursor: not-allowed !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Hints */
+.auto-hint {
+  margin-top: 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+/* File upload premium */
+.sales-form-group input[type="file"] {
+  min-height: 54px !important;
+  padding: 9px !important;
+  background:
+    linear-gradient(180deg, #ffffff, #f8fafc) !important;
+  border: 1.5px dashed #60a5fa !important;
+}
+
+.sales-form-group input[type="file"]::file-selector-button {
+  border: none !important;
+  margin-right: 12px !important;
+  padding: 11px 16px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #0f172a, #2563eb) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.2);
+}
+
+.file-selected {
+  display: inline-flex;
+  margin-top: 8px !important;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #166534 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+/* Material box */
+textarea[name="sizeGradeQuantityRate"] {
+  min-height: 170px !important;
+  font-family: "Cascadia Mono", "Consolas", "Courier New", monospace !important;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-color: #93c5fd !important;
+}
+
+/* Error premium */
+.sales-form-group.has-error input,
+.sales-form-group.has-error select,
+.sales-form-group.has-error textarea {
+  border-color: #ef4444 !important;
+  background: #fff7f7 !important;
+  box-shadow:
+    0 0 0 4px rgba(239, 68, 68, 0.12),
+    0 10px 20px rgba(239, 68, 68, 0.08) !important;
+}
+
+.sales-field-error {
+  margin-top: 6px !important;
+  color: #dc2626 !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+
+/* PDF boxes */
+.pdf-generation-box,
+.pdf-ready-box {
+  margin-top: 18px !important;
+  padding: 15px 18px !important;
+  border-radius: 16px !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+}
+
+.pdf-generation-box {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7) !important;
+  color: #92400e !important;
+  border: 1px solid #facc15 !important;
+}
+
+.pdf-ready-box {
+  background: linear-gradient(135deg, #ecfdf5, #dcfce7) !important;
+  color: #166534 !important;
+  border: 1px solid #86efac !important;
+}
+
+.pdf-ready-box a {
+  color: #1d4ed8 !important;
+  font-weight: 1000 !important;
+}
+
+/* Bottom action premium */
+.sales-form-actions {
+  position: sticky !important;
+  bottom: -24px !important;
+  z-index: 30 !important;
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.86), #ffffff 45%) !important;
+  backdrop-filter: blur(8px);
+  padding: 18px 0 0 !important;
+  margin-top: 24px !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+.sales-cancel-btn,
+.sales-submit-btn {
+  height: 46px !important;
+  border-radius: 14px !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+  transition: 0.2s ease !important;
+}
+
+.sales-cancel-btn {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.sales-cancel-btn:hover {
+  background: #cbd5e1 !important;
+}
+
+.sales-submit-btn {
+  min-width: 230px !important;
+  background: linear-gradient(135deg, #2563eb, #4f46e5) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.28) !important;
+}
+
+.sales-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(79, 70, 229, 0.34) !important;
+}
+
+.sales-submit-btn:disabled {
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Mobile polish */
+@media (max-width: 768px) {
+  .premium-sales-form {
+    border-radius: 0 !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+  }
+
+  .sales-premium-header,
+  .sales-form-header {
+    padding: 18px 16px !important;
+  }
+
+  .sales-form-header h2 {
+    font-size: 21px !important;
+  }
+
+  .sales-form-header p {
+    font-size: 12.5px !important;
+  }
+
+  .premium-sales-form form {
+    max-height: calc(100vh - 84px) !important;
+    padding: 14px !important;
+  }
+
+  .premium-section-title,
+  .form-section-title {
+    font-size: 12px !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .premium-section-title span,
+  .form-section-title span {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+  }
+
+  .sales-form-group input,
+  .sales-form-group select {
+    height: 46px !important;
+  }
+
+  .sales-form-group textarea {
+    min-height: 95px !important;
+  }
+
+  textarea[name="sizeGradeQuantityRate"] {
+    min-height: 190px !important;
+  }
+
+  .sales-form-actions {
+    flex-direction: column !important;
+    bottom: -14px !important;
+    padding-top: 12px !important;
+  }
+
+  .sales-cancel-btn,
+  .sales-submit-btn {
+    width: 100% !important;
+    height: 46px !important;
+  }
+}
+/* =====================================================
+   SALES FORM SOFT PREMIUM HEADER FIX
+   Compact section bars + softer colors
+===================================================== */
+
+/* Softer main modal header */
+.sales-premium-header,
+.sales-form-header {
+  background: linear-gradient(135deg, #172554 0%, #1e40af 52%, #2563eb 100%) !important;
+  padding: 18px 26px !important;
+}
+
+.sales-form-header h2 {
+  font-size: 24px !important;
+}
+
+.sales-form-header p {
+  color: #dbeafe !important;
+}
+
+/* Compact section heading — text-fit style */
+.premium-section-title,
+.form-section-title {
+  width: fit-content !important;
+  max-width: 100% !important;
+  min-width: 360px !important;
+  padding: 11px 18px 11px 12px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #1e293b 0%, #1d4ed8 100%) !important;
+  font-size: 13px !important;
+  box-shadow: 0 10px 22px rgba(30, 64, 175, 0.18) !important;
+}
+
+/* Number pill smaller and premium */
+.premium-section-title span,
+.form-section-title span {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  border-radius: 11px !important;
+  background: #facc15 !important;
+  color: #111827 !important;
+  font-size: 13px !important;
+}
+
+/* Reduce gap after section heading */
+.sales-form-grid {
+  margin-top: 0 !important;
+}
+
+/* Make auto/default fields look intentional */
+.sales-form-group input:disabled {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  font-weight: 800 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Customer type auto existing field softer */
+.sales-form-group input[value="Existing"] {
+  background: linear-gradient(180deg, #eff6ff, #f8fafc) !important;
+  color: #1d4ed8 !important;
+}
+
+/* File upload area softer */
+.sales-form-group input[type="file"] {
+  border-color: #93c5fd !important;
+  background: #f8fbff !important;
+}
+
+.sales-form-group input[type="file"]::file-selector-button {
+  background: linear-gradient(135deg, #1e3a8a, #2563eb) !important;
+}
+
+/* Softer submit button */
+.sales-submit-btn {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.24) !important;
+}
+
+/* Mobile section heading full width but compact */
+@media (max-width: 768px) {
+  .premium-section-title,
+  .form-section-title {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 10px 12px !important;
+    border-radius: 14px !important;
+    font-size: 12px !important;
+  }
+
+  .premium-section-title span,
+  .form-section-title span {
+    width: 27px !important;
+    height: 27px !important;
+    min-width: 27px !important;
+    font-size: 12px !important;
+  }
+
+  .sales-premium-header,
+  .sales-form-header {
+    padding: 16px 18px !important;
+  }
+}

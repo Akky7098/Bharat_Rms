@@ -5,6 +5,9 @@ import "./EnquiryList.css";
 import EnquiryForm from "./EnquiryForm";
 import WorkflowUpdate from "./WorkflowUpdate";
 
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+
 const EnquiryList = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
@@ -34,7 +37,6 @@ const EnquiryList = () => {
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -48,7 +50,6 @@ const EnquiryList = () => {
       });
 
       const response = await getAllEnquiries(cleanFilters);
-
       setEnquiries(response.data || []);
       setPagination(response.pagination);
     } catch (error) {
@@ -177,11 +178,19 @@ const EnquiryList = () => {
 
   const isOverdue = (planDate, completed) => {
     if (!planDate) return false;
+    return !completed && new Date() > new Date(planDate);
+  };
 
-    const now = new Date();
-    const plan = new Date(planDate);
+  const getSizePdfUrl = (enquiry) => {
+    const fileUrl = enquiry?.sizePdf?.fileUrl;
 
-    return !completed && now > plan;
+    if (!fileUrl) return "";
+
+    if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
+      return fileUrl;
+    }
+
+    return `${API_BASE_URL}${fileUrl}`;
   };
 
   const getRowClass = (enquiry) => {
@@ -277,6 +286,21 @@ const EnquiryList = () => {
             />
           </div>
 
+          <div className="enquiry-color-remarks">
+            <div>
+              <span className="remark-dot delayed"></span> Delayed
+            </div>
+            <div>
+              <span className="remark-dot feasible"></span> Feasible
+            </div>
+            <div>
+              <span className="remark-dot not-feasible"></span> Not Feasible
+            </div>
+            <div>
+              <span className="remark-dot lost"></span> Lost
+            </div>
+          </div>
+
           <div className="filter-buttons">
             <button className="filter-btn" onClick={applyFilters}>
               Apply
@@ -345,72 +369,93 @@ const EnquiryList = () => {
                   </td>
                 </tr>
               ) : (
-                enquiries.map((enquiry) => (
-                  <tr key={enquiry._id} className={getRowClass(enquiry)}>
-                    <td className="sticky-col col-date">
-                      {formatDate(enquiry.enquiryDate)}
-                    </td>
+                enquiries.map((enquiry) => {
+                  const sizePdfUrl = getSizePdfUrl(enquiry);
 
-                    {isAdmin && (
-                      <td className="sticky-col col-sales">
-                        {enquiry.salesPersonId?.name || "-"}
+                  return (
+                    <tr key={enquiry._id} className={getRowClass(enquiry)}>
+                      <td className="sticky-col col-date">
+                        {formatDate(enquiry.enquiryDate)}
                       </td>
-                    )}
 
-                    <td className="sticky-col col-company">
-                      {enquiry.companyName}
-                    </td>
-
-                    <td>{enquiry.customerName}</td>
-                    <td>{enquiry.customerContactNo}</td>
-                    <td>{enquiry.customerEmailId || "-"}</td>
-                    <td>{enquiry.customerAddress || "-"}</td>
-                    <td>{enquiry.productCategory}</td>
-                    <td>{enquiry.grade}</td>
-                    <td>{enquiry.shape}</td>
-                    <td className="size-cell">{enquiry.size}</td>
-                    <td>{enquiry.quantityInKg}</td>
-                    <td>{enquiry.supplyCondition || "-"}</td>
-                    <td>{enquiry.modeOfEnquiry}</td>
-
-                    <td>{formatDateTime(enquiry.feasibility?.planDate)}</td>
-                    <td>{formatDateTime(enquiry.feasibility?.actualDate)}</td>
-                    <td>{enquiry.feasibility?.status || "-"}</td>
-                    <td>{enquiry.feasibility?.completed ? "Yes" : "No"}</td>
-
-                    <td>{formatDateTime(enquiry.quotation?.planDate)}</td>
-                    <td>{formatDateTime(enquiry.quotation?.actualDate)}</td>
-                    <td>
-                      {enquiry.quotation?.quotationLink ? (
-                        <a
-                          href={enquiry.quotation.quotationLink}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          View
-                        </a>
-                      ) : (
-                        "-"
+                      {isAdmin && (
+                        <td className="sticky-col col-sales">
+                          {enquiry.salesPersonId?.name || "-"}
+                        </td>
                       )}
-                    </td>
-                    <td>{enquiry.quotation?.completed ? "Yes" : "No"}</td>
 
-                    <td>{formatDateTime(enquiry.closure?.planDate)}</td>
-                    <td>{formatDateTime(enquiry.closure?.actualDate)}</td>
-                    <td>{enquiry.closure?.status || "-"}</td>
-                    <td>{enquiry.closure?.lostRemark || "-"}</td>
-                    <td>{enquiry.closure?.completed ? "Yes" : "No"}</td>
+                      <td className="sticky-col col-company">
+                        {enquiry.companyName}
+                      </td>
 
-                    <td>
-                      <button
-                        className="edit-btn"
-                        onClick={() => openWorkflowModal(enquiry)}
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      <td>{enquiry.customerName}</td>
+                      <td>{enquiry.customerContactNo}</td>
+                      <td>{enquiry.customerEmailId || "-"}</td>
+                      <td>{enquiry.customerAddress || "-"}</td>
+                      <td>{enquiry.productCategory}</td>
+                      <td>{enquiry.grade}</td>
+                      <td>{enquiry.shape}</td>
+
+                      <td className="size-cell">
+                        <div className="size-cell-content">
+                          <span>{enquiry.size || "-"}</span>
+
+                          {sizePdfUrl && (
+                            <a
+                              href={sizePdfUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="size-pdf-link"
+                            >
+                              Size PDF
+                            </a>
+                          )}
+                        </div>
+                      </td>
+
+                      <td>{enquiry.quantityInKg}</td>
+                      <td>{enquiry.supplyCondition || "-"}</td>
+                      <td>{enquiry.modeOfEnquiry}</td>
+
+                      <td>{formatDateTime(enquiry.feasibility?.planDate)}</td>
+                      <td>{formatDateTime(enquiry.feasibility?.actualDate)}</td>
+                      <td>{enquiry.feasibility?.status || "-"}</td>
+                      <td>{enquiry.feasibility?.completed ? "Yes" : "No"}</td>
+
+                      <td>{formatDateTime(enquiry.quotation?.planDate)}</td>
+                      <td>{formatDateTime(enquiry.quotation?.actualDate)}</td>
+                      <td>
+                        {enquiry.quotation?.quotationLink ? (
+                          <a
+                            href={enquiry.quotation.quotationLink}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            View
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td>{enquiry.quotation?.completed ? "Yes" : "No"}</td>
+
+                      <td>{formatDateTime(enquiry.closure?.planDate)}</td>
+                      <td>{formatDateTime(enquiry.closure?.actualDate)}</td>
+                      <td>{enquiry.closure?.status || "-"}</td>
+                      <td>{enquiry.closure?.lostRemark || "-"}</td>
+                      <td>{enquiry.closure?.completed ? "Yes" : "No"}</td>
+
+                      <td>
+                        <button
+                          className="edit-btn"
+                          onClick={() => openWorkflowModal(enquiry)}
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -420,75 +465,95 @@ const EnquiryList = () => {
           {enquiries.length === 0 ? (
             <div className="no-data">No enquiries found</div>
           ) : (
-            enquiries.map((enquiry) => (
-              <div
-                key={enquiry._id}
-                className={`mobile-card ${getRowClass(enquiry)}`}
-              >
-                <div className="mobile-card-top">
-                  <div>
-                    <strong>{enquiry.companyName}</strong>
-                    <span>{enquiry.customerName || "-"}</span>
+            enquiries.map((enquiry) => {
+              const sizePdfUrl = getSizePdfUrl(enquiry);
+
+              return (
+                <div
+                  key={enquiry._id}
+                  className={`mobile-card ${getRowClass(enquiry)}`}
+                >
+                  <div className="mobile-card-top">
+                    <div>
+                      <strong>{enquiry.companyName}</strong>
+                      <span>{enquiry.customerName || "-"}</span>
+                    </div>
+                    <small>{formatDate(enquiry.enquiryDate)}</small>
                   </div>
-                  <small>{formatDate(enquiry.enquiryDate)}</small>
-                </div>
 
-                <div className="mobile-card-tags">
-                  <span>{enquiry.productCategory || "-"}</span>
-                  <span>{enquiry.grade || "-"}</span>
-                  <span>{enquiry.quantityInKg || 0} Kg</span>
-                </div>
+                  <div className="mobile-card-tags">
+                    <span>{enquiry.productCategory || "-"}</span>
+                    <span>{enquiry.grade || "-"}</span>
+                    <span>{enquiry.quantityInKg || 0} Kg</span>
+                  </div>
 
-                <div className="mobile-card-body">
-                  {isAdmin && (
+                  <div className="mobile-card-body">
+                    {isAdmin && (
+                      <p>
+                        <b>Sales:</b> {enquiry.salesPersonId?.name || "-"}
+                      </p>
+                    )}
+
                     <p>
-                      <b>Sales:</b> {enquiry.salesPersonId?.name || "-"}
+                      <b>Contact:</b> {enquiry.customerContactNo || "-"}
                     </p>
-                  )}
-                  <p>
-                    <b>Contact:</b> {enquiry.customerContactNo || "-"}
-                  </p>
-                  <p>
-                    <b>Shape / Size:</b> {enquiry.shape || "-"} /{" "}
-                    {enquiry.size || "-"}
-                  </p>
-                  <p>
-                    <b>Mode:</b> {enquiry.modeOfEnquiry || "-"}
-                  </p>
-                  <p>
-                    <b>Feasibility:</b>{" "}
-                    {enquiry.feasibility?.completed ? "Done" : "Pending"}
-                  </p>
-                  <p>
-                    <b>Quotation:</b>{" "}
-                    {enquiry.quotation?.completed ? "Done" : "Pending"}
-                  </p>
-                  <p>
-                    <b>Closure:</b> {enquiry.closure?.status || "Pending"}
-                  </p>
-                </div>
 
-                <div className="mobile-card-actions">
-                  {enquiry.quotation?.quotationLink && (
-                    <a
-                      href={enquiry.quotation.quotationLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mobile-view-link"
+                    <p>
+                      <b>Shape / Size:</b> {enquiry.shape || "-"} /{" "}
+                      {enquiry.size || "-"}
+                      {sizePdfUrl && (
+                        <a
+                          href={sizePdfUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mobile-size-pdf-link"
+                        >
+                          Size PDF
+                        </a>
+                      )}
+                    </p>
+
+                    <p>
+                      <b>Mode:</b> {enquiry.modeOfEnquiry || "-"}
+                    </p>
+
+                    <p>
+                      <b>Feasibility:</b>{" "}
+                      {enquiry.feasibility?.completed ? "Done" : "Pending"}
+                    </p>
+
+                    <p>
+                      <b>Quotation:</b>{" "}
+                      {enquiry.quotation?.completed ? "Done" : "Pending"}
+                    </p>
+
+                    <p>
+                      <b>Closure:</b> {enquiry.closure?.status || "Pending"}
+                    </p>
+                  </div>
+
+                  <div className="mobile-card-actions">
+                    {enquiry.quotation?.quotationLink && (
+                      <a
+                        href={enquiry.quotation.quotationLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mobile-view-link"
+                      >
+                        View Quote
+                      </a>
+                    )}
+
+                    <button
+                      className="edit-btn"
+                      onClick={() => openWorkflowModal(enquiry)}
                     >
-                      View Quote
-                    </a>
-                  )}
-
-                  <button
-                    className="edit-btn"
-                    onClick={() => openWorkflowModal(enquiry)}
-                  >
-                    Update
-                  </button>
+                      Update
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

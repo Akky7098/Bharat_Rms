@@ -1,12 +1,13 @@
 import axios from "axios";
 
 const API_URL = "https://bharatspecialsteels.bharatspecialsteels.com/api/enquiry";
-export const createEnquiry = async (data) => {
+export const createEnquiry = async (formData) => {
   const token = localStorage.getItem("token");
 
-  const response = await axios.post(`${API_URL}/create`, data, {
+  const response = await axios.post(`${API_URL}/create`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
     },
   });
 

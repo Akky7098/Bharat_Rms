@@ -2,26 +2,18 @@ import React, { useState } from "react";
 import { updateEnquiryWorkflow } from "../services/enquiryForm";
 import "./WorkflowUpdate.css";
 
+const lostRemarkOptions = [
+  { value: "", label: "Select Lost Remark" },
+  { value: "price", label: "Price" },
+  { value: "delivery", label: "Delivery" },
+  { value: "qty", label: "Qty" },
+  { value: "quality", label: "Quality" },
+  { value: "payment_terms", label: "Payment Terms" },
+  { value: "material_not_available", label: "Material Not Available" },
+  { value: "others", label: "Others" },
+];
+
 const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
-  const formatForDateTimeInput = (date) => {
-    if (!date) return "";
-
-    const d = new Date(date);
-
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
-  const toISOStringOrUndefined = (value) => {
-    if (!value) return undefined;
-    return new Date(value).toISOString();
-  };
-
   const formatDisplayDateTime = (date) => {
     if (!date) return "-";
 
@@ -36,29 +28,42 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
     });
   };
 
+  const isFeasibilityLocked = enquiry.feasibility?.completed === true;
+  const isQuotationLocked = enquiry.quotation?.completed === true;
+  const isClosureLocked = enquiry.closure?.completed === true;
+
   const [form, setForm] = useState({
-    feasibilityActualDate: formatForDateTimeInput(
-      enquiry.feasibility?.actualDate
-    ),
     feasibilityStatus: enquiry.feasibility?.status || "pending",
     feasibilityCompleted: enquiry.feasibility?.completed || false,
 
-    quotationActualDate: formatForDateTimeInput(enquiry.quotation?.actualDate),
     quotationLink: enquiry.quotation?.quotationLink || "",
     quotationCompleted: enquiry.quotation?.completed || false,
 
-    closureActualDate: formatForDateTimeInput(enquiry.closure?.actualDate),
     closureStatus: enquiry.closure?.status || "pending",
     lostRemark: enquiry.closure?.lostRemark || "",
+    lostRemarkOtherText: enquiry.closure?.lostRemarkOtherText || "",
     closureCompleted: enquiry.closure?.completed || false,
   });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    setForm({
-      ...form,
-      [name]: type === "checkbox" ? checked : value,
+    setForm((prev) => {
+      const updated = {
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      };
+
+      if (name === "closureStatus" && value !== "lost") {
+        updated.lostRemark = "";
+        updated.lostRemarkOtherText = "";
+      }
+
+      if (name === "lostRemark" && value !== "others") {
+        updated.lostRemarkOtherText = "";
+      }
+
+      return updated;
     });
   };
 
@@ -68,39 +73,57 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
     const payload = {};
 
     if (
-      form.feasibilityActualDate ||
-      form.feasibilityStatus !== (enquiry.feasibility?.status || "pending") ||
-      form.feasibilityCompleted !== (enquiry.feasibility?.completed || false)
+      !isFeasibilityLocked &&
+      (form.feasibilityStatus !== (enquiry.feasibility?.status || "pending") ||
+        form.feasibilityCompleted !== (enquiry.feasibility?.completed || false))
     ) {
       payload.feasibility = {
-        actualDate: toISOStringOrUndefined(form.feasibilityActualDate),
         status: form.feasibilityStatus,
         completed: form.feasibilityCompleted,
       };
     }
 
     if (
-      form.quotationActualDate ||
-      form.quotationLink ||
-      form.quotationCompleted !== (enquiry.quotation?.completed || false)
+      !isQuotationLocked &&
+      (form.quotationLink !== (enquiry.quotation?.quotationLink || "") ||
+        form.quotationCompleted !== (enquiry.quotation?.completed || false))
     ) {
       payload.quotation = {
-        actualDate: toISOStringOrUndefined(form.quotationActualDate),
         quotationLink: form.quotationLink || undefined,
         completed: form.quotationCompleted,
       };
     }
 
     if (
-      form.closureActualDate ||
-      form.closureStatus !== (enquiry.closure?.status || "pending") ||
-      form.lostRemark ||
-      form.closureCompleted !== (enquiry.closure?.completed || false)
+      !isClosureLocked &&
+      (form.closureStatus !== (enquiry.closure?.status || "pending") ||
+        form.lostRemark !== (enquiry.closure?.lostRemark || "") ||
+        form.lostRemarkOtherText !==
+          (enquiry.closure?.lostRemarkOtherText || "") ||
+        form.closureCompleted !== (enquiry.closure?.completed || false))
     ) {
+      if (form.closureStatus === "lost" && !form.lostRemark) {
+        alert("Please select lost remark");
+        return;
+      }
+
+      if (
+        form.closureStatus === "lost" &&
+        form.lostRemark === "others" &&
+        !form.lostRemarkOtherText.trim()
+      ) {
+        alert("Please enter other lost remark");
+        return;
+      }
+
       payload.closure = {
-        actualDate: toISOStringOrUndefined(form.closureActualDate),
         status: form.closureStatus,
-        lostRemark: form.lostRemark || undefined,
+        lostRemark:
+          form.closureStatus === "lost" ? form.lostRemark : undefined,
+        lostRemarkOtherText:
+          form.closureStatus === "lost" && form.lostRemark === "others"
+            ? form.lostRemarkOtherText.trim()
+            : undefined,
         completed: form.closureCompleted,
       };
     }
@@ -138,8 +161,18 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="workflow-grid">
-            <div className="workflow-section">
+            <div
+              className={`workflow-section ${
+                isFeasibilityLocked ? "workflow-locked" : ""
+              }`}
+            >
               <h3>Feasibility</h3>
+
+              {isFeasibilityLocked && (
+                <div className="locked-note">
+                  Completed on {formatDisplayDateTime(enquiry.feasibility?.actualDate)}
+                </div>
+              )}
 
               <label>Plan Date</label>
               <input
@@ -147,19 +180,12 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                 disabled
               />
 
-              <label>Actual Date</label>
-              <input
-                type="datetime-local"
-                name="feasibilityActualDate"
-                value={form.feasibilityActualDate}
-                onChange={handleChange}
-              />
-
               <label>Status</label>
               <select
                 name="feasibilityStatus"
                 value={form.feasibilityStatus}
                 onChange={handleChange}
+                disabled={isFeasibilityLocked}
               >
                 <option value="pending">Pending</option>
                 <option value="feasible">Feasible</option>
@@ -172,26 +198,29 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                   name="feasibilityCompleted"
                   checked={form.feasibilityCompleted}
                   onChange={handleChange}
+                  disabled={isFeasibilityLocked}
                 />
                 Completed
               </label>
             </div>
 
-            <div className="workflow-section">
+            <div
+              className={`workflow-section ${
+                isQuotationLocked ? "workflow-locked" : ""
+              }`}
+            >
               <h3>Quotation</h3>
+
+              {isQuotationLocked && (
+                <div className="locked-note">
+                  Completed on {formatDisplayDateTime(enquiry.quotation?.actualDate)}
+                </div>
+              )}
 
               <label>Plan Date</label>
               <input
                 value={formatDisplayDateTime(enquiry.quotation?.planDate)}
                 disabled
-              />
-
-              <label>Actual Date</label>
-              <input
-                type="datetime-local"
-                name="quotationActualDate"
-                value={form.quotationActualDate}
-                onChange={handleChange}
               />
 
               <label>Quotation Link</label>
@@ -200,6 +229,7 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                 value={form.quotationLink}
                 onChange={handleChange}
                 placeholder="Paste quotation link"
+                disabled={isQuotationLocked}
               />
 
               <label className="check-row">
@@ -208,13 +238,24 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                   name="quotationCompleted"
                   checked={form.quotationCompleted}
                   onChange={handleChange}
+                  disabled={isQuotationLocked}
                 />
                 Completed
               </label>
             </div>
 
-            <div className="workflow-section">
+            <div
+              className={`workflow-section ${
+                isClosureLocked ? "workflow-locked" : ""
+              }`}
+            >
               <h3>Closure</h3>
+
+              {isClosureLocked && (
+                <div className="locked-note">
+                  Completed on {formatDisplayDateTime(enquiry.closure?.actualDate)}
+                </div>
+              )}
 
               <label>Plan Date</label>
               <input
@@ -222,19 +263,12 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                 disabled
               />
 
-              <label>Actual Date</label>
-              <input
-                type="datetime-local"
-                name="closureActualDate"
-                value={form.closureActualDate}
-                onChange={handleChange}
-              />
-
               <label>Status</label>
               <select
                 name="closureStatus"
                 value={form.closureStatus}
                 onChange={handleChange}
+                disabled={isClosureLocked}
               >
                 <option value="pending">Pending</option>
                 <option value="won">Won</option>
@@ -244,12 +278,31 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
               {form.closureStatus === "lost" && (
                 <>
                   <label>Lost Remark</label>
-                  <textarea
+                  <select
                     name="lostRemark"
                     value={form.lostRemark}
                     onChange={handleChange}
-                    placeholder="Reason for lost enquiry"
-                  />
+                    disabled={isClosureLocked}
+                  >
+                    {lostRemarkOptions.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  {form.lostRemark === "others" && (
+                    <>
+                      <label>Other Lost Remark</label>
+                      <textarea
+                        name="lostRemarkOtherText"
+                        value={form.lostRemarkOtherText}
+                        onChange={handleChange}
+                        placeholder="Enter other reason"
+                        disabled={isClosureLocked}
+                      />
+                    </>
+                  )}
                 </>
               )}
 
@@ -259,6 +312,7 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                   name="closureCompleted"
                   checked={form.closureCompleted}
                   onChange={handleChange}
+                  disabled={isClosureLocked}
                 />
                 Completed
               </label>

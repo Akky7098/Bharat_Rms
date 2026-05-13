@@ -265,3 +265,164 @@
   }
 
 }
+
+/* ================= WORKFLOW UPDATE FINAL FIX ================= */
+
+.workflow-section input:disabled {
+  background: #eef2f7;
+  color: #334155;
+  font-weight: 800;
+  cursor: not-allowed;
+}
+
+.workflow-section textarea {
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.workflow-section select {
+  cursor: pointer;
+}
+
+.check-row {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+}
+
+.check-row input {
+  accent-color: #2563eb;
+}
+
+/* ================= MOBILE WORKFLOW FIX ================= */
+
+@media (max-width: 768px) {
+  .workflow-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .workflow-card {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .workflow-header {
+    border-radius: 0;
+    padding: 18px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex-shrink: 0;
+  }
+
+  .workflow-header h2 {
+    font-size: 20px;
+  }
+
+  .workflow-header p {
+    font-size: 12px;
+  }
+
+  .workflow-card form {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .workflow-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .workflow-section {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .workflow-section h3 {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+
+  .workflow-section input,
+  .workflow-section select {
+    height: 46px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  .workflow-section textarea {
+    height: 90px;
+    min-height: 90px;
+    font-size: 14px;
+    border-radius: 12px;
+    resize: vertical;
+  }
+
+  .workflow-section label {
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .workflow-actions {
+    position: sticky;
+    bottom: 0;
+    background: #ffffff;
+    padding-top: 12px;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 15;
+  }
+
+  .cancel-workflow,
+  .save-workflow {
+    width: 100%;
+    height: 46px;
+    font-size: 15px;
+  }
+}
+.workflow-locked {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  opacity: 0.9;
+}
+
+.locked-note {
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid #86efac;
+}
+
+.workflow-locked input,
+.workflow-locked select,
+.workflow-locked textarea {
+  cursor: not-allowed !important;
+  background: #e5e7eb !important;
+  color: #475569 !important;
+  font-weight: 800;
+}
+
+.workflow-locked .check-row {
+  background: #e5e7eb !important;
+  color: #475569 !important;
+}
+
+.workflow-section textarea:disabled {
+  cursor: not-allowed !important;
+  background: #e5e7eb !important;
+  color: #475569 !important;
+}

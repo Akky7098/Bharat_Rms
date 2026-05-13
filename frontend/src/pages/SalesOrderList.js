@@ -1,18 +1,32 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getAllSalesOrders,
   getSalesPersons,
+  approveSalesOrderByAdmin,
+  rejectSalesOrderByAdmin,
+  approveSalesOrderByManager,
+  rejectSalesOrderByManager,
 } from "../services/salesOrderService";
 import "./SalesOrderList.css";
 import SalesOrderForm from "./SalesOrderForm";
 
+const BACKEND_URL =
+  process.env.REACT_APP_BACKEND_URL ||
+  "https://bharatspecialsteels.bharatspecialsteels.com";
+
 const SalesOrderList = () => {
   const user = JSON.parse(localStorage.getItem("user"));
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+
+  const isAdmin = user?.role === "admin";
+  const isManager = user?.role === "super_admin";
+  const isSalesPerson = user?.role === "user";
+  const canViewSalesPersonFilter = isAdmin || isManager;
 
   const [salesOrders, setSalesOrders] = useState([]);
   const [salesPersons, setSalesPersons] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editOrder, setEditOrder] = useState(null);
+  const [activeTab, setActiveTab] = useState("approved");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const [pagination, setPagination] = useState({
@@ -31,10 +45,7 @@ const SalesOrderList = () => {
   });
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -50,7 +61,7 @@ const SalesOrderList = () => {
       const response = await getAllSalesOrders(cleanFilters);
 
       setSalesOrders(response.data || []);
-      setPagination(response.pagination);
+      setPagination(response.pagination || pagination);
     } catch (error) {
       console.log(error);
       alert(error.response?.data?.message || "Failed to load sales orders");
@@ -71,10 +82,21 @@ const SalesOrderList = () => {
   }, [fetchSalesOrders]);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (canViewSalesPersonFilter) {
       fetchSalesPersons();
     }
-  }, [isAdmin, fetchSalesPersons]);
+  }, [canViewSalesPersonFilter, fetchSalesPersons]);
+
+  const visibleOrders = useMemo(() => {
+    if (activeTab === "approved") {
+      return salesOrders.filter((order) => order.approvalStatus === "approved");
+    }
+
+    return salesOrders.filter(
+      (order) =>
+        order.approvalStatus !== "approved"
+    );
+  }, [salesOrders, activeTab]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -127,24 +149,17 @@ const SalesOrderList = () => {
     const total = pagination.totalPages || 1;
     const current = pagination.currentPage || 1;
 
-    if (total <= 7) {
-      return Array.from({ length: total }, (_, i) => i + 1);
-    }
-
-    if (current <= 4) {
-      return [1, 2, 3, 4, 5, "...", total];
-    }
-
-    if (current >= total - 3) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
+    if (current >= total - 3)
       return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
-    }
 
     return [1, "...", current - 1, current, current + 1, "...", total];
   };
 
   const formatDate = (date) => {
     if (!date) return "-";
-    return new Date(date).toLocaleDateString();
+    return new Date(date).toLocaleDateString("en-IN");
   };
 
   const formatCurrency = (amount) => {
@@ -152,22 +167,149 @@ const SalesOrderList = () => {
     return Number(amount).toLocaleString("en-IN");
   };
 
+  const formatStatus = (status) => {
+    if (!status) return "-";
+    return String(status).replaceAll("_", " ").toUpperCase();
+  };
+
+  const getPdfUrl = (order) => {
+    const fileUrl =
+      order.finalSalesOrderPackage?.fileUrl ||
+      order.pdf?.fileUrl ||
+      order.preShipmentInspectionPdf?.fileUrl;
+
+    if (!fileUrl) return "";
+
+    return fileUrl.startsWith("http")
+      ? fileUrl
+      : `${BACKEND_URL.replace(/\/$/, "")}${fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`}`;
+  };
+
+  const canEditOrder = (order) => {
+    return (
+      isSalesPerson &&
+      (order.approvalStatus === "rejected_by_admin" ||
+        order.approvalStatus === "rejected_by_manager" ||
+        order.isEditableBySalesPerson === true)
+    );
+  };
+
+  const canAdminApproveReject = (order) => {
+    return (
+      isAdmin &&
+      order.approvalStatus !== "approved" &&
+      order.approvalStatus !== "pending_manager_approval"
+    );
+  };
+
+  const canManagerApproveReject = (order) => {
+    return isManager && order.approvalStatus === "pending_manager_approval";
+  };
+
+  const handleAdminApprove = async (orderId) => {
+    if (!window.confirm("Approve this sales order and send to manager?")) return;
+
+    try {
+      await approveSalesOrderByAdmin(orderId);
+      alert("Sales order approved by admin and sent to manager.");
+      fetchSalesOrders();
+    } catch (error) {
+      alert(error.response?.data?.message || "Admin approval failed");
+    }
+  };
+
+  const handleAdminReject = async (orderId) => {
+    const comment = window.prompt("Enter rejection reason");
+
+    if (!comment) return;
+
+    try {
+      await rejectSalesOrderByAdmin(orderId, {
+        rejectionComment: comment,
+      });
+      alert("Sales order rejected by admin.");
+      fetchSalesOrders();
+    } catch (error) {
+      alert(error.response?.data?.message || "Admin rejection failed");
+    }
+  };
+
+  const handleManagerApprove = async (orderId) => {
+    if (!window.confirm("Final approve this sales order?")) return;
+
+    try {
+      await approveSalesOrderByManager(orderId);
+      alert("Sales order approved by manager.");
+      fetchSalesOrders();
+    } catch (error) {
+      alert(error.response?.data?.message || "Manager approval failed");
+    }
+  };
+
+  const handleManagerReject = async (orderId) => {
+    const comment = window.prompt("Enter manager rejection reason");
+
+    if (!comment) return;
+
+    try {
+      await rejectSalesOrderByManager(orderId, {
+        rejectionComment: comment,
+      });
+      alert("Sales order rejected by manager.");
+      fetchSalesOrders();
+    } catch (error) {
+      alert(error.response?.data?.message || "Manager rejection failed");
+    }
+  };
+
+  const openEditForm = (order) => {
+    setEditOrder(order);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditOrder(null);
+  };
+
   return (
-    <div className={`sales-order-container ${isAdmin ? "admin-view" : "user-view"}`}>
+    <div
+      className={`sales-order-container ${
+        canViewSalesPersonFilter ? "admin-view" : "user-view"
+      }`}
+    >
       <div className="sales-order-header">
         <div>
           <h2>Sales Order Sheet</h2>
-          <p>Latest sales orders appear first</p>
+          <p>Approved, pending and rejected sales orders</p>
         </div>
 
-        <button className="new-sales-btn" onClick={() => setShowForm(true)}>
-          + New Sales Order
-        </button>
+        <button
+  type="button"
+  className="new-sales-btn"
+  onClick={() => {
+    setEditOrder(null);
+    setShowForm(true);
+  }}
+>
+  + New Sales Order
+</button>
+      </div>
+
+      <div className="sales-status-tabs">
+        <button
+  className={activeTab === "approved" ? "active-tab" : ""}
+  onClick={() =>
+    setActiveTab(activeTab === "approved" ? "pending_rejected" : "approved")
+  }
+>
+  {activeTab === "approved" ? "Pending / Rejected" : "Approved"}
+</button>
       </div>
 
       <div className="sales-filter-card">
         <div className="sales-filter-grid">
-          {isAdmin && (
+          {canViewSalesPersonFilter && (
             <div className="filter-field">
               <label>Sales Person</label>
               <select
@@ -220,123 +362,259 @@ const SalesOrderList = () => {
           <table className="sales-order-table">
             <thead>
               <tr>
-                <th className="sticky-col sticky-head col-date">Order Date</th>
+                <th className="sticky-col sticky-head col-date">Date</th>
 
-                {isAdmin && (
+                {canViewSalesPersonFilter && (
                   <th className="sticky-col sticky-head col-sales">
                     Sales Person
                   </th>
                 )}
 
                 <th className="sticky-col sticky-head col-company">Company</th>
-                <th>Location</th>
-                <th>Contact Person</th>
-                <th>Contact No</th>
-                <th>Email</th>
-                <th>Product</th>
-                <th>Grade</th>
-                <th>Size</th>
-                <th>Qty Kg</th>
-                <th>Value ₹</th>
-                <th>Payment Terms</th>
+                <th>PO No</th>
+                <th>Contact</th>
+                <th>Value</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>PDF</th>
+                <th>Action</th>
               </tr>
             </thead>
 
             <tbody>
-              {salesOrders.length === 0 ? (
+              {visibleOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 13 : 12} className="no-data">
+                  <td
+                    colSpan={canViewSalesPersonFilter ? 10 : 9}
+                    className="no-data"
+                  >
                     No sales orders found
                   </td>
                 </tr>
               ) : (
-                salesOrders.map((order) => (
-                  <tr key={order._id}>
-                    <td className="sticky-col col-date">
-                      {formatDate(order.orderDate)}
-                    </td>
+                visibleOrders.map((order) => {
+                  const pdfUrl = getPdfUrl(order);
 
-                    {isAdmin && (
-                      <td className="sticky-col col-sales">
-                        {order.salesPersonId?.name || "-"}
+                  return (
+                    <tr key={order._id}>
+                      <td className="sticky-col col-date">
+                        {formatDate(order.orderDate || order.createdAt)}
                       </td>
-                    )}
 
-                    <td className="sticky-col col-company">
-                      {order.companyName}
-                    </td>
+                      {canViewSalesPersonFilter && (
+                        <td className="sticky-col col-sales">
+                          {order.salesPersonName ||
+                            order.salesPersonId?.name ||
+                            "-"}
+                        </td>
+                      )}
 
-                    <td>{order.location}</td>
-                    <td>{order.contactPersonName}</td>
-                    <td>{order.contactPersonNumber}</td>
-                    <td>{order.contactPersonEmailId || "-"}</td>
-                    <td>{order.productCategory}</td>
-                    <td>{order.grade}</td>
-                    <td className="size-cell">{order.size}</td>
-                    <td>{order.quantityInKg}</td>
-                    <td>₹ {formatCurrency(order.valueInRupees)}</td>
-                    <td>{order.paymentTerms}</td>
-                  </tr>
-                ))
+                      <td className="sticky-col col-company">
+                        <b>{order.companyName || "-"}</b>
+                        <br />
+                        <small>{order.companyAddress || "-"}</small>
+                      </td>
+
+                      <td>{order.poNumber || "-"}</td>
+
+                      <td>
+                        {order.contactPersonName || "-"}
+                        <br />
+                        <small>{order.contactPersonNumber || "-"}</small>
+                      </td>
+
+                      <td>Rs. {formatCurrency(order.orderValue)}</td>
+
+                      <td>{formatStatus(order.paymentTerms)}</td>
+
+                      <td>
+                        <span className={`status-pill ${order.approvalStatus}`}>
+                          {formatStatus(order.approvalStatus)}
+                        </span>
+                      </td>
+
+                      <td>
+                        {pdfUrl ? (
+                          <a
+                            className="pdf-btn"
+                            href={pdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            PDF
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+
+                      <td>
+                        {canEditOrder(order) && (
+                          <button
+                            className="edit-btn"
+                            onClick={() => openEditForm(order)}
+                          >
+                            Edit
+                          </button>
+                        )}
+
+                        {canAdminApproveReject(order) && (
+                          <div className="action-stack">
+                            <button
+                              className="approve-btn"
+                              onClick={() => handleAdminApprove(order._id)}
+                            >
+                              Approve
+                            </button>
+
+                            <button
+                              className="reject-btn"
+                              onClick={() => handleAdminReject(order._id)}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+
+                        {canManagerApproveReject(order) && (
+                          <div className="action-stack">
+                            <button
+                              className="approve-btn"
+                              onClick={() => handleManagerApprove(order._id)}
+                            >
+                              Approve
+                            </button>
+
+                            <button
+                              className="reject-btn"
+                              onClick={() => handleManagerReject(order._id)}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+
+                        {!canEditOrder(order) &&
+                          !canAdminApproveReject(order) &&
+                          !canManagerApproveReject(order) &&
+                          "-"}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       ) : (
         <div className="sales-mobile-list">
-          {salesOrders.length === 0 ? (
+          {visibleOrders.length === 0 ? (
             <div className="no-data">No sales orders found</div>
           ) : (
-            salesOrders.map((order) => (
-              <div key={order._id} className="sales-card">
-                <div className="sales-card-top">
-                  <div>
-                    <strong>{order.companyName}</strong>
-                    <span>{order.contactPersonName || "-"}</span>
+            visibleOrders.map((order) => {
+              const pdfUrl = getPdfUrl(order);
+
+              return (
+                <div key={order._id} className="sales-card">
+                  <div className="sales-card-top">
+                    <div>
+                      <strong>{order.companyName || "-"}</strong>
+                      <span>{order.poNumber || "-"}</span>
+                    </div>
+
+                    <small>{formatDate(order.orderDate || order.createdAt)}</small>
                   </div>
 
-                  <small>{formatDate(order.orderDate)}</small>
-                </div>
+                  <div className="sales-card-tags">
+                    <span>{formatStatus(order.approvalStatus)}</span>
+                    <span>Rs. {formatCurrency(order.orderValue)}</span>
+                    <span>{order.paymentTerms || "-"}</span>
+                  </div>
 
-                <div className="sales-card-tags">
-                  <span>{order.productCategory || "-"}</span>
-                  <span>{order.grade || "-"}</span>
-                  <span>{order.quantityInKg || 0} Kg</span>
-                </div>
+                  <div className="sales-card-body">
+                    {canViewSalesPersonFilter && (
+                      <p>
+                        <b>Sales:</b>{" "}
+                        {order.salesPersonName || order.salesPersonId?.name || "-"}
+                      </p>
+                    )}
 
-                <div className="sales-card-body">
-                  {isAdmin && (
                     <p>
-                      <b>Sales:</b> {order.salesPersonId?.name || "-"}
+                      <b>Contact:</b> {order.contactPersonName || "-"} (
+                      {order.contactPersonNumber || "-"})
                     </p>
-                  )}
 
-                  <p>
-                    <b>Contact:</b> {order.contactPersonNumber || "-"}
-                  </p>
+                    <p>
+                      <b>Address:</b> {order.companyAddress || "-"}
+                    </p>
 
-                  <p>
-                    <b>Email:</b> {order.contactPersonEmailId || "-"}
-                  </p>
+                    <p>
+                      <b>Status:</b> {formatStatus(order.approvalStatus)}
+                    </p>
 
-                  <p>
-                    <b>Location:</b> {order.location || "-"}
-                  </p>
+                    <div className="mobile-actions">
+                      {pdfUrl ? (
+                        <a
+                          className="pdf-btn"
+                          href={pdfUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open PDF
+                        </a>
+                      ) : (
+                        <span>-</span>
+                      )}
 
-                  <p>
-                    <b>Size:</b> {order.size || "-"}
-                  </p>
+                      {canEditOrder(order) && (
+                        <button
+                          className="edit-btn"
+                          onClick={() => openEditForm(order)}
+                        >
+                          Edit
+                        </button>
+                      )}
 
-                  <p>
-                    <b>Value:</b> ₹ {formatCurrency(order.valueInRupees)}
-                  </p>
+                      {canAdminApproveReject(order) && (
+                        <>
+                          <button
+                            className="approve-btn"
+                            onClick={() => handleAdminApprove(order._id)}
+                          >
+                            Approve
+                          </button>
 
-                  <p>
-                    <b>Payment:</b> {order.paymentTerms || "-"}
-                  </p>
+                          <button
+                            className="reject-btn"
+                            onClick={() => handleAdminReject(order._id)}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+
+                      {canManagerApproveReject(order) && (
+                        <>
+                          <button
+                            className="approve-btn"
+                            onClick={() => handleManagerApprove(order._id)}
+                          >
+                            Approve
+                          </button>
+
+                          <button
+                            className="reject-btn"
+                            onClick={() => handleManagerReject(order._id)}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
@@ -376,8 +654,9 @@ const SalesOrderList = () => {
 
       {showForm && (
         <SalesOrderForm
-          onClose={() => setShowForm(false)}
+          onClose={closeForm}
           refresh={fetchSalesOrders}
+          editOrder={editOrder}
         />
       )}
     </div>

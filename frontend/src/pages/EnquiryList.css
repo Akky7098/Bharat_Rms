@@ -1133,3 +1133,156 @@
     border-radius: 8px;
   }
 }
+/* ===== SIZE PDF LINK IN SIZE COLUMN ===== */
+
+.size-cell-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.35;
+}
+
+.size-pdf-link {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: #dbeafe;
+  color: #1d4ed8 !important;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none !important;
+  border: 1px solid #bfdbfe;
+}
+
+.size-pdf-link:hover {
+  background: #2563eb;
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+/* ===== COLOR REMARKS IN FILTER ===== */
+
+.enquiry-color-remarks {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 120px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 900;
+  color: #334155;
+}
+
+.enquiry-color-remarks div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.remark-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.remark-dot.delayed {
+  background: #fb923c;
+}
+
+.remark-dot.feasible {
+  background: #bbf7d0;
+  border: 1px solid #22c55e;
+}
+
+.remark-dot.not-feasible {
+  background: #fecaca;
+  border: 1px solid #ef4444;
+}
+
+.remark-dot.lost {
+  background: #dc2626;
+}
+
+/* ===== ROW STRIKE RULES ===== */
+
+/* Lost should be red only, no strike */
+.enquiry-table tbody tr.row-lost td {
+  text-decoration: none !important;
+}
+
+/* Not feasible should have strike */
+.enquiry-table tbody tr.row-not-feasible td {
+  text-decoration: line-through !important;
+}
+
+/* Do not strike buttons and links */
+.enquiry-table tbody tr.row-not-feasible td a,
+.enquiry-table tbody tr.row-not-feasible td button,
+.enquiry-table tbody tr.row-not-feasible td .size-pdf-link {
+  text-decoration: none !important;
+}
+
+/* Keep PDF button readable on colored rows */
+.enquiry-table tbody tr.row-won .size-pdf-link,
+.enquiry-table tbody tr.row-lost .size-pdf-link,
+.enquiry-table tbody tr.row-overdue .size-pdf-link,
+.enquiry-table tbody tr.row-not-feasible .size-pdf-link,
+.enquiry-table tbody tr.row-feasible .size-pdf-link,
+.enquiry-table tbody tr.row-quotation .size-pdf-link {
+  background: #ffffff !important;
+  color: #1d4ed8 !important;
+  border-color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+/* Hover correction */
+@media (min-width: 769px) {
+  .enquiry-table tbody tr.row-lost:hover td {
+    text-decoration: none !important;
+  }
+
+  .enquiry-table tbody tr.row-not-feasible:hover td {
+    text-decoration: line-through !important;
+  }
+
+  .enquiry-table tbody tr.row-not-feasible:hover td a,
+  .enquiry-table tbody tr.row-not-feasible:hover td button,
+  .enquiry-table tbody tr.row-not-feasible:hover td .size-pdf-link {
+    text-decoration: none !important;
+  }
+}
+
+/* ===== MOBILE SIZE PDF LINK ===== */
+
+.mobile-size-pdf-link {
+  display: inline-flex;
+  margin-left: 6px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: #dbeafe;
+  color: #1d4ed8 !important;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none !important;
+}
+
+/* ===== MOBILE COLOR REMARKS ===== */
+
+@media (max-width: 768px) {
+  .enquiry-color-remarks {
+    width: 100%;
+    min-width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
