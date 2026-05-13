@@ -1,7 +1,6 @@
 const Enquiry = require("../model/enquiryModel");
 const productGrades = require("../constants/productGrades");
-
-const createEnquiry = async (body, user) => {
+const createEnquiry = async (body, user, file) => {
   const {
     enquiryDate,
     companyName,
@@ -33,37 +32,85 @@ const createEnquiry = async (body, user) => {
     throw new Error("Invalid grade selected for this product category");
   }
 
-  // Base date (enquiry created date)
+  const allowedShapes = ["round", "flat", "square"];
+  if (!allowedShapes.includes(shape)) {
+    throw new Error("Invalid shape selected");
+  }
+
+  const allowedSupplyConditions = [
+    "as_per_standard",
+    "as_rolled_annealed",
+    "as_forged_annealed",
+    "as_rolled",
+    "as_forged",
+  ];
+
+  if (!allowedSupplyConditions.includes(supplyCondition)) {
+    throw new Error("Invalid supply condition selected");
+  }
+
+  const allowedModes = [
+    "phone",
+    "email",
+    "whatsapp",
+    "website",
+    "walk-in",
+    "google-ads",
+    "reference",
+  ];
+
+  if (!allowedModes.includes(modeOfEnquiry)) {
+    throw new Error("Invalid mode of enquiry selected");
+  }
+
   const baseDate = new Date();
 
-  // Auto plan dates
   const feasibilityPlanDate = new Date(
     baseDate.getTime() + 1 * 60 * 60 * 1000
-  ); // +1 hour
+  );
 
   const quotationPlanDate = new Date(
     baseDate.getTime() + 24 * 60 * 60 * 1000
-  ); // +1 day
+  );
 
   const closurePlanDate = new Date(
     baseDate.getTime() + 2 * 24 * 60 * 60 * 1000
-  ); // +2 days
+  );
+
+  let sizePdf = {
+    fileName: "",
+    filePath: "",
+    fileUrl: "",
+  };
+
+  if (file) {
+    sizePdf = {
+      fileName: file.filename,
+      filePath: file.path,
+      fileUrl: `/uploads/enquiry-size-pdf/${file.filename}`,
+      uploadedAt: new Date(),
+    };
+  }
 
   const enquiry = await Enquiry.create({
     salesPersonId: user.id,
+
     enquiryDate,
     companyName,
     customerName,
     customerContactNo,
     customerEmailId,
     customerAddress,
+
     productCategory,
     grade,
     shape,
     size,
-    quantityInKg,
+    quantityInKg: Number(quantityInKg),
     supplyCondition,
     modeOfEnquiry,
+
+    sizePdf,
 
     feasibility: {
       planDate: feasibilityPlanDate,
@@ -86,6 +133,7 @@ const createEnquiry = async (body, user) => {
 
   return enquiry;
 };
+
 const updateWorkflow = async (id, body) => {
   const enquiry = await Enquiry.findById(id);
 
@@ -101,10 +149,6 @@ const updateWorkflow = async (id, body) => {
 
   // FEASIBILITY PARTIAL UPDATE
   if (feasibility) {
-    if (feasibility.completed === true && !feasibility.actualDate) {
-      throw new Error("Feasibility actual date is required when completed");
-    }
-
     if (
       feasibility.completed === true &&
       (!feasibility.status || feasibility.status === "pending")
@@ -116,12 +160,16 @@ const updateWorkflow = async (id, body) => {
       enquiry.feasibility.status = feasibility.status;
     }
 
-    if (feasibility.actualDate) {
-      enquiry.feasibility.actualDate = feasibility.actualDate;
-    }
-
     if (feasibility.completed !== undefined) {
       enquiry.feasibility.completed = feasibility.completed;
+
+      if (feasibility.completed === true && !enquiry.feasibility.actualDate) {
+        enquiry.feasibility.actualDate = new Date();
+      }
+
+      if (feasibility.completed === false) {
+        enquiry.feasibility.actualDate = undefined;
+      }
     }
   }
 
@@ -131,20 +179,20 @@ const updateWorkflow = async (id, body) => {
       throw new Error("Please complete feasibility before quotation update");
     }
 
-    if (quotation.completed === true && !quotation.actualDate) {
-      throw new Error("Quotation actual date is required when completed");
-    }
-
-    if (quotation.actualDate) {
-      enquiry.quotation.actualDate = quotation.actualDate;
-    }
-
-    if (quotation.quotationLink) {
+    if (quotation.quotationLink !== undefined) {
       enquiry.quotation.quotationLink = quotation.quotationLink;
     }
 
     if (quotation.completed !== undefined) {
       enquiry.quotation.completed = quotation.completed;
+
+      if (quotation.completed === true && !enquiry.quotation.actualDate) {
+        enquiry.quotation.actualDate = new Date();
+      }
+
+      if (quotation.completed === false) {
+        enquiry.quotation.actualDate = undefined;
+      }
     }
   }
 
@@ -154,28 +202,58 @@ const updateWorkflow = async (id, body) => {
       throw new Error("Please complete quotation before closure update");
     }
 
-    if (closure.completed === true && !closure.actualDate) {
-      throw new Error("Closure actual date is required when completed");
-    }
-
-    if (closure.status === "lost" && !closure.lostRemark) {
-      throw new Error("Lost remark is required when closure status is lost");
-    }
-
-    if (closure.actualDate) {
-      enquiry.closure.actualDate = closure.actualDate;
-    }
+    const allowedLostRemarks = [
+      "price",
+      "delivery",
+      "qty",
+      "quality",
+      "payment_terms",
+      "material_not_available",
+      "others",
+    ];
 
     if (closure.status) {
       enquiry.closure.status = closure.status;
     }
 
-    if (closure.lostRemark) {
+    if (closure.status === "lost") {
+      if (!closure.lostRemark) {
+        throw new Error("Lost remark is required when closure status is lost");
+      }
+
+      if (!allowedLostRemarks.includes(closure.lostRemark)) {
+        throw new Error("Invalid lost remark selected");
+      }
+
       enquiry.closure.lostRemark = closure.lostRemark;
+
+      if (closure.lostRemark === "others") {
+        if (!closure.lostRemarkOtherText || !closure.lostRemarkOtherText.trim()) {
+          throw new Error("Other lost remark is required");
+        }
+
+        enquiry.closure.lostRemarkOtherText =
+          closure.lostRemarkOtherText.trim();
+      } else {
+        enquiry.closure.lostRemarkOtherText = "";
+      }
+    }
+
+    if (closure.status && closure.status !== "lost") {
+      enquiry.closure.lostRemark = "";
+      enquiry.closure.lostRemarkOtherText = "";
     }
 
     if (closure.completed !== undefined) {
       enquiry.closure.completed = closure.completed;
+
+      if (closure.completed === true && !enquiry.closure.actualDate) {
+        enquiry.closure.actualDate = new Date();
+      }
+
+      if (closure.completed === false) {
+        enquiry.closure.actualDate = undefined;
+      }
     }
   }
 

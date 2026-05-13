@@ -7,32 +7,43 @@ const enquirySchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
     enquiryDate: {
       type: Date,
       required: true,
     },
+
     companyName: {
       type: String,
       required: true,
+      trim: true,
     },
+
     customerName: {
       type: String,
       required: true,
+      trim: true,
     },
+
     customerContactNo: {
       type: String,
       required: true,
+      trim: true,
     },
 
-    customerEmailId:{
-        type: String,
-        required: true,
+    customerEmailId: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
     },
 
     customerAddress: {
-        type: String,
-        required:true,
+      type: String,
+      required: true,
+      trim: true,
     },
+
     productCategory: {
       type: String,
       enum: [
@@ -42,21 +53,45 @@ const enquirySchema = new mongoose.Schema(
         "high_speed_steel",
         "alloy_steel",
         "carbon_steel",
-        "other"
+        "other",
       ],
       required: true,
     },
+
     grade: {
       type: String,
       required: true,
+      trim: true,
     },
+
     shape: {
       type: String,
+      enum: ["round", "flat", "square"],
       required: true,
     },
+
     size: {
       type: String,
       required: true,
+      trim: true,
+    },
+
+    sizePdf: {
+      fileName: {
+        type: String,
+        default: "",
+      },
+      filePath: {
+        type: String,
+        default: "",
+      },
+      fileUrl: {
+        type: String,
+        default: "",
+      },
+      uploadedAt: {
+        type: Date,
+      },
     },
 
     quantityInKg: {
@@ -64,7 +99,17 @@ const enquirySchema = new mongoose.Schema(
       required: true,
     },
 
-    supplyCondition: String,
+    supplyCondition: {
+      type: String,
+      enum: [
+        "as_per_standard",
+        "as_rolled_annealed",
+        "as_forged_annealed",
+        "as_rolled",
+        "as_forged",
+      ],
+      required: true,
+    },
 
     modeOfEnquiry: {
       type: String,
@@ -75,7 +120,7 @@ const enquirySchema = new mongoose.Schema(
         "website",
         "walk-in",
         "google-ads",
-        "reference"
+        "reference",
       ],
       required: true,
     },
@@ -112,10 +157,25 @@ const enquirySchema = new mongoose.Schema(
         enum: ["pending", "won", "lost"],
         default: "pending",
       },
-       lostRemark: {
-       type: String,
+
+      lostRemark: {
+        type: String,
+        enum: [
+          "",
+          "price",
+          "delivery",
+          "qty",
+          "quality",
+          "payment_terms",
+          "material_not_available",
+          "others",
+        ],
         default: "",
-       },
+      },
+      lostRemarkOtherText: {
+  type: String,
+  default: "",
+},
       completed: {
         type: Boolean,
         default: false,

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const enquiryController = require("../controller/enquiryController");
 const authMiddleware = require("../util/auth");
+const uploadEnquirySizePdf = require("../util/enquirySizePdfUpload");
 
 router.get(
   "/product-config",
@@ -9,11 +10,14 @@ router.get(
   enquiryController.getProductConfig
 );
 
+
 router.post(
   "/create",
   authMiddleware,
+  uploadEnquirySizePdf.single("sizePdf"),
   enquiryController.createEnquiry
 );
+
 router.post(
   "/:id/update-workflow",
   authMiddleware,

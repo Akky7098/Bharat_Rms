@@ -4,8 +4,9 @@ const productGrades = require("../constants/productGrades");
 const createEnquiry = async (req, res) => {
   try {
     const enquiry = await enquiryService.createEnquiry(
-      req.body,
-      req.user
+      JSON.parse(req.body.data),
+      req.user,
+      req.file
     );
 
     res.status(201).json({
@@ -20,6 +21,7 @@ const createEnquiry = async (req, res) => {
     });
   }
 };
+
 
 const getProductConfig = async (req, res) => {
   res.status(200).json({

@@ -32,6 +32,10 @@ app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
 app.get("/api/cors-test", (req, res) => {
   res.json({ message: "cors working" });
 });
