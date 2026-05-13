@@ -100,16 +100,17 @@ const enquirySchema = new mongoose.Schema(
     },
 
     supplyCondition: {
-      type: String,
-      enum: [
-        "as_per_standard",
-        "as_rolled_annealed",
-        "as_forged_annealed",
-        "as_rolled",
-        "as_forged",
-      ],
-      required: true,
-    },
+  type: String,
+  enum: [
+    "as_per_standard",
+    "as_rolled_annealed",
+    "as_forged_annealed",
+    "as_rolled",
+    "as_forged",
+  ],
+  required: true,
+  default: "as_per_standard",
+},
 
     modeOfEnquiry: {
       type: String,
