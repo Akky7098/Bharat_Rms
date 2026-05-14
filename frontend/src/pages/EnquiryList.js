@@ -6,7 +6,7 @@ import EnquiryForm from "./EnquiryForm";
 import WorkflowUpdate from "./WorkflowUpdate";
 
 const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  process.env.REACT_APP_API_BASE_URL || "https://bharatspecialsteels.bharatspecialsteels.com";
 
 const EnquiryList = () => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -166,15 +166,25 @@ const EnquiryList = () => {
     setShowWorkflow(true);
   };
 
-  const formatDate = (date) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString();
-  };
+ const formatDate = (date) => {
+  if (!date) return "-";
 
-  const formatDateTime = (date) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleString();
-  };
+  return new Date(date).toLocaleDateString("en-GB");
+};
+
+const formatDateTime = (date) => {
+  if (!date) return "-";
+
+  return new Date(date).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+};
 
   const isOverdue = (planDate, completed) => {
     if (!planDate) return false;

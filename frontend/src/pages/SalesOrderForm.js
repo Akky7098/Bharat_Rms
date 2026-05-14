@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   createSalesOrder,
   updateSalesOrder,
@@ -31,10 +31,76 @@ const paymentTermOptions = [
   "75_days_from_date_of_po_received",
   "90_days_from_date_of_po_received",
 ];
+
+const supplyConditionOptions = [
+  { value: "as_per_standard", label: "As Per Standard" },
+  { value: "as_rolled", label: "As Rolled" },
+  { value: "as_forged", label: "As Forged" },
+  { value: "as_rolled_or_as_forged", label: "As Rolled / As Forged" },
+  { value: "as_rolled_annealed", label: "As Rolled + Annealed" },
+  { value: "as_forged_annealed", label: "As Forged + Annealed" },
+  {
+    value: "as_rolled_or_forged_annealed",
+    label: "As Rolled / Forged + Annealed",
+  },
+  { value: "as_rolled_normalised", label: "As Rolled + Normalised" },
+  {
+    value: "as_rolled_or_as_forged_normalised",
+    label: "As Rolled / As Forged + Normalised",
+  },
+  { value: "as_rolled_qt", label: "As Rolled + QT" },
+  { value: "as_forged_qt", label: "As Forged + QT" },
+  {
+    value: "as_rolled_or_as_forged_qt",
+    label: "As Rolled / As Forged + QT",
+  },
+  { value: "other", label: "Others" },
+];
+
 const approverOptions = ["nilesh_sir", "jatin_sir", "mayank_sir"];
 
 const formatLabel = (value = "") =>
   String(value).replaceAll("_", " ").toUpperCase();
+
+const formatPaymentTermLabel = (term) => {
+  const map = {
+    "10_percent_advance_balance_on_readiness_of_material":
+      "10% Advance, Balance on Readiness of Material",
+    "20_percent_advance_balance_on_readiness_of_material":
+      "20% Advance, Balance on Readiness of Material",
+    "30_percent_advance_balance_on_readiness_of_material":
+      "30% Advance, Balance on Readiness of Material",
+    "40_percent_advance_balance_on_readiness_of_material":
+      "40% Advance, Balance on Readiness of Material",
+    "50_percent_advance_balance_on_readiness_of_material":
+      "50% Advance, Balance on Readiness of Material",
+
+    "30_days_pdc_against_invoice": "30 Days PDC Against Invoice",
+    "45_days_pdc_against_invoice": "45 Days PDC Against Invoice",
+    "60_days_pdc_against_invoice": "60 Days PDC Against Invoice",
+    "75_days_pdc_against_invoice": "75 Days PDC Against Invoice",
+    "90_days_pdc_against_invoice": "90 Days PDC Against Invoice",
+
+    "30_days_from_date_of_invoice": "30 Days from Date of Invoice",
+    "45_days_from_date_of_invoice": "45 Days from Date of Invoice",
+    "60_days_from_date_of_invoice": "60 Days from Date of Invoice",
+    "75_days_from_date_of_invoice": "75 Days from Date of Invoice",
+    "90_days_from_date_of_invoice": "90 Days from Date of Invoice",
+
+    "30_days_from_date_of_po_received":
+      "30 Days from Date of PO Received",
+    "45_days_from_date_of_po_received":
+      "45 Days from Date of PO Received",
+    "60_days_from_date_of_po_received":
+      "60 Days from Date of PO Received",
+    "75_days_from_date_of_po_received":
+      "75 Days from Date of PO Received",
+    "90_days_from_date_of_po_received":
+      "90 Days from Date of PO Received",
+  };
+
+  return map[term] || formatLabel(term);
+};
 
 const getToday = () => new Date().toISOString().split("T")[0];
 
@@ -54,24 +120,32 @@ const initialForm = {
   isPaymentTermsApprovedByManagement: "false",
   paymentTermsApprovedBy: "",
 
+  previousPaymentAvailable: "",
   previousPaymentStatus: "",
+
   poAsPerQuotation: "",
 
   billingSameAsCompany: "true",
   billingAddress: "",
+  billingGstinNumber: "",
 
   shippingSameAsCompany: "true",
   shippingAddress: "",
+  shippingGstinNumber: "",
 
   enquiryFormFilled: "",
-  enquiryNumber: "",
 
   sizeGradeQuantityRate: "",
   supplyCondition: "as_per_standard",
   otherSupplyConditions: "",
+
   cutLengthRequired: "",
   cuttingCost: "",
+  cuttingExtraCharges: "",
+
   freight: "",
+  freightExtraCharges: "",
+
   tolerance: "",
   endUseOfCustomer: "",
   deliveryTime: "",
@@ -91,8 +165,96 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState("");
 
+  const fieldRefs = useRef({});
+
+  const rejectionComment = useMemo(() => {
+    const comments = [];
+
+    if (editOrder?.rejectionComment) comments.push(editOrder.rejectionComment);
+    if (editOrder?.adminRejectionComment)
+      comments.push(editOrder.adminRejectionComment);
+    if (editOrder?.managerRejectionComment)
+      comments.push(editOrder.managerRejectionComment);
+    if (editOrder?.adminApproval?.rejectionComment)
+      comments.push(editOrder.adminApproval.rejectionComment);
+    if (editOrder?.managerApproval?.rejectionComment)
+      comments.push(editOrder.managerApproval.rejectionComment);
+
+    if (Array.isArray(editOrder?.approvalHistory)) {
+      editOrder.approvalHistory.forEach((item) => {
+        if (item?.rejectionComment) comments.push(item.rejectionComment);
+        if (item?.comment) comments.push(item.comment);
+        if (item?.remarks) comments.push(item.remarks);
+      });
+    }
+
+    return comments.filter(Boolean).join(" | ");
+  }, [editOrder]);
+
+  const revisionFields = useMemo(() => {
+    const text = String(rejectionComment || "").toLowerCase();
+    const fields = new Set();
+
+    const addIf = (keywords, fieldNames) => {
+      if (keywords.some((keyword) => text.includes(keyword))) {
+        fieldNames.forEach((field) => fields.add(field));
+      }
+    };
+
+    addIf(["payment term", "payment terms", "payment"], [
+      "paymentTerms",
+      "isPaymentTermsApprovedByManagement",
+      "paymentTermsApprovedBy",
+    ]);
+    addIf(["freight", "transport"], ["freight", "freightExtraCharges"]);
+    addIf(["cutting", "cut length", "cutting cost"], [
+      "cutLengthRequired",
+      "cuttingCost",
+      "cuttingExtraCharges",
+    ]);
+    addIf(["gst", "gstin"], [
+      "gstinNumber",
+      "billingCombined",
+      "shippingCombined",
+    ]);
+    addIf(["billing"], ["billingSameAsCompany", "billingCombined"]);
+    addIf(["shipping", "delivery address"], [
+      "shippingSameAsCompany",
+      "shippingCombined",
+    ]);
+    addIf(["delivery time", "delivery"], ["deliveryTime"]);
+    addIf(["tolerance"], ["tolerance"]);
+    addIf(["supply"], ["supplyCondition", "otherSupplyConditions"]);
+    addIf(["contact", "email", "phone", "mobile"], [
+      "contactPersonName",
+      "contactPersonNumber",
+      "contactPersonEmail",
+    ]);
+    addIf(["order value", "value", "amount"], ["orderValue"]);
+    addIf(["po number", "po no", "po"], ["poNumber", "customerPOFile"]);
+    addIf(["checklist"], ["checklistNumber"]);
+    addIf(["previous payment", "old payment"], [
+      "previousPaymentAvailable",
+      "previousPaymentStatus",
+    ]);
+    addIf(["enquiry"], ["enquiryFormFilled"]);
+    addIf(["size", "grade", "qty", "quantity", "rate"], [
+      "sizeGradeQuantityRate",
+    ]);
+
+    return fields;
+  }, [rejectionComment]);
+
   useEffect(() => {
     if (!editOrder) return;
+
+    const billingObj = editOrder.billingAddress || {};
+    const shippingObj = editOrder.shippingAddress || {};
+
+    const previousPaymentValue = editOrder.previousPaymentStatus || "";
+    const hasPreviousPayment =
+      previousPaymentValue &&
+      String(previousPaymentValue).toLowerCase() !== "no";
 
     setForm({
       ...initialForm,
@@ -115,21 +277,22 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
       paymentTermsApprovedBy: editOrder.paymentTermsApprovedBy || "",
 
-      previousPaymentStatus: editOrder.previousPaymentStatus || "",
+      previousPaymentAvailable: hasPreviousPayment ? "yes" : "no",
+      previousPaymentStatus: hasPreviousPayment ? previousPaymentValue : "",
+
       poAsPerQuotation: editOrder.poAsPerQuotation || "",
 
-      billingSameAsCompany: editOrder.billingAddress?.sameAsCompanyAddress
-        ? "true"
-        : "false",
-      billingAddress: editOrder.billingAddress?.address || "",
+      billingSameAsCompany: billingObj.sameAsCompanyAddress ? "true" : "false",
+      billingAddress: billingObj.address || "",
+      billingGstinNumber: billingObj.gstinNumber || "",
 
-      shippingSameAsCompany: editOrder.shippingAddress?.sameAsCompanyAddress
+      shippingSameAsCompany: shippingObj.sameAsCompanyAddress
         ? "true"
         : "false",
-      shippingAddress: editOrder.shippingAddress?.address || "",
+      shippingAddress: shippingObj.address || "",
+      shippingGstinNumber: shippingObj.gstinNumber || "",
 
       enquiryFormFilled: editOrder.enquiryFormFilled || "",
-      enquiryNumber: editOrder.enquiryNumber || "",
 
       sizeGradeQuantityRate: editOrder.sizeGradeQuantityRate || "",
       supplyCondition: editOrder.supplyCondition || "as_per_standard",
@@ -139,7 +302,11 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
       cutLengthRequired: editOrder.cutLengthRequired || "",
       cuttingCost: editOrder.cuttingCost || "",
+      cuttingExtraCharges: editOrder.cuttingExtraCharges || "",
+
       freight: editOrder.freight || "",
+      freightExtraCharges: editOrder.freightExtraCharges || "",
+
       tolerance: editOrder.tolerance || "",
       endUseOfCustomer: editOrder.endUseOfCustomer || "",
       deliveryTime: editOrder.deliveryTime || "",
@@ -151,11 +318,24 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
     });
   }, [editOrder]);
 
+  useEffect(() => {
+    if (!isEditMode || !rejectionComment) return;
+
+    setTimeout(() => {
+      const firstRevisionField = Array.from(revisionFields)[0];
+      if (firstRevisionField) {
+        scrollToField(firstRevisionField);
+      }
+    }, 350);
+  }, [isEditMode, rejectionComment, revisionFields]);
+
   const isPaymentApproved = form.isPaymentTermsApprovedByManagement === "true";
   const isOtherSupplyCondition = form.supplyCondition === "other";
   const billingDifferent = form.billingSameAsCompany === "false";
   const shippingDifferent = form.shippingSameAsCompany === "false";
-  const enquiryYes = form.enquiryFormFilled === "yes";
+  const previousPaymentYes = form.previousPaymentAvailable === "yes";
+  const cuttingExtra = form.cuttingCost === "extra";
+  const freightExtra = form.freight === "extra";
 
   const mandatoryLabel = (text) => (
     <>
@@ -164,7 +344,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
   );
 
   const validateEmail = (email) => {
-    if (!email) return true;
+    if (!email) return false;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
@@ -172,6 +352,22 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
     return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(
       gstin
     );
+  };
+
+  const scrollToField = (fieldName) => {
+    const el = fieldRefs.current[fieldName];
+
+    if (el) {
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      const input = el.querySelector("input, select, textarea");
+      if (input && !input.disabled) {
+        setTimeout(() => input.focus(), 300);
+      }
+    }
   };
 
   const validateForm = () => {
@@ -185,7 +381,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       ["customerType", "Customer type is required"],
       ["paymentTerms", "Payment terms are required"],
       ["orderValue", "Order value is required"],
-      ["previousPaymentStatus", "Previous payment status is required"],
+      ["previousPaymentAvailable", "Previous payment selection is required"],
       ["poAsPerQuotation", "PO as per quotation is required"],
       ["enquiryFormFilled", "Enquiry form status is required"],
       ["sizeGradeQuantityRate", "Size / Grade / Qty / Rate is required"],
@@ -198,6 +394,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       ["deliveryTime", "Delivery time is required"],
       ["contactPersonName", "Contact person name is required"],
       ["contactPersonNumber", "Contact number is required"],
+      ["contactPersonEmail", "Contact person email is required"],
     ];
 
     requiredFields.forEach(([field, message]) => {
@@ -210,6 +407,30 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       newErrors.gstinNumber = "Please enter valid GSTIN";
     }
 
+    if (billingDifferent) {
+      if (!form.billingAddress.trim()) {
+        newErrors.billingCombined = "Billing address is required";
+      }
+
+      if (!form.billingGstinNumber.trim()) {
+        newErrors.billingCombined = "Billing GSTIN is required";
+      } else if (!validateGstin(form.billingGstinNumber.trim())) {
+        newErrors.billingCombined = "Please enter valid billing GSTIN";
+      }
+    }
+
+    if (shippingDifferent) {
+      if (!form.shippingAddress.trim()) {
+        newErrors.shippingCombined = "Shipping address is required";
+      }
+
+      if (!form.shippingGstinNumber.trim()) {
+        newErrors.shippingCombined = "Shipping GSTIN is required";
+      } else if (!validateGstin(form.shippingGstinNumber.trim())) {
+        newErrors.shippingCombined = "Please enter valid shipping GSTIN";
+      }
+    }
+
     if (Number(form.orderValue) <= 0) {
       newErrors.orderValue = "Order value must be greater than 0";
     }
@@ -218,20 +439,20 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       newErrors.paymentTermsApprovedBy = "Select approved person";
     }
 
-    if (billingDifferent && !form.billingAddress.trim()) {
-      newErrors.billingAddress = "Billing address is required";
-    }
-
-    if (shippingDifferent && !form.shippingAddress.trim()) {
-      newErrors.shippingAddress = "Shipping address is required";
-    }
-
-    if (enquiryYes && !form.enquiryNumber.trim()) {
-      newErrors.enquiryNumber = "Enquiry number is required";
+    if (previousPaymentYes && !form.previousPaymentStatus.trim()) {
+      newErrors.previousPaymentStatus = "Previous payment details are required";
     }
 
     if (isOtherSupplyCondition && !form.otherSupplyConditions.trim()) {
       newErrors.otherSupplyConditions = "Enter supply condition";
+    }
+
+    if (cuttingExtra && !form.cuttingExtraCharges.trim()) {
+      newErrors.cuttingExtraCharges = "Enter cutting extra charges";
+    }
+
+    if (freightExtra && !form.freightExtraCharges.trim()) {
+      newErrors.freightExtraCharges = "Enter freight extra charges";
     }
 
     if (!/^[0-9]{10}$/.test(form.contactPersonNumber)) {
@@ -247,14 +468,18 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       newErrors.customerPOFile = "Customer PO PDF is required";
     }
 
-    if (
-      form.customerPOFile &&
-      form.customerPOFile.type !== "application/pdf"
-    ) {
+    if (form.customerPOFile && form.customerPOFile.type !== "application/pdf") {
       newErrors.customerPOFile = "Only PDF file is allowed";
     }
 
     setErrors(newErrors);
+
+    const firstErrorField = Object.keys(newErrors)[0];
+
+    if (firstErrorField) {
+      setTimeout(() => scrollToField(firstErrorField), 100);
+    }
+
     return Object.keys(newErrors).length === 0;
   };
 
@@ -277,18 +502,52 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       return;
     }
 
-    if (name === "gstinNumber") {
+    if (
+      name === "gstinNumber" ||
+      name === "billingGstinNumber" ||
+      name === "shippingGstinNumber"
+    ) {
       setForm((prev) => ({
         ...prev,
-        gstinNumber: value.toUpperCase().slice(0, 15),
+        [name]: value.toUpperCase().slice(0, 15),
       }));
       return;
     }
 
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => {
+      const updated = {
+        ...prev,
+        [name]: value,
+      };
+
+      if (name === "billingSameAsCompany" && value === "true") {
+        updated.billingAddress = "";
+        updated.billingGstinNumber = "";
+      }
+
+      if (name === "shippingSameAsCompany" && value === "true") {
+        updated.shippingAddress = "";
+        updated.shippingGstinNumber = "";
+      }
+
+      if (name === "previousPaymentAvailable" && value === "no") {
+        updated.previousPaymentStatus = "";
+      }
+
+      if (name === "supplyCondition" && value !== "other") {
+        updated.otherSupplyConditions = "";
+      }
+
+      if (name === "cuttingCost" && value !== "extra") {
+        updated.cuttingExtraCharges = "";
+      }
+
+      if (name === "freight" && value !== "extra") {
+        updated.freightExtraCharges = "";
+      }
+
+      return updated;
+    });
   };
 
   const buildPayload = () => {
@@ -314,7 +573,9 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
         ? form.paymentTermsApprovedBy
         : null,
 
-      previousPaymentStatus: form.previousPaymentStatus.trim(),
+      previousPaymentStatus: previousPaymentYes
+        ? form.previousPaymentStatus.trim()
+        : "No",
 
       poAsPerQuotation: form.poAsPerQuotation,
 
@@ -331,20 +592,33 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
       cutLengthRequired: form.cutLengthRequired,
       cuttingCost: form.cuttingCost,
+      cuttingExtraCharges: cuttingExtra ? form.cuttingExtraCharges.trim() : "",
+
       freight: form.freight,
+      freightExtraCharges: freightExtra ? form.freightExtraCharges.trim() : "",
 
       billingAddress: {
         sameAsCompanyAddress: form.billingSameAsCompany === "true",
-        ...(form.billingSameAsCompany === "false"
-          ? { address: form.billingAddress.trim() }
-          : {}),
+        address:
+          form.billingSameAsCompany === "true"
+            ? form.companyAddress.trim()
+            : form.billingAddress.trim(),
+        gstinNumber:
+          form.billingSameAsCompany === "true"
+            ? form.gstinNumber.trim()
+            : form.billingGstinNumber.trim(),
       },
 
       shippingAddress: {
         sameAsCompanyAddress: form.shippingSameAsCompany === "true",
-        ...(form.shippingSameAsCompany === "false"
-          ? { address: form.shippingAddress.trim() }
-          : {}),
+        address:
+          form.shippingSameAsCompany === "true"
+            ? form.companyAddress.trim()
+            : form.shippingAddress.trim(),
+        gstinNumber:
+          form.shippingSameAsCompany === "true"
+            ? form.gstinNumber.trim()
+            : form.shippingGstinNumber.trim(),
       },
 
       tolerance: form.tolerance.trim(),
@@ -354,7 +628,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       testCertificateRequired: "yes",
 
       enquiryFormFilled: form.enquiryFormFilled,
-      enquiryNumber: enquiryYes ? form.enquiryNumber.trim() : "",
+      enquiryNumber: "",
     };
   };
 
@@ -420,7 +694,9 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
         );
       }
 
-      const salesOrderId = isEditMode ? editOrder._id : getSalesOrderId(savedResponse);
+      const salesOrderId = isEditMode
+        ? editOrder._id
+        : getSalesOrderId(savedResponse);
 
       if (salesOrderId) {
         setPdfGenerating(true);
@@ -436,7 +712,12 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
         }
       }
 
-      alert(isEditMode ? "Sales order updated successfully" : "Sales order created successfully");
+      alert(
+        isEditMode
+          ? "Sales order updated successfully"
+          : "Sales order created successfully"
+      );
+
       refresh();
       onClose();
     } catch (error) {
@@ -448,7 +729,15 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
   };
 
   const fieldClass = (name, extra = "") =>
-    `sales-form-group ${errors[name] ? "has-error" : ""} ${extra}`;
+    `sales-form-group ${errors[name] ? "has-error" : ""} ${
+      revisionFields.has(name) ? "revision-highlight" : ""
+    } ${extra}`;
+
+  const refProp = (name) => ({
+    ref: (el) => {
+      fieldRefs.current[name] = el;
+    },
+  });
 
   const errorText = (name) =>
     errors[name] ? (
@@ -461,13 +750,21 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
         <div className="sales-form-header sales-premium-header">
           <div>
             <h2>{isEditMode ? "Edit Sales Order" : "New Sales Order"}</h2>
-            <p>Fill customer PO details and generate final Sales Order package.</p>
+            <p>
+              Fill customer PO details and generate final Sales Order package.
+            </p>
           </div>
 
           <button type="button" className="sales-close-btn" onClick={onClose}>
             ×
           </button>
         </div>
+
+        {isEditMode && rejectionComment && (
+          <div className="revision-comment-box">
+            <strong>Revision Comment:</strong> {rejectionComment}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-section-title premium-section-title">
@@ -481,43 +778,83 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
               <small className="auto-hint">Auto set on submission</small>
             </div>
 
-            <div className={fieldClass("companyName")}>
+            <div
+              className={fieldClass("companyName")}
+              {...refProp("companyName")}
+            >
               <label>{mandatoryLabel("Company Name")}</label>
-              <input name="companyName" value={form.companyName} onChange={handleChange} />
+              <input
+                name="companyName"
+                value={form.companyName}
+                onChange={handleChange}
+                placeholder="Example: ABC Engineering Pvt Ltd"
+              />
               {errorText("companyName")}
             </div>
 
-            <div className={fieldClass("gstinNumber")}>
-              <label>{mandatoryLabel("GSTIN")}</label>
+            <div
+              className={fieldClass("gstinNumber")}
+              {...refProp("gstinNumber")}
+            >
+              <label>{mandatoryLabel("Company GSTIN")}</label>
               <input
                 name="gstinNumber"
                 value={form.gstinNumber}
                 onChange={handleChange}
                 maxLength={15}
+                placeholder="Example: 27ABCDE1234F1Z5"
               />
               {errorText("gstinNumber")}
             </div>
 
-            <div className={fieldClass("companyAddress", "sales-full-width")}>
+            <div
+              className={fieldClass("companyAddress", "sales-full-width")}
+              {...refProp("companyAddress")}
+            >
               <label>{mandatoryLabel("Company Address")}</label>
-              <textarea name="companyAddress" value={form.companyAddress} onChange={handleChange} />
+              <textarea
+                name="companyAddress"
+                value={form.companyAddress}
+                onChange={handleChange}
+                placeholder="Example: Plot No, Industrial Area, City, State - Pincode"
+              />
               {errorText("companyAddress")}
             </div>
 
-            <div className={fieldClass("poNumber")}>
+            <div className={fieldClass("poNumber")} {...refProp("poNumber")}>
               <label>{mandatoryLabel("PO Number")}</label>
-              <input name="poNumber" value={form.poNumber} onChange={handleChange} />
+              <input
+                name="poNumber"
+                value={form.poNumber}
+                onChange={handleChange}
+                placeholder="Example: PO/2026/001"
+              />
               {errorText("poNumber")}
             </div>
 
-            <div className={fieldClass("checklistNumber")}>
+            <div
+              className={fieldClass("checklistNumber")}
+              {...refProp("checklistNumber")}
+            >
               <label>Checklist Number</label>
-              <input name="checklistNumber" value={form.checklistNumber} onChange={handleChange} />
+              <input
+                name="checklistNumber"
+                value={form.checklistNumber}
+                onChange={handleChange}
+                placeholder="Example: CHK-001"
+              />
             </div>
 
-            <div className={fieldClass("customerType")}>
+            <div
+              className={fieldClass("customerType")}
+              {...refProp("customerType")}
+            >
               <label>{mandatoryLabel("Customer Type")}</label>
-              <select name="customerType" value={form.customerType} onChange={handleChange}>
+              <select
+                name="customerType"
+                value={form.customerType}
+                onChange={handleChange}
+              >
                 <option value="existing">Existing</option>
                 <option value="new">New</option>
               </select>
@@ -525,10 +862,26 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
               {errorText("customerType")}
             </div>
 
-            <div className={fieldClass("customerPOFile")}>
-              <label>{isEditMode ? "Replace Customer PO PDF" : mandatoryLabel("Customer PO PDF")}</label>
-              <input type="file" name="customerPOFile" accept="application/pdf" onChange={handleChange} />
-              {form.customerPOFile && <small className="file-selected">Selected: {form.customerPOFile.name}</small>}
+            <div
+              className={fieldClass("customerPOFile")}
+              {...refProp("customerPOFile")}
+            >
+              <label>
+                {isEditMode
+                  ? "Replace Customer PO PDF"
+                  : mandatoryLabel("Customer PO PDF")}
+              </label>
+              <input
+                type="file"
+                name="customerPOFile"
+                accept="application/pdf"
+                onChange={handleChange}
+              />
+              {form.customerPOFile && (
+                <small className="file-selected">
+                  Selected: {form.customerPOFile.name}
+                </small>
+              )}
               {errorText("customerPOFile")}
             </div>
           </div>
@@ -538,53 +891,121 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
           </div>
 
           <div className="sales-form-grid">
-            <div className={fieldClass("paymentTerms")}>
+            <div
+              className={fieldClass("paymentTerms", "sales-full-width")}
+              {...refProp("paymentTerms")}
+            >
               <label>{mandatoryLabel("Payment Terms")}</label>
-              <select name="paymentTerms" value={form.paymentTerms} onChange={handleChange}>
+              <select
+                name="paymentTerms"
+                value={form.paymentTerms}
+                onChange={handleChange}
+              >
                 <option value="">Select payment terms</option>
                 {paymentTermOptions.map((term) => (
-                  <option key={term} value={term}>{formatLabel(term)}</option>
+                  <option key={term} value={term}>
+                    {formatPaymentTermLabel(term)}
+                  </option>
                 ))}
               </select>
               {errorText("paymentTerms")}
             </div>
 
-            <div className={fieldClass("orderValue")}>
+            <div className={fieldClass("orderValue")} {...refProp("orderValue")}>
               <label>{mandatoryLabel("Order Value")}</label>
-              <input type="number" name="orderValue" value={form.orderValue} onChange={handleChange} />
+              <input
+                type="number"
+                name="orderValue"
+                value={form.orderValue}
+                onChange={handleChange}
+                placeholder="Example: 250000"
+              />
               {errorText("orderValue")}
             </div>
 
-            <div className={fieldClass("isPaymentTermsApprovedByManagement")}>
+            <div
+              className={fieldClass("isPaymentTermsApprovedByManagement")}
+              {...refProp("isPaymentTermsApprovedByManagement")}
+            >
               <label>{mandatoryLabel("Payment Terms Approved?")}</label>
-              <select name="isPaymentTermsApprovedByManagement" value={form.isPaymentTermsApprovedByManagement} onChange={handleChange}>
+              <select
+                name="isPaymentTermsApprovedByManagement"
+                value={form.isPaymentTermsApprovedByManagement}
+                onChange={handleChange}
+              >
                 <option value="false">No</option>
                 <option value="true">Yes</option>
               </select>
             </div>
 
             {isPaymentApproved && (
-              <div className={fieldClass("paymentTermsApprovedBy")}>
+              <div
+                className={fieldClass("paymentTermsApprovedBy")}
+                {...refProp("paymentTermsApprovedBy")}
+              >
                 <label>{mandatoryLabel("Approved By")}</label>
-                <select name="paymentTermsApprovedBy" value={form.paymentTermsApprovedBy} onChange={handleChange}>
+                <select
+                  name="paymentTermsApprovedBy"
+                  value={form.paymentTermsApprovedBy}
+                  onChange={handleChange}
+                >
                   <option value="">Select approver</option>
                   {approverOptions.map((person) => (
-                    <option key={person} value={person}>{formatLabel(person)}</option>
+                    <option key={person} value={person}>
+                      {formatLabel(person)}
+                    </option>
                   ))}
                 </select>
                 {errorText("paymentTermsApprovedBy")}
               </div>
             )}
 
-            <div className={fieldClass("previousPaymentStatus", "sales-full-width")}>
-              <label>{mandatoryLabel("Previous Payment Status")}</label>
-              <textarea name="previousPaymentStatus" value={form.previousPaymentStatus} onChange={handleChange} />
-              {errorText("previousPaymentStatus")}
+            <div
+              className={fieldClass("previousPaymentAvailable")}
+              {...refProp("previousPaymentAvailable")}
+            >
+              <label>{mandatoryLabel("Previous Payment?")}</label>
+              <select
+                name="previousPaymentAvailable"
+                value={form.previousPaymentAvailable}
+                onChange={handleChange}
+              >
+                <option value="">Select</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+              {errorText("previousPaymentAvailable")}
             </div>
 
-            <div className={fieldClass("poAsPerQuotation")}>
+            {previousPaymentYes && (
+              <div
+                className={fieldClass(
+                  "previousPaymentStatus",
+                  "sales-full-width"
+                )}
+                {...refProp("previousPaymentStatus")}
+              >
+                <label>{mandatoryLabel("Previous Payment Details")}</label>
+                <textarea
+                  name="previousPaymentStatus"
+                  value={form.previousPaymentStatus}
+                  onChange={handleChange}
+                  placeholder="Example: Date of Inv: 10/05/2026 | Inv No: INV-102 | Invoice Value: 2,50,000 | Due Date: 25/05/2026 | Overdue Days: 0"
+                />
+                {errorText("previousPaymentStatus")}
+              </div>
+            )}
+
+            <div
+              className={fieldClass("poAsPerQuotation")}
+              {...refProp("poAsPerQuotation")}
+            >
               <label>{mandatoryLabel("PO As Per Quotation")}</label>
-              <select name="poAsPerQuotation" value={form.poAsPerQuotation} onChange={handleChange}>
+              <select
+                name="poAsPerQuotation"
+                value={form.poAsPerQuotation}
+                onChange={handleChange}
+              >
                 <option value="">Select</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
@@ -592,55 +1013,108 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
               {errorText("poAsPerQuotation")}
             </div>
 
-            <div className={fieldClass("billingSameAsCompany")}>
+            <div
+              className={fieldClass("billingSameAsCompany")}
+              {...refProp("billingSameAsCompany")}
+            >
               <label>Billing Same As Company?</label>
-              <select name="billingSameAsCompany" value={form.billingSameAsCompany} onChange={handleChange}>
+              <select
+                name="billingSameAsCompany"
+                value={form.billingSameAsCompany}
+                onChange={handleChange}
+              >
                 <option value="true">Yes</option>
                 <option value="false">No</option>
               </select>
             </div>
 
             {billingDifferent && (
-              <div className={fieldClass("billingAddress", "sales-full-width")}>
-                <label>{mandatoryLabel("Billing Address")}</label>
-                <textarea name="billingAddress" value={form.billingAddress} onChange={handleChange} />
-                {errorText("billingAddress")}
+              <div
+                className={fieldClass("billingCombined", "sales-full-width")}
+                {...refProp("billingCombined")}
+              >
+                <label>{mandatoryLabel("Billing Address With GSTIN")}</label>
+                <div className="combined-address-box">
+                  <textarea
+                    name="billingAddress"
+                    value={form.billingAddress}
+                    onChange={handleChange}
+                    placeholder="Billing Address: office address with city, state and pincode"
+                  />
+                  <div className="combined-gstin-row">
+                    <span>GSTIN</span>
+                    <input
+                      name="billingGstinNumber"
+                      value={form.billingGstinNumber}
+                      onChange={handleChange}
+                      maxLength={15}
+                      placeholder="27ABCDE1234F1Z5"
+                    />
+                  </div>
+                </div>
+                {errorText("billingCombined")}
               </div>
             )}
 
-            <div className={fieldClass("shippingSameAsCompany")}>
+            <div
+              className={fieldClass("shippingSameAsCompany")}
+              {...refProp("shippingSameAsCompany")}
+            >
               <label>Shipping Same As Company?</label>
-              <select name="shippingSameAsCompany" value={form.shippingSameAsCompany} onChange={handleChange}>
+              <select
+                name="shippingSameAsCompany"
+                value={form.shippingSameAsCompany}
+                onChange={handleChange}
+              >
                 <option value="true">Yes</option>
                 <option value="false">No</option>
               </select>
             </div>
 
             {shippingDifferent && (
-              <div className={fieldClass("shippingAddress", "sales-full-width")}>
-                <label>{mandatoryLabel("Shipping Address")}</label>
-                <textarea name="shippingAddress" value={form.shippingAddress} onChange={handleChange} />
-                {errorText("shippingAddress")}
+              <div
+                className={fieldClass("shippingCombined", "sales-full-width")}
+                {...refProp("shippingCombined")}
+              >
+                <label>{mandatoryLabel("Shipping Address With GSTIN")}</label>
+                <div className="combined-address-box">
+                  <textarea
+                    name="shippingAddress"
+                    value={form.shippingAddress}
+                    onChange={handleChange}
+                    placeholder="Shipping Address: delivery location with city, state and pincode"
+                  />
+                  <div className="combined-gstin-row">
+                    <span>GSTIN</span>
+                    <input
+                      name="shippingGstinNumber"
+                      value={form.shippingGstinNumber}
+                      onChange={handleChange}
+                      maxLength={15}
+                      placeholder="27ABCDE1234F1Z5"
+                    />
+                  </div>
+                </div>
+                {errorText("shippingCombined")}
               </div>
             )}
 
-            <div className={fieldClass("enquiryFormFilled")}>
+            <div
+              className={fieldClass("enquiryFormFilled")}
+              {...refProp("enquiryFormFilled")}
+            >
               <label>{mandatoryLabel("Enquiry Form Filled?")}</label>
-              <select name="enquiryFormFilled" value={form.enquiryFormFilled} onChange={handleChange}>
+              <select
+                name="enquiryFormFilled"
+                value={form.enquiryFormFilled}
+                onChange={handleChange}
+              >
                 <option value="">Select</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
               </select>
               {errorText("enquiryFormFilled")}
             </div>
-
-            {enquiryYes && (
-              <div className={fieldClass("enquiryNumber")}>
-                <label>{mandatoryLabel("Enquiry Number")}</label>
-                <input name="enquiryNumber" value={form.enquiryNumber} onChange={handleChange} />
-                {errorText("enquiryNumber")}
-              </div>
-            )}
           </div>
 
           <div className="form-section-title premium-section-title">
@@ -648,37 +1122,69 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
           </div>
 
           <div className="sales-form-grid">
-            <div className={fieldClass("sizeGradeQuantityRate", "sales-full-width")}>
+            <div
+              className={fieldClass(
+                "sizeGradeQuantityRate",
+                "sales-full-width"
+              )}
+              {...refProp("sizeGradeQuantityRate")}
+            >
               <label>{mandatoryLabel("Size / Grade / Qty / Rate")}</label>
               <textarea
                 name="sizeGradeQuantityRate"
                 value={form.sizeGradeQuantityRate}
                 onChange={handleChange}
                 rows={8}
+                placeholder="Example: Size: 100 Dia x 5000 Long | Grade: H13 | Qty: 500 Kg | Rate: 250/Kg"
               />
               {errorText("sizeGradeQuantityRate")}
             </div>
 
-            <div className={fieldClass("supplyCondition")}>
+            <div
+              className={fieldClass("supplyCondition")}
+              {...refProp("supplyCondition")}
+            >
               <label>{mandatoryLabel("Supply Condition")}</label>
-              <select name="supplyCondition" value={form.supplyCondition} onChange={handleChange}>
-                <option value="as_per_standard">As Per Standard Size</option>
-                <option value="other">Other</option>
+              <select
+                name="supplyCondition"
+                value={form.supplyCondition}
+                onChange={handleChange}
+              >
+                {supplyConditionOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
               </select>
               {errorText("supplyCondition")}
             </div>
 
             {isOtherSupplyCondition && (
-              <div className={fieldClass("otherSupplyConditions")}>
+              <div
+                className={fieldClass("otherSupplyConditions")}
+                {...refProp("otherSupplyConditions")}
+              >
                 <label>{mandatoryLabel("Other Supply Conditions")}</label>
-                <input name="otherSupplyConditions" value={form.otherSupplyConditions} onChange={handleChange} />
+                <input
+                  name="otherSupplyConditions"
+                  value={form.otherSupplyConditions}
+                  onChange={handleChange}
+                  placeholder="Enter custom supply condition"
+                />
                 {errorText("otherSupplyConditions")}
               </div>
             )}
 
-            <div className={fieldClass("cutLengthRequired")}>
+            <div
+              className={fieldClass("cutLengthRequired")}
+              {...refProp("cutLengthRequired")}
+            >
               <label>{mandatoryLabel("Cut Length Required")}</label>
-              <select name="cutLengthRequired" value={form.cutLengthRequired} onChange={handleChange}>
+              <select
+                name="cutLengthRequired"
+                value={form.cutLengthRequired}
+                onChange={handleChange}
+              >
                 <option value="">Select</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
@@ -686,9 +1192,13 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
               {errorText("cutLengthRequired")}
             </div>
 
-            <div className={fieldClass("cuttingCost")}>
+            <div className={fieldClass("cuttingCost")} {...refProp("cuttingCost")}>
               <label>{mandatoryLabel("Cutting Cost")}</label>
-              <select name="cuttingCost" value={form.cuttingCost} onChange={handleChange}>
+              <select
+                name="cuttingCost"
+                value={form.cuttingCost}
+                onChange={handleChange}
+              >
                 <option value="">Select</option>
                 <option value="extra">Extra</option>
                 <option value="inclusive">Inclusive</option>
@@ -696,26 +1206,74 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
               {errorText("cuttingCost")}
             </div>
 
-            <div className={fieldClass("freight")}>
+            {cuttingExtra && (
+              <div
+                className={fieldClass("cuttingExtraCharges")}
+                {...refProp("cuttingExtraCharges")}
+              >
+                <label>{mandatoryLabel("Cutting Extra Charges")}</label>
+                <input
+                  name="cuttingExtraCharges"
+                  value={form.cuttingExtraCharges}
+                  onChange={handleChange}
+                  placeholder="Example: ₹5/Kg or ₹2500 extra"
+                />
+                {errorText("cuttingExtraCharges")}
+              </div>
+            )}
+
+            <div className={fieldClass("freight")} {...refProp("freight")}>
               <label>{mandatoryLabel("Freight")}</label>
-              <select name="freight" value={form.freight} onChange={handleChange}>
+              <select
+                name="freight"
+                value={form.freight}
+                onChange={handleChange}
+              >
                 <option value="">Select</option>
                 <option value="extra">Extra</option>
                 <option value="self">Self-Pickup</option>
-                <option value = "inclusive">Inclusive</option>
+                <option value="inclusive">Inclusive</option>
               </select>
               {errorText("freight")}
             </div>
 
-            <div className={fieldClass("tolerance")}>
+            {freightExtra && (
+              <div
+                className={fieldClass("freightExtraCharges")}
+                {...refProp("freightExtraCharges")}
+              >
+                <label>{mandatoryLabel("Freight Extra Charges")}</label>
+                <input
+                  name="freightExtraCharges"
+                  value={form.freightExtraCharges}
+                  onChange={handleChange}
+                  placeholder="Example: ₹3500 extra"
+                />
+                {errorText("freightExtraCharges")}
+              </div>
+            )}
+
+            <div className={fieldClass("tolerance")} {...refProp("tolerance")}>
               <label>{mandatoryLabel("Tolerance")}</label>
-              <input name="tolerance" value={form.tolerance} onChange={handleChange} />
+              <input
+                name="tolerance"
+                value={form.tolerance}
+                onChange={handleChange}
+                placeholder="Example: +2 / -0 mm"
+              />
               {errorText("tolerance")}
             </div>
 
-            <div className={fieldClass("endUseOfCustomer")}>
+            <div
+              className={fieldClass("endUseOfCustomer")}
+              {...refProp("endUseOfCustomer")}
+            >
               <label>{mandatoryLabel("End Use Of Customer")}</label>
-              <select name="endUseOfCustomer" value={form.endUseOfCustomer} onChange={handleChange}>
+              <select
+                name="endUseOfCustomer"
+                value={form.endUseOfCustomer}
+                onChange={handleChange}
+              >
                 <option value="">Select</option>
                 <option value="machining">Machining</option>
                 <option value="forging">Forging</option>
@@ -723,9 +1281,17 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
               {errorText("endUseOfCustomer")}
             </div>
 
-            <div className={fieldClass("deliveryTime")}>
+            <div
+              className={fieldClass("deliveryTime")}
+              {...refProp("deliveryTime")}
+            >
               <label>{mandatoryLabel("Delivery Time")}</label>
-              <input name="deliveryTime" value={form.deliveryTime} onChange={handleChange} />
+              <input
+                name="deliveryTime"
+                value={form.deliveryTime}
+                onChange={handleChange}
+                placeholder="Example: 2-3 weeks from PO confirmation"
+              />
               {errorText("deliveryTime")}
             </div>
 
@@ -741,40 +1307,80 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
           </div>
 
           <div className="sales-form-grid">
-            <div className={fieldClass("contactPersonName")}>
+            <div
+              className={fieldClass("contactPersonName")}
+              {...refProp("contactPersonName")}
+            >
               <label>{mandatoryLabel("Contact Person Name")}</label>
-              <input name="contactPersonName" value={form.contactPersonName} onChange={handleChange} />
+              <input
+                name="contactPersonName"
+                value={form.contactPersonName}
+                onChange={handleChange}
+                placeholder="Example: Rajesh Kumar"
+              />
               {errorText("contactPersonName")}
             </div>
 
-            <div className={fieldClass("contactPersonNumber")}>
+            <div
+              className={fieldClass("contactPersonNumber")}
+              {...refProp("contactPersonNumber")}
+            >
               <label>{mandatoryLabel("Contact Person Number")}</label>
-              <input name="contactPersonNumber" value={form.contactPersonNumber} onChange={handleChange} maxLength={10} />
+              <input
+                name="contactPersonNumber"
+                value={form.contactPersonNumber}
+                onChange={handleChange}
+                maxLength={10}
+                placeholder="10 digit mobile number"
+              />
               {errorText("contactPersonNumber")}
             </div>
 
-            <div className={fieldClass("contactPersonEmail")}>
-              <label>Contact Person Email</label>
-              <input type="email" name="contactPersonEmail" value={form.contactPersonEmail} onChange={handleChange} />
+            <div
+              className={fieldClass("contactPersonEmail")}
+              {...refProp("contactPersonEmail")}
+            >
+              <label>{mandatoryLabel("Contact Person Email")}</label>
+              <input
+                type="email"
+                name="contactPersonEmail"
+                value={form.contactPersonEmail}
+                onChange={handleChange}
+                placeholder="Example: purchase@company.com"
+              />
               {errorText("contactPersonEmail")}
             </div>
           </div>
 
-          {pdfGenerating && <div className="pdf-generation-box">Generating final Sales Order PDF...</div>}
+          {pdfGenerating && (
+            <div className="pdf-generation-box">
+              Generating final Sales Order PDF...
+            </div>
+          )}
 
           {pdfUrl && (
             <div className="pdf-ready-box">
               PDF generated successfully.{" "}
-              <a href={pdfUrl} target="_blank" rel="noreferrer">Open PDF</a>
+              <a href={pdfUrl} target="_blank" rel="noreferrer">
+                Open PDF
+              </a>
             </div>
           )}
 
           <div className="sales-form-actions">
-            <button type="button" className="sales-cancel-btn" onClick={onClose}>
+            <button
+              type="button"
+              className="sales-cancel-btn"
+              onClick={onClose}
+            >
               Cancel
             </button>
 
-            <button type="submit" className="sales-submit-btn" disabled={isSubmitting || pdfGenerating}>
+            <button
+              type="submit"
+              className="sales-submit-btn"
+              disabled={isSubmitting || pdfGenerating}
+            >
               {isSubmitting
                 ? isEditMode
                   ? "Updating..."

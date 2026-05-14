@@ -1117,3 +1117,125 @@
     height: 38px;
   }
 }
+.approval-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.approval-modal-card {
+  width: 420px;
+  max-width: 96vw;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+}
+
+.approval-icon {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.approval-modal-card h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.approval-modal-card p {
+  margin: 10px 0 16px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.approval-modal-card textarea {
+  width: 100%;
+  min-height: 95px;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  outline: none;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.approval-modal-card textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.approval-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.modal-cancel-btn,
+.modal-approve-btn,
+.modal-reject-btn {
+  flex: 1;
+  height: 42px;
+  border: none;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.modal-cancel-btn {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.modal-approve-btn {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.modal-reject-btn {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.modal-cancel-btn:hover,
+.modal-approve-btn:hover,
+.modal-reject-btn:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+  .approval-modal-card {
+    padding: 20px;
+  }
+
+  .approval-modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-cancel-btn,
+  .modal-approve-btn,
+  .modal-reject-btn {
+    width: 100%;
+  }
+}

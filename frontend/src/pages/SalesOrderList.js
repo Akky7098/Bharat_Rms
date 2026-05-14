@@ -29,6 +29,14 @@ const SalesOrderList = () => {
   const [activeTab, setActiveTab] = useState("approved");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
+  const [approvalModal, setApprovalModal] = useState({
+    open: false,
+    type: "",
+    orderId: null,
+  });
+
+  const [rejectionComment, setRejectionComment] = useState("");
+
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -66,7 +74,7 @@ const SalesOrderList = () => {
       console.log(error);
       alert(error.response?.data?.message || "Failed to load sales orders");
     }
-  }, [filters]);
+  }, [filters, pagination]);
 
   const fetchSalesPersons = useCallback(async () => {
     try {
@@ -92,10 +100,7 @@ const SalesOrderList = () => {
       return salesOrders.filter((order) => order.approvalStatus === "approved");
     }
 
-    return salesOrders.filter(
-      (order) =>
-        order.approvalStatus !== "approved"
-    );
+    return salesOrders.filter((order) => order.approvalStatus !== "approved");
   }, [salesOrders, activeTab]);
 
   const handleFilterChange = (e) => {
@@ -159,7 +164,7 @@ const SalesOrderList = () => {
 
   const formatDate = (date) => {
     if (!date) return "-";
-    return new Date(date).toLocaleDateString("en-IN");
+    return new Date(date).toLocaleDateString("en-GB");
   };
 
   const formatCurrency = (amount) => {
@@ -182,7 +187,9 @@ const SalesOrderList = () => {
 
     return fileUrl.startsWith("http")
       ? fileUrl
-      : `${BACKEND_URL.replace(/\/$/, "")}${fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`}`;
+      : `${BACKEND_URL.replace(/\/$/, "")}${
+          fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`
+        }`;
   };
 
   const canEditOrder = (order) => {
@@ -195,70 +202,91 @@ const SalesOrderList = () => {
   };
 
   const canAdminApproveReject = (order) => {
-    return (
-      isAdmin &&
-      order.approvalStatus !== "approved" &&
-      order.approvalStatus !== "pending_manager_approval"
-    );
+    return isAdmin && order.approvalStatus === "pending_admin_review";
   };
 
   const canManagerApproveReject = (order) => {
     return isManager && order.approvalStatus === "pending_manager_approval";
   };
 
-  const handleAdminApprove = async (orderId) => {
-    if (!window.confirm("Approve this sales order and send to manager?")) return;
-
-    try {
-      await approveSalesOrderByAdmin(orderId);
-      alert("Sales order approved by admin and sent to manager.");
-      fetchSalesOrders();
-    } catch (error) {
-      alert(error.response?.data?.message || "Admin approval failed");
-    }
+  const handleAdminApprove = (orderId) => {
+    setApprovalModal({
+      open: true,
+      type: "admin_approve",
+      orderId,
+    });
   };
 
-  const handleAdminReject = async (orderId) => {
-    const comment = window.prompt("Enter rejection reason");
-
-    if (!comment) return;
-
-    try {
-      await rejectSalesOrderByAdmin(orderId, {
-        rejectionComment: comment,
-      });
-      alert("Sales order rejected by admin.");
-      fetchSalesOrders();
-    } catch (error) {
-      alert(error.response?.data?.message || "Admin rejection failed");
-    }
+  const handleAdminReject = (orderId) => {
+    setApprovalModal({
+      open: true,
+      type: "admin_reject",
+      orderId,
+    });
+    setRejectionComment("");
   };
 
-  const handleManagerApprove = async (orderId) => {
-    if (!window.confirm("Final approve this sales order?")) return;
-
-    try {
-      await approveSalesOrderByManager(orderId);
-      alert("Sales order approved by manager.");
-      fetchSalesOrders();
-    } catch (error) {
-      alert(error.response?.data?.message || "Manager approval failed");
-    }
+  const handleManagerApprove = (orderId) => {
+    setApprovalModal({
+      open: true,
+      type: "manager_approve",
+      orderId,
+    });
   };
 
-  const handleManagerReject = async (orderId) => {
-    const comment = window.prompt("Enter manager rejection reason");
+  const handleManagerReject = (orderId) => {
+    setApprovalModal({
+      open: true,
+      type: "manager_reject",
+      orderId,
+    });
+    setRejectionComment("");
+  };
 
-    if (!comment) return;
+  const closeApprovalModal = () => {
+    setApprovalModal({
+      open: false,
+      type: "",
+      orderId: null,
+    });
+    setRejectionComment("");
+  };
 
+  const submitApprovalAction = async () => {
     try {
-      await rejectSalesOrderByManager(orderId, {
-        rejectionComment: comment,
-      });
-      alert("Sales order rejected by manager.");
+      if (approvalModal.type.includes("reject") && !rejectionComment.trim()) {
+        alert("Please enter rejection reason");
+        return;
+      }
+
+      if (approvalModal.type === "admin_approve") {
+        await approveSalesOrderByAdmin(approvalModal.orderId);
+        alert("Sales order approved and sent to manager.");
+      }
+
+      if (approvalModal.type === "admin_reject") {
+        await rejectSalesOrderByAdmin(approvalModal.orderId, {
+          rejectionComment: rejectionComment.trim(),
+        });
+        alert("Sales order rejected by admin.");
+      }
+
+      if (approvalModal.type === "manager_approve") {
+        await approveSalesOrderByManager(approvalModal.orderId);
+        alert("Sales order finally approved.");
+      }
+
+      if (approvalModal.type === "manager_reject") {
+        await rejectSalesOrderByManager(approvalModal.orderId, {
+          rejectionComment: rejectionComment.trim(),
+        });
+        alert("Sales order rejected by manager.");
+      }
+
+      closeApprovalModal();
       fetchSalesOrders();
     } catch (error) {
-      alert(error.response?.data?.message || "Manager rejection failed");
+      alert(error.response?.data?.message || "Action failed");
     }
   };
 
@@ -285,26 +313,28 @@ const SalesOrderList = () => {
         </div>
 
         <button
-  type="button"
-  className="new-sales-btn"
-  onClick={() => {
-    setEditOrder(null);
-    setShowForm(true);
-  }}
->
-  + New Sales Order
-</button>
+          type="button"
+          className="new-sales-btn"
+          onClick={() => {
+            setEditOrder(null);
+            setShowForm(true);
+          }}
+        >
+          + New Sales Order
+        </button>
       </div>
 
       <div className="sales-status-tabs">
         <button
-  className={activeTab === "approved" ? "active-tab" : ""}
-  onClick={() =>
-    setActiveTab(activeTab === "approved" ? "pending_rejected" : "approved")
-  }
->
-  {activeTab === "approved" ? "Pending / Rejected" : "Approved"}
-</button>
+          className={activeTab === "approved" ? "active-tab" : ""}
+          onClick={() =>
+            setActiveTab(
+              activeTab === "approved" ? "pending_rejected" : "approved"
+            )
+          }
+        >
+          {activeTab === "approved" ? "Pending / Rejected" : "Approved"}
+        </button>
       </div>
 
       <div className="sales-filter-card">
@@ -535,7 +565,9 @@ const SalesOrderList = () => {
                     {canViewSalesPersonFilter && (
                       <p>
                         <b>Sales:</b>{" "}
-                        {order.salesPersonName || order.salesPersonId?.name || "-"}
+                        {order.salesPersonName ||
+                          order.salesPersonId?.name ||
+                          "-"}
                       </p>
                     )}
 
@@ -658,6 +690,55 @@ const SalesOrderList = () => {
           refresh={fetchSalesOrders}
           editOrder={editOrder}
         />
+      )}
+
+      {approvalModal.open && (
+        <div className="approval-modal-overlay">
+          <div className="approval-modal-card">
+            <div className="approval-icon">
+              {approvalModal.type.includes("approve") ? "✓" : "!"}
+            </div>
+
+            <h3>
+              {approvalModal.type.includes("approve")
+                ? "Approve Sales Order"
+                : "Reject Sales Order"}
+            </h3>
+
+            <p>
+              {approvalModal.type.includes("approve")
+                ? "Are you sure you want to approve this sales order?"
+                : "Please enter rejection reason below."}
+            </p>
+
+            {approvalModal.type.includes("reject") && (
+              <textarea
+                value={rejectionComment}
+                onChange={(e) => setRejectionComment(e.target.value)}
+                placeholder="Enter rejection reason"
+              />
+            )}
+
+            <div className="approval-modal-actions">
+              <button className="modal-cancel-btn" onClick={closeApprovalModal}>
+                Cancel
+              </button>
+
+              <button
+                className={
+                  approvalModal.type.includes("approve")
+                    ? "modal-approve-btn"
+                    : "modal-reject-btn"
+                }
+                onClick={submitApprovalAction}
+              >
+                {approvalModal.type.includes("approve")
+                  ? "Yes, Approve"
+                  : "Reject"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

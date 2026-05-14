@@ -1019,3 +1019,150 @@ textarea[name="sizeGradeQuantityRate"] {
     padding: 16px 18px !important;
   }
 }
+.sales-form-group input::placeholder,
+.sales-form-group textarea::placeholder {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sales-form-group textarea {
+  line-height: 1.5;
+}
+
+.sales-form-group select {
+  cursor: pointer;
+}
+
+.sales-form-group.has-error input,
+.sales-form-group.has-error select,
+.sales-form-group.has-error textarea {
+  border-color: #dc2626 !important;
+  background: #fff5f5 !important;
+}
+
+.sales-field-error {
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.required-star {
+  color: #dc2626;
+  font-weight: 900;
+}
+
+.file-selected {
+  display: block;
+  margin-top: 5px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.auto-hint {
+  display: block;
+  margin-top: 5px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+}
+.revision-comment-box {
+  margin: 16px 20px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #7f1d1d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.revision-highlight label {
+  color: #b91c1c !important;
+}
+
+.revision-highlight input,
+.revision-highlight select,
+.revision-highlight textarea,
+.revision-highlight .combined-address-box {
+  border-color: #ef4444 !important;
+  background: #fff7f7 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+.combined-address-box {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.combined-address-box textarea {
+  border: none !important;
+  border-radius: 0 !important;
+  margin-bottom: 0 !important;
+  min-height: 85px;
+  resize: vertical;
+  box-shadow: none !important;
+}
+
+.combined-gstin-row {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.combined-gstin-row span {
+  font-size: 12px;
+  font-weight: 900;
+  color: #334155;
+}
+
+.combined-gstin-row input {
+  margin-bottom: 0 !important;
+  height: 38px !important;
+}
+
+.sales-form-group.has-error input,
+.sales-form-group.has-error select,
+.sales-form-group.has-error textarea,
+.sales-form-group.has-error .combined-address-box {
+  border-color: #dc2626 !important;
+  background: #fff5f5 !important;
+}
+
+.sales-field-error {
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 5px;
+}
+
+.sales-form-group input::placeholder,
+.sales-form-group textarea::placeholder {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .revision-comment-box {
+    margin: 12px 14px 0;
+    font-size: 12px;
+  }
+
+  .combined-gstin-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .combined-gstin-row input {
+    width: 100%;
+  }
+}
