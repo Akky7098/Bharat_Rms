@@ -138,16 +138,33 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
   try {
     browser = await puppeteer.launch({
       headless: true,
+      executablePath: puppeteer.executablePath(),
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
         "--disable-extensions",
+
+        // extra Hostinger-safe optimizations
+        "--disable-background-networking",
+        "--disable-background-timer-throttling",
+        "--disable-renderer-backgrounding",
+        "--disable-features=TranslateUI",
+        "--disable-ipc-flooding-protection",
+        "--single-process",
+        "--no-zygote",
+        "--no-first-run",
       ],
     });
 
     page = await browser.newPage();
+
+    await page.setViewport({
+      width: 1240,
+      height: 1754,
+      deviceScaleFactor: 1,
+    });
 
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
@@ -156,11 +173,9 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
 
     await page.emulateMediaType("screen");
 
-    // IMPORTANT: wait until embedded base64 fonts are loaded
     await page.evaluateHandle("document.fonts.ready");
 
-    // small extra wait for Chromium PDF renderer
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     const pdfBuffer = await page.pdf({
       format: "A4",
@@ -175,9 +190,30 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
     });
 
     return pdfBuffer;
+  } catch (error) {
+    console.log("PDF GENERATION ERROR =>", error.message);
+    throw error;
   } finally {
-    if (page) await page.close().catch(() => {});
-    if (browser) await browser.close().catch(() => {});
+    try {
+      if (page) {
+        await page.close();
+        console.log("PDF PAGE CLOSED");
+      }
+    } catch (e) {
+      console.log("PDF PAGE CLOSE ERROR =>", e.message);
+    }
+
+    try {
+      if (browser) {
+        await browser.close();
+        console.log("PDF BROWSER CLOSED");
+      }
+    } catch (e) {
+      console.log("PDF BROWSER CLOSE ERROR =>", e.message);
+    }
+
+    browser = null;
+    page = null;
   }
 };
 const addSalesOrderHtmlPages = async (mergedPdf, salesOrder) => {

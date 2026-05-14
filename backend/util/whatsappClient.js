@@ -116,7 +116,20 @@ const restartWhatsappClient = async () => {
 
   return initWhatsappClient();
 };
+const destroyWhatsappClient = async () => {
+  try {
+    if (whatsappClient) {
+      await whatsappClient.destroy();
+      whatsappClient = null;
+      isReady = false;
+      latestQr = null;
 
+      console.log("WhatsApp client destroyed");
+    }
+  } catch (error) {
+    console.log("WhatsApp destroy error:", error.message);
+  }
+};
 module.exports = {
   initWhatsappClient,
   getWhatsappClient,
@@ -124,4 +137,5 @@ module.exports = {
   getLatestQr,
   restartWhatsappClient,
   MessageMedia,
+  destroyWhatsappClient,
 };

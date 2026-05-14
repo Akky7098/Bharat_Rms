@@ -1,7 +1,12 @@
 const emailService = require("./emailService");
 const pdfService = require("./pdfService");
 const whatsappApprovalService = require("./whatsappApprovalService");
- 
+
+const {
+  destroyWhatsappClient,
+  initWhatsappClient,
+} = require("../util/whatsappClient");
+
 const finalApproveSalesOrder = async (
   salesOrder,
   managerData = {
@@ -11,9 +16,10 @@ const finalApproveSalesOrder = async (
   },
   source = "dashboard"
 ) => {
-    console.log("===== FINAL APPROVAL SERVICE START =====");
-console.log("FINAL APPROVAL SOURCE =>", source);
-console.log("SALES ORDER ID =>", salesOrder._id);
+  console.log("===== FINAL APPROVAL SERVICE START =====");
+  console.log("FINAL APPROVAL SOURCE =>", source);
+  console.log("SALES ORDER ID =>", salesOrder._id);
+
   if (!salesOrder) {
     throw new Error("Sales order not found");
   }
@@ -55,24 +61,55 @@ console.log("SALES ORDER ID =>", salesOrder._id);
 
   await salesOrder.save();
 
-  const pdfDetails = await pdfService.generateSalesOrderPdf(salesOrder);
+  // ============================
+  // STOP WHATSAPP BEFORE PDF
+  // ============================
+  try {
+    console.log("DESTROYING WHATSAPP CLIENT BEFORE PDF...");
+    await destroyWhatsappClient();
+    console.log("WHATSAPP CLIENT DESTROYED");
+  } catch (err) {
+    console.log("WHATSAPP DESTROY ERROR =>", err.message);
+  }
 
-  salesOrder.pdf = {
-    generated: true,
-    fileName: pdfDetails.fileName,
-    filePath: pdfDetails.filePath,
-    fileUrl: pdfDetails.fileUrl,
-    generatedAt: new Date(),
-  };
+  // ============================
+  // PDF GENERATION
+  // ============================
+  try {
+    const pdfDetails = await pdfService.generateSalesOrderPdf(salesOrder);
 
-  salesOrder.approvalHistory.push({
-    role: "system",
-    action: "pdf_generated",
-    comment: "Final approved PDF generated",
-  });
+    salesOrder.pdf = {
+      generated: true,
+      fileName: pdfDetails.fileName,
+      filePath: pdfDetails.filePath,
+      fileUrl: pdfDetails.fileUrl,
+      generatedAt: new Date(),
+    };
 
-  await salesOrder.save();
+    salesOrder.approvalHistory.push({
+      role: "system",
+      action: "pdf_generated",
+      comment: "Final approved PDF generated",
+    });
 
+    await salesOrder.save();
+  } catch (pdfError) {
+    console.log("PDF GENERATION FAILED =>", pdfError.message);
+
+    salesOrder.approvalHistory.push({
+      role: "system",
+      action: "failed",
+      comment: `PDF generation failed: ${pdfError.message}`,
+    });
+
+    await salesOrder.save();
+
+    throw pdfError;
+  }
+
+  // ============================
+  // EMAIL
+  // ============================
   try {
     const emailResult = await emailService.sendSalesOrderApprovedEmail(
       salesOrder,
@@ -98,6 +135,8 @@ console.log("SALES ORDER ID =>", salesOrder._id);
 
     await salesOrder.save();
   } catch (emailError) {
+    console.log("EMAIL ERROR =>", emailError.message);
+
     salesOrder.approvalHistory.push({
       role: "system",
       action: "failed",
@@ -107,6 +146,23 @@ console.log("SALES ORDER ID =>", salesOrder._id);
     await salesOrder.save();
   }
 
+  // ============================
+  // RESTART WHATSAPP
+  // ============================
+  try {
+    console.log("RESTARTING WHATSAPP CLIENT...");
+    await initWhatsappClient();
+
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+
+    console.log("WHATSAPP CLIENT RESTARTED");
+  } catch (err) {
+    console.log("WHATSAPP RESTART ERROR =>", err.message);
+  }
+
+  // ============================
+  // SEND GROUP PDF
+  // ============================
   try {
     await whatsappApprovalService.sendFinalPdfToSalesGroup(salesOrder);
 
@@ -124,6 +180,8 @@ console.log("SALES ORDER ID =>", salesOrder._id);
 
     await salesOrder.save();
   } catch (waError) {
+    console.log("GROUP WHATSAPP ERROR =>", waError.message);
+
     salesOrder.whatsappGroupStatus = {
       ...salesOrder.whatsappGroupStatus,
       errorMessage: waError.message,
@@ -197,37 +255,12 @@ const holdSalesOrderByMd = async (
   await salesOrder.save();
 
   try {
-    const emailResult = await emailService.sendSalesOrderRejectedEmail(
+    await emailService.sendSalesOrderRejectedEmail(
       salesOrder,
       rejectionComment.trim()
     );
-
-    salesOrder.emailStatus = {
-      sent: true,
-      sentAt: new Date(),
-      sentTo: [salesOrder.salesPersonEmail],
-      ccTo: [
-        salesOrder.adminApproval?.adminEmail,
-        salesOrder.managerApproval?.managerEmail,
-      ].filter(Boolean),
-      messageId: emailResult?.messageId,
-    };
-
-    salesOrder.approvalHistory.push({
-      role: "system",
-      action: "email_sent",
-      comment: "Hold email sent to salesperson",
-    });
-
-    await salesOrder.save();
   } catch (emailError) {
-    salesOrder.approvalHistory.push({
-      role: "system",
-      action: "failed",
-      comment: `Hold email failed: ${emailError.message}`,
-    });
-
-    await salesOrder.save();
+    console.log("HOLD EMAIL ERROR =>", emailError.message);
   }
 
   return salesOrder;
