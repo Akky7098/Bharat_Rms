@@ -10,22 +10,18 @@ const getBaseUrl = () => {
 const getFullPdfLink = (fileUrl) => {
   if (!fileUrl) return "";
 
-  const cleanFileUrl = fileUrl.startsWith("/")
-    ? fileUrl
-    : `/${fileUrl}`;
+  const cleanFileUrl = fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`;
 
   return `${getBaseUrl()}${cleanFileUrl}`;
 };
 
 const formatDate = (date) => {
   if (!date) return "";
-
   return new Date(date).toLocaleDateString("en-IN");
 };
 
 const formatStatus = (status) => {
   if (!status) return "";
-
   return String(status).replaceAll("_", " ").toUpperCase();
 };
 
@@ -114,10 +110,7 @@ const sendSalesOrderApprovedEmail = async (
   });
 };
 
-const sendSalesOrderRejectedEmail = async (
-  salesOrder,
-  rejectionComment
-) => {
+const sendSalesOrderRejectedEmail = async (salesOrder, rejectionComment) => {
   if (!salesOrder.salesPersonEmail) return null;
 
   const pdfLink = getFullPdfLink(salesOrder.pdf?.fileUrl);
@@ -127,26 +120,26 @@ const sendSalesOrderRejectedEmail = async (
     from: `"Bharat Special Steel" <bsspl97@gmail.com>`,
     to: salesOrder.salesPersonEmail,
 
-    subject: `Bharat Special Steel | Sales Order ${orderRef} Rejected for ${salesOrder.companyName}`,
+    subject: `Bharat Special Steel | Sales Order ${orderRef} Put On Hold for ${salesOrder.companyName}`,
 
-    headers: getUniqueMailHeaders(salesOrder, "salesperson-rejected"),
+    headers: getUniqueMailHeaders(salesOrder, "salesperson-put-on-hold"),
 
     html: `
       <div style="font-family:Arial,sans-serif;color:#111;line-height:1.5;">
         <h2 style="color:#dc2626;margin-bottom:8px;">
-          Sales Order Rejected
+          Sales Order Put On Hold
         </h2>
 
         <p>Hello <b>${salesOrder.salesPersonName || "Sales Team"}</b>,</p>
 
         <p>
           Sales Order for <b>${salesOrder.companyName || ""}</b>
-          has been rejected. Please check the reason below, edit the order and resubmit.
+          has been put on hold. Please check the comment below, revise the Sales Order and resubmit.
         </p>
 
         ${getOrderRows(
           salesOrder,
-          `<tr><td><b>Rejection Comment</b></td><td style="color:#dc2626;"><b>${
+          `<tr><td><b>Hold Comment</b></td><td style="color:#dc2626;"><b>${
             rejectionComment || ""
           }</b></td></tr>`
         )}
@@ -158,7 +151,7 @@ const sendSalesOrderRejectedEmail = async (
         }
 
         <p style="margin-top:20px;">
-          Please edit and resubmit the sales order.
+          Please revise Sales Order and resubmit.
         </p>
 
         <p style="margin-top:30px;">
@@ -187,7 +180,7 @@ const sendAdminApprovalNotification = async (
 
     subject: `Bharat Special Steel | ${actionText} | Sales Order ${orderRef} | ${salesOrder.companyName}`,
 
-    headers: getUniqueMailHeaders(salesOrder, "admin-approval-notification"),
+    headers: getUniqueMailHeaders(salesOrder, "manager-approval-notification"),
 
     html: `
       <div style="font-family:Arial,sans-serif;color:#111;line-height:1.5;">
@@ -215,8 +208,7 @@ const sendAdminRejectionNotification = async (
   rejectionComment
 ) => {
   const adminEmail =
-    salesOrder.adminApproval?.adminEmail ||
-    process.env.ADMIN_EMAIL;
+    salesOrder.adminApproval?.adminEmail || process.env.ADMIN_EMAIL;
 
   if (!adminEmail) return null;
 
@@ -227,23 +219,23 @@ const sendAdminRejectionNotification = async (
     from: `"Bharat Special Steel" <bsspl97@gmail.com>`,
     to: adminEmail,
 
-    subject: `Bharat Special Steel | Manager Rejected Sales Order ${orderRef} | ${salesOrder.companyName}`,
+    subject: `Bharat Special Steel | MD Sir Put Sales Order On Hold ${orderRef} | ${salesOrder.companyName}`,
 
-    headers: getUniqueMailHeaders(salesOrder, "admin-manager-rejected"),
+    headers: getUniqueMailHeaders(salesOrder, "manager-md-put-on-hold"),
 
     html: `
       <div style="font-family:Arial,sans-serif;color:#111;line-height:1.5;">
         <h2 style="color:#dc2626;">
-          Manager Rejected Sales Order
+          MD Sir Put Sales Order On Hold
         </h2>
 
         <p>
-          A sales order checked by admin has been rejected by manager.
+          A sales order checked by Manager has been put on hold by MD Sir.
         </p>
 
         ${getOrderRows(
           salesOrder,
-          `<tr><td><b>Manager Comment</b></td><td style="color:#dc2626;"><b>${
+          `<tr><td><b>MD Sir Comment</b></td><td style="color:#dc2626;"><b>${
             rejectionComment || ""
           }</b></td></tr>`
         )}
@@ -255,7 +247,7 @@ const sendAdminRejectionNotification = async (
         }
 
         <p style="margin-top:20px;">
-          Please coordinate with the salesperson for correction.
+          Please coordinate with the salesperson to revise the Sales Order.
         </p>
       </div>
     `,
@@ -273,7 +265,7 @@ const sendManagerApprovalRequestEmail = async (salesOrder) => {
 
   const approveLink = `${baseUrl}/api/sales-order/email-approve/${salesOrder._id}/${salesOrder.managerEmailApproval.token}`;
 
-  const rejectLink = `${baseUrl}/api/sales-order/email-reject-form/${salesOrder._id}/${salesOrder.managerEmailApproval.token}`;
+  const holdLink = `${baseUrl}/api/sales-order/email-reject-form/${salesOrder._id}/${salesOrder.managerEmailApproval.token}`;
 
   const pdfLink = getFullPdfLink(salesOrder.pdf?.fileUrl);
   const orderRef = getOrderRef(salesOrder);
@@ -282,9 +274,9 @@ const sendManagerApprovalRequestEmail = async (salesOrder) => {
     from: `"Bharat Special Steel" <bsspl97@gmail.com>`,
     to: managerEmail,
 
-    subject: `Bharat Special Steel | Approval Required | Sales Order ${orderRef} | ${salesOrder.companyName}`,
+    subject: `Bharat Special Steel | MD Sir Approval Required | Sales Order ${orderRef} | ${salesOrder.companyName}`,
 
-    headers: getUniqueMailHeaders(salesOrder, "manager-approval-request"),
+    headers: getUniqueMailHeaders(salesOrder, "md-sir-approval-request"),
 
     html: `
       <div style="font-family:Arial,sans-serif;color:#111;line-height:1.5;">
@@ -294,7 +286,7 @@ const sendManagerApprovalRequestEmail = async (salesOrder) => {
 
         <p>
           A new Sales Order Form for <b>${salesOrder.companyName || ""}</b>
-          has been checked by admin and is pending your approval.
+          has been checked by Manager and is pending MD Sir approval.
         </p>
 
         ${getOrderRows(salesOrder)}
@@ -312,8 +304,8 @@ const sendManagerApprovalRequestEmail = async (salesOrder) => {
 
           &nbsp;&nbsp;
 
-          <a href="${rejectLink}" target="_blank" style="background:#dc2626;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block;">
-            Reject Sales Order
+          <a href="${holdLink}" target="_blank" style="background:#dc2626;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block;">
+            Put On Hold
           </a>
         </p>
 

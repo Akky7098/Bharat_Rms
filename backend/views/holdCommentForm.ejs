@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Put Sales Order On Hold</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+
+      .card {
+        width: 480px;
+        max-width: calc(100vw - 32px);
+        margin: 50px auto;
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+      }
+
+      h2 {
+        margin: 0 0 8px;
+        color: #dc2626;
+      }
+
+      p {
+        color: #475569;
+        line-height: 1.5;
+      }
+
+      .info {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px;
+        margin: 16px 0;
+        font-size: 14px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 12px;
+        font-size: 14px;
+        box-sizing: border-box;
+        resize: vertical;
+        outline: none;
+      }
+
+      textarea:focus {
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+      }
+
+      button {
+        width: 100%;
+        height: 46px;
+        border: none;
+        border-radius: 12px;
+        background: #dc2626;
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+        margin-top: 14px;
+      }
+
+      button:hover {
+        background: #b91c1c;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <h2>Put Sales Order On Hold</h2>
+
+      <p>Please enter the revision comment for the salesperson.</p>
+
+      <div class="info">
+        <b>Company:</b> <%= salesOrder.companyName || "-" %><br />
+        <b>PO No:</b> <%= salesOrder.poNumber || "-" %><br />
+        <b>Sales Person:</b> <%= salesOrder.salesPersonName || "-" %>
+      </div>
+
+      <form
+        method="POST"
+        action="/api/whatsapp-approval/hold/<%= salesOrder._id %>/<%= token %>"
+      >
+        <textarea
+          name="rejectionComment"
+          placeholder="Example: Please revise freight and payment terms"
+          required
+        ></textarea>
+
+        <button type="submit">Put On Hold</button>
+      </form>
+    </div>
+  </body>
+</html>

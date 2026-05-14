@@ -6,9 +6,18 @@ const addressSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
     address: {
       type: String,
       trim: true,
+      default: "",
+    },
+
+    gstinNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: "",
     },
   },
   { _id: false }
@@ -158,6 +167,7 @@ const salesOrderSchema = new mongoose.Schema(
 
     contactPersonEmail: {
       type: String,
+       required: true,
       trim: true,
       lowercase: true,
     },
@@ -251,17 +261,30 @@ const salesOrderSchema = new mongoose.Schema(
     // SUPPLY DETAILS
     // =========================
     supplyCondition: {
-      type: String,
-      enum: ["as_per_standard", "other"],
-      required: true,
-    },
+  type: String,
+  enum: [
+    "as_per_standard",
+    "as_rolled",
+    "as_forged",
+    "as_rolled_or_as_forged",
+    "as_rolled_annealed",
+    "as_forged_annealed",
+    "as_rolled_or_forged_annealed",
+    "as_rolled_normalised",
+    "as_rolled_or_as_forged_normalised",
+    "as_rolled_qt",
+    "as_forged_qt",
+    "as_rolled_or_as_forged_qt",
+    "other",
+  ],
+  required: true,
+  default: "as_per_standard",
+},
 
-    otherSupplyConditions: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
+   otherSupplyConditions: {
+  type: [String],
+  default: [],
+},
 
     cutLengthRequired: {
       type: String,
@@ -274,7 +297,11 @@ const salesOrderSchema = new mongoose.Schema(
       enum: ["extra", "inclusive"],
       required: true,
     },
-
+    cuttingExtraCharges: {
+  type: String,
+  default: "",
+},
+   
     deliveryCost: {
       type: String,
       enum: ["inclusive"],
@@ -286,7 +313,10 @@ const salesOrderSchema = new mongoose.Schema(
       enum: ["extra", "self","inclusive"],
       required: true,
     },
-
+    freightExtraCharges: {
+  type: String,
+  default: "",
+},
     tolerance: {
       type: String,
       trim: true,

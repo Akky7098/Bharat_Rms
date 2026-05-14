@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-
+const path = require("path");
 const authRoutes = require("./routes/authRoutes");
 const enquiryRoutes = require("./routes/enquiryRoutes");
 const salesOrderRoutes = require("./routes/salesOrderRoutes");
@@ -11,8 +11,10 @@ const coldCallRoutes = require("./routes/coldCallRoutes");
 const timesheetRoutes = require("./routes/timesheetRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const dispatchRoutes = require("./routes/dispatchRoutes");
+const whatsappApprovalRoutes = require("./routes/whatsappApprovalRoutes");
+const whatsappStatusRoutes = require("./routes/whatsappStatusRoutes");
 const app = express();
-const path = require("path");
+
 // OPEN CORS - temporary for testing
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -63,6 +65,8 @@ app.use(
       path.join(__dirname, "uploads", "customer-po")
   )
 );
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
 app.use("/api/auth", authRoutes);
 app.use("/api/enquiry", enquiryRoutes);
 app.use("/api/sales-order", salesOrderRoutes);
@@ -72,4 +76,6 @@ app.use("/api/cold-call", coldCallRoutes);
 app.use("/api/timesheet", timesheetRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/dispatch", dispatchRoutes);
+app.use("/api/whatsapp-approval", whatsappApprovalRoutes);
+app.use("/api/whatsapp", whatsappStatusRoutes);
 module.exports = app;
