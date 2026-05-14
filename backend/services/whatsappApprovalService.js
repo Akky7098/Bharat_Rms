@@ -5,7 +5,7 @@ const {
   isWhatsappReady,
   MessageMedia,
 } = require("../util/whatsappClient");
-
+const runWithChromiumLock = require("../util/chromiumLock");
 const getBaseUrl = () => {
   const baseUrl = (
     process.env.BACKEND_URL || "http://localhost:5000"
