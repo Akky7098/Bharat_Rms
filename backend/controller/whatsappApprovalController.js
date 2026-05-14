@@ -23,11 +23,36 @@ const approveFromWhatsapp = async (req, res) => {
       return res.status(403).send("Invalid or expired approval link");
     }
 
+    // already approved
     if (salesOrder.approvalStatus === "approved") {
       return res.send(`
         <div style="font-family:Arial;padding:30px;">
-          <h2 style="color:#16a34a;">Already Approved</h2>
-          <p>This Sales Order is already approved.</p>
+          <h2 style="color:#16a34a;">Sales Order Already Approved</h2>
+          <p>This Sales Order has already been approved by MD Sir.</p>
+        </div>
+      `);
+    }
+
+    // already rejected / put on hold
+    if (salesOrder.approvalStatus === "rejected_by_manager") {
+      return res.send(`
+        <div style="font-family:Arial;padding:30px;">
+          <h2 style="color:#dc2626;">Sales Order Already Put On Hold</h2>
+          <p>This Sales Order has already been put on hold by MD Sir.</p>
+          <p><b>Reason:</b> ${
+            salesOrder.managerApproval?.rejectionComment || "-"
+          }</p>
+        </div>
+      `);
+    }
+
+    // invalid workflow state
+    if (salesOrder.approvalStatus !== "pending_manager_approval") {
+      return res.send(`
+        <div style="font-family:Arial;padding:30px;">
+          <h2>Action Not Available</h2>
+          <p>This Sales Order is no longer pending MD Sir approval.</p>
+          <p><b>Current Status:</b> ${salesOrder.approvalStatus}</p>
         </div>
       `);
     }
@@ -68,6 +93,37 @@ const holdForm = async (req, res) => {
       return res.status(403).send("Invalid or expired approval link");
     }
 
+    if (salesOrder.approvalStatus === "rejected_by_manager") {
+      return res.send(`
+        <div style="font-family:Arial;padding:30px;">
+          <h2 style="color:#dc2626;">Sales Order Already Put On Hold</h2>
+          <p>This Sales Order has already been put on hold by MD Sir.</p>
+          <p><b>Reason:</b> ${
+            salesOrder.managerApproval?.rejectionComment || "-"
+          }</p>
+        </div>
+      `);
+    }
+
+    if (salesOrder.approvalStatus === "approved") {
+      return res.send(`
+        <div style="font-family:Arial;padding:30px;">
+          <h2 style="color:#16a34a;">Sales Order Already Approved</h2>
+          <p>This Sales Order has already been approved by MD Sir.</p>
+        </div>
+      `);
+    }
+
+    if (salesOrder.approvalStatus !== "pending_manager_approval") {
+      return res.send(`
+        <div style="font-family:Arial;padding:30px;">
+          <h2>Action Not Available</h2>
+          <p>This Sales Order is no longer pending MD Sir approval.</p>
+          <p><b>Current Status:</b> ${salesOrder.approvalStatus}</p>
+        </div>
+      `);
+    }
+
     return res.render("holdCommentForm", {
       salesOrder,
       token,
@@ -76,7 +132,6 @@ const holdForm = async (req, res) => {
     return res.status(500).send(error.message);
   }
 };
-
 const submitHoldFromWhatsapp = async (req, res) => {
   try {
     const { id, token } = req.params;

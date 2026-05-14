@@ -33,6 +33,20 @@ const getOrderRef = (salesOrder) => {
   );
 };
 
+const cleanEmails = (emails = []) => {
+  return [...new Set(emails.filter(Boolean))];
+};
+
+const getDefaultTrackingCc = (salesOrder) => {
+  return cleanEmails([
+    salesOrder.adminApproval?.adminEmail,
+    salesOrder.adminApproval?.approvedByEmail,
+    salesOrder.managerApproval?.managerEmail,
+    process.env.ADMIN_EMAIL,
+    process.env.MANAGER_EMAIL,
+  ]);
+};
+
 const getUniqueMailHeaders = (salesOrder, type) => {
   const uniqueId = `${type}-${salesOrder._id}-${Date.now()}@bharatspecialsteel.local`;
 
@@ -61,16 +75,23 @@ const getOrderRows = (salesOrder, extraRows = "") => {
 
 const sendSalesOrderApprovedEmail = async (
   salesOrder,
-  approvedBy = "Management"
+  approvedBy = "Management",
+  ccEmails = []
 ) => {
   if (!salesOrder.salesPersonEmail) return null;
 
   const pdfLink = getFullPdfLink(salesOrder.pdf?.fileUrl);
   const orderRef = getOrderRef(salesOrder);
 
+  const finalCc = cleanEmails([
+    ...getDefaultTrackingCc(salesOrder),
+    ...ccEmails,
+  ]);
+
   return transporter.sendMail({
     from: `"Bharat Special Steel" <bsspl97@gmail.com>`,
     to: salesOrder.salesPersonEmail,
+    cc: finalCc,
 
     subject: `Bharat Special Steel | Sales Order ${orderRef} Approved for ${salesOrder.companyName}`,
 
@@ -110,15 +131,25 @@ const sendSalesOrderApprovedEmail = async (
   });
 };
 
-const sendSalesOrderRejectedEmail = async (salesOrder, rejectionComment) => {
+const sendSalesOrderRejectedEmail = async (
+  salesOrder,
+  rejectionComment,
+  ccEmails = []
+) => {
   if (!salesOrder.salesPersonEmail) return null;
 
   const pdfLink = getFullPdfLink(salesOrder.pdf?.fileUrl);
   const orderRef = getOrderRef(salesOrder);
 
+  const finalCc = cleanEmails([
+    ...getDefaultTrackingCc(salesOrder),
+    ...ccEmails,
+  ]);
+
   return transporter.sendMail({
     from: `"Bharat Special Steel" <bsspl97@gmail.com>`,
     to: salesOrder.salesPersonEmail,
+    cc: finalCc,
 
     subject: `Bharat Special Steel | Sales Order ${orderRef} Put On Hold for ${salesOrder.companyName}`,
 
