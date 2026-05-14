@@ -15,17 +15,22 @@ const initWhatsappClient = () => {
       dataPath: path.join(__dirname, "../.wwebjs_auth"),
     }),
     puppeteer: {
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--disable-extensions",
-        "--no-first-run",
-        "--no-zygote",
-      ],
-    },
+  headless: true,
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-extensions",
+    "--disable-background-networking",
+    "--disable-background-timer-throttling",
+    "--disable-renderer-backgrounding",
+    "--disable-features=TranslateUI",
+    "--disable-ipc-flooding-protection",
+    "--single-process",
+    "--no-zygote",
+  ],
+},
   });
 
   whatsappClient.on("qr", (qr) => {
