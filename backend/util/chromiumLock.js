@@ -1,7 +1,7 @@
 let queue = Promise.resolve();
 
 const runWithChromiumLock = async (jobName, jobFn) => {
-  const run = async () => {
+  const execute = async () => {
     console.log(`CHROMIUM LOCK START => ${jobName}`);
 
     try {
@@ -14,11 +14,11 @@ const runWithChromiumLock = async (jobName, jobFn) => {
     }
   };
 
-  const currentJob = queue.then(run, run);
+  const current = queue.then(execute, execute);
 
-  queue = currentJob.catch(() => {});
+  queue = current.catch(() => {});
 
-  return currentJob;
+  return current;
 };
 
 module.exports = runWithChromiumLock;

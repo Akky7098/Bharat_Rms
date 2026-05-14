@@ -1,19 +1,18 @@
 const fs = require("fs");
 const path = require("path");
+const runWithChromiumLock = require("../util/chromiumLock");
+
 const {
   getWhatsappClient,
   isWhatsappReady,
   MessageMedia,
 } = require("../util/whatsappClient");
-const runWithChromiumLock = require("../util/chromiumLock");
+
 const getBaseUrl = () => {
-  const baseUrl = (
-    process.env.BACKEND_URL || "http://localhost:5000"
-  ).replace(/\/$/, "");
-
-  console.log("BASE URL =>", baseUrl);
-
-  return baseUrl;
+  return (process.env.BACKEND_URL || "http://localhost:5000").replace(
+    /\/$/,
+    ""
+  );
 };
 
 const getOrderRef = (salesOrder) => {
@@ -24,104 +23,53 @@ const getOrderRef = (salesOrder) => {
   );
 };
 
-const getFullPdfLink = (fileUrl) => {
-  if (!fileUrl) {
-    console.log("NO PDF FILE URL FOUND");
-    return "";
-  }
-
-  const cleanFileUrl = fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`;
-  const fullUrl = `${getBaseUrl()}${cleanFileUrl}`;
-
-  console.log("FULL PDF URL =>", fullUrl);
-
-  return fullUrl;
-};
-
-const getPdfFileUrl = (salesOrder) => {
-  const fileUrl =
-    salesOrder.finalSalesOrderPackage?.fileUrl ||
-    salesOrder.pdf?.fileUrl ||
-    salesOrder.preShipmentInspectionPdf?.fileUrl ||
-    "";
-
-  console.log("RAW PDF FILE URL FROM DB =>", fileUrl);
-
-  return fileUrl;
-};
-
-const getPdfFilePath = (salesOrder) => {
-  const filePath =
-    salesOrder.finalSalesOrderPackage?.filePath ||
-    salesOrder.pdf?.filePath ||
-    salesOrder.preShipmentInspectionPdf?.filePath ||
-    "";
-
-  console.log("RAW PDF FILE PATH FROM DB =>", filePath);
-
-  return filePath;
-};
-
-const getSafeFilePath = (filePath) => {
-  if (!filePath) {
-    console.log("EMPTY FILE PATH");
-    return "";
-  }
-
-  if (path.isAbsolute(filePath)) {
-    console.log("ABSOLUTE FILE PATH =>", filePath);
-    return filePath;
-  }
-
-  const resolvedPath = path.join(__dirname, "..", filePath);
-
-  console.log("RESOLVED FILE PATH =>", resolvedPath);
-
-  return resolvedPath;
-};
-
 const formatCurrency = (amount) => {
   return Number(amount || 0).toLocaleString("en-IN");
 };
 
-const buildMdApprovalMessage = (salesOrder) => {
-  console.log("BUILDING MD WHATSAPP MESSAGE");
+const formatDate = (date) => {
+  if (!date) return "-";
 
-  const orderRef = getOrderRef(salesOrder);
-  const pdfLink = getFullPdfLink(getPdfFileUrl(salesOrder));
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
 
-  const shortPdfLink = `${getBaseUrl()}/api/whatsapp-approval/pdf/${
-  salesOrder._id
-}/${salesOrder.managerEmailApproval.token}`;
+const getPdfFileUrl = (salesOrder) => {
+  return (
+    salesOrder.finalSalesOrderPackage?.fileUrl ||
+    salesOrder.pdf?.fileUrl ||
+    salesOrder.preShipmentInspectionPdf?.fileUrl ||
+    ""
+  );
+};
 
-const approveLink = `${getBaseUrl()}/api/whatsapp-approval/approve/${
-  salesOrder._id
-}/${salesOrder.managerEmailApproval.token}`;
+const getPdfFilePath = (salesOrder) => {
+  return (
+    salesOrder.finalSalesOrderPackage?.filePath ||
+    salesOrder.pdf?.filePath ||
+    salesOrder.preShipmentInspectionPdf?.filePath ||
+    ""
+  );
+};
 
-const holdLink = `${getBaseUrl()}/api/whatsapp-approval/hold-form/${
-  salesOrder._id
-}/${salesOrder.managerEmailApproval.token}`;
+const getFullPdfLink = (fileUrl) => {
+  if (!fileUrl) return "";
 
-  console.log("APPROVE LINK =>", approveLink);
-  console.log("HOLD LINK =>", holdLink);
+  const cleanFileUrl = fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`;
+  return `${getBaseUrl()}${cleanFileUrl}`;
+};
 
-  return `*Bharat Special Steel*
+const getSafeFilePath = (filePath) => {
+  if (!filePath) return "";
 
-*Sales Order Approval Required*
+  if (path.isAbsolute(filePath)) {
+    return filePath;
+  }
 
-*Company:* ${salesOrder.companyName || "-"}
-*Sales Person:* ${salesOrder.salesPersonName || "-"}
-*PO Number:* ${salesOrder.poNumber || "-"}
-*Order Value:* Rs. ${formatCurrency(salesOrder.orderValue)}
-
-📄 *Open Sales Order PDF:*
-${shortPdfLink}
-
-✅ *Approve Sales Order:*
-${approveLink}
-
-⏸ *Put On Hold / Revise:*
-${holdLink}`;
+  return path.join(__dirname, "..", filePath);
 };
 
 const sendMdApprovalWhatsapp = async (salesOrder) => {
@@ -160,6 +108,7 @@ const sendMdApprovalWhatsapp = async (salesOrder) => {
 *Sales Person:* ${salesOrder.salesPersonName || "-"}
 *Order Date:* ${formatDate(salesOrder.orderDate || salesOrder.createdAt)}
 *PO Number:* ${salesOrder.poNumber || "-"}
+*Order Ref:* ${getOrderRef(salesOrder)}
 *Order Value:* Rs. ${formatCurrency(salesOrder.orderValue)}
 
 ✅ *Approve Sales Order:*
@@ -214,6 +163,7 @@ const sendFinalPdfToSalesGroup = async (salesOrder) => {
 *Sales Person:* ${salesOrder.salesPersonName || "-"}
 *Order Date:* ${formatDate(salesOrder.orderDate || salesOrder.createdAt)}
 *PO Number:* ${salesOrder.poNumber || "-"}
+*Order Ref:* ${getOrderRef(salesOrder)}
 *Order Value:* Rs. ${formatCurrency(salesOrder.orderValue)}`;
 
     if (pdfFilePath && fs.existsSync(pdfFilePath)) {
