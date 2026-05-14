@@ -128,7 +128,7 @@ const formatDate = (date) => {
 };
 
 const generateSalesOrderPdfBuffer = async (salesOrder) => {
-  await ensureChromium();
+  const executablePath = await ensureChromium();
 
   const html = salesOrderTemplate(salesOrder);
 
@@ -138,15 +138,13 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
   try {
     browser = await puppeteer.launch({
       headless: true,
-      executablePath: puppeteer.executablePath(),
+      executablePath,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
         "--disable-extensions",
-
-        // extra Hostinger-safe optimizations
         "--disable-background-networking",
         "--disable-background-timer-throttling",
         "--disable-renderer-backgrounding",
