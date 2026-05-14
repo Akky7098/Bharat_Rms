@@ -1,19 +1,12 @@
 const productGrades = {
-  tool_steel: [
-    "DIN 1.2714/DB6",
-    "DIN 1.2714/DB6 (NLMK)",
-    "DIN 1.2344/H13",
-    "DIN 1.2343/H11",
-    "DIN 1.2379/D2",
-    "DIN 1.2080/D3 (HCHCR)",
-  ],
-
-  die_steel: [
-    "DIN 1.2714/DB6",
-    "DIN 1.2344/H13",
-    "DIN 1.2343/H11",
-    "DIN 1.2379/D2",
-  ],
+ tool_and_die_steel: [
+  "DIN 1.2714/DB6",
+  "DIN 1.2714/DB6 (NLMK)",
+  "DIN 1.2344/H13",
+  "DIN 1.2343/H11",
+  "DIN 1.2379/D2",
+  "DIN 1.2080/D3 (HCHCR)",
+],
 
   plastic_mould_steel: [
     "DIN 1.2311/P20",

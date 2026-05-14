@@ -45,18 +45,17 @@ const enquirySchema = new mongoose.Schema(
     },
 
     productCategory: {
-      type: String,
-      enum: [
-        "tool_steel",
-        "die_steel",
-        "plastic_mould_steel",
-        "high_speed_steel",
-        "alloy_steel",
-        "carbon_steel",
-        "other",
-      ],
-      required: true,
-    },
+  type: String,
+  enum: [
+    "tool_and_die_steel",
+    "plastic_mould_steel",
+    "high_speed_steel",
+    "alloy_steel",
+    "carbon_steel",
+    "other",
+  ],
+  required: true,
+},
 
     grade: {
       type: String,
@@ -98,18 +97,36 @@ const enquirySchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-
-    supplyCondition: {
+supplyCondition: {
   type: String,
   enum: [
     "as_per_standard",
-    "as_rolled_annealed",
-    "as_forged_annealed",
+
     "as_rolled",
     "as_forged",
+
+    "as_rolled_or_as_forged",
+
+    "as_rolled_annealed",
+    "as_forged_annealed",
+    "as_rolled_or_forged_annealed",
+
+    "as_rolled_normalised",
+    "as_rolled_or_as_forged_normalised",
+
+    "as_rolled_qt",
+    "as_forged_qt",
+    "as_rolled_or_as_forged_qt",
+
+    "other",
   ],
   required: true,
   default: "as_per_standard",
+},
+otherSupplyConditions: {
+  type: String,
+  default: "",
+  trim: true,
 },
 
     modeOfEnquiry: {
