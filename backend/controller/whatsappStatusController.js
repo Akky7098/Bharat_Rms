@@ -8,21 +8,15 @@ const {
 
 const getWhatsappStatus = async (req, res) => {
   try {
-    const ready = await isWhatsappReady();
+    const { forceCheckWhatsappStatus, getLatestQr } = require("../util/whatsappClient");
 
-    let state = "NOT_READY";
-
-    try {
-      const client = getWhatsappClient();
-      state = await client.getState();
-    } catch (error) {
-      state = "DISCONNECTED";
-    }
+    const status = await forceCheckWhatsappStatus();
 
     return res.json({
       success: true,
-      ready,
-      state,
+      ready: status.ready,
+      state: status.state,
+      error: status.error || "",
       hasQr: Boolean(getLatestQr()),
     });
   } catch (error) {

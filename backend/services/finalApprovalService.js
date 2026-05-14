@@ -61,13 +61,7 @@ const finalApproveSalesOrder = async (
 
   await salesOrder.save();
 
-  try {
-    console.log("PAUSING WHATSAPP BEFORE PDF GENERATION...");
-    await destroyWhatsappClient();
-    console.log("WHATSAPP PAUSED");
-  } catch (err) {
-    console.log("WHATSAPP PAUSE ERROR =>", err.message);
-  }
+ 
 
   try {
     const pdfDetails = await pdfService.generateSalesOrderPdf(salesOrder);

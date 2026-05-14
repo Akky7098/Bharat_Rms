@@ -85,20 +85,9 @@ const getWhatsappClient = () => {
 };
 
 const isWhatsappReady = async () => {
-  try {
-    if (!whatsappClient) return false;
-
-    const state = await whatsappClient.getState();
-
-    console.log("WHATSAPP CURRENT STATE =>", state);
-
-    return state === "CONNECTED";
-  } catch (error) {
-    console.log("WHATSAPP STATE ERROR =>", error.message);
-    return false;
-  }
+  const status = await forceCheckWhatsappStatus();
+  return status.ready;
 };
-
 const getLatestQr = () => latestQr;
 
 const restartWhatsappClient = async () => {
@@ -130,12 +119,58 @@ const destroyWhatsappClient = async () => {
     console.log("WhatsApp destroy error:", error.message);
   }
 };
+const getWhatsappBrowser = () => {
+  if (!whatsappClient) return null;
+
+  return whatsappClient.pupBrowser || null;
+};
+
+const forceCheckWhatsappStatus = async () => {
+  try {
+    if (!whatsappClient) {
+      return {
+        ready: false,
+        state: "NO_CLIENT",
+      };
+    }
+
+    const state = await whatsappClient.getState();
+
+    if (state !== "CONNECTED") {
+      isReady = false;
+      return {
+        ready: false,
+        state,
+      };
+    }
+
+    // real test, because sometimes getState stays stale
+    await whatsappClient.getChats();
+
+    isReady = true;
+
+    return {
+      ready: true,
+      state,
+    };
+  } catch (error) {
+    isReady = false;
+
+    return {
+      ready: false,
+      state: "DISCONNECTED",
+      error: error.message,
+    };
+  }
+};
 module.exports = {
   initWhatsappClient,
   getWhatsappClient,
   isWhatsappReady,
   getLatestQr,
   restartWhatsappClient,
-  MessageMedia,
   destroyWhatsappClient,
+  getWhatsappBrowser,
+  forceCheckWhatsappStatus,
+  MessageMedia,
 };

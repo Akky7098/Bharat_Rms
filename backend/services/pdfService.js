@@ -129,15 +129,27 @@ const formatDate = (date) => {
 };
 
 const generateSalesOrderPdfBuffer = async (salesOrder) => {
-  return runWithChromiumLock("PDF_GENERATION", async () => {
-    await ensureChromium();
+  await ensureChromium();
 
-    const html = salesOrderTemplate(salesOrder);
+  const html = salesOrderTemplate(salesOrder);
 
-    let browser;
-    let page;
+  let browser;
+  let page;
+  let shouldCloseBrowser = false;
 
-    try {
+  try {
+    const { getWhatsappBrowser, forceCheckWhatsappStatus } = require("../util/whatsappClient");
+
+    const whatsappStatus = await forceCheckWhatsappStatus();
+    const whatsappBrowser = getWhatsappBrowser();
+
+    if (whatsappStatus.ready && whatsappBrowser) {
+      console.log("PDF USING WHATSAPP CHROMIUM");
+      browser = whatsappBrowser;
+      shouldCloseBrowser = false;
+    } else {
+      console.log("PDF USING OWN CHROMIUM");
+
       browser = await puppeteer.launch({
         headless: true,
         args: [
@@ -157,34 +169,43 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
         ],
       });
 
-      page = await browser.newPage();
-
-      await page.setContent(html, {
-        waitUntil: "domcontentloaded",
-        timeout: 300000,
-      });
-
-      await page.emulateMediaType("screen");
-      await page.evaluateHandle("document.fonts.ready");
-
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      return await page.pdf({
-        format: "A4",
-        printBackground: true,
-        preferCSSPageSize: true,
-        margin: {
-          top: "8mm",
-          right: "8mm",
-          bottom: "8mm",
-          left: "8mm",
-        },
-      });
-    } finally {
-      if (page) await page.close().catch(() => {});
-      if (browser) await browser.close().catch(() => {});
+      shouldCloseBrowser = true;
     }
-  });
+
+    page = await browser.newPage();
+
+    await page.setContent(html, {
+      waitUntil: "domcontentloaded",
+      timeout: 300000,
+    });
+
+    await page.emulateMediaType("screen");
+
+    await page.evaluateHandle("document.fonts.ready");
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+      margin: {
+        top: "8mm",
+        right: "8mm",
+        bottom: "8mm",
+        left: "8mm",
+      },
+    });
+
+    return pdfBuffer;
+  } finally {
+    if (page) await page.close().catch(() => {});
+
+    // IMPORTANT: do not close WhatsApp browser
+    if (browser && shouldCloseBrowser) {
+      await browser.close().catch(() => {});
+    }
+  }
 };
 const addSalesOrderHtmlPages = async (mergedPdf, salesOrder) => {
   const salesOrderPdfBuffer = await generateSalesOrderPdfBuffer(salesOrder);
