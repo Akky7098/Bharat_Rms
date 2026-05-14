@@ -125,98 +125,116 @@ ${holdLink}`;
 };
 
 const sendMdApprovalWhatsapp = async (salesOrder) => {
-  console.log("===== MD WHATSAPP SEND START =====");
+  return runWithChromiumLock("MD_WHATSAPP_APPROVAL", async () => {
+    console.log("===== MD WHATSAPP SEND START =====");
 
-  if (!process.env.MD_WHATSAPP_NUMBER) {
-    throw new Error("MD_WHATSAPP_NUMBER missing in env");
-  }
+    if (!process.env.MD_WHATSAPP_NUMBER) {
+      throw new Error("MD_WHATSAPP_NUMBER missing in env");
+    }
 
-  console.log("MD NUMBER =>", process.env.MD_WHATSAPP_NUMBER);
+    const ready = await isWhatsappReady();
 
-  const ready = await isWhatsappReady();
+    if (!ready) {
+      throw new Error("WhatsApp client is not ready.");
+    }
 
-  console.log("WHATSAPP READY STATUS =>", ready);
+    const client = getWhatsappClient();
+    const mdChatId = `${process.env.MD_WHATSAPP_NUMBER}@c.us`;
 
-  if (!ready) {
-    throw new Error("WhatsApp client is not ready.");
-  }
+    const rawPdfPath = getPdfFilePath(salesOrder);
+    const pdfFilePath = getSafeFilePath(rawPdfPath);
 
-  const client = getWhatsappClient();
-  const mdChatId = `${process.env.MD_WHATSAPP_NUMBER}@c.us`;
+    const approveLink = `${getBaseUrl()}/api/whatsapp-approval/approve/${
+      salesOrder._id
+    }/${salesOrder.managerEmailApproval.token}`;
 
-  console.log("MD CHAT ID =>", mdChatId);
+    const holdLink = `${getBaseUrl()}/api/whatsapp-approval/hold-form/${
+      salesOrder._id
+    }/${salesOrder.managerEmailApproval.token}`;
 
-  const message = buildMdApprovalMessage(salesOrder);
+    const caption = `*Bharat Special Steel*
 
-  console.log("SENDING MD MESSAGE...");
+*Sales Order Approval Required*
 
-  await client.sendMessage(mdChatId, message);
+*Company:* ${salesOrder.companyName || "-"}
+*Sales Person:* ${salesOrder.salesPersonName || "-"}
+*Order Date:* ${formatDate(salesOrder.orderDate || salesOrder.createdAt)}
+*PO Number:* ${salesOrder.poNumber || "-"}
+*Order Value:* Rs. ${formatCurrency(salesOrder.orderValue)}
 
-  console.log("MD WHATSAPP SENT SUCCESS");
+✅ *Approve Sales Order:*
+${approveLink}
 
-  return true;
+⏸ *Put On Hold / Revise:*
+${holdLink}`;
+
+    if (pdfFilePath && fs.existsSync(pdfFilePath)) {
+      const media = MessageMedia.fromFilePath(pdfFilePath);
+
+      await client.sendMessage(mdChatId, media, {
+        caption,
+      });
+
+      console.log("MD PDF WHATSAPP SENT SUCCESS");
+      return true;
+    }
+
+    await client.sendMessage(mdChatId, caption);
+
+    console.log("MD TEXT WHATSAPP SENT SUCCESS");
+    return true;
+  });
 };
 
 const sendFinalPdfToSalesGroup = async (salesOrder) => {
-  console.log("===== GROUP PDF SEND START =====");
+  return runWithChromiumLock("WHATSAPP_GROUP_PDF_SEND", async () => {
+    console.log("===== GROUP PDF SEND START =====");
 
-  if (!process.env.SALES_WHATSAPP_GROUP_ID) {
-    throw new Error("SALES_WHATSAPP_GROUP_ID missing in env");
-  }
+    if (!process.env.SALES_WHATSAPP_GROUP_ID) {
+      throw new Error("SALES_WHATSAPP_GROUP_ID missing in env");
+    }
 
-  console.log("GROUP ID =>", process.env.SALES_WHATSAPP_GROUP_ID);
+    const ready = await isWhatsappReady();
 
-  const ready = await isWhatsappReady();
+    if (!ready) {
+      throw new Error("WhatsApp client is not ready.");
+    }
 
-  console.log("WHATSAPP READY STATUS =>", ready);
+    const client = getWhatsappClient();
 
-  if (!ready) {
-    throw new Error("WhatsApp client is not ready.");
-  }
+    const rawPdfPath = getPdfFilePath(salesOrder);
+    const pdfFilePath = getSafeFilePath(rawPdfPath);
+    const pdfLink = getFullPdfLink(getPdfFileUrl(salesOrder));
 
-  const client = getWhatsappClient();
-
-  const rawPdfPath = getPdfFilePath(salesOrder);
-  const pdfFilePath = getSafeFilePath(rawPdfPath);
-  const pdfLink = getFullPdfLink(getPdfFileUrl(salesOrder));
-
-  console.log("FINAL PDF PATH =>", pdfFilePath);
-  console.log("PDF EXISTS =>", fs.existsSync(pdfFilePath));
-
-  const caption = `*Bharat Special Steel*
+    const caption = `*Bharat Special Steel*
 
 ✅ *Sales Order Approved by MD Sir*
 
 *Company:* ${salesOrder.companyName || "-"}
+*Sales Person:* ${salesOrder.salesPersonName || "-"}
+*Order Date:* ${formatDate(salesOrder.orderDate || salesOrder.createdAt)}
 *PO Number:* ${salesOrder.poNumber || "-"}
-*Order Value:* Rs. ${formatCurrency(salesOrder.orderValue)}
+*Order Value:* Rs. ${formatCurrency(salesOrder.orderValue)}`;
 
-Dispatch / Billing team may proceed.`;
+    if (pdfFilePath && fs.existsSync(pdfFilePath)) {
+      const media = MessageMedia.fromFilePath(pdfFilePath);
 
-  if (pdfFilePath && fs.existsSync(pdfFilePath)) {
-    console.log("SENDING PDF FILE TO GROUP...");
+      await client.sendMessage(process.env.SALES_WHATSAPP_GROUP_ID, media, {
+        caption,
+      });
 
-    const media = MessageMedia.fromFilePath(pdfFilePath);
+      console.log("GROUP PDF SENT SUCCESS");
+      return true;
+    }
 
-    await client.sendMessage(process.env.SALES_WHATSAPP_GROUP_ID, media, {
-      caption,
-    });
+    await client.sendMessage(
+      process.env.SALES_WHATSAPP_GROUP_ID,
+      `${caption}\n\n📄 PDF Link:\n${pdfLink || "-"}`
+    );
 
-    console.log("GROUP PDF SENT SUCCESS");
-
+    console.log("GROUP LINK SENT SUCCESS");
     return true;
-  }
-
-  console.log("PDF FILE NOT FOUND, SENDING LINK INSTEAD");
-
-  await client.sendMessage(
-    process.env.SALES_WHATSAPP_GROUP_ID,
-    `${caption}\n\n📄 PDF Link:\n${pdfLink || "-"}`
-  );
-
-  console.log("GROUP LINK SENT SUCCESS");
-
-  return true;
+  });
 };
 
 module.exports = {

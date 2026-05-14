@@ -3,10 +3,9 @@ const path = require("path");
 const puppeteer = require("puppeteer");
 
 let chromiumReady = false;
-let chromiumExecutablePath = "";
 
 const chmodRecursive = (targetPath) => {
-  if (!targetPath || !fs.existsSync(targetPath)) return;
+  if (!fs.existsSync(targetPath)) return;
 
   const stat = fs.statSync(targetPath);
 
@@ -20,14 +19,9 @@ const chmodRecursive = (targetPath) => {
 };
 
 const ensureChromium = async () => {
-  if (chromiumReady && chromiumExecutablePath) {
-    return chromiumExecutablePath;
-  }
+  if (chromiumReady) return;
 
-  const revision =
-    puppeteer._preferredRevision ||
-    puppeteer.browserRevision ||
-    "901912";
+  const revision = puppeteer._preferredRevision || "901912";
 
   const browserFetcher = puppeteer.createBrowserFetcher();
 
@@ -58,11 +52,6 @@ const ensureChromium = async () => {
   }
 
   chromiumReady = true;
-  chromiumExecutablePath = info.executablePath;
-
-  console.log("CHROMIUM READY PATH =>", chromiumExecutablePath);
-
-  return chromiumExecutablePath;
 };
 
 module.exports = ensureChromium;

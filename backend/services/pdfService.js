@@ -1,7 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
-const ensureChromium = require("../util/ensureChromium");
+const ensureChromium = require("../util/ensureChromium")
+const runWithChromiumLock = require("../util/chromiumLock");
 const {
   PDFDocument,
   StandardFonts,
@@ -128,91 +129,62 @@ const formatDate = (date) => {
 };
 
 const generateSalesOrderPdfBuffer = async (salesOrder) => {
-  const executablePath = await ensureChromium();
+  return runWithChromiumLock("PDF_GENERATION", async () => {
+    await ensureChromium();
 
-  const html = salesOrderTemplate(salesOrder);
+    const html = salesOrderTemplate(salesOrder);
 
-  let browser;
-  let page;
-
-  try {
-    browser = await puppeteer.launch({
-      headless: true,
-      executablePath,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--disable-extensions",
-        "--disable-background-networking",
-        "--disable-background-timer-throttling",
-        "--disable-renderer-backgrounding",
-        "--disable-features=TranslateUI",
-        "--disable-ipc-flooding-protection",
-        "--single-process",
-        "--no-zygote",
-        "--no-first-run",
-      ],
-    });
-
-    page = await browser.newPage();
-
-    await page.setViewport({
-      width: 1240,
-      height: 1754,
-      deviceScaleFactor: 1,
-    });
-
-    await page.setContent(html, {
-      waitUntil: "domcontentloaded",
-      timeout: 300000,
-    });
-
-    await page.emulateMediaType("screen");
-
-    await page.evaluateHandle("document.fonts.ready");
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: {
-        top: "8mm",
-        right: "8mm",
-        bottom: "8mm",
-        left: "8mm",
-      },
-    });
-
-    return pdfBuffer;
-  } catch (error) {
-    console.log("PDF GENERATION ERROR =>", error.message);
-    throw error;
-  } finally {
-    try {
-      if (page) {
-        await page.close();
-        console.log("PDF PAGE CLOSED");
-      }
-    } catch (e) {
-      console.log("PDF PAGE CLOSE ERROR =>", e.message);
-    }
+    let browser;
+    let page;
 
     try {
-      if (browser) {
-        await browser.close();
-        console.log("PDF BROWSER CLOSED");
-      }
-    } catch (e) {
-      console.log("PDF BROWSER CLOSE ERROR =>", e.message);
-    }
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--disable-extensions",
+          "--disable-background-networking",
+          "--disable-background-timer-throttling",
+          "--disable-renderer-backgrounding",
+          "--disable-features=TranslateUI",
+          "--disable-ipc-flooding-protection",
+          "--single-process",
+          "--no-zygote",
+          "--no-first-run",
+        ],
+      });
 
-    browser = null;
-    page = null;
-  }
+      page = await browser.newPage();
+
+      await page.setContent(html, {
+        waitUntil: "domcontentloaded",
+        timeout: 300000,
+      });
+
+      await page.emulateMediaType("screen");
+      await page.evaluateHandle("document.fonts.ready");
+
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      return await page.pdf({
+        format: "A4",
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: {
+          top: "8mm",
+          right: "8mm",
+          bottom: "8mm",
+          left: "8mm",
+        },
+      });
+    } finally {
+      if (page) await page.close().catch(() => {});
+      if (browser) await browser.close().catch(() => {});
+    }
+  });
 };
 const addSalesOrderHtmlPages = async (mergedPdf, salesOrder) => {
   const salesOrderPdfBuffer = await generateSalesOrderPdfBuffer(salesOrder);
