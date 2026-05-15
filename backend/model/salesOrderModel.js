@@ -222,15 +222,24 @@ const salesOrderSchema = new mongoose.Schema(
       default: null,
     },
 
-    previousPaymentStatus: {
-      type: String,
-      trim: true,
-    },
+   previousPaymentStatus: {
+  type: String,
+  enum: ["yes", "no"],
+  default: "no",
+  required: true,
+},
 
-    previousPaymentRemark: {
-      type: String,
-      trim: true,
-    },
+previousPaymentRemark: {
+  type: String,
+  trim: true,
+  default: "",
+},
+
+specialNote: {
+  type: String,
+  trim: true,
+  default: "",
+},
 
     // =========================
     // PO / QUOTATION DETAILS

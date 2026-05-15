@@ -4,6 +4,7 @@ node_modules/
 # WhatsApp Web session
 .wwebjs_auth/
 .wwebjs_cache/
+whatsapp-session/
 
 # uploads/session/temp
 *.log

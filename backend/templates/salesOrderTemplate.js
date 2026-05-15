@@ -13,39 +13,120 @@ const formatDate = (date) => {
 
 const formatText = (value) => {
   if (!value) return "";
-  return String(value).replaceAll("_", " ");
+
+  return String(value)
+    .replaceAll("_", " ")
+    .split(" ")
+    .map((word) =>
+      word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : ""
+    )
+    .join(" ");
+};
+const formatCuttingCost = (salesOrder) => {
+  if (salesOrder.cuttingCost === "extra") {
+    return salesOrder.cuttingExtraCharges
+      ? `Extra ${salesOrder.cuttingExtraCharges}`
+      : "Extra";
+  }
+
+  return formatText(salesOrder.cuttingCost);
 };
 
+const formatFreight = (salesOrder) => {
+  if (salesOrder.freight === "extra") {
+    return salesOrder.freightExtraCharges
+      ? `Extra ${salesOrder.freightExtraCharges}`
+      : "Extra";
+  }
+
+  return formatText(salesOrder.freight);
+};
+const highlightRs = (value) => {
+  if (!value) return "";
+
+  return String(value).replace(
+    /(Rs\.?\s*[0-9,]+(?:\.[0-9]+)?(?:\/-)?(?:\s*\/\s*Kg|\s*\/Kg|\s*per\s*Kg)?|@\s*Rs\.?\s*[0-9,]+(?:\s*\/\s*Kg|\s*\/Kg)?)/gi,
+    `<span class="red">$1</span>`
+  );
+};
+const formatIndianCurrency = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "0";
+  }
+
+  const numericValue = Number(
+    String(value).replace(/,/g, "").trim()
+  );
+
+  if (isNaN(numericValue)) {
+    return "0";
+  }
+
+  return numericValue.toLocaleString("en-IN");
+};
 const formatSizeGradeText = (value) => {
   if (!value) return "";
 
   return String(value)
     .split("\n")
     .filter((line) => line.trim() !== "")
-    .map((line) => `<div>${line}</div>`)
+    .map((line) => `<div>${highlightRs(line)}</div>`)
     .join("");
+};
+
+const formatPreviousPayment = (value) => {
+  if (!value) return "NO";
+
+  return highlightRs(
+    String(value)
+      .split("\n")
+      .filter((line) => line.trim() !== "")
+      .map((line) => line.trim())
+      .join("<br/>")
+  );
+};
+const formatPreviousPaymentForPdf = (salesOrder) => {
+  if (salesOrder.previousPaymentStatus !== "yes") {
+    return "NO";
+  }
+
+  if (!salesOrder.previousPaymentRemark) {
+    return "YES";
+  }
+
+  return formatPreviousPayment(salesOrder.previousPaymentRemark);
+};
+const formatAddressWithGstin = (address, gstin) => {
+  return `
+    ${address || ""}
+    ${
+      gstin
+        ? `<br/><span class="red">GSTIN: ${gstin}</span>`
+        : ""
+    }
+  `;
+};
+
+const formatSupplyCondition = (salesOrder) => {
+  if (salesOrder.supplyCondition === "as_per_standard") {
+    return "As per standard";
+  }
+
+  if (salesOrder.supplyCondition === "other") {
+    return salesOrder.otherSupplyConditions || "";
+  }
+
+  return formatText(salesOrder.supplyCondition);
 };
 
 const getLogoBase64 = () => {
   try {
-    const logoPath = path.join(
-      __dirname,
-      "..",
-      "public",
-      "logo.png"
-    );
-
+    const logoPath = path.join(__dirname, "..", "public", "logo.png");
     const logoBuffer = fs.readFileSync(logoPath);
 
-    return `data:image/png;base64,${logoBuffer.toString(
-      "base64"
-    )}`;
+    return `data:image/png;base64,${logoBuffer.toString("base64")}`;
   } catch (error) {
-    console.log(
-      "LOGO LOAD ERROR =>",
-      error.message
-    );
-
+    console.log("LOGO LOAD ERROR =>", error.message);
     return "";
   }
 };
@@ -63,14 +144,9 @@ const getFontBase64 = (fileName) => {
     );
 
     const fontBuffer = fs.readFileSync(fontPath);
-
     return fontBuffer.toString("base64");
   } catch (error) {
-    console.log(
-      "FONT LOAD ERROR =>",
-      error.message
-    );
-
+    console.log("FONT LOAD ERROR =>", error.message);
     return "";
   }
 };
@@ -78,13 +154,8 @@ const getFontBase64 = (fileName) => {
 const salesOrderTemplate = (salesOrder) => {
   const logoBase64 = getLogoBase64();
 
-  const robotoRegular = getFontBase64(
-    "roboto-latin-400-normal.woff2"
-  );
-
-  const robotoBold = getFontBase64(
-    "roboto-latin-700-normal.woff2"
-  );
+  const robotoRegular = getFontBase64("roboto-latin-400-normal.woff2");
+  const robotoBold = getFontBase64("roboto-latin-700-normal.woff2");
 
   return `
 <!DOCTYPE html>
@@ -231,7 +302,15 @@ td {
 .footer-signature {
   height: 42px;
 }
-
+.special-note {
+  margin-top: 8px;
+  padding-top: 5px;
+  border-top: 1px solid #000;
+  color: red;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.35;
+}
 </style>
 </head>
 
@@ -249,17 +328,11 @@ td {
 
 <tr>
   <td colspan="3" class="logo-section">
-
-    ${
-      logoBase64
-        ? `<img src="${logoBase64}" />`
-        : ""
-    }
+    ${logoBase64 ? `<img src="${logoBase64}" />` : ""}
 
     <div class="heading">
       SALES ORDER FORM
     </div>
-
   </td>
 </tr>
 
@@ -273,15 +346,12 @@ td {
     <br/>
     ${salesOrder.companyAddress || ""}
     <br/>
-    GSTIN - ${salesOrder.gstinNumber || ""}
+    <span class="red">GSTIN - ${salesOrder.gstinNumber || ""}</span>
   </td>
 
   <td class="small-text bold">
-
     <table style="width:100%; border-collapse:collapse;">
-
       <tr>
-
         <td style="border:none; width:60%;">
           PO No - ${salesOrder.poNumber || ""}
           <br/>
@@ -291,11 +361,8 @@ td {
         <td style="border:none; width:40%; text-align:center;">
           Dated - ${formatDate(salesOrder.orderDate)}
         </td>
-
       </tr>
-
     </table>
-
   </td>
 </tr>
 
@@ -327,7 +394,7 @@ td {
   <td class="sno">2.</td>
   <td class="label-col">Order Value</td>
   <td class="value-col large-text">
-    Rs. ${salesOrder.orderValue || 0}
+   <span class="red">Rs. ${formatIndianCurrency(salesOrder.orderValue)}</span>
   </td>
 </tr>
 
@@ -356,9 +423,7 @@ td {
   <td class="value-col">
     ${
       salesOrder.isPaymentTermsApprovedByManagement
-        ? `Yes, By ${formatText(
-            salesOrder.paymentTermsApprovedBy
-          )}`
+        ? `Yes, By ${formatText(salesOrder.paymentTermsApprovedBy)}`
         : "No"
     }
   </td>
@@ -373,8 +438,8 @@ td {
     (Invoice details/Invoice date/amount/Due date)
   </td>
 
-  <td class="value-col">
-    ${salesOrder.previousPaymentStatus || "NO"}
+  <td class="value-col red">
+    ${formatPreviousPaymentForPdf(salesOrder)}
   </td>
 </tr>
 
@@ -393,7 +458,6 @@ td {
 </tr>
 
 <tr>
-
   <td class="sno">7.</td>
 
   <td class="label-col">
@@ -401,19 +465,23 @@ td {
   </td>
 
   <td class="supply-size-box">
-
     <div class="supply-title">
       Supply Size
     </div>
 
     <div class="size-rate-text">
-      ${formatSizeGradeText(
-        salesOrder.sizeGradeQuantityRate
-      )}
-    </div>
+  ${formatSizeGradeText(salesOrder.sizeGradeQuantityRate)}
+</div>
 
+${
+  salesOrder.specialNote
+    ? `<div class="special-note">
+        <b>Special Note:</b><br/>
+        ${String(salesOrder.specialNote).replace(/\n/g, "<br/>")}
+      </div>`
+    : ""
+}
   </td>
-
 </tr>
 
 <tr>
@@ -424,11 +492,7 @@ td {
   </td>
 
   <td class="value-col">
-    ${
-      salesOrder.supplyCondition === "as_per_standard"
-        ? "As Per Standard size"
-        : salesOrder.otherSupplyConditions?.join(", ") || ""
-    }
+    ${formatSupplyCondition(salesOrder)}
   </td>
 </tr>
 
@@ -456,7 +520,7 @@ td {
   </td>
 
   <td class="value-col">
-    ${formatText(salesOrder.cuttingCost)}
+    ${formatCuttingCost(salesOrder)}
   </td>
 </tr>
 
@@ -470,7 +534,7 @@ td {
   </td>
 
   <td class="value-col">
-    ${formatText(salesOrder.freight)}
+    ${formatFreight(salesOrder)}
   </td>
 </tr>
 
@@ -488,8 +552,14 @@ td {
   <td class="value-col">
     ${
       salesOrder.billingAddress?.sameAsCompanyAddress
-        ? salesOrder.companyAddress
-        : salesOrder.billingAddress?.address || ""
+        ? formatAddressWithGstin(
+            salesOrder.companyAddress,
+            salesOrder.gstinNumber
+          )
+        : formatAddressWithGstin(
+            salesOrder.billingAddress?.address,
+            salesOrder.billingAddress?.gstinNumber
+          )
     }
   </td>
 </tr>
@@ -508,8 +578,14 @@ td {
   <td class="value-col">
     ${
       salesOrder.shippingAddress?.sameAsCompanyAddress
-        ? salesOrder.companyAddress
-        : salesOrder.shippingAddress?.address || ""
+        ? formatAddressWithGstin(
+            salesOrder.companyAddress,
+            salesOrder.gstinNumber
+          )
+        : formatAddressWithGstin(
+            salesOrder.shippingAddress?.address,
+            salesOrder.shippingAddress?.gstinNumber
+          )
     }
   </td>
 </tr>
@@ -570,9 +646,7 @@ td {
   </td>
 
   <td class="value-col yellow red">
-    ${formatText(
-      salesOrder.testCertificateRequired
-    )}
+    ${formatText(salesOrder.testCertificateRequired)}
   </td>
 </tr>
 
@@ -587,9 +661,7 @@ td {
     ${
       salesOrder.enquiryFormFilled === "yes"
         ? `YES ${
-            salesOrder.enquiryNumber
-              ? `- ${salesOrder.enquiryNumber}`
-              : ""
+            salesOrder.enquiryNumber ? `- ${salesOrder.enquiryNumber}` : ""
           }`
         : "NO"
     }
@@ -598,16 +670,13 @@ td {
 
 <tr>
   <td colspan="3">
-
     Contact Person -
     ${salesOrder.contactPersonName || ""}
     (${salesOrder.contactPersonNumber || ""})
-
   </td>
 </tr>
 
 <tr class="footer-signature">
-
   <td colspan="2" class="center bold">
     Prepared By
     <br/>
@@ -619,7 +688,6 @@ td {
     <br/>
     ${salesOrder.checkedByAdminName || ""}
   </td>
-
 </tr>
 
 </table>

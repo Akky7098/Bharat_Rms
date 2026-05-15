@@ -5,15 +5,17 @@ const path = require("path");
 let whatsappClient = null;
 let isReady = false;
 let latestQr = null;
-
+  const whatsappSessionPath =
+  process.env.WHATSAPP_SESSION_PATH ||
+  path.join(__dirname, "../.wwebjs_auth");
 const initWhatsappClient = () => {
   if (whatsappClient) return whatsappClient;
 
   whatsappClient = new Client({
-    authStrategy: new LocalAuth({
-      clientId: "bharat-rms-company-whatsapp",
-      dataPath: path.join(__dirname, "../.wwebjs_auth"),
-    }),
+   authStrategy: new LocalAuth({
+  clientId: "bharat-rms-company-whatsapp",
+  dataPath: whatsappSessionPath,
+}),
     puppeteer: {
   headless: true,
   args: [
