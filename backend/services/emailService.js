@@ -34,17 +34,14 @@ const getOrderRef = (salesOrder) => {
 };
 
 const cleanEmails = (emails = []) => {
-  return [...new Set(emails.filter(Boolean))];
-};
-
-const getDefaultTrackingCc = (salesOrder) => {
-  return cleanEmails([
-    salesOrder.adminApproval?.adminEmail,
-    salesOrder.adminApproval?.approvedByEmail,
-    salesOrder.managerApproval?.managerEmail,
-    process.env.ADMIN_EMAIL,
-    process.env.MANAGER_EMAIL,
-  ]);
+  return [
+    ...new Set(
+      emails
+        .filter(Boolean)
+        .map((email) => String(email).trim().toLowerCase())
+        .filter(Boolean)
+    ),
+  ];
 };
 
 const getUniqueMailHeaders = (salesOrder, type) => {
@@ -82,11 +79,7 @@ const sendSalesOrderApprovedEmail = async (
 
   const pdfLink = getFullPdfLink(salesOrder.pdf?.fileUrl);
   const orderRef = getOrderRef(salesOrder);
-
-  const finalCc = cleanEmails([
-    ...getDefaultTrackingCc(salesOrder),
-    ...ccEmails,
-  ]);
+  const finalCc = cleanEmails(ccEmails);
 
   return transporter.sendMail({
     from: `"Bharat Special Steel" <bsspl97@gmail.com>`,
@@ -140,11 +133,7 @@ const sendSalesOrderRejectedEmail = async (
 
   const pdfLink = getFullPdfLink(salesOrder.pdf?.fileUrl);
   const orderRef = getOrderRef(salesOrder);
-
-  const finalCc = cleanEmails([
-    ...getDefaultTrackingCc(salesOrder),
-    ...ccEmails,
-  ]);
+  const finalCc = cleanEmails(ccEmails);
 
   return transporter.sendMail({
     from: `"Bharat Special Steel" <bsspl97@gmail.com>`,
@@ -196,9 +185,14 @@ const sendSalesOrderRejectedEmail = async (
 const sendAdminApprovalNotification = async (
   salesOrder,
   actionText,
-  comment = ""
+  comment = "",
+  adminEmailOverride = ""
 ) => {
-  const adminEmail = salesOrder.adminApproval?.adminEmail;
+  const adminEmail =
+    adminEmailOverride ||
+    salesOrder.adminApproval?.adminEmail ||
+    salesOrder.adminApproval?.adminEmail ||
+    "";
 
   if (!adminEmail) return null;
 
@@ -236,10 +230,13 @@ const sendAdminApprovalNotification = async (
 
 const sendAdminRejectionNotification = async (
   salesOrder,
-  rejectionComment
+  rejectionComment,
+  adminEmailOverride = ""
 ) => {
   const adminEmail =
-    salesOrder.adminApproval?.adminEmail || process.env.ADMIN_EMAIL;
+    adminEmailOverride ||
+    salesOrder.adminApproval?.adminEmail ||
+    process.env.ADMIN_EMAIL;
 
   if (!adminEmail) return null;
 
