@@ -350,11 +350,12 @@ specialNote: {
       required: true,
     },
 
-    enquiryFormFilled: {
-      type: String,
-      enum: ["yes", "no"],
-      required: true,
-    },
+   enquiryFormFilled: {
+  type: String,
+  enum: ["yes", "no"],
+  required: true,
+  default: "yes",
+},
 
     enquiryNumber: {
       type: String,
