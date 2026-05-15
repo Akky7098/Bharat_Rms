@@ -942,81 +942,7 @@
     width: 100%;
   }
 }
-/* ================= HOVER READABILITY IMPROVEMENT ================= */
-@media (min-width: 769px) {
-  .enquiry-table tbody tr {
-    transition: background 0.18s ease, box-shadow 0.18s ease;
-  }
 
-  /* Normal rows hover */
-  .enquiry-table tbody tr:hover td {
-    font-weight: 800;
-    color: #0f172a;
-    box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.08),
-                inset 0 -1px 0 rgba(15, 23, 42, 0.08);
-  }
-
-  /* Remove ziggle */
-  .enquiry-table tbody tr:hover {
-    transform: none !important;
-  }
-
-  /* Feasible - light green */
-  .enquiry-table tbody tr.row-feasible:hover td {
-    background: #bbf7d0 !important;
-    color: #064e3b !important;
-    font-weight: 900;
-  }
-
-  /* Quotation - stronger green */
-  .enquiry-table tbody tr.row-quotation:hover td {
-    background: #86efac !important;
-    color: #052e16 !important;
-    font-weight: 900;
-  }
-
-  /* Overdue - softer but readable orange */
-  .enquiry-table tbody tr.row-overdue:hover td {
-    background: #fdba74 !important;
-    color: #111827 !important;
-    font-weight: 900;
-  }
-
-  /* Not feasible */
-  .enquiry-table tbody tr.row-not-feasible:hover td {
-    background: #fca5a5 !important;
-    color: #7f1d1d !important;
-    font-weight: 900;
-  }
-
-  /* Won */
-  .enquiry-table tbody tr.row-won:hover td {
-    background: #166534 !important;
-    color: #ffffff !important;
-    font-weight: 900;
-  }
-
-  /* Lost */
-  .enquiry-table tbody tr.row-lost:hover td {
-    background: #991b1b !important;
-    color: #ffffff !important;
-    font-weight: 900;
-    text-decoration: line-through !important;
-  }
-
-  /* Sticky columns follow row hover */
-  .enquiry-table tbody tr:hover .sticky-col,
-  .enquiry-table tbody tr:hover .col-date,
-  .enquiry-table tbody tr:hover .col-sales,
-  .enquiry-table tbody tr:hover .col-company {
-    font-weight: 900;
-  }
-
-  /* Clear focus line on left edge */
-  .enquiry-table tbody tr:hover td:first-child {
-    box-shadow: inset 4px 0 0 #2563eb;
-  }
-}
 /* ================= FINAL ENQUIRY MOBILE PAGINATION FIX ================= */
 @media (max-width: 768px) {
   .enquiry-container .enquiry-pagination {
@@ -1288,4 +1214,15 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
+}
+.size-lines {
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.size-lines-inline {
+  line-height: 1.45;
+  white-space: normal;
+  display: inline-block;
+  vertical-align: top;
 }

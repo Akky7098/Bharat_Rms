@@ -251,7 +251,8 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
     const billingObj = editOrder.billingAddress || {};
     const shippingObj = editOrder.shippingAddress || {};
 
-    const previousPaymentValue = editOrder.previousPaymentStatus || "";
+   const previousPaymentValue = editOrder.previousPaymentStatus || "no";
+const previousPaymentRemarkValue = editOrder.previousPaymentRemark || "";
     const hasPreviousPayment =
       previousPaymentValue &&
       String(previousPaymentValue).toLowerCase() !== "no";
@@ -277,8 +278,9 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
       paymentTermsApprovedBy: editOrder.paymentTermsApprovedBy || "",
 
-      previousPaymentAvailable: hasPreviousPayment ? "yes" : "no",
-      previousPaymentStatus: hasPreviousPayment ? previousPaymentValue : "",
+      previousPaymentAvailable:
+  String(previousPaymentValue).toLowerCase() === "yes" ? "yes" : "no",
+previousPaymentStatus: previousPaymentRemarkValue,
 
       poAsPerQuotation: editOrder.poAsPerQuotation || "",
 
@@ -296,9 +298,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
       sizeGradeQuantityRate: editOrder.sizeGradeQuantityRate || "",
       supplyCondition: editOrder.supplyCondition || "as_per_standard",
-      otherSupplyConditions: Array.isArray(editOrder.otherSupplyConditions)
-        ? editOrder.otherSupplyConditions.join(", ")
-        : "",
+     otherSupplyConditions: editOrder.otherSupplyConditions || "",
 
       cutLengthRequired: editOrder.cutLengthRequired || "",
       cuttingCost: editOrder.cuttingCost || "",
@@ -573,9 +573,10 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
         ? form.paymentTermsApprovedBy
         : null,
 
-      previousPaymentStatus: previousPaymentYes
-        ? form.previousPaymentStatus.trim()
-        : "No",
+     previousPaymentStatus: previousPaymentYes ? "yes" : "no",
+previousPaymentRemark: previousPaymentYes
+  ? form.previousPaymentStatus.trim()
+  : "",
 
       poAsPerQuotation: form.poAsPerQuotation,
 
@@ -584,11 +585,8 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       supplyCondition: form.supplyCondition,
 
       otherSupplyConditions: isOtherSupplyCondition
-        ? form.otherSupplyConditions
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean)
-        : [],
+  ? form.otherSupplyConditions.trim()
+  : "",
 
       cutLengthRequired: form.cutLengthRequired,
       cuttingCost: form.cuttingCost,

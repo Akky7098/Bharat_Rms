@@ -291,10 +291,10 @@ specialNote: {
 },
 
    otherSupplyConditions: {
-  type: [String],
-  default: [],
+  type: String,
+  trim: true,
+  default: "",
 },
-
     cutLengthRequired: {
       type: String,
       enum: ["yes", "no"],

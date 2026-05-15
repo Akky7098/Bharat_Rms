@@ -426,3 +426,59 @@
   background: #e5e7eb !important;
   color: #475569 !important;
 }
+
+.workflow-step-title {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.workflow-locked .workflow-step-title {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.workflow-locked {
+  opacity: 0.86;
+  position: relative;
+}
+
+.workflow-locked select,
+.workflow-locked input,
+.workflow-locked textarea {
+  cursor: not-allowed;
+}
+
+.locked-note {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.workflow-section h3 {
+  margin-top: 0;
+}
+
+@media (max-width: 768px) {
+  .workflow-step-title {
+    width: fit-content;
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .locked-note {
+    font-size: 11px;
+  }
+}

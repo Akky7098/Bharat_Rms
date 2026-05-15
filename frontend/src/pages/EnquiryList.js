@@ -123,7 +123,25 @@ const EnquiryList = () => {
       }));
     }
   };
+const formatSizeText = (value) => {
+  if (!value) return "-";
 
+  return String(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item, index) => (
+      <React.Fragment key={index}>
+        {item}
+        {index !== String(value).split(",").filter(Boolean).length - 1 && (
+          <>
+            ,
+            <br />
+          </>
+        )}
+      </React.Fragment>
+    ));
+};
   const prevPage = () => {
     if (pagination.currentPage > 1) {
       setFilters((prev) => ({
@@ -175,7 +193,10 @@ const EnquiryList = () => {
 const formatDateTime = (date) => {
   if (!date) return "-";
 
-  return new Date(date).toLocaleString("en-GB", {
+  const parsedDate = new Date(date);
+
+  return parsedDate.toLocaleString("en-GB", {
+    timeZone: "Asia/Kolkata",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -185,7 +206,6 @@ const formatDateTime = (date) => {
     hour12: true,
   });
 };
-
   const isOverdue = (planDate, completed) => {
     if (!planDate) return false;
     return !completed && new Date() > new Date(planDate);
@@ -355,9 +375,9 @@ const formatDateTime = (date) => {
                 <th>Supply</th>
                 <th>Mode</th>
 
-                <th>Feasibility Plan</th>
-                <th>Feasibility Actual</th>
-                <th>Feasibility Status</th>
+                <th>Feasible Plan</th>
+                <th>Feasible Actual</th>
+                <th>Feasible Status</th>
                 <th>Done</th>
 
                 <th>Quotation Plan</th>
@@ -388,8 +408,8 @@ const formatDateTime = (date) => {
                   return (
                     <tr key={enquiry._id} className={getRowClass(enquiry)}>
                       <td className="sticky-col col-date">
-                        {formatDate(enquiry.enquiryDate)}
-                      </td>
+  {formatDateTime(enquiry.createdAt)}
+</td>
 
                       {isAdmin && (
                         <td className="sticky-col col-sales">
@@ -411,7 +431,9 @@ const formatDateTime = (date) => {
 
                       <td className="size-cell">
                         <div className="size-cell-content">
-                          <span>{enquiry.size || "-"}</span>
+                         <div className="size-lines">
+  {formatSizeText(enquiry.size)}
+</div>
 
                           {sizePdfUrl && (
                             <a
@@ -512,9 +534,11 @@ const formatDateTime = (date) => {
                     </p>
 
                     <p>
-                      <b>Shape / Size:</b> {enquiry.shape || "-"} /{" "}
-                      {enquiry.size || "-"}
-                      {sizePdfUrl && (
+                     <b>Shape / Size:</b> {enquiry.shape || "-"} /{" "}
+<span className="size-lines-inline">
+  {formatSizeText(enquiry.size)}
+</span>                      
+{sizePdfUrl && (
                         <a
                           href={sizePdfUrl}
                           target="_blank"

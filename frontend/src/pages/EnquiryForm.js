@@ -10,10 +10,59 @@ const shapeOptions = [
 
 const supplyConditionOptions = [
   { value: "as_per_standard", label: "As Per Standard" },
-  { value: "as_rolled_annealed", label: "As Rolled + Annealed" },
-  { value: "as_forged_annealed", label: "As Forged + Annealed" },
+
   { value: "as_rolled", label: "As Rolled" },
   { value: "as_forged", label: "As Forged" },
+
+  {
+    value: "as_rolled_or_as_forged",
+    label: "As Rolled / As Forged",
+  },
+
+  {
+    value: "as_rolled_annealed",
+    label: "As Rolled + Annealed",
+  },
+
+  {
+    value: "as_forged_annealed",
+    label: "As Forged + Annealed",
+  },
+
+  {
+    value: "as_rolled_or_forged_annealed",
+    label: "As Rolled / Forged + Annealed",
+  },
+
+  {
+    value: "as_rolled_normalised",
+    label: "As Rolled + Normalised",
+  },
+
+  {
+    value: "as_rolled_or_as_forged_normalised",
+    label: "As Rolled / As Forged + Normalised",
+  },
+
+  {
+    value: "as_rolled_qt",
+    label: "As Rolled + Q&T",
+  },
+
+  {
+    value: "as_forged_qt",
+    label: "As Forged + Q&T",
+  },
+
+  {
+    value: "as_rolled_or_as_forged_qt",
+    label: "As Rolled / As Forged + Q&T",
+  },
+
+  {
+    value: "other",
+    label: "Others",
+  },
 ];
 
 const modeOfEnquiryOptions = [

@@ -16,33 +16,33 @@ const ColdCallForm = ({ onClose, refresh }) => {
   const [error, setError] = useState("");
 
   // ✅ HANDLE CHANGE (number restriction added)
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+ const handleChange = (e) => {
+  const { name, value } = e.target;
 
-    // allow only numbers
-    if (name === "contactPersonNumber") {
-      if (!/^\d*$/.test(value)) return;
+  let finalValue = value;
+
+  if (name === "contactPersonNumber") {
+    // allow paste, remove all non-digits
+    finalValue = value.replace(/\D/g, "").slice(0, 10);
+  }
+
+  setForm((prev) => ({
+    ...prev,
+    [name]: finalValue,
+  }));
+
+  if (name === "contactPersonNumber") {
+    if (finalValue.length === 0) {
+      setError("");
+    } else if (!/^[6-9]/.test(finalValue)) {
+      setError("Number must start from 6-9");
+    } else if (finalValue.length < 10) {
+      setError("Enter exactly 10 digits");
+    } else {
+      setError("");
     }
-
-    setForm({
-      ...form,
-      [name]: value,
-    });
-
-    // live validation
-    if (name === "contactPersonNumber") {
-      if (value.length === 0) {
-        setError("");
-      } else if (!/^[6-9]\d{0,9}$/.test(value)) {
-        setError("Number must start from 6-9");
-      } else if (value.length !== 10) {
-        setError("Enter exactly 10 digits");
-      } else {
-        setError("");
-      }
-    }
-  };
-
+  }
+};
   // ✅ VALIDATE BEFORE SUBMIT
   const validate = () => {
     if (!form.activityType) return "Select activity type";

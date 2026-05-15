@@ -33,25 +33,20 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
   const isClosureLocked = enquiry.closure?.completed === true;
 
   const [form, setForm] = useState({
-    feasibilityStatus: enquiry.feasibility?.status || "pending",
-    feasibilityCompleted: enquiry.feasibility?.completed || false,
-
+    feasibilityStatus: enquiry.feasibility?.status || "",
     quotationLink: enquiry.quotation?.quotationLink || "",
-    quotationCompleted: enquiry.quotation?.completed || false,
-
-    closureStatus: enquiry.closure?.status || "pending",
+    closureStatus: enquiry.closure?.status || "",
     lostRemark: enquiry.closure?.lostRemark || "",
     lostRemarkOtherText: enquiry.closure?.lostRemarkOtherText || "",
-    closureCompleted: enquiry.closure?.completed || false,
   });
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
 
     setForm((prev) => {
       const updated = {
         ...prev,
-        [name]: type === "checkbox" ? checked : value,
+        [name]: value,
       };
 
       if (name === "closureStatus" && value !== "lost") {
@@ -72,64 +67,70 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
 
     const payload = {};
 
-    if (
-      !isFeasibilityLocked &&
-      (form.feasibilityStatus !== (enquiry.feasibility?.status || "pending") ||
-        form.feasibilityCompleted !== (enquiry.feasibility?.completed || false))
-    ) {
-      payload.feasibility = {
-        status: form.feasibilityStatus,
-        completed: form.feasibilityCompleted,
-      };
-    }
-
-    if (
-      !isQuotationLocked &&
-      (form.quotationLink !== (enquiry.quotation?.quotationLink || "") ||
-        form.quotationCompleted !== (enquiry.quotation?.completed || false))
-    ) {
-      payload.quotation = {
-        quotationLink: form.quotationLink || undefined,
-        completed: form.quotationCompleted,
-      };
-    }
-
-    if (
-      !isClosureLocked &&
-      (form.closureStatus !== (enquiry.closure?.status || "pending") ||
-        form.lostRemark !== (enquiry.closure?.lostRemark || "") ||
-        form.lostRemarkOtherText !==
-          (enquiry.closure?.lostRemarkOtherText || "") ||
-        form.closureCompleted !== (enquiry.closure?.completed || false))
-    ) {
-      if (form.closureStatus === "lost" && !form.lostRemark) {
-        alert("Please select lost remark");
-        return;
-      }
-
+    // FEASIBILITY
+    if (!isFeasibilityLocked) {
       if (
-        form.closureStatus === "lost" &&
-        form.lostRemark === "others" &&
-        !form.lostRemarkOtherText.trim()
+        form.feasibilityStatus &&
+        form.feasibilityStatus !== enquiry.feasibility?.status
       ) {
-        alert("Please enter other lost remark");
-        return;
+        payload.feasibility = {
+          status: form.feasibilityStatus,
+          completed: true,
+        };
       }
+    }
 
-      payload.closure = {
-        status: form.closureStatus,
-        lostRemark:
-          form.closureStatus === "lost" ? form.lostRemark : undefined,
-        lostRemarkOtherText:
-          form.closureStatus === "lost" && form.lostRemark === "others"
-            ? form.lostRemarkOtherText.trim()
-            : undefined,
-        completed: form.closureCompleted,
-      };
+    // QUOTATION
+    if (!isQuotationLocked) {
+      if (
+        form.quotationLink.trim() &&
+        form.quotationLink !== (enquiry.quotation?.quotationLink || "")
+      ) {
+        payload.quotation = {
+          quotationLink: form.quotationLink.trim(),
+          completed: true,
+        };
+      }
+    }
+
+    // CLOSURE
+    if (!isClosureLocked) {
+      if (
+        form.closureStatus &&
+        form.closureStatus !== enquiry.closure?.status
+      ) {
+        if (form.closureStatus === "lost" && !form.lostRemark) {
+          alert("Please select lost remark");
+          return;
+        }
+
+        if (
+          form.closureStatus === "lost" &&
+          form.lostRemark === "others" &&
+          !form.lostRemarkOtherText.trim()
+        ) {
+          alert("Please enter other lost remark");
+          return;
+        }
+
+        payload.closure = {
+          status: form.closureStatus,
+          lostRemark:
+            form.closureStatus === "lost"
+              ? form.lostRemark
+              : undefined,
+          lostRemarkOtherText:
+            form.closureStatus === "lost" &&
+            form.lostRemark === "others"
+              ? form.lostRemarkOtherText.trim()
+              : undefined,
+          completed: true,
+        };
+      }
     }
 
     if (Object.keys(payload).length === 0) {
-      alert("No update added");
+      alert("Please complete at least one workflow step before saving.");
       return;
     }
 
@@ -161,12 +162,18 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="workflow-grid">
+
+            {/* STEP 1 */}
             <div
               className={`workflow-section ${
                 isFeasibilityLocked ? "workflow-locked" : ""
               }`}
             >
-              <h3>Feasibility</h3>
+              <div className="workflow-step-title">
+                Step 1 – Feasible Review
+              </div>
+
+              <h3>Feasible</h3>
 
               {isFeasibilityLocked && (
                 <div className="locked-note">
@@ -187,28 +194,22 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                 onChange={handleChange}
                 disabled={isFeasibilityLocked}
               >
-                <option value="pending">Pending</option>
+                <option value="">Select Status</option>
                 <option value="feasible">Feasible</option>
                 <option value="not_feasible">Not Feasible</option>
               </select>
-
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  name="feasibilityCompleted"
-                  checked={form.feasibilityCompleted}
-                  onChange={handleChange}
-                  disabled={isFeasibilityLocked}
-                />
-                Completed
-              </label>
             </div>
 
+            {/* STEP 2 */}
             <div
               className={`workflow-section ${
                 isQuotationLocked ? "workflow-locked" : ""
               }`}
             >
+              <div className="workflow-step-title">
+                Step 2 – Quotation Follow-up
+              </div>
+
               <h3>Quotation</h3>
 
               {isQuotationLocked && (
@@ -231,24 +232,18 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                 placeholder="Paste quotation link"
                 disabled={isQuotationLocked}
               />
-
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  name="quotationCompleted"
-                  checked={form.quotationCompleted}
-                  onChange={handleChange}
-                  disabled={isQuotationLocked}
-                />
-                Completed
-              </label>
             </div>
 
+            {/* STEP 3 */}
             <div
               className={`workflow-section ${
                 isClosureLocked ? "workflow-locked" : ""
               }`}
             >
+              <div className="workflow-step-title">
+                Step 3 – Closure Decision
+              </div>
+
               <h3>Closure</h3>
 
               {isClosureLocked && (
@@ -270,7 +265,7 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                 onChange={handleChange}
                 disabled={isClosureLocked}
               >
-                <option value="pending">Pending</option>
+                <option value="">Select Status</option>
                 <option value="won">Won</option>
                 <option value="lost">Lost</option>
               </select>
@@ -292,30 +287,16 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                   </select>
 
                   {form.lostRemark === "others" && (
-                    <>
-                      <label>Other Lost Remark</label>
-                      <textarea
-                        name="lostRemarkOtherText"
-                        value={form.lostRemarkOtherText}
-                        onChange={handleChange}
-                        placeholder="Enter other reason"
-                        disabled={isClosureLocked}
-                      />
-                    </>
+                    <textarea
+                      name="lostRemarkOtherText"
+                      value={form.lostRemarkOtherText}
+                      onChange={handleChange}
+                      placeholder="Enter other reason"
+                      disabled={isClosureLocked}
+                    />
                   )}
                 </>
               )}
-
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  name="closureCompleted"
-                  checked={form.closureCompleted}
-                  onChange={handleChange}
-                  disabled={isClosureLocked}
-                />
-                Completed
-              </label>
             </div>
           </div>
 
