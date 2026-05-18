@@ -4,6 +4,10 @@ const path = require("path");
 
 const Dispatch = require("../model/dispatchModel");
 const SalesOrder = require("../model/salesOrderModel");
+const {
+  sendDispatchCreatedEmail,
+  sendPaymentUpdateEmail,
+} = require("./dispatchMailService");
 
 const isPrivilegedUser = (user) => {
   return ["admin", "super_admin", "dispatch"].includes(user.role);
@@ -403,7 +407,24 @@ const createDispatch = async (body, files, user) => {
 
     await session.commitTransaction();
 
-    return dispatch[0];
+    const createdDispatch = dispatch[0];
+
+try {
+  const mailInfo = await sendDispatchCreatedEmail(createdDispatch);
+
+  createdDispatch.notificationEmail.sent = true;
+  createdDispatch.notificationEmail.sentAt = new Date();
+  createdDispatch.notificationEmail.messageId = mailInfo.messageId || "";
+
+  await createdDispatch.save();
+} catch (mailError) {
+  createdDispatch.notificationEmail.sent = false;
+  createdDispatch.notificationEmail.errorMessage = mailError.message;
+
+  await createdDispatch.save();
+}
+
+return createdDispatch;
   } catch (error) {
     await session.abortTransaction();
     deleteUploadedFiles(uploadedFiles);
@@ -576,7 +597,14 @@ const updateDispatchPayment = async (dispatchId, body, user) => {
   });
 
   await dispatch.save();
-
+  try {
+  await sendPaymentUpdateEmail(dispatch, {
+    amount: receivedAmount,
+    remark: body.remark || "",
+  });
+} catch (mailError) {
+  console.error("Payment update email failed:", mailError.message);
+}
   return dispatch;
 };
 
