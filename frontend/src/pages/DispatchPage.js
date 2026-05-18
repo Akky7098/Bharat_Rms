@@ -6,12 +6,20 @@ import {
   getDispatches,
   getFullFileUrl,
   updateDispatchPayment,
+  updateDispatchStatus,
   deleteDispatch,
 } from "../services/dispatchService";
 
 const DispatchPage = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const isAdmin = ["admin", "super_admin", "dispatch"].includes(user?.role);
+
+  const canManageAll = ["admin", "super_admin"].includes(user?.role);
+  const canDeleteDispatch = user?.role === "super_admin";
+
+  const canManageItem = (item) => {
+    if (canManageAll) return true;
+    return String(item.salesPersonId) === String(user?._id || user?.id);
+  };
 
   const [dispatches, setDispatches] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -25,6 +33,8 @@ const DispatchPage = () => {
     amount: "",
     remark: "",
     paymentBillPdf: null,
+    dispatchStatus: "dispatched",
+    internalRemark: "",
   });
 
   const [filters, setFilters] = useState({
@@ -37,6 +47,16 @@ const DispatchPage = () => {
     page: 1,
     limit: 10,
   });
+
+  const resetPaymentForm = () => {
+    setPaymentForm({
+      amount: "",
+      remark: "",
+      paymentBillPdf: null,
+      dispatchStatus: "dispatched",
+      internalRemark: "",
+    });
+  };
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -137,6 +157,8 @@ const DispatchPage = () => {
       amount: "",
       remark: "",
       paymentBillPdf: null,
+      dispatchStatus: dispatch.dispatchStatus || "dispatched",
+      internalRemark: dispatch.internalRemark || "",
     });
   };
 
@@ -144,11 +166,7 @@ const DispatchPage = () => {
     if (paymentUpdating) return;
 
     setPaymentModal(null);
-    setPaymentForm({
-      amount: "",
-      remark: "",
-      paymentBillPdf: null,
-    });
+    resetPaymentForm();
   };
 
   const handlePaymentSubmit = async (e) => {
@@ -157,14 +175,25 @@ const DispatchPage = () => {
     if (!paymentModal?._id) return;
 
     const amount = Number(paymentForm.amount || 0);
+    const hasPayment = amount > 0;
 
-    if (!amount || amount <= 0) {
-      alert("Payment amount must be greater than 0");
+    const statusChanged =
+      paymentForm.dispatchStatus !==
+        (paymentModal.dispatchStatus || "dispatched") ||
+      paymentForm.internalRemark !== (paymentModal.internalRemark || "");
+
+    if (!hasPayment && !statusChanged) {
+      alert("Please update payment or dispatch status");
       return;
     }
 
-    if (amount > Number(paymentModal.pendingAmount || 0)) {
+    if (hasPayment && amount > Number(paymentModal.pendingAmount || 0)) {
       alert("Payment amount cannot be greater than pending amount");
+      return;
+    }
+
+    if (!hasPayment && paymentForm.paymentBillPdf) {
+      alert("Please enter received amount if you are uploading payment bill.");
       return;
     }
 
@@ -183,20 +212,29 @@ const DispatchPage = () => {
     try {
       setPaymentUpdating(true);
 
-      await updateDispatchPayment(
-        paymentModal._id,
-        {
-          amount,
-          remark: paymentForm.remark,
-        },
-        paymentForm.paymentBillPdf
-      );
+      if (hasPayment) {
+        await updateDispatchPayment(
+          paymentModal._id,
+          {
+            amount,
+            remark: paymentForm.remark,
+          },
+          paymentForm.paymentBillPdf
+        );
+      }
 
-      alert("Payment updated successfully. Email has been sent.");
+      if (statusChanged) {
+        await updateDispatchStatus(paymentModal._id, {
+          dispatchStatus: paymentForm.dispatchStatus,
+          internalRemark: paymentForm.internalRemark,
+        });
+      }
+
+      alert("Dispatch updated successfully.");
       closePaymentModal();
       loadDispatches();
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to update payment");
+      alert(error.response?.data?.message || "Failed to update dispatch");
     } finally {
       setPaymentUpdating(false);
     }
@@ -484,17 +522,17 @@ const DispatchPage = () => {
 
                     <td data-label="Action">
                       <div className="dispatch-action-group">
-                        {isAdmin && Number(item.pendingAmount || 0) > 0 && (
+                        {canManageItem(item) && (
                           <button
                             type="button"
                             className="dispatch-edit-btn"
                             onClick={() => openPaymentModal(item)}
                           >
-                            Payment
+                            Edit
                           </button>
                         )}
 
-                        {isAdmin && (
+                        {canDeleteDispatch && (
                           <button
                             type="button"
                             className="dispatch-delete-btn"
@@ -584,25 +622,25 @@ const DispatchPage = () => {
                     {renderDocuments(item)}
                   </div>
 
-                  {isAdmin && (
+                  {canManageItem(item) && (
                     <div className="dispatch-mobile-actions">
-                      {Number(item.pendingAmount || 0) > 0 && (
-                        <button
-                          type="button"
-                          className="dispatch-mobile-edit-btn"
-                          onClick={() => openPaymentModal(item)}
-                        >
-                          Update Payment
-                        </button>
-                      )}
-
                       <button
                         type="button"
-                        className="dispatch-mobile-delete-btn"
-                        onClick={() => handleDelete(item._id)}
+                        className="dispatch-mobile-edit-btn"
+                        onClick={() => openPaymentModal(item)}
                       >
-                        Delete
+                        Edit Dispatch
                       </button>
+
+                      {canDeleteDispatch && (
+                        <button
+                          type="button"
+                          className="dispatch-mobile-delete-btn"
+                          onClick={() => handleDelete(item._id)}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -643,7 +681,7 @@ const DispatchPage = () => {
           <div className="dispatch-payment-card">
             <div className="dispatch-form-header">
               <div>
-                <h2>Update Payment</h2>
+                <h2>Manage Dispatch</h2>
                 <p>
                   Invoice {paymentModal.invoiceNumber} · Pending{" "}
                   {formatCurrency(paymentModal.pendingAmount)}
@@ -677,6 +715,24 @@ const DispatchPage = () => {
                   />
                 </div>
 
+                <div className="dispatch-field">
+                  <label>Dispatch Status</label>
+                  <select
+                    value={paymentForm.dispatchStatus}
+                    onChange={(e) =>
+                      setPaymentForm((prev) => ({
+                        ...prev,
+                        dispatchStatus: e.target.value,
+                      }))
+                    }
+                    disabled={paymentUpdating}
+                  >
+                    <option value="dispatched">Dispatched</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
                 <div className="dispatch-field dispatch-full">
                   <label>Payment Bill / Receipt PDF</label>
                   <input
@@ -686,7 +742,7 @@ const DispatchPage = () => {
                     onChange={(e) =>
                       setPaymentForm((prev) => ({
                         ...prev,
-                        paymentBillPdf: e.target.files[0],
+                        paymentBillPdf: e.target.files[0] || null,
                       }))
                     }
                   />
@@ -697,6 +753,21 @@ const DispatchPage = () => {
                       {formatFileSize(paymentForm.paymentBillPdf.size)}
                     </small>
                   )}
+                </div>
+
+                <div className="dispatch-field dispatch-full">
+                  <label>Status / Internal Remark</label>
+                  <textarea
+                    value={paymentForm.internalRemark}
+                    onChange={(e) =>
+                      setPaymentForm((prev) => ({
+                        ...prev,
+                        internalRemark: e.target.value,
+                      }))
+                    }
+                    placeholder="Example: Material delivered successfully"
+                    disabled={paymentUpdating}
+                  />
                 </div>
 
                 <div className="dispatch-field dispatch-full">
@@ -730,9 +801,7 @@ const DispatchPage = () => {
                   className="dispatch-submit"
                   disabled={paymentUpdating}
                 >
-                  {paymentUpdating
-                    ? "Updating..."
-                    : "Update Payment & Send Mail"}
+                  {paymentUpdating ? "Updating..." : "Save Changes"}
                 </button>
               </div>
             </form>

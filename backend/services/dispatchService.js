@@ -4,17 +4,29 @@ const path = require("path");
 
 const Dispatch = require("../model/dispatchModel");
 const SalesOrder = require("../model/salesOrderModel");
+
 const {
   sendDispatchCreatedEmail,
   sendPaymentUpdateEmail,
 } = require("./dispatchMailService");
 
-const isPrivilegedUser = (user) => {
-  return ["admin", "super_admin", "dispatch"].includes(user.role);
+const getUserId = (user) => user?._id || user?.id;
+
+const isAdminOrSuperAdmin = (user) => {
+  return ["admin", "super_admin"].includes(user?.role);
 };
 
-const getUserId = (user) => {
-  return user._id || user.id;
+const canViewAllDispatches = (user) => {
+  return ["admin", "super_admin"].includes(user?.role);
+};
+
+const canManageDispatch = (user, dispatch) => {
+  if (isAdminOrSuperAdmin(user)) return true;
+  return String(dispatch.salesPersonId) === String(getUserId(user));
+};
+
+const canDeleteDispatch = (user) => {
+  return user?.role === "super_admin";
 };
 
 const escapeRegex = (value = "") => {
@@ -81,20 +93,24 @@ const deleteUploadedFiles = (files = []) => {
 
 const calculatePaymentDueDate = (dispatchDate, paymentDueDays) => {
   const dueDate = new Date(dispatchDate);
-  dueDate.setDate(dueDate.getDate() + Number(paymentDueDays));
+  dueDate.setDate(dueDate.getDate() + Number(paymentDueDays || 0));
   return dueDate;
 };
 
 const calculatePaymentStatus = (pendingAmount, paymentDueDate, paidAmount) => {
+  const pending = Number(pendingAmount || 0);
+  const paid = Number(paidAmount || 0);
+
+  if (pending <= 0) return "paid";
+  if (paid > 0) return "partial";
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const due = new Date(paymentDueDate);
   due.setHours(0, 0, 0, 0);
 
-  if (Number(pendingAmount || 0) <= 0) return "paid";
   if (due < today) return "overdue";
-  if (Number(paidAmount || 0) > 0) return "partial";
 
   return "pending";
 };
@@ -122,44 +138,30 @@ const buildDispatchCcEmails = (salesOrder, additionalCcEmails = [], user) => {
 ========================= */
 
 const searchPendingDispatchSalesOrders = async (query, user) => {
-  const { search = "", limit = 20 } = query;
+  const { search = "", limit = 6 } = query;
 
   const keyword = String(search || "").trim().replace(/\s+/g, " ");
-  const safeLimit = Math.min(Number(limit) || 20, 50);
+  const safeLimit = Math.min(Number(limit) || 6, 20);
 
   const filter = {
     approvalStatus: "approved",
   };
 
-  if (!isPrivilegedUser(user)) {
+  // normal user can create/search dispatch only for own sales orders
+  if (!canViewAllDispatches(user)) {
     filter.salesPersonId = getUserId(user);
   }
 
+  // search only by company name as per requirement
   if (keyword) {
-    filter.$or = [
-      {
-        companyName: {
-          $regex: "^" + escapeRegex(keyword),
-          $options: "i",
-        },
-      },
-      {
-        salesOrderNo: {
-          $regex: escapeRegex(keyword),
-          $options: "i",
-        },
-      },
-      {
-        poNumber: {
-          $regex: escapeRegex(keyword),
-          $options: "i",
-        },
-      },
-    ];
+    filter.companyName = {
+      $regex: "^" + escapeRegex(keyword),
+      $options: "i",
+    };
   }
 
   const salesOrders = await SalesOrder.find(filter)
-    .sort({ companyName: 1, createdAt: -1 })
+    .sort({ createdAt: -1 })
     .limit(safeLimit)
     .select(
       `
@@ -230,9 +232,6 @@ const createDispatch = async (body, files, user) => {
       dispatchDate,
       dispatchQty,
       invoiceValue,
-      materialDescription,
-      lrNumber = "",
-      lrDate,
       paymentDueDays,
       paidAmount = 0,
       additionalCcEmails = [],
@@ -271,8 +270,9 @@ const createDispatch = async (body, files, user) => {
       throw new Error("Dispatch can be created only for approved sales orders.");
     }
 
+    // admin/super_admin can create any dispatch, user only own
     if (
-      !isPrivilegedUser(user) &&
+      !isAdminOrSuperAdmin(user) &&
       String(salesOrder.salesPersonId) !== String(getUserId(user))
     ) {
       throw new Error("You are not allowed to create dispatch for this sales order.");
@@ -315,6 +315,7 @@ const createDispatch = async (body, files, user) => {
     const finalDispatchDate = dispatchDate ? new Date(dispatchDate) : new Date();
     const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
     const pendingAmount = Number((value - paid).toFixed(2));
+
     const paymentStatus = calculatePaymentStatus(
       pendingAmount,
       paymentDueDate,
@@ -369,10 +370,7 @@ const createDispatch = async (body, files, user) => {
           dispatchQty: qty,
           invoiceValue: value,
           materialDescription:
-            materialDescription || salesOrder.sizeGradeQuantityRate,
-
-          lrNumber,
-          lrDate: lrDate || undefined,
+            salesOrder.sizeGradeQuantityRate || "As per sales order",
 
           billPdf: buildFileObject(renamedBillFile),
           lrCopyPdf: buildFileObject(renamedLrFile),
@@ -409,22 +407,22 @@ const createDispatch = async (body, files, user) => {
 
     const createdDispatch = dispatch[0];
 
-try {
-  const mailInfo = await sendDispatchCreatedEmail(createdDispatch);
+    try {
+      const mailInfo = await sendDispatchCreatedEmail(createdDispatch);
 
-  createdDispatch.notificationEmail.sent = true;
-  createdDispatch.notificationEmail.sentAt = new Date();
-  createdDispatch.notificationEmail.messageId = mailInfo.messageId || "";
+      createdDispatch.notificationEmail.sent = true;
+      createdDispatch.notificationEmail.sentAt = new Date();
+      createdDispatch.notificationEmail.messageId = mailInfo.messageId || "";
 
-  await createdDispatch.save();
-} catch (mailError) {
-  createdDispatch.notificationEmail.sent = false;
-  createdDispatch.notificationEmail.errorMessage = mailError.message;
+      await createdDispatch.save();
+    } catch (mailError) {
+      createdDispatch.notificationEmail.sent = false;
+      createdDispatch.notificationEmail.errorMessage = mailError.message;
 
-  await createdDispatch.save();
-}
+      await createdDispatch.save();
+    }
 
-return createdDispatch;
+    return createdDispatch;
   } catch (error) {
     await session.abortTransaction();
     deleteUploadedFiles(uploadedFiles);
@@ -471,11 +469,17 @@ const getAllDispatches = async (query, user) => {
   }
 
   if (companyName) {
-    match.companyName = { $regex: companyName, $options: "i" };
+    match.companyName = {
+      $regex: escapeRegex(companyName),
+      $options: "i",
+    };
   }
 
   if (invoiceNumber) {
-    match.invoiceNumber = { $regex: invoiceNumber, $options: "i" };
+    match.invoiceNumber = {
+      $regex: escapeRegex(invoiceNumber),
+      $options: "i",
+    };
   }
 
   if (fromDate || toDate) {
@@ -492,7 +496,8 @@ const getAllDispatches = async (query, user) => {
     }
   }
 
-  if (!isPrivilegedUser(user)) {
+  // admin/super_admin see all, user sees only own dispatches
+  if (!canViewAllDispatches(user)) {
     match.salesPersonId = new mongoose.Types.ObjectId(getUserId(user));
   }
 
@@ -531,10 +536,7 @@ const getDispatchById = async (dispatchId, user) => {
     throw new Error("Dispatch not found.");
   }
 
-  if (
-    !isPrivilegedUser(user) &&
-    String(dispatch.salesPersonId) !== String(getUserId(user))
-  ) {
+  if (!canManageDispatch(user, dispatch)) {
     throw new Error("You are not allowed to view this dispatch.");
   }
 
@@ -558,8 +560,8 @@ const updateDispatchPayment = async (dispatchId, body, file, user) => {
       throw new Error("Dispatch not found.");
     }
 
-    if (!isPrivilegedUser(user)) {
-      throw new Error("Only admin, super admin or dispatch user can update payment.");
+    if (!canManageDispatch(user, dispatch)) {
+      throw new Error("You are not allowed to update payment for this dispatch.");
     }
 
     const receivedAmount = Number(body.amount || 0);
@@ -568,7 +570,7 @@ const updateDispatchPayment = async (dispatchId, body, file, user) => {
       throw new Error("Payment amount must be greater than 0.");
     }
 
-    if (receivedAmount > dispatch.pendingAmount) {
+    if (receivedAmount > Number(dispatch.pendingAmount || 0)) {
       throw new Error("Payment amount cannot be greater than pending amount.");
     }
 
@@ -602,7 +604,7 @@ const updateDispatchPayment = async (dispatchId, body, file, user) => {
 
     dispatch.paymentRemark = body.remark || dispatch.paymentRemark;
 
-    const historyItem = {
+    dispatch.paymentHistory.push({
       amount: receivedAmount,
       receivedAt: body.receivedAt || new Date(),
       remark: body.remark || "",
@@ -615,9 +617,7 @@ const updateDispatchPayment = async (dispatchId, body, file, user) => {
       mailStatus: {
         sent: false,
       },
-    };
-
-    dispatch.paymentHistory.push(historyItem);
+    });
 
     await dispatch.save();
 
@@ -654,12 +654,53 @@ const updateDispatchPayment = async (dispatchId, body, file, user) => {
 };
 
 /* =========================
+   UPDATE DISPATCH STATUS
+========================= */
+
+const updateDispatchStatus = async (dispatchId, body, user) => {
+  const dispatch = await Dispatch.findOne({
+    _id: dispatchId,
+    isActive: true,
+  });
+
+  if (!dispatch) {
+    throw new Error("Dispatch not found.");
+  }
+
+  if (!canManageDispatch(user, dispatch)) {
+    throw new Error("You are not allowed to update status for this dispatch.");
+  }
+
+  const allowedStatuses = ["dispatched", "delivered", "cancelled"];
+
+  if (!allowedStatuses.includes(body.dispatchStatus)) {
+    throw new Error("Invalid dispatch status.");
+  }
+
+  dispatch.dispatchStatus = body.dispatchStatus;
+
+  if (body.dispatchStatus === "delivered") {
+    dispatch.deliveredAt = body.deliveredAt || new Date();
+  } else {
+    dispatch.deliveredAt = undefined;
+  }
+
+  if (body.internalRemark !== undefined) {
+    dispatch.internalRemark = body.internalRemark;
+  }
+
+  await dispatch.save();
+
+  return dispatch;
+};
+
+/* =========================
    SOFT DELETE
 ========================= */
 
 const deleteDispatch = async (dispatchId, user) => {
-  if (!isPrivilegedUser(user)) {
-    throw new Error("Only admin, super admin or dispatch user can delete dispatch.");
+  if (!canDeleteDispatch(user)) {
+    throw new Error("Only super admin can delete dispatch.");
   }
 
   const dispatch = await Dispatch.findOne({
@@ -683,5 +724,6 @@ module.exports = {
   getAllDispatches,
   getDispatchById,
   updateDispatchPayment,
+  updateDispatchStatus,
   deleteDispatch,
 };

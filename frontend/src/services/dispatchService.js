@@ -70,6 +70,21 @@ export const getDispatchById = async (dispatchId) => {
   return response.data;
 };
 
+export const updateDispatchStatus = async (dispatchId, data) => {
+  const response = await axios.patch(`${API_URL}/${dispatchId}/status`, data, {
+    headers: authHeaders(),
+  });
+
+  return response.data;
+};
+
+export const deleteDispatch = async (dispatchId) => {
+  const response = await axios.delete(`${API_URL}/${dispatchId}`, {
+    headers: authHeaders(),
+  });
+
+  return response.data;
+};
 export const updateDispatchPayment = async (
   dispatchId,
   data,
@@ -93,14 +108,6 @@ export const updateDispatchPayment = async (
       },
     }
   );
-
-  return response.data;
-};
-
-export const deleteDispatch = async (dispatchId) => {
-  const response = await axios.delete(`${API_URL}/${dispatchId}`, {
-    headers: authHeaders(),
-  });
 
   return response.data;
 };
