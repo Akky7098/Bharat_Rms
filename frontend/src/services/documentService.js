@@ -32,7 +32,7 @@ export const deleteDocumentFolder = async (folderId) => {
   return axios.delete(`${API_URL}/folders/${folderId}`, authHeaders());
 };
 
-export const uploadDocumentFile = async (data, file) => {
+export const uploadDocumentFile = async (data, file, onUploadProgress) => {
   const formData = new FormData();
 
   formData.append("data", JSON.stringify(data));
@@ -43,6 +43,7 @@ export const uploadDocumentFile = async (data, file) => {
       Authorization: `Bearer ${getToken()}`,
       "Content-Type": "multipart/form-data",
     },
+    onUploadProgress,
   });
 };
 

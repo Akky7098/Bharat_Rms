@@ -13,7 +13,28 @@ const getUserId = (user) => {
 const getFileUrl = (file) => {
   return `/uploads/documents/${file.filename}`;
 };
+const sanitizeFileName = (name) => {
+  return String(name || "document")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+};
 
+const renameFileAsTitle = (file, title) => {
+  const ext = path.extname(file.originalname);
+  const safeTitle = sanitizeFileName(title);
+  const newFileName = `${safeTitle}-${Date.now()}${ext}`;
+  const newPath = path.join(path.dirname(file.path), newFileName);
+
+  fs.renameSync(file.path, newPath);
+
+  file.filename = newFileName;
+  file.path = newPath;
+
+  return file;
+};
 // ================= FOLDER SERVICES =================
 
 const createFolder = async (body, user) => {
@@ -48,10 +69,28 @@ const createFolder = async (body, user) => {
 
   return folder;
 };
-const getAllFolders = async () => {
-  return await DocumentFolder.find({ isActive: true }).sort({
+const getAllFolders = async (user) => {
+  const folders = await DocumentFolder.find({ isActive: true }).sort({
     createdAt: -1,
   });
+
+  const visibleQuery = getVisibleDocumentQuery(user);
+
+  const foldersWithCount = await Promise.all(
+    folders.map(async (folder) => {
+      const documentCount = await Document.countDocuments({
+        ...visibleQuery,
+        folderId: folder._id,
+      });
+
+      return {
+        ...folder.toObject(),
+        documentCount,
+      };
+    })
+  );
+
+  return foldersWithCount;
 };
 
 const deleteFolder = async (folderId, user) => {
@@ -84,7 +123,7 @@ const createDocument = async (body, file, user) => {
   }
 
   try {
-    if (!body.title) {
+    if (!body.title || !body.title.trim()) {
       throw new Error("Document title is required.");
     }
 
@@ -101,6 +140,9 @@ const createDocument = async (body, file, user) => {
       throw new Error("Folder not found.");
     }
 
+    // Rename uploaded physical file using document title
+    file = renameFileAsTitle(file, body.title);
+
     let accessLevel = body.accessLevel || "private";
 
     if (!["private", "admin_only", "all_users"].includes(accessLevel)) {
@@ -113,7 +155,7 @@ const createDocument = async (body, file, user) => {
 
     const document = await Document.create({
       folderId: body.folderId,
-      title: body.title,
+      title: body.title.trim(),
       description: body.description || "",
       accessLevel,
       fileName: file.filename,

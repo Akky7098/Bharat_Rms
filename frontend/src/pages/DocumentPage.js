@@ -53,6 +53,15 @@ function DocumentPage() {
     file: null,
   });
 
+  const [uploadProgress, setUploadProgress] = useState({
+    show: false,
+    percent: 0,
+    uploadedMB: 0,
+    totalMB: 0,
+    fileName: "",
+    status: "",
+  });
+
   const fetchFolders = async () => {
     try {
       setFolderLoading(true);
@@ -101,11 +110,11 @@ function DocumentPage() {
     );
   }, [documents, search]);
 
- const resetFolderForm = () => {
-  setFolderForm({
-    name: "",
-  });
-};
+  const resetFolderForm = () => {
+    setFolderForm({
+      name: "",
+    });
+  };
 
   const resetUploadForm = () => {
     setUploadForm({
@@ -116,42 +125,53 @@ function DocumentPage() {
     });
   };
 
-  const handleCreateFolder = async (e) => {
-  e.preventDefault();
-
-  const folderName = folderForm.name.trim();
-
-  if (!folderName) {
-    alert("Folder name is required");
-    return;
-  }
-
-  const alreadyExists = folders.some(
-    (folder) => folder.name.toLowerCase() === folderName.toLowerCase()
-  );
-
-  if (alreadyExists) {
-    alert("Folder with this name already exists");
-    return;
-  }
-
-  try {
-    setCreatingFolder(true);
-
-    await createDocumentFolder({
-      name: folderName,
+  const resetUploadProgress = () => {
+    setUploadProgress({
+      show: false,
+      percent: 0,
+      uploadedMB: 0,
+      totalMB: 0,
+      fileName: "",
+      status: "",
     });
+  };
 
-    resetFolderForm();
-    setShowFolderModal(false);
-    fetchFolders();
-    alert("Folder created successfully");
-  } catch (error) {
-    alert(error.response?.data?.message || "Failed to create folder");
-  } finally {
-    setCreatingFolder(false);
-  }
-};
+  const handleCreateFolder = async (e) => {
+    e.preventDefault();
+
+    const folderName = folderForm.name.trim();
+
+    if (!folderName) {
+      alert("Folder name is required");
+      return;
+    }
+
+    const alreadyExists = folders.some(
+      (folder) => folder.name.toLowerCase() === folderName.toLowerCase()
+    );
+
+    if (alreadyExists) {
+      alert("Folder with this name already exists");
+      return;
+    }
+
+    try {
+      setCreatingFolder(true);
+
+      await createDocumentFolder({
+        name: folderName,
+      });
+
+      resetFolderForm();
+      setShowFolderModal(false);
+      fetchFolders();
+      alert("Folder created successfully");
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to create folder");
+    } finally {
+      setCreatingFolder(false);
+    }
+  };
 
   const handleUploadFile = async (e) => {
     e.preventDefault();
@@ -181,18 +201,55 @@ function DocumentPage() {
 
       const data = {
         folderId: activeFolder._id,
-        title: uploadForm.title,
+        title: uploadForm.title.trim(),
         description: uploadForm.description,
         accessLevel: isAdmin ? uploadForm.accessLevel : "private",
       };
 
-      await uploadDocumentFile(data, uploadForm.file);
+      setUploadProgress({
+        show: true,
+        percent: 0,
+        uploadedMB: 0,
+        totalMB: uploadForm.file.size / (1024 * 1024),
+        fileName: uploadForm.file.name,
+        status: "Uploading...",
+      });
+
+      await uploadDocumentFile(data, uploadForm.file, (progressEvent) => {
+        const loaded = progressEvent.loaded || 0;
+        const total = progressEvent.total || uploadForm.file.size;
+        const percent = Math.round((loaded * 100) / total);
+
+        setUploadProgress({
+          show: true,
+          percent,
+          uploadedMB: loaded / (1024 * 1024),
+          totalMB: total / (1024 * 1024),
+          fileName: uploadForm.file.name,
+          status: percent >= 100 ? "Processing file..." : "Uploading...",
+        });
+      });
+
+      setUploadProgress((prev) => ({
+        ...prev,
+        percent: 100,
+        uploadedMB: prev.totalMB,
+        status: "Uploaded successfully",
+      }));
 
       resetUploadForm();
       setShowUploadModal(false);
-      fetchDocuments(activeFolder._id);
+
+      await fetchDocuments(activeFolder._id);
+      await fetchFolders();
+
       alert("Document uploaded successfully");
+
+      setTimeout(() => {
+        resetUploadProgress();
+      }, 1200);
     } catch (error) {
+      resetUploadProgress();
       alert(error.response?.data?.message || "Failed to upload document");
     } finally {
       setUploading(false);
@@ -217,6 +274,7 @@ function DocumentPage() {
     try {
       await deleteDocumentFile(documentId);
       fetchDocuments(activeFolder._id);
+      fetchFolders();
       alert("Document deleted successfully");
     } catch (error) {
       alert(error.response?.data?.message || "Failed to delete document");
@@ -273,6 +331,7 @@ function DocumentPage() {
                 setActiveFolder(null);
                 setDocuments([]);
                 setSearch("");
+                fetchFolders();
               }}
               type="button"
             >
@@ -352,7 +411,10 @@ function DocumentPage() {
 
                 <div className="folder-info">
                   <h3>{folder.name}</h3>
-                  <p>Click to open folder</p>
+                  <p>
+                    {folder.documentCount || 0}{" "}
+                    {(folder.documentCount || 0) === 1 ? "file" : "files"}
+                  </p>
                 </div>
 
                 {isAdmin && (
@@ -402,9 +464,7 @@ function DocumentPage() {
                   <div className="document-meta">
                     <span>{doc.originalFileName}</span>
                     <span>{formatFileSize(doc.fileSize)}</span>
-                    <span>
-                      Uploaded by {doc.uploadedBy?.name || "User"}
-                    </span>
+                    <span>Uploaded by {doc.uploadedBy?.name || "User"}</span>
                   </div>
                 </div>
 
@@ -444,50 +504,53 @@ function DocumentPage() {
               <h2>Create Folder</h2>
               <button
                 onClick={() => {
+                  if (creatingFolder) return;
                   setShowFolderModal(false);
                   resetFolderForm();
                 }}
                 type="button"
+                disabled={creatingFolder}
               >
                 <X size={20} />
               </button>
             </div>
-<form onSubmit={handleCreateFolder} className="doc-form">
-  <label>
-    Folder Name
-    <input
-      type="text"
-      value={folderForm.name}
-      onChange={(e) =>
-        setFolderForm({ ...folderForm, name: e.target.value })
-      }
-      placeholder="Example: Brochure"
-      disabled={creatingFolder}
-    />
-  </label>
 
-  <div className="doc-modal-actions">
-    <button
-      className="doc-btn secondary"
-      type="button"
-      disabled={creatingFolder}
-      onClick={() => {
-        setShowFolderModal(false);
-        resetFolderForm();
-      }}
-    >
-      Cancel
-    </button>
+            <form onSubmit={handleCreateFolder} className="doc-form">
+              <label>
+                Folder Name
+                <input
+                  type="text"
+                  value={folderForm.name}
+                  onChange={(e) =>
+                    setFolderForm({ ...folderForm, name: e.target.value })
+                  }
+                  placeholder="Example: Brochure"
+                  disabled={creatingFolder}
+                />
+              </label>
 
-    <button
-      className="doc-btn primary"
-      type="submit"
-      disabled={creatingFolder || !folderForm.name.trim()}
-    >
-      {creatingFolder ? "Creating..." : "Create Folder"}
-    </button>
-  </div>
-</form>
+              <div className="doc-modal-actions">
+                <button
+                  className="doc-btn secondary"
+                  type="button"
+                  disabled={creatingFolder}
+                  onClick={() => {
+                    setShowFolderModal(false);
+                    resetFolderForm();
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="doc-btn primary"
+                  type="submit"
+                  disabled={creatingFolder || !folderForm.name.trim()}
+                >
+                  {creatingFolder ? "Creating..." : "Create Folder"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -499,10 +562,12 @@ function DocumentPage() {
               <h2>Upload File</h2>
               <button
                 onClick={() => {
+                  if (uploading) return;
                   setShowUploadModal(false);
                   resetUploadForm();
                 }}
                 type="button"
+                disabled={uploading}
               >
                 <X size={20} />
               </button>
@@ -518,6 +583,7 @@ function DocumentPage() {
                     setUploadForm({ ...uploadForm, title: e.target.value })
                   }
                   placeholder="Example: Alloy Steel Brochure"
+                  disabled={uploading}
                 />
               </label>
 
@@ -532,6 +598,7 @@ function DocumentPage() {
                     })
                   }
                   placeholder="Short detail visible to users"
+                  disabled={uploading}
                 />
               </label>
 
@@ -546,6 +613,7 @@ function DocumentPage() {
                         accessLevel: e.target.value,
                       })
                     }
+                    disabled={uploading}
                   >
                     <option value="private">Private - Only Me</option>
                     <option value="admin_only">Admin Only</option>
@@ -564,6 +632,7 @@ function DocumentPage() {
                 Select File
                 <input
                   type="file"
+                  disabled={uploading}
                   onChange={(e) =>
                     setUploadForm({
                       ...uploadForm,
@@ -585,6 +654,7 @@ function DocumentPage() {
                 <button
                   className="doc-btn secondary"
                   type="button"
+                  disabled={uploading}
                   onClick={() => {
                     setShowUploadModal(false);
                     resetUploadForm();
@@ -593,12 +663,38 @@ function DocumentPage() {
                   Cancel
                 </button>
 
-                <button className="doc-btn primary" type="submit" disabled={uploading}>
+                <button
+                  className="doc-btn primary"
+                  type="submit"
+                  disabled={
+                    uploading || !uploadForm.title.trim() || !uploadForm.file
+                  }
+                >
                   {uploading ? "Uploading..." : "Upload File"}
                 </button>
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {uploadProgress.show && (
+        <div className="upload-progress-toast">
+          <div className="upload-progress-head">
+            <strong>{uploadProgress.status}</strong>
+            <span>{uploadProgress.percent}%</span>
+          </div>
+
+          <p>{uploadProgress.fileName}</p>
+
+          <div className="upload-progress-bar">
+            <div style={{ width: `${uploadProgress.percent}%` }} />
+          </div>
+
+          <small>
+            {uploadProgress.uploadedMB.toFixed(2)} MB of{" "}
+            {uploadProgress.totalMB.toFixed(2)} MB uploaded
+          </small>
         </div>
       )}
     </div>

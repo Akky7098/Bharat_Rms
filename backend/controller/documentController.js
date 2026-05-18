@@ -31,7 +31,7 @@ const createFolder = async (req, res) => {
 
 const getAllFolders = async (req, res) => {
   try {
-    const folders = await documentService.getAllFolders();
+    const folders = await documentService.getAllFolders(req.user);
 
     return res.status(200).json({
       success: true,
