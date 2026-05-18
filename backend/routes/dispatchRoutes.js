@@ -52,7 +52,11 @@ router.patch(
 /* =========================
    GET DISPATCH BY ID
 ========================= */
-
+router.patch(
+  "/:dispatchId/status",
+  authMiddleware,
+  dispatchController.updateDispatchStatus
+);
 router.get(
   "/:dispatchId",
   authMiddleware,

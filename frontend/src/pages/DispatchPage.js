@@ -717,20 +717,24 @@ const DispatchPage = () => {
 
                 <div className="dispatch-field">
                   <label>Dispatch Status</label>
-                  <select
-                    value={paymentForm.dispatchStatus}
-                    onChange={(e) =>
-                      setPaymentForm((prev) => ({
-                        ...prev,
-                        dispatchStatus: e.target.value,
-                      }))
-                    }
-                    disabled={paymentUpdating}
-                  >
-                    <option value="dispatched">Dispatched</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
+                 <select
+  value={paymentForm.dispatchStatus}
+  onChange={(e) =>
+    setPaymentForm((prev) => ({
+      ...prev,
+      dispatchStatus: e.target.value,
+    }))
+  }
+  disabled={paymentUpdating || paymentModal?.dispatchStatus === "delivered"}
+>
+  <option value="dispatched">Dispatched</option>
+  <option value="delivered">Delivered</option>
+</select>
+{paymentModal?.dispatchStatus === "delivered" && (
+  <small className="dispatch-lock-note">
+    Delivery status is locked. Payment can still be updated.
+  </small>
+)}
                 </div>
 
                 <div className="dispatch-field dispatch-full">

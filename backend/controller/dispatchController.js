@@ -160,6 +160,26 @@ const deleteDispatch = async (req, res) => {
   }
 };
 
+const updateDispatchStatus = async (req, res) => {
+  try {
+    const dispatch = await dispatchService.updateDispatchStatus(
+      req.params.dispatchId,
+      req.body,
+      req.user
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Dispatch status updated successfully.",
+      data: dispatch,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 module.exports = {
   searchPendingDispatchSalesOrders,
   createDispatch,
@@ -167,4 +187,5 @@ module.exports = {
   getDispatchById,
   updateDispatchPayment,
   deleteDispatch,
+  updateDispatchStatus,
 };
