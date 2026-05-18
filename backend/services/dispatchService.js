@@ -1,4 +1,7 @@
 const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
+
 const Dispatch = require("../model/dispatchModel");
 const SalesOrder = require("../model/salesOrderModel");
 
@@ -6,9 +9,75 @@ const isPrivilegedUser = (user) => {
   return ["admin", "super_admin", "dispatch"].includes(user.role);
 };
 
-const calculatePaymentDueDate = (dispatchDate, paymentDays) => {
+const getUserId = (user) => {
+  return user._id || user.id;
+};
+
+const escapeRegex = (value = "") => {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const cleanEmails = (emails = []) => {
+  return [
+    ...new Set(
+      emails
+        .filter(Boolean)
+        .map((email) => String(email).trim().toLowerCase())
+        .filter((email) => email.includes("@"))
+    ),
+  ];
+};
+
+const getFileUrl = (file) => {
+  return `/uploads/dispatch/${file.filename}`;
+};
+
+const sanitizeFileName = (name) => {
+  return String(name || "dispatch-file")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+};
+
+const renameUploadedFile = (file, title) => {
+  const ext = path.extname(file.originalname || ".pdf");
+  const safeTitle = sanitizeFileName(title);
+  const newFileName = `${safeTitle}-${Date.now()}${ext}`;
+  const newPath = path.join(path.dirname(file.path), newFileName);
+
+  fs.renameSync(file.path, newPath);
+
+  file.filename = newFileName;
+  file.path = newPath;
+
+  return file;
+};
+
+const buildFileObject = (file) => {
+  return {
+    originalName: file.originalname,
+    fileName: file.filename,
+    filePath: file.path,
+    fileUrl: getFileUrl(file),
+    mimeType: file.mimetype,
+    fileSize: file.size,
+    uploadedAt: new Date(),
+  };
+};
+
+const deleteUploadedFiles = (files = []) => {
+  files.forEach((file) => {
+    if (file?.path && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+    }
+  });
+};
+
+const calculatePaymentDueDate = (dispatchDate, paymentDueDays) => {
   const dueDate = new Date(dispatchDate);
-  dueDate.setDate(dueDate.getDate() + Number(paymentDays));
+  dueDate.setDate(dueDate.getDate() + Number(paymentDueDays));
   return dueDate;
 };
 
@@ -19,53 +88,133 @@ const calculatePaymentStatus = (pendingAmount, paymentDueDate, paidAmount) => {
   const due = new Date(paymentDueDate);
   due.setHours(0, 0, 0, 0);
 
-  if (pendingAmount <= 0) return "paid";
+  if (Number(pendingAmount || 0) <= 0) return "paid";
   if (due < today) return "overdue";
-  if (paidAmount > 0) return "partial";
+  if (Number(paidAmount || 0) > 0) return "partial";
 
   return "pending";
 };
 
-const recalculateSalesOrderDispatchStatus = async (salesOrderId, session = null) => {
-  const dispatches = await Dispatch.find({ salesOrderId }).session(session);
-
-  const salesOrder = await SalesOrder.findById(salesOrderId).session(session);
-
-  if (!salesOrder) {
-    throw new Error("Sales order not found");
+const getShippingAddress = (salesOrder) => {
+  if (salesOrder.shippingAddress?.sameAsCompanyAddress) {
+    return salesOrder.companyAddress || "";
   }
 
-  const totalDispatchedQty = dispatches.reduce(
-    (sum, item) => sum + Number(item.dispatchQty || 0),
-    0
-  );
-
-  const pendingDispatchQty = Math.max(
-    Number(salesOrder.quantityInKg || 0) - totalDispatchedQty,
-    0
-  );
-
-  let orderStatus = "pending_dispatch";
-
-  if (totalDispatchedQty > 0 && pendingDispatchQty > 0) {
-    orderStatus = "partial_dispatch";
-  }
-
-  if (totalDispatchedQty >= Number(salesOrder.quantityInKg || 0)) {
-    orderStatus = "fully_dispatched";
-  }
-
-  salesOrder.totalDispatchedQty = totalDispatchedQty;
-  salesOrder.pendingDispatchQty = pendingDispatchQty;
-  salesOrder.orderStatus = orderStatus;
-
-  await salesOrder.save({ session });
-
-  return salesOrder;
+  return salesOrder.shippingAddress?.address || salesOrder.companyAddress || "";
 };
 
-const createDispatch = async (body, user) => {
+const buildDispatchCcEmails = (salesOrder, additionalCcEmails = [], user) => {
+  return cleanEmails([
+    salesOrder.salesPersonEmail,
+    user?.email,
+    process.env.ADMIN_EMAIL,
+    process.env.SUPER_ADMIN_EMAIL,
+    ...(additionalCcEmails || []),
+  ]);
+};
+
+/* =========================
+   SEARCH APPROVED SALES ORDERS FOR DISPATCH
+========================= */
+
+const searchPendingDispatchSalesOrders = async (query, user) => {
+  const { search = "", limit = 20 } = query;
+
+  const keyword = String(search || "").trim().replace(/\s+/g, " ");
+  const safeLimit = Math.min(Number(limit) || 20, 50);
+
+  const filter = {
+    approvalStatus: "approved",
+  };
+
+  if (!isPrivilegedUser(user)) {
+    filter.salesPersonId = getUserId(user);
+  }
+
+  if (keyword) {
+    filter.$or = [
+      {
+        companyName: {
+          $regex: "^" + escapeRegex(keyword),
+          $options: "i",
+        },
+      },
+      {
+        salesOrderNo: {
+          $regex: escapeRegex(keyword),
+          $options: "i",
+        },
+      },
+      {
+        poNumber: {
+          $regex: escapeRegex(keyword),
+          $options: "i",
+        },
+      },
+    ];
+  }
+
+  const salesOrders = await SalesOrder.find(filter)
+    .sort({ companyName: 1, createdAt: -1 })
+    .limit(safeLimit)
+    .select(
+      `
+      orderDate
+      salesOrderNo
+      companyName
+      companyAddress
+      poNumber
+      checklistNumber
+      contactPersonName
+      contactPersonNumber
+      contactPersonEmail
+      salesPersonId
+      salesPersonName
+      salesPersonEmail
+      salesPersonMobile
+      paymentTerms
+      orderValue
+      sizeGradeQuantityRate
+      supplyCondition
+      deliveryTime
+      billingAddress
+      shippingAddress
+      approvalStatus
+      createdAt
+      updatedAt
+      `
+    )
+    .lean();
+
+  const formatted = await Promise.all(
+    salesOrders.map(async (salesOrder) => {
+      const dispatchCount = await Dispatch.countDocuments({
+        salesOrderId: salesOrder._id,
+        isActive: true,
+      });
+
+      return {
+        ...salesOrder,
+        dispatchCount,
+        alreadyDispatched: dispatchCount > 0,
+      };
+    })
+  );
+
+  return formatted;
+};
+
+/* =========================
+   CREATE DISPATCH
+========================= */
+
+const createDispatch = async (body, files, user) => {
   const session = await mongoose.startSession();
+
+  const uploadedFiles = [
+    ...(files?.billPdf || []),
+    ...(files?.lrCopyPdf || []),
+  ];
 
   try {
     session.startTransaction();
@@ -77,105 +226,173 @@ const createDispatch = async (body, user) => {
       dispatchDate,
       dispatchQty,
       invoiceValue,
-      transporterName,
-      vehicleNumber,
-      lrNumber,
-      ewayBillNumber,
-      invoicePdf,
-      lrCopyPdf,
-      ewayBillPdf,
-      paymentDays,
+      materialDescription,
+      lrNumber = "",
+      lrDate,
+      paymentDueDays,
       paidAmount = 0,
+      additionalCcEmails = [],
       dispatchStatus = "dispatched",
       internalRemark = "",
+      paymentRemark = "",
     } = body;
+
+    if (!salesOrderId) {
+      throw new Error("Sales order is required.");
+    }
+
+    if (!invoiceNumber || !String(invoiceNumber).trim()) {
+      throw new Error("Invoice number is required.");
+    }
+
+    if (!invoiceDate) {
+      throw new Error("Invoice date is required.");
+    }
+
+    if (!files?.billPdf?.[0]) {
+      throw new Error("Bill PDF is required.");
+    }
+
+    if (!files?.lrCopyPdf?.[0]) {
+      throw new Error("LR copy PDF is required.");
+    }
 
     const salesOrder = await SalesOrder.findById(salesOrderId).session(session);
 
     if (!salesOrder) {
-      throw new Error("Sales order not found");
+      throw new Error("Sales order not found.");
+    }
+
+    if (salesOrder.approvalStatus !== "approved") {
+      throw new Error("Dispatch can be created only for approved sales orders.");
+    }
+
+    if (
+      !isPrivilegedUser(user) &&
+      String(salesOrder.salesPersonId) !== String(getUserId(user))
+    ) {
+      throw new Error("You are not allowed to create dispatch for this sales order.");
+    }
+
+    const existingInvoice = await Dispatch.findOne({
+      invoiceNumber: String(invoiceNumber).trim(),
+      isActive: true,
+    }).session(session);
+
+    if (existingInvoice) {
+      throw new Error("Dispatch with this invoice number already exists.");
     }
 
     const qty = Number(dispatchQty);
     const value = Number(invoiceValue);
-    const days = Number(paymentDays);
+    const days = Number(paymentDueDays);
     const paid = Number(paidAmount || 0);
 
     if (!qty || qty <= 0) {
-      throw new Error("Dispatch quantity must be greater than 0");
+      throw new Error("Dispatch quantity must be greater than 0.");
     }
 
     if (!value || value <= 0) {
-      throw new Error("Invoice value must be greater than 0");
+      throw new Error("Invoice value must be greater than 0.");
     }
 
-    if (days < 0 || paymentDays === "" || paymentDays === undefined) {
-      throw new Error("Payment days is required");
+    if (paymentDueDays === "" || paymentDueDays === undefined || days < 0) {
+      throw new Error("Payment due days is required.");
     }
 
     if (paid < 0) {
-      throw new Error("Paid amount cannot be negative");
+      throw new Error("Paid amount cannot be negative.");
     }
 
     if (paid > value) {
-      throw new Error("Paid amount cannot be greater than invoice value");
+      throw new Error("Paid amount cannot be greater than invoice value.");
     }
 
-    const existingDispatches = await Dispatch.find({ salesOrderId }).session(
-      session
-    );
-
-    const alreadyDispatchedQty = existingDispatches.reduce(
-      (sum, item) => sum + Number(item.dispatchQty || 0),
-      0
-    );
-
-    const remainingQty = Number(salesOrder.quantityInKg) - alreadyDispatchedQty;
-
-    if (qty > remainingQty) {
-      throw new Error(
-        `Dispatch quantity cannot exceed pending quantity. Pending quantity is ${remainingQty} Kg`
-      );
-    }
-
-    const paymentDueDate = calculatePaymentDueDate(dispatchDate, days);
+    const finalDispatchDate = dispatchDate ? new Date(dispatchDate) : new Date();
+    const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
     const pendingAmount = Number((value - paid).toFixed(2));
-    const ratePerKg = Number((value / qty).toFixed(2));
-
     const paymentStatus = calculatePaymentStatus(
       pendingAmount,
       paymentDueDate,
       paid
     );
 
+    const renamedBillFile = renameUploadedFile(
+      files.billPdf[0],
+      `bill-${invoiceNumber}-${salesOrder.companyName}`
+    );
+
+    const renamedLrFile = renameUploadedFile(
+      files.lrCopyPdf[0],
+      `lr-${invoiceNumber}-${salesOrder.companyName}`
+    );
+
+    const ccEmails = buildDispatchCcEmails(
+      salesOrder,
+      additionalCcEmails,
+      user
+    );
+
     const dispatch = await Dispatch.create(
       [
         {
-          salesOrderId,
-          dispatchPersonId: user.id,
+          salesOrderId: salesOrder._id,
+          salesOrderNo: salesOrder.salesOrderNo,
+          poNumber: salesOrder.poNumber,
+          companyName: salesOrder.companyName,
 
-          invoiceNumber,
+          salesPersonId: salesOrder.salesPersonId,
+          salesPersonName: salesOrder.salesPersonName,
+          salesPersonEmail: salesOrder.salesPersonEmail,
+          salesPersonMobile: salesOrder.salesPersonMobile,
+
+          contactPersonName: salesOrder.contactPersonName,
+          contactPersonEmail: salesOrder.contactPersonEmail,
+          contactPersonNumber: salesOrder.contactPersonNumber,
+          shippingAddress: getShippingAddress(salesOrder),
+
+          dispatchCreatedBy: {
+            userId: getUserId(user),
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
+
+          invoiceNumber: String(invoiceNumber).trim(),
           invoiceDate,
-          dispatchDate,
+          dispatchDate: finalDispatchDate,
 
           dispatchQty: qty,
           invoiceValue: value,
-          ratePerKg,
+          materialDescription:
+            materialDescription || salesOrder.sizeGradeQuantityRate,
 
-          transporterName,
-          vehicleNumber,
           lrNumber,
-          ewayBillNumber,
+          lrDate: lrDate || undefined,
 
-          invoicePdf,
-          lrCopyPdf,
-          ewayBillPdf,
+          billPdf: buildFileObject(renamedBillFile),
+          lrCopyPdf: buildFileObject(renamedLrFile),
 
-          paymentDays: days,
+          paymentTerms: salesOrder.paymentTerms || "",
+          paymentDueDays: days,
           paymentDueDate,
           paymentStatus,
           paidAmount: paid,
           pendingAmount,
+          paymentRemark,
+
+          additionalCcEmails: cleanEmails(additionalCcEmails),
+
+          notificationEmail: {
+            sent: false,
+            sentTo: salesOrder.contactPersonEmail,
+            cc: ccEmails,
+          },
+
+          mobileNotification: {
+            sent: false,
+            sentTo: salesOrder.contactPersonNumber,
+          },
 
           dispatchStatus,
           internalRemark,
@@ -184,164 +401,21 @@ const createDispatch = async (body, user) => {
       { session }
     );
 
-    await recalculateSalesOrderDispatchStatus(salesOrderId, session);
-
     await session.commitTransaction();
 
     return dispatch[0];
   } catch (error) {
     await session.abortTransaction();
+    deleteUploadedFiles(uploadedFiles);
     throw error;
   } finally {
     session.endSession();
   }
 };
 
-const updateDispatch = async (dispatchId, body, user) => {
-  const session = await mongoose.startSession();
-
-  try {
-    session.startTransaction();
-
-    const dispatch = await Dispatch.findById(dispatchId).session(session);
-
-    if (!dispatch) {
-      throw new Error("Dispatch not found");
-    }
-
-    const salesOrder = await SalesOrder.findById(dispatch.salesOrderId).session(
-      session
-    );
-
-    if (!salesOrder) {
-      throw new Error("Sales order not found");
-    }
-
-    const updatedDispatchQty =
-      body.dispatchQty !== undefined
-        ? Number(body.dispatchQty)
-        : Number(dispatch.dispatchQty);
-
-    const updatedInvoiceValue =
-      body.invoiceValue !== undefined
-        ? Number(body.invoiceValue)
-        : Number(dispatch.invoiceValue);
-
-    const updatedPaymentDays =
-      body.paymentDays !== undefined
-        ? Number(body.paymentDays)
-        : Number(dispatch.paymentDays);
-
-    const updatedPaidAmount =
-      body.paidAmount !== undefined
-        ? Number(body.paidAmount)
-        : Number(dispatch.paidAmount || 0);
-
-    const updatedDispatchDate = body.dispatchDate || dispatch.dispatchDate;
-
-    if (!updatedDispatchQty || updatedDispatchQty <= 0) {
-      throw new Error("Dispatch quantity must be greater than 0");
-    }
-
-    if (!updatedInvoiceValue || updatedInvoiceValue <= 0) {
-      throw new Error("Invoice value must be greater than 0");
-    }
-
-    if (updatedPaymentDays < 0) {
-      throw new Error("Payment days is required");
-    }
-
-    if (updatedPaidAmount < 0) {
-      throw new Error("Paid amount cannot be negative");
-    }
-
-    if (updatedPaidAmount > updatedInvoiceValue) {
-      throw new Error("Paid amount cannot be greater than invoice value");
-    }
-
-    const otherDispatches = await Dispatch.find({
-      salesOrderId: dispatch.salesOrderId,
-      _id: { $ne: dispatch._id },
-    }).session(session);
-
-    const otherDispatchedQty = otherDispatches.reduce(
-      (sum, item) => sum + Number(item.dispatchQty || 0),
-      0
-    );
-
-    const availableQty =
-      Number(salesOrder.quantityInKg || 0) - otherDispatchedQty;
-
-    if (updatedDispatchQty > availableQty) {
-      throw new Error(
-        `Dispatch quantity cannot exceed available quantity. Available quantity is ${availableQty} Kg`
-      );
-    }
-
-    const paymentDueDate = calculatePaymentDueDate(
-      updatedDispatchDate,
-      updatedPaymentDays
-    );
-
-    const pendingAmount = Number(
-      (updatedInvoiceValue - updatedPaidAmount).toFixed(2)
-    );
-
-    const ratePerKg = Number(
-      (updatedInvoiceValue / updatedDispatchQty).toFixed(2)
-    );
-
-    const paymentStatus = calculatePaymentStatus(
-      pendingAmount,
-      paymentDueDate,
-      updatedPaidAmount
-    );
-
-    const allowedFields = [
-      "invoiceNumber",
-      "invoiceDate",
-      "dispatchDate",
-      "transporterName",
-      "vehicleNumber",
-      "lrNumber",
-      "ewayBillNumber",
-      "invoicePdf",
-      "lrCopyPdf",
-      "ewayBillPdf",
-      "dispatchStatus",
-      "internalRemark",
-    ];
-
-    allowedFields.forEach((field) => {
-      if (body[field] !== undefined) {
-        dispatch[field] = body[field];
-      }
-    });
-
-    dispatch.dispatchQty = updatedDispatchQty;
-    dispatch.invoiceValue = updatedInvoiceValue;
-    dispatch.ratePerKg = ratePerKg;
-
-    dispatch.paymentDays = updatedPaymentDays;
-    dispatch.paymentDueDate = paymentDueDate;
-    dispatch.paidAmount = updatedPaidAmount;
-    dispatch.pendingAmount = pendingAmount;
-    dispatch.paymentStatus = paymentStatus;
-
-    await dispatch.save({ session });
-
-    await recalculateSalesOrderDispatchStatus(dispatch.salesOrderId, session);
-
-    await session.commitTransaction();
-
-    return dispatch;
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
-};
+/* =========================
+   GET ALL DISPATCHES
+========================= */
 
 const getAllDispatches = async (query, user) => {
   const {
@@ -356,7 +430,12 @@ const getAllDispatches = async (query, user) => {
     toDate,
   } = query;
 
-  const match = {};
+  const safePage = Math.max(Number(page) || 1, 1);
+  const safeLimit = Math.min(Number(limit) || 10, 100);
+
+  const match = {
+    isActive: true,
+  };
 
   if (salesOrderId) {
     match.salesOrderId = new mongoose.Types.ObjectId(salesOrderId);
@@ -368,6 +447,10 @@ const getAllDispatches = async (query, user) => {
 
   if (dispatchStatus) {
     match.dispatchStatus = dispatchStatus;
+  }
+
+  if (companyName) {
+    match.companyName = { $regex: companyName, $options: "i" };
   }
 
   if (invoiceNumber) {
@@ -388,190 +471,144 @@ const getAllDispatches = async (query, user) => {
     }
   }
 
-  const pipeline = [
-    { $match: match },
-
-    {
-      $lookup: {
-        from: "salesorders",
-        localField: "salesOrderId",
-        foreignField: "_id",
-        as: "salesOrder",
-      },
-    },
-    {
-      $unwind: {
-        path: "$salesOrder",
-        preserveNullAndEmptyArrays: false,
-      },
-    },
-  ];
-
   if (!isPrivilegedUser(user)) {
-    pipeline.push({
-      $match: {
-        "salesOrder.salesPersonId": new mongoose.Types.ObjectId(user.id),
-      },
-    });
+    match.salesPersonId = new mongoose.Types.ObjectId(getUserId(user));
   }
 
-  if (companyName) {
-    pipeline.push({
-      $match: {
-        "salesOrder.companyName": { $regex: companyName, $options: "i" },
-      },
-    });
-  }
+  const [totalRecords, dispatches] = await Promise.all([
+    Dispatch.countDocuments(match),
 
-  const countPipeline = [...pipeline, { $count: "totalRecords" }];
-
-  pipeline.push(
-    {
-      $lookup: {
-        from: "users",
-        localField: "salesOrder.salesPersonId",
-        foreignField: "_id",
-        as: "salesPerson",
-      },
-    },
-    {
-      $unwind: {
-        path: "$salesPerson",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "dispatchPersonId",
-        foreignField: "_id",
-        as: "dispatchPerson",
-      },
-    },
-    {
-      $unwind: {
-        path: "$dispatchPerson",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    { $sort: { dispatchDate: -1, createdAt: -1 } },
-    { $skip: (Number(page) - 1) * Number(limit) },
-    { $limit: Number(limit) },
-    {
-      $project: {
-        invoiceNumber: 1,
-        invoiceDate: 1,
-        dispatchDate: 1,
-
-        dispatchQty: 1,
-        invoiceValue: 1,
-        ratePerKg: 1,
-
-        transporterName: 1,
-        vehicleNumber: 1,
-        lrNumber: 1,
-        ewayBillNumber: 1,
-
-        invoicePdf: 1,
-        lrCopyPdf: 1,
-        ewayBillPdf: 1,
-
-        paymentDays: 1,
-        paymentDueDate: 1,
-        paymentStatus: 1,
-        paidAmount: 1,
-        pendingAmount: 1,
-
-        dispatchStatus: 1,
-        internalRemark: 1,
-
-        createdAt: 1,
-        updatedAt: 1,
-
-        "salesOrder._id": 1,
-        "salesOrder.companyName": 1,
-        "salesOrder.location": 1,
-        "salesOrder.contactPersonName": 1,
-        "salesOrder.contactPersonNumber": 1,
-        "salesOrder.contactPersonEmailId": 1,
-        "salesOrder.additionalEmails": 1,
-        "salesOrder.productCategory": 1,
-        "salesOrder.grade": 1,
-        "salesOrder.size": 1,
-        "salesOrder.quantityInKg": 1,
-        "salesOrder.valueInRupees": 1,
-        "salesOrder.paymentTerms": 1,
-        "salesOrder.totalDispatchedQty": 1,
-        "salesOrder.pendingDispatchQty": 1,
-        "salesOrder.orderStatus": 1,
-
-        "salesPerson._id": 1,
-        "salesPerson.name": 1,
-        "salesPerson.email": 1,
-
-        "dispatchPerson._id": 1,
-        "dispatchPerson.name": 1,
-        "dispatchPerson.email": 1,
-      },
-    }
-  );
-
-  const [countResult, dispatches] = await Promise.all([
-    Dispatch.aggregate(countPipeline),
-    Dispatch.aggregate(pipeline),
+    Dispatch.find(match)
+      .sort({ dispatchDate: -1, createdAt: -1 })
+      .skip((safePage - 1) * safeLimit)
+      .limit(safeLimit)
+      .lean(),
   ]);
-
-  const totalRecords = countResult[0]?.totalRecords || 0;
 
   return {
     dispatches,
     pagination: {
       totalRecords,
-      currentPage: Number(page),
-      totalPages: Math.ceil(totalRecords / Number(limit)),
-      limit: Number(limit),
+      currentPage: safePage,
+      totalPages: Math.ceil(totalRecords / safeLimit),
+      limit: safeLimit,
     },
   };
 };
 
-const getDispatchById = async (dispatchId, user) => {
-  const result = await getAllDispatches(
-    {
-      page: 1,
-      limit: 1,
-    },
-    user
-  );
+/* =========================
+   GET DISPATCH BY ID
+========================= */
 
-  const dispatch = await Dispatch.findById(dispatchId)
-    .populate({
-      path: "salesOrderId",
-      populate: {
-        path: "salesPersonId",
-        select: "name email role",
-      },
-    })
-    .populate("dispatchPersonId", "name email role")
-    .lean();
+const getDispatchById = async (dispatchId, user) => {
+  const dispatch = await Dispatch.findOne({
+    _id: dispatchId,
+    isActive: true,
+  }).lean();
 
   if (!dispatch) {
-    throw new Error("Dispatch not found");
+    throw new Error("Dispatch not found.");
   }
 
   if (
     !isPrivilegedUser(user) &&
-    String(dispatch.salesOrderId?.salesPersonId?._id) !== String(user.id)
+    String(dispatch.salesPersonId) !== String(getUserId(user))
   ) {
-    throw new Error("You are not allowed to view this dispatch");
+    throw new Error("You are not allowed to view this dispatch.");
   }
 
   return dispatch;
 };
 
+/* =========================
+   UPDATE PAYMENT
+========================= */
+
+const updateDispatchPayment = async (dispatchId, body, user) => {
+  const dispatch = await Dispatch.findOne({
+    _id: dispatchId,
+    isActive: true,
+  });
+
+  if (!dispatch) {
+    throw new Error("Dispatch not found.");
+  }
+
+  if (!isPrivilegedUser(user)) {
+    throw new Error("Only admin, super admin or dispatch user can update payment.");
+  }
+
+  const receivedAmount = Number(body.amount || 0);
+
+  if (!receivedAmount || receivedAmount <= 0) {
+    throw new Error("Payment amount must be greater than 0.");
+  }
+
+  if (receivedAmount > dispatch.pendingAmount) {
+    throw new Error("Payment amount cannot be greater than pending amount.");
+  }
+
+  dispatch.paidAmount = Number(
+    (Number(dispatch.paidAmount || 0) + receivedAmount).toFixed(2)
+  );
+
+  dispatch.pendingAmount = Number(
+    (Number(dispatch.invoiceValue || 0) - Number(dispatch.paidAmount || 0)).toFixed(2)
+  );
+
+  dispatch.paymentStatus = calculatePaymentStatus(
+    dispatch.pendingAmount,
+    dispatch.paymentDueDate,
+    dispatch.paidAmount
+  );
+
+  dispatch.paymentRemark = body.remark || dispatch.paymentRemark;
+
+  dispatch.paymentHistory.push({
+    amount: receivedAmount,
+    receivedAt: body.receivedAt || new Date(),
+    remark: body.remark || "",
+    updatedBy: {
+      userId: getUserId(user),
+      name: user.name,
+      email: user.email,
+    },
+  });
+
+  await dispatch.save();
+
+  return dispatch;
+};
+
+/* =========================
+   SOFT DELETE
+========================= */
+
+const deleteDispatch = async (dispatchId, user) => {
+  if (!isPrivilegedUser(user)) {
+    throw new Error("Only admin, super admin or dispatch user can delete dispatch.");
+  }
+
+  const dispatch = await Dispatch.findOne({
+    _id: dispatchId,
+    isActive: true,
+  });
+
+  if (!dispatch) {
+    throw new Error("Dispatch not found.");
+  }
+
+  dispatch.isActive = false;
+  await dispatch.save();
+
+  return dispatch;
+};
+
 module.exports = {
+  searchPendingDispatchSalesOrders,
   createDispatch,
-  updateDispatch,
   getAllDispatches,
   getDispatchById,
-  recalculateSalesOrderDispatchStatus,
+  updateDispatchPayment,
+  deleteDispatch,
 };

@@ -76,6 +76,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/cold-call", coldCallRoutes);
 app.use("/api/timesheet", timesheetRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/uploads", express.static("uploads"));
 app.use("/api/dispatch", dispatchRoutes);
 app.use("/api/whatsapp-approval", whatsappApprovalRoutes);
 app.use("/api/whatsapp", whatsappStatusRoutes);
