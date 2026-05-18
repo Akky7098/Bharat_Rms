@@ -268,31 +268,54 @@ const dispatchSchema = new mongoose.Schema(
     },
 
     paymentHistory: [
-      {
-        amount: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        receivedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        remark: {
-          type: String,
-          trim: true,
-          default: "",
-        },
-        updatedBy: {
-          userId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-          },
-          name: String,
-          email: String,
-        },
+  {
+    amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    receivedAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    remark: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    paymentBillPdf: {
+      originalName: String,
+      fileName: String,
+      filePath: String,
+      fileUrl: String,
+      mimeType: String,
+      fileSize: Number,
+      uploadedAt: Date,
+    },
+
+    mailStatus: {
+      sent: {
+        type: Boolean,
+        default: false,
       },
-    ],
+      sentAt: Date,
+      messageId: String,
+      errorMessage: String,
+    },
+
+    updatedBy: {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      name: String,
+      email: String,
+    },
+  },
+],
 
     /* =========================
        CUSTOMER EMAIL / CC TRACKING

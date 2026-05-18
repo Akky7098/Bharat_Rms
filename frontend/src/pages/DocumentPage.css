@@ -750,3 +750,61 @@
     width: auto;
   }
 }
+.dispatch-doc-link.payment-doc {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.dispatch-payment-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.dispatch-payment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.dispatch-payment-chip span {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.dispatch-payment-chip strong {
+  color: #15803d;
+  font-size: 10px;
+}
+
+.dispatch-selected-payment-file {
+  margin-top: 7px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  word-break: break-all;
+}
+
+@media (max-width: 768px) {
+  .dispatch-payment-history {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eef2f7;
+  }
+
+  .dispatch-payment-chip {
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 12px;
+    padding: 8px 10px;
+  }
+}

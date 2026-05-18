@@ -46,6 +46,7 @@ router.get(
 router.patch(
   "/:dispatchId/payment",
   authMiddleware,
+  dispatchUpload.single("paymentBillPdf"),
   dispatchController.updateDispatchPayment
 );
 /* =========================

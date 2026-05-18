@@ -70,10 +70,29 @@ export const getDispatchById = async (dispatchId) => {
   return response.data;
 };
 
-export const updateDispatchPayment = async (dispatchId, data) => {
-  const response = await axios.patch(`${API_URL}/${dispatchId}/payment`, data, {
-    headers: authHeaders(),
-  });
+export const updateDispatchPayment = async (
+  dispatchId,
+  data,
+  paymentBillPdf
+) => {
+  const formData = new FormData();
+
+  formData.append("data", JSON.stringify(data));
+
+  if (paymentBillPdf) {
+    formData.append("paymentBillPdf", paymentBillPdf);
+  }
+
+  const response = await axios.patch(
+    `${API_URL}/${dispatchId}/payment`,
+    formData,
+    {
+      headers: {
+        ...authHeaders(),
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
 
   return response.data;
 };

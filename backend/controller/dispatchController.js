@@ -114,9 +114,12 @@ const getDispatchById = async (req, res) => {
 
 const updateDispatchPayment = async (req, res) => {
   try {
+    const body = req.body.data ? JSON.parse(req.body.data) : req.body;
+
     const dispatch = await dispatchService.updateDispatchPayment(
       req.params.dispatchId,
-      req.body,
+      body,
+      req.file,
       req.user
     );
 

@@ -24,6 +24,7 @@ const DispatchPage = () => {
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
     remark: "",
+    paymentBillPdf: null,
   });
 
   const [filters, setFilters] = useState({
@@ -52,6 +53,13 @@ const DispatchPage = () => {
 
   const formatStatus = (status) => {
     return String(status || "-").replaceAll("_", " ");
+  };
+
+  const formatFileSize = (size) => {
+    if (!size) return "";
+    const mb = size / (1024 * 1024);
+    if (mb >= 1) return `${mb.toFixed(2)} MB`;
+    return `${(size / 1024).toFixed(1)} KB`;
   };
 
   const getPaymentStatusClass = (status) => {
@@ -128,15 +136,18 @@ const DispatchPage = () => {
     setPaymentForm({
       amount: "",
       remark: "",
+      paymentBillPdf: null,
     });
   };
 
   const closePaymentModal = () => {
     if (paymentUpdating) return;
+
     setPaymentModal(null);
     setPaymentForm({
       amount: "",
       remark: "",
+      paymentBillPdf: null,
     });
   };
 
@@ -157,13 +168,29 @@ const DispatchPage = () => {
       return;
     }
 
+    if (paymentForm.paymentBillPdf) {
+      if (paymentForm.paymentBillPdf.type !== "application/pdf") {
+        alert("Payment bill / receipt must be a PDF file");
+        return;
+      }
+
+      if (paymentForm.paymentBillPdf.size > 30 * 1024 * 1024) {
+        alert("Payment bill PDF must be under 30MB");
+        return;
+      }
+    }
+
     try {
       setPaymentUpdating(true);
 
-      await updateDispatchPayment(paymentModal._id, {
-        amount,
-        remark: paymentForm.remark,
-      });
+      await updateDispatchPayment(
+        paymentModal._id,
+        {
+          amount,
+          remark: paymentForm.remark,
+        },
+        paymentForm.paymentBillPdf
+      );
 
       alert("Payment updated successfully. Email has been sent.");
       closePaymentModal();
@@ -199,6 +226,8 @@ const DispatchPage = () => {
   const renderDocuments = (item) => {
     const billUrl = item.billPdf?.fileUrl;
     const lrUrl = item.lrCopyPdf?.fileUrl;
+    const paymentBills =
+      item.paymentHistory?.filter((p) => p.paymentBillPdf?.fileUrl) || [];
 
     return (
       <div className="dispatch-doc-list">
@@ -224,9 +253,38 @@ const DispatchPage = () => {
           </a>
         )}
 
-        {!billUrl && !lrUrl && (
+        {paymentBills.map((payment, index) => (
+          <a
+            key={index}
+            href={getFullFileUrl(payment.paymentBillPdf.fileUrl)}
+            target="_blank"
+            rel="noreferrer"
+            className="dispatch-doc-link payment-doc"
+          >
+            Payment {index + 1}
+          </a>
+        ))}
+
+        {!billUrl && !lrUrl && paymentBills.length === 0 && (
           <span className="dispatch-doc-disabled">No Docs</span>
         )}
+      </div>
+    );
+  };
+
+  const renderPaymentHistory = (item) => {
+    if (!item.paymentHistory || item.paymentHistory.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="dispatch-payment-history">
+        {item.paymentHistory.map((payment, index) => (
+          <div className="dispatch-payment-chip" key={index}>
+            <span>Payment {index + 1}</span>
+            <strong>{formatCurrency(payment.amount)}</strong>
+          </div>
+        ))}
       </div>
     );
   };
@@ -382,7 +440,6 @@ const DispatchPage = () => {
                     <td data-label="Dispatch">
                       <div className="dispatch-company-cell">
                         <strong>{formatDate(item.dispatchDate)}</strong>
-                        <span>LR: {item.lrNumber || "-"}</span>
                       </div>
                     </td>
 
@@ -405,6 +462,7 @@ const DispatchPage = () => {
                         <small>
                           Pending: {formatCurrency(item.pendingAmount)}
                         </small>
+                        {renderPaymentHistory(item)}
                       </div>
                     </td>
 
@@ -520,6 +578,8 @@ const DispatchPage = () => {
                     <strong>{formatStatus(item.dispatchStatus)}</strong>
                   </div>
 
+                  {renderPaymentHistory(item)}
+
                   <div className="dispatch-mobile-docs">
                     {renderDocuments(item)}
                   </div>
@@ -618,6 +678,28 @@ const DispatchPage = () => {
                 </div>
 
                 <div className="dispatch-field dispatch-full">
+                  <label>Payment Bill / Receipt PDF</label>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    disabled={paymentUpdating}
+                    onChange={(e) =>
+                      setPaymentForm((prev) => ({
+                        ...prev,
+                        paymentBillPdf: e.target.files[0],
+                      }))
+                    }
+                  />
+
+                  {paymentForm.paymentBillPdf && (
+                    <small className="dispatch-selected-payment-file">
+                      {paymentForm.paymentBillPdf.name} ·{" "}
+                      {formatFileSize(paymentForm.paymentBillPdf.size)}
+                    </small>
+                  )}
+                </div>
+
+                <div className="dispatch-field dispatch-full">
                   <label>Payment Remark</label>
                   <textarea
                     value={paymentForm.remark}
@@ -648,7 +730,9 @@ const DispatchPage = () => {
                   className="dispatch-submit"
                   disabled={paymentUpdating}
                 >
-                  {paymentUpdating ? "Updating..." : "Update Payment & Send Mail"}
+                  {paymentUpdating
+                    ? "Updating..."
+                    : "Update Payment & Send Mail"}
                 </button>
               </div>
             </form>

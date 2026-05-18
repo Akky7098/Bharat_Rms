@@ -545,67 +545,112 @@ const getDispatchById = async (dispatchId, user) => {
    UPDATE PAYMENT
 ========================= */
 
-const updateDispatchPayment = async (dispatchId, body, user) => {
-  const dispatch = await Dispatch.findOne({
-    _id: dispatchId,
-    isActive: true,
-  });
+const updateDispatchPayment = async (dispatchId, body, file, user) => {
+  const uploadedFiles = file ? [file] : [];
 
-  if (!dispatch) {
-    throw new Error("Dispatch not found.");
-  }
-
-  if (!isPrivilegedUser(user)) {
-    throw new Error("Only admin, super admin or dispatch user can update payment.");
-  }
-
-  const receivedAmount = Number(body.amount || 0);
-
-  if (!receivedAmount || receivedAmount <= 0) {
-    throw new Error("Payment amount must be greater than 0.");
-  }
-
-  if (receivedAmount > dispatch.pendingAmount) {
-    throw new Error("Payment amount cannot be greater than pending amount.");
-  }
-
-  dispatch.paidAmount = Number(
-    (Number(dispatch.paidAmount || 0) + receivedAmount).toFixed(2)
-  );
-
-  dispatch.pendingAmount = Number(
-    (Number(dispatch.invoiceValue || 0) - Number(dispatch.paidAmount || 0)).toFixed(2)
-  );
-
-  dispatch.paymentStatus = calculatePaymentStatus(
-    dispatch.pendingAmount,
-    dispatch.paymentDueDate,
-    dispatch.paidAmount
-  );
-
-  dispatch.paymentRemark = body.remark || dispatch.paymentRemark;
-
-  dispatch.paymentHistory.push({
-    amount: receivedAmount,
-    receivedAt: body.receivedAt || new Date(),
-    remark: body.remark || "",
-    updatedBy: {
-      userId: getUserId(user),
-      name: user.name,
-      email: user.email,
-    },
-  });
-
-  await dispatch.save();
   try {
-  await sendPaymentUpdateEmail(dispatch, {
-    amount: receivedAmount,
-    remark: body.remark || "",
-  });
-} catch (mailError) {
-  console.error("Payment update email failed:", mailError.message);
-}
-  return dispatch;
+    const dispatch = await Dispatch.findOne({
+      _id: dispatchId,
+      isActive: true,
+    });
+
+    if (!dispatch) {
+      throw new Error("Dispatch not found.");
+    }
+
+    if (!isPrivilegedUser(user)) {
+      throw new Error("Only admin, super admin or dispatch user can update payment.");
+    }
+
+    const receivedAmount = Number(body.amount || 0);
+
+    if (!receivedAmount || receivedAmount <= 0) {
+      throw new Error("Payment amount must be greater than 0.");
+    }
+
+    if (receivedAmount > dispatch.pendingAmount) {
+      throw new Error("Payment amount cannot be greater than pending amount.");
+    }
+
+    let paymentBillPdf = undefined;
+
+    if (file) {
+      const renamedFile = renameUploadedFile(
+        file,
+        `payment-${dispatch.invoiceNumber}-${dispatch.companyName}`
+      );
+
+      paymentBillPdf = buildFileObject(renamedFile);
+    }
+
+    dispatch.paidAmount = Number(
+      (Number(dispatch.paidAmount || 0) + receivedAmount).toFixed(2)
+    );
+
+    dispatch.pendingAmount = Number(
+      (
+        Number(dispatch.invoiceValue || 0) -
+        Number(dispatch.paidAmount || 0)
+      ).toFixed(2)
+    );
+
+    dispatch.paymentStatus = calculatePaymentStatus(
+      dispatch.pendingAmount,
+      dispatch.paymentDueDate,
+      dispatch.paidAmount
+    );
+
+    dispatch.paymentRemark = body.remark || dispatch.paymentRemark;
+
+    const historyItem = {
+      amount: receivedAmount,
+      receivedAt: body.receivedAt || new Date(),
+      remark: body.remark || "",
+      paymentBillPdf,
+      updatedBy: {
+        userId: getUserId(user),
+        name: user.name,
+        email: user.email,
+      },
+      mailStatus: {
+        sent: false,
+      },
+    };
+
+    dispatch.paymentHistory.push(historyItem);
+
+    await dispatch.save();
+
+    const lastPaymentIndex = dispatch.paymentHistory.length - 1;
+
+    try {
+      const mailInfo = await sendPaymentUpdateEmail(dispatch, {
+        amount: receivedAmount,
+        remark: body.remark || "",
+        paymentBillPdf,
+      });
+
+      dispatch.paymentHistory[lastPaymentIndex].mailStatus = {
+        sent: true,
+        sentAt: new Date(),
+        messageId: mailInfo.messageId || "",
+      };
+
+      await dispatch.save();
+    } catch (mailError) {
+      dispatch.paymentHistory[lastPaymentIndex].mailStatus = {
+        sent: false,
+        errorMessage: mailError.message,
+      };
+
+      await dispatch.save();
+    }
+
+    return dispatch;
+  } catch (error) {
+    deleteUploadedFiles(uploadedFiles);
+    throw error;
+  }
 };
 
 /* =========================

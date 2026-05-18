@@ -17,6 +17,7 @@ const formatCurrency = (amount) => {
 
 const formatDate = (date) => {
   if (!date) return "-";
+
   return new Date(date).toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -34,7 +35,18 @@ const cleanEmails = (emails = []) => {
     ),
   ];
 };
+const getPaymentAttachments = (dispatch, paymentBillPdf) => {
+  const attachments = [];
 
+  if (paymentBillPdf?.filePath && fs.existsSync(paymentBillPdf.filePath)) {
+    attachments.push({
+      filename: paymentBillPdf.originalName || paymentBillPdf.fileName,
+      path: paymentBillPdf.filePath,
+    });
+  }
+
+  return attachments;
+};
 const getDispatchAttachments = (dispatch) => {
   const attachments = [];
 
@@ -58,310 +70,319 @@ const getDispatchAttachments = (dispatch) => {
   return attachments;
 };
 
-const baseEmailTemplate = ({ title, subtitle, bodyContent }) => {
+const getPaymentBadge = (status) => {
+  if (status === "paid") return "Payment Complete";
+  if (status === "partial") return "Partial Payment";
+  if (status === "overdue") return "Payment Overdue";
+  return "Payment Pending";
+};
+
+const getDispatchStatusText = (status) => {
+  if (status === "delivered") return "Delivered";
+  if (status === "cancelled") return "Cancelled";
+  return "Dispatched";
+};
+
+const baseEmailTemplate = ({
+  preHeader = "",
+  title,
+  subtitle,
+  badge,
+  badgeColor = "#facc15",
+  bodyContent,
+}) => {
   return `
   <!DOCTYPE html>
   <html>
-  <head>
-    <meta charset="UTF-8" />
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        background: #f3f6fb;
-        font-family: Arial, Helvetica, sans-serif;
-        color: #1f2937;
-      }
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
 
-      .wrapper {
-        width: 100%;
-        padding: 24px 0;
-        background: #f3f6fb;
-      }
+    <body style="margin:0;padding:0;background:#eef3f8;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+      <div style="display:none;max-height:0;overflow:hidden;color:transparent;opacity:0;">
+        ${preHeader}
+      </div>
 
-      .container {
-        max-width: 720px;
-        margin: 0 auto;
-        background: #ffffff;
-        border-radius: 14px;
-        overflow: hidden;
-        border: 1px solid #e5e7eb;
-      }
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef3f8;padding:28px 0;">
+        <tr>
+          <td align="center">
+            <table width="680" cellpadding="0" cellspacing="0" style="width:94%;max-width:680px;background:#ffffff;border-radius:22px;overflow:hidden;border:1px solid #dfe7f1;box-shadow:0 22px 60px rgba(15,23,42,0.12);">
 
-      .header {
-        background: linear-gradient(135deg, #0f172a, #1e3a8a);
-        padding: 24px 28px;
-        color: #ffffff;
-      }
+              <tr>
+                <td style="padding:0;background:#0f172a;">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:28px 30px;background:linear-gradient(135deg,#0f172a 0%,#123f6d 52%,#0f766e 100%);">
+                        <div style="font-size:12px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#b7f7e5;">
+                          Bharat Special Steels
+                        </div>
 
-      .header h1 {
-        margin: 0;
-        font-size: 22px;
-        letter-spacing: 0.2px;
-      }
+                        <h1 style="margin:10px 0 6px;font-size:26px;line-height:1.25;color:#ffffff;font-weight:900;">
+                          ${title}
+                        </h1>
 
-      .header p {
-        margin: 8px 0 0;
-        font-size: 14px;
-        color: #dbeafe;
-      }
+                        <div style="font-size:14px;line-height:1.5;color:#dbeafe;">
+                          ${subtitle}
+                        </div>
 
-      .content {
-        padding: 28px;
-      }
+                        ${
+                          badge
+                            ? `<div style="margin-top:18px;">
+                                <span style="display:inline-block;background:${badgeColor};color:#111827;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:900;letter-spacing:.2px;">
+                                  ${badge}
+                                </span>
+                              </div>`
+                            : ""
+                        }
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
 
-      .notice {
-        background: #eff6ff;
-        border-left: 4px solid #2563eb;
-        padding: 14px 16px;
-        border-radius: 10px;
-        margin-bottom: 22px;
-        font-size: 14px;
-        line-height: 1.55;
-      }
+              <tr>
+                <td style="padding:30px;">
+                  ${bodyContent}
+                </td>
+              </tr>
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 18px 0;
-      }
+              <tr>
+                <td style="padding:22px 30px;background:#f8fafc;border-top:1px solid #e2e8f0;">
+                  <div style="font-size:14px;font-weight:900;color:#0f172a;">
+                    ${COMPANY.name}
+                  </div>
 
-      td {
-        padding: 11px 12px;
-        border-bottom: 1px solid #e5e7eb;
-        font-size: 14px;
-        vertical-align: top;
-      }
+                  <div style="margin-top:6px;font-size:12px;color:#64748b;line-height:1.6;">
+                    ${COMPANY.address}
+                  </div>
 
-      td.label {
-        width: 38%;
-        background: #f8fafc;
-        font-weight: 700;
-        color: #475569;
-      }
+                  <div style="margin-top:16px;padding:12px 14px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;font-size:11px;color:#94a3b8;line-height:1.6;">
+                    This is an automated notification generated by Bharat RMS. Please do not reply directly to this email.
+                  </div>
+                </td>
+              </tr>
 
-      td.value {
-        color: #111827;
-        font-weight: 600;
-      }
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+  </html>
+  `;
+};
 
-      .amount-box {
-        background: #f8fafc;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 16px;
-        margin-top: 16px;
-      }
-
-      .amount-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 7px 0;
-        font-size: 14px;
-      }
-
-      .amount-row strong {
-        color: #111827;
-      }
-
-      .pending {
-        color: #b91c1c;
-        font-weight: 800;
-      }
-
-      .paid {
-        color: #15803d;
-        font-weight: 800;
-      }
-
-      .footer {
-        padding: 20px 28px;
-        background: #f8fafc;
-        border-top: 1px solid #e5e7eb;
-        font-size: 12px;
-        color: #64748b;
-        line-height: 1.6;
-      }
-
-      .company {
-        font-weight: 800;
-        color: #0f172a;
-        font-size: 13px;
-      }
-
-      .auto {
-        margin-top: 12px;
-        font-style: italic;
-        color: #94a3b8;
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="wrapper">
-      <div class="container">
-        <div class="header">
-          <h1>${title}</h1>
-          <p>${subtitle}</p>
+const infoCard = (label, value, color = "#0f172a") => {
+  return `
+    <td style="width:50%;padding:8px;">
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:16px;min-height:74px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:900;color:#64748b;">
+          ${label}
         </div>
-
-        <div class="content">
-          ${bodyContent}
-        </div>
-
-        <div class="footer">
-          <div class="company">${COMPANY.name}</div>
-          <div>${COMPANY.address}</div>
-          <div class="auto">
-            This is an automated notification generated by Bharat RMS. Please do not reply to this email directly.
-          </div>
+        <div style="margin-top:8px;font-size:17px;line-height:1.3;font-weight:900;color:${color};">
+          ${value || "-"}
         </div>
       </div>
-    </div>
-  </body>
-  </html>
+    </td>
+  `;
+};
+
+const amountCard = (label, value, bg, border, color) => {
+  return `
+    <td style="width:50%;padding:8px;">
+      <div style="background:${bg};border:1px solid ${border};border-radius:18px;padding:18px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:900;color:${color};">
+          ${label}
+        </div>
+        <div style="margin-top:8px;font-size:22px;line-height:1.2;font-weight:900;color:${color};">
+          ${value}
+        </div>
+      </div>
+    </td>
   `;
 };
 
 const buildDispatchCreatedTemplate = (dispatch) => {
   return baseEmailTemplate({
-    title: "Material Dispatch Notification",
-    subtitle: `${COMPANY.name} | Dispatch Confirmation`,
+    preHeader: `Your material has been dispatched. Invoice ${dispatch.invoiceNumber}.`,
+    title: "Your Material Has Been Dispatched",
+    subtitle: `Invoice ${dispatch.invoiceNumber || "-"} · ${
+      dispatch.companyName || "-"
+    }`,
+    badge: getDispatchStatusText(dispatch.dispatchStatus),
+    badgeColor: "#facc15",
     bodyContent: `
-      <div class="notice">
-        Dear ${dispatch.contactPersonName || "Customer"},<br/><br/>
-        We are pleased to inform you that your material against the below order has been dispatched.
-        The tax invoice/bill set and LR copy are attached with this email for your records.
+      <div style="font-size:15px;line-height:1.7;color:#334155;">
+        Dear <strong>${dispatch.contactPersonName || "Customer"}</strong>,<br/><br/>
+        Your order has been dispatched from <strong>Bharat Special Steels Pvt. Ltd.</strong>.
+        The bill PDF and LR copy are attached with this email for your records.
       </div>
 
-      <table>
+      <div style="margin:24px 0 8px;font-size:13px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:.5px;">
+        Dispatch Summary
+      </div>
+
+      <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td class="label">Company Name</td>
-          <td class="value">${dispatch.companyName || "-"}</td>
+          ${infoCard("Company", dispatch.companyName)}
+          ${infoCard("PO Number", dispatch.poNumber || "-")}
         </tr>
         <tr>
-          <td class="label">Sales Order No.</td>
-          <td class="value">${dispatch.salesOrderNo || "-"}</td>
+          ${infoCard("Sales Order", dispatch.salesOrderNo || "-")}
+          ${infoCard("Dispatch Date", formatDate(dispatch.dispatchDate), "#0f766e")}
         </tr>
         <tr>
-          <td class="label">PO Number</td>
-          <td class="value">${dispatch.poNumber || "-"}</td>
+          ${infoCard("Invoice Number", dispatch.invoiceNumber || "-")}
+          ${infoCard("Invoice Date", formatDate(dispatch.invoiceDate))}
         </tr>
         <tr>
-          <td class="label">Invoice Number</td>
-          <td class="value">${dispatch.invoiceNumber || "-"}</td>
-        </tr>
-        <tr>
-          <td class="label">Invoice Date</td>
-          <td class="value">${formatDate(dispatch.invoiceDate)}</td>
-        </tr>
-        <tr>
-          <td class="label">Dispatch Date</td>
-          <td class="value">${formatDate(dispatch.dispatchDate)}</td>
-        </tr>
-        <tr>
-          <td class="label">Dispatch Quantity</td>
-          <td class="value">${dispatch.dispatchQty || 0} Kg</td>
-        </tr>
-        <tr>
-          <td class="label">Invoice Value</td>
-          <td class="value">${formatCurrency(dispatch.invoiceValue)}</td>
-        </tr>
-        <tr>
-          <td class="label">LR Number</td>
-          <td class="value">${dispatch.lrNumber || "-"}</td>
-        </tr>
-        <tr>
-          <td class="label">Payment Due Date</td>
-          <td class="value">${formatDate(dispatch.paymentDueDate)}</td>
+          ${infoCard("Dispatch Quantity", `${dispatch.dispatchQty || 0} Kg`, "#0f766e")}
+          ${infoCard("Payment Due Date", formatDate(dispatch.paymentDueDate), "#b45309")}
         </tr>
       </table>
 
-      <div class="amount-box">
-        <div class="amount-row">
-          <span>Invoice Amount</span>
-          <strong>${formatCurrency(dispatch.invoiceValue)}</strong>
-        </div>
-        <div class="amount-row">
-          <span>Paid Amount</span>
-          <strong class="paid">${formatCurrency(dispatch.paidAmount)}</strong>
-        </div>
-        <div class="amount-row">
-          <span>Pending Amount</span>
-          <strong class="pending">${formatCurrency(dispatch.pendingAmount)}</strong>
-        </div>
+      <div style="margin:22px 0 8px;font-size:13px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:.5px;">
+        Payment Snapshot
+      </div>
+
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          ${amountCard(
+            "Invoice Amount",
+            formatCurrency(dispatch.invoiceValue),
+            "#eff6ff",
+            "#bfdbfe",
+            "#1d4ed8"
+          )}
+          ${amountCard(
+            "Paid Amount",
+            formatCurrency(dispatch.paidAmount),
+            "#f0fdf4",
+            "#bbf7d0",
+            "#15803d"
+          )}
+        </tr>
+        <tr>
+          ${amountCard(
+            "Pending Amount",
+            formatCurrency(dispatch.pendingAmount),
+            "#fff7ed",
+            "#fed7aa",
+            "#c2410c"
+          )}
+          ${amountCard(
+            "Payment Status",
+            getPaymentBadge(dispatch.paymentStatus),
+            "#f8fafc",
+            "#e2e8f0",
+            "#334155"
+          )}
+        </tr>
+      </table>
+
+      <div style="margin-top:24px;background:#ecfeff;border:1px solid #99f6e4;border-radius:16px;padding:16px;font-size:14px;line-height:1.7;color:#115e59;">
+        <strong>Attachments included:</strong><br/>
+        Bill PDF and LR copy are attached with this email.
       </div>
     `,
   });
 };
 
 const buildPaymentUpdateTemplate = (dispatch, payment) => {
+  const isFullyPaid = Number(dispatch.pendingAmount || 0) <= 0;
+
   return baseEmailTemplate({
-    title: "Payment Update Notification",
-    subtitle: `${COMPANY.name} | Accounts Update`,
+    preHeader: `Payment received for invoice ${dispatch.invoiceNumber}.`,
+    title: isFullyPaid ? "Payment Completed" : "Payment Received",
+    subtitle: `Invoice ${dispatch.invoiceNumber || "-"} · ${
+      dispatch.companyName || "-"
+    }`,
+    badge: isFullyPaid ? "PAID" : "PARTIAL PAYMENT",
+    badgeColor: isFullyPaid ? "#22c55e" : "#facc15",
     bodyContent: `
-      <div class="notice">
-        Dear ${dispatch.contactPersonName || "Customer"},<br/><br/>
-        This is to confirm that a payment update has been recorded against your dispatched invoice.
+      <div style="font-size:15px;line-height:1.7;color:#334155;">
+        Dear <strong>${dispatch.contactPersonName || "Customer"}</strong>,<br/><br/>
+        Thank you. We have recorded your payment against invoice
+        <strong>${dispatch.invoiceNumber || "-"}</strong>.
         Please find the updated payment summary below.
       </div>
 
-      <table>
+      <div style="margin:24px 0 8px;font-size:13px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:.5px;">
+        Payment Summary
+      </div>
+
+      <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td class="label">Company Name</td>
-          <td class="value">${dispatch.companyName || "-"}</td>
+          ${amountCard(
+            "Invoice Amount",
+            formatCurrency(dispatch.invoiceValue),
+            "#eff6ff",
+            "#bfdbfe",
+            "#1d4ed8"
+          )}
+          ${amountCard(
+            "Payment Received Now",
+            formatCurrency(payment.amount),
+            "#f0fdf4",
+            "#bbf7d0",
+            "#15803d"
+          )}
         </tr>
         <tr>
-          <td class="label">Invoice Number</td>
-          <td class="value">${dispatch.invoiceNumber || "-"}</td>
-        </tr>
-        <tr>
-          <td class="label">Invoice Date</td>
-          <td class="value">${formatDate(dispatch.invoiceDate)}</td>
-        </tr>
-        <tr>
-          <td class="label">Payment Due Date</td>
-          <td class="value">${formatDate(dispatch.paymentDueDate)}</td>
-        </tr>
-        <tr>
-          <td class="label">Payment Status</td>
-          <td class="value">${String(dispatch.paymentStatus || "-").toUpperCase()}</td>
+          ${amountCard(
+            "Total Paid Amount",
+            formatCurrency(dispatch.paidAmount),
+            "#ecfdf5",
+            "#86efac",
+            "#166534"
+          )}
+          ${amountCard(
+            "Pending Amount",
+            formatCurrency(dispatch.pendingAmount),
+            isFullyPaid ? "#ecfdf5" : "#fff7ed",
+            isFullyPaid ? "#86efac" : "#fed7aa",
+            isFullyPaid ? "#166534" : "#c2410c"
+          )}
         </tr>
       </table>
 
-      <div class="amount-box">
-        <div class="amount-row">
-          <span>Invoice Amount</span>
-          <strong>${formatCurrency(dispatch.invoiceValue)}</strong>
-        </div>
-        <div class="amount-row">
-          <span>Payment Received Now</span>
-          <strong class="paid">${formatCurrency(payment.amount)}</strong>
-        </div>
-        <div class="amount-row">
-          <span>Total Paid Amount</span>
-          <strong class="paid">${formatCurrency(dispatch.paidAmount)}</strong>
-        </div>
-        <div class="amount-row">
-          <span>Pending Amount</span>
-          <strong class="pending">${formatCurrency(dispatch.pendingAmount)}</strong>
-        </div>
+      <div style="margin:24px 0 8px;font-size:13px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:.5px;">
+        Invoice Details
       </div>
+
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          ${infoCard("Company", dispatch.companyName)}
+          ${infoCard("Invoice Number", dispatch.invoiceNumber || "-")}
+        </tr>
+        <tr>
+          ${infoCard("Invoice Date", formatDate(dispatch.invoiceDate))}
+          ${infoCard("Payment Due Date", formatDate(dispatch.paymentDueDate), "#b45309")}
+        </tr>
+      </table>
 
       ${
         payment.remark
-          ? `<div class="notice" style="margin-top:18px;">Remark: ${payment.remark}</div>`
+          ? `<div style="margin-top:24px;background:#f8fafc;border-left:4px solid #2563eb;border-radius:14px;padding:15px 16px;font-size:14px;line-height:1.7;color:#334155;">
+              <strong>Remark:</strong> ${payment.remark}
+            </div>`
           : ""
       }
+
+      <div style="margin-top:24px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:16px;padding:16px;font-size:14px;line-height:1.7;color:#166534;">
+        ${
+          isFullyPaid
+            ? "This invoice is now marked as fully paid in our records."
+            : "The balance amount remains pending as shown above."
+        }
+      </div>
     `,
   });
 };
 
 const sendDispatchCreatedEmail = async (dispatch) => {
   const to = dispatch.contactPersonEmail;
-
   const cc = cleanEmails(dispatch.notificationEmail?.cc || []);
-
   const attachments = getDispatchAttachments(dispatch);
 
   const mail = await transporter.sendMail({
@@ -388,15 +409,15 @@ const sendPaymentUpdateEmail = async (dispatch, payment) => {
     from: `"${COMPANY.name}" <${process.env.ADMIN_EMAIL}>`,
     to,
     cc,
-    subject: `Payment Update | Invoice ${dispatch.invoiceNumber} | Pending ${formatCurrency(
-      dispatch.pendingAmount
-    )}`,
+    subject: `Re: Payment Update | Invoice ${dispatch.invoiceNumber} | ${dispatch.companyName}`,
     html: buildPaymentUpdateTemplate(dispatch, payment),
+    attachments: getPaymentAttachments(dispatch, payment.paymentBillPdf),
+    inReplyTo: dispatch.notificationEmail?.messageId || undefined,
+    references: dispatch.notificationEmail?.messageId || undefined,
   });
 
   return mail;
 };
-
 module.exports = {
   sendDispatchCreatedEmail,
   sendPaymentUpdateEmail,
