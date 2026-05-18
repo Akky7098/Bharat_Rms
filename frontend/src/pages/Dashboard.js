@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import "./Dashboard.css";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import EnquiryList from "./EnquiryList";
 import SalesOrderList from "./SalesOrderList";
 import DashboardHome from "./DashboardHome";
 import ColdCallList from "./ColdCallList";
 import TimesheetPage from "./TimesheetPage";
 import DispatchPage from "./DispatchPage";
+import DocumentPage from "./DocumentPage";
 
 function Dashboard() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -14,6 +15,7 @@ function Dashboard() {
   const getInitialActive = () => {
     const hash = window.location.hash.replace("#", "");
 
+    if (hash === "documents") return "documents";
     if (hash === "enquiry") return "sheet";
     if (hash === "sales-order") return "salesOrder";
     if (hash === "cold-call") return "coldCall";
@@ -25,10 +27,14 @@ function Dashboard() {
 
   const [active, setActive] = useState(getInitialActive);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    localStorage.getItem("sidebarCollapsed") === "true"
+  );
 
   useEffect(() => {
     const hashMap = {
       dashboard: "dashboard",
+      documents: "documents",
       sheet: "enquiry",
       salesOrder: "sales-order",
       coldCall: "cold-call",
@@ -40,26 +46,33 @@ function Dashboard() {
     localStorage.setItem("activeModule", active);
   }, [active]);
 
+  useEffect(() => {
+    localStorage.setItem("sidebarCollapsed", sidebarCollapsed);
+  }, [sidebarCollapsed]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("activeModule");
+    localStorage.removeItem("sidebarCollapsed");
     window.location.href = "/";
   };
 
-const menuItems = [
-  { key: "dashboard", label: "Dashboard", icon: "📊" },
+  const menuItems = [
+    { key: "dashboard", label: "Dashboard", icon: "📊" },
 
-  { key: "sheet", label: "Enquiry Sheet", icon: "📝" },
+    { key: "documents", label: "Document Center", icon: "📁" },
 
-  { key: "salesOrder", label: "Sales Order", icon: "💼" },
+    { key: "sheet", label: "Enquiry Sheet", icon: "📝" },
 
-  { key: "dispatch", label: "Dispatch", icon: "🚚" },
+    { key: "salesOrder", label: "Sales Order", icon: "💼" },
 
-  { key: "coldCall", label: "Cold Call / Visit", icon: "📞" },
+    { key: "dispatch", label: "Dispatch", icon: "🚚" },
 
-  { key: "timesheet", label: "Timesheet", icon: "⏱️" },
-];
+    { key: "coldCall", label: "Cold Call / Visit", icon: "📞" },
+
+    { key: "timesheet", label: "Timesheet", icon: "⏱️" },
+  ];
 
   const activeItem = menuItems.find((item) => item.key === active);
 
@@ -138,26 +151,49 @@ const menuItems = [
         </button>
       </div>
 
-      <div className="dashboard-layout">
+      <div
+        className={`dashboard-layout ${
+          sidebarCollapsed ? "sidebar-collapsed" : ""
+        }`}
+      >
         <aside className="sidebar">
           <div className="brand-box">
             <div className="brand-logo">
               <img src="/logo.png" alt="BSSPL Logo" />
             </div>
-            <div>
-              <h2>Bharat Special</h2>
-              <p>Steels RMS</p>
-            </div>
+
+            {!sidebarCollapsed && (
+              <div>
+                <h2>Bharat Special</h2>
+                <p>Steels RMS</p>
+              </div>
+            )}
           </div>
+
+          <button
+            className="sidebar-collapse-btn"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            type="button"
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen size={18} />
+            ) : (
+              <PanelLeftClose size={18} />
+            )}
+          </button>
 
           <div className="user-box">
             <div className="user-avatar">
               {(user?.name || "U").charAt(0).toUpperCase()}
             </div>
-            <div>
-              <strong>{user?.name || "User"}</strong>
-              <span>{user?.role || "Employee"}</span>
-            </div>
+
+            {!sidebarCollapsed && (
+              <div>
+                <strong>{user?.name || "User"}</strong>
+                <span>{user?.role || "Employee"}</span>
+              </div>
+            )}
           </div>
 
           <nav className="menu">
@@ -166,33 +202,42 @@ const menuItems = [
                 key={item.key}
                 className={active === item.key ? "active" : ""}
                 onClick={() => setActive(item.key)}
+                title={sidebarCollapsed ? item.label : ""}
+                type="button"
               >
                 <span className="menu-icon">{item.icon}</span>
-                <span>{item.label}</span>
+                {!sidebarCollapsed && <span>{item.label}</span>}
               </button>
             ))}
           </nav>
 
           <div className="sidebar-footer">
-            <button className="logout-btn" onClick={handleLogout}>
+            <button
+              className="logout-btn"
+              onClick={handleLogout}
+              title={sidebarCollapsed ? "Logout" : ""}
+              type="button"
+            >
               <LogOut size={18} />
-              <span>Logout</span>
+              {!sidebarCollapsed && <span>Logout</span>}
             </button>
           </div>
         </aside>
 
         <main className="main">
-         {active === "dashboard" && <DashboardHome user={user} />}
+          {active === "dashboard" && <DashboardHome user={user} />}
 
-{active === "sheet" && <EnquiryList />}
+          {active === "documents" && <DocumentPage />}
 
-{active === "salesOrder" && <SalesOrderList />}
+          {active === "sheet" && <EnquiryList />}
 
-{active === "dispatch" && <DispatchPage />}
+          {active === "salesOrder" && <SalesOrderList />}
 
-{active === "coldCall" && <ColdCallList />}
+          {active === "dispatch" && <DispatchPage />}
 
-{active === "timesheet" && <TimesheetPage />}
+          {active === "coldCall" && <ColdCallList />}
+
+          {active === "timesheet" && <TimesheetPage />}
         </main>
       </div>
     </div>

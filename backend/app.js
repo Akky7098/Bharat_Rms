@@ -13,6 +13,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const dispatchRoutes = require("./routes/dispatchRoutes");
 const whatsappApprovalRoutes = require("./routes/whatsappApprovalRoutes");
 const whatsappStatusRoutes = require("./routes/whatsappStatusRoutes");
+const documentRoutes = require("./routes/documentRoutes");
 const app = express();
 
 // OPEN CORS - temporary for testing
@@ -78,4 +79,6 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/dispatch", dispatchRoutes);
 app.use("/api/whatsapp-approval", whatsappApprovalRoutes);
 app.use("/api/whatsapp", whatsappStatusRoutes);
+app.use("/uploads", express.static("uploads"));
+app.use("/api/documents", documentRoutes);
 module.exports = app;

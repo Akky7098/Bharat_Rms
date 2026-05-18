@@ -445,3 +445,111 @@
     border-radius: 10px;
   }
 }
+
+.sidebar {
+  position: relative;
+}
+
+.dashboard-layout.sidebar-collapsed .sidebar {
+  width: 82px;
+  min-width: 82px;
+}
+
+.dashboard-layout.sidebar-collapsed .brand-box {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.dashboard-layout.sidebar-collapsed .brand-logo {
+  margin: 0 auto;
+}
+
+.dashboard-layout.sidebar-collapsed .user-box {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.dashboard-layout.sidebar-collapsed .menu button {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.dashboard-layout.sidebar-collapsed .menu-icon {
+  margin-right: 0;
+  font-size: 20px;
+}
+
+.dashboard-layout.sidebar-collapsed .logout-btn {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* NEW PROFESSIONAL FLOATING COLLAPSE BUTTON */
+.sidebar-collapse-btn {
+  position: absolute;
+  top: 108px;
+  right: -16px;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  background: #ffffff;
+  color: #1e3a8a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+  z-index: 30;
+  transition: all 0.22s ease;
+}
+
+.sidebar-collapse-btn:hover {
+  background: #eff6ff;
+  color: #2563eb;
+  transform: scale(1.08);
+}
+
+.dashboard-layout.sidebar-collapsed .sidebar-collapse-btn {
+  right: -16px;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+}
+
+/* smoother transitions */
+.sidebar,
+.main,
+.brand-box,
+.user-box,
+.menu button,
+.logout-btn {
+  transition: all 0.25s ease;
+}
+
+/* tooltip improvement for collapsed icons */
+.dashboard-layout.sidebar-collapsed .menu button {
+  position: relative;
+}
+
+.dashboard-layout.sidebar-collapsed .menu button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+}
+
+/* mobile */
+@media (max-width: 900px) {
+  .sidebar-collapse-btn {
+    display: none;
+  }
+
+  .dashboard-layout.sidebar-collapsed .sidebar {
+    width: 255px;
+    min-width: 255px;
+  }
+}
