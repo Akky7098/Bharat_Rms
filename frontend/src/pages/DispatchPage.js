@@ -1,22 +1,40 @@
 import React, { useEffect, useState, useCallback } from "react";
-
 import "./Dispatch.css";
-
 import DispatchForm from "./DispatchForm";
 
-import { getDispatches } from "../services/dispatchService";
+import {
+  getDispatches,
+  getFullFileUrl,
+  updateDispatchPayment,
+  deleteDispatch,
+} from "../services/dispatchService";
 
 const DispatchPage = () => {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isAdmin = ["admin", "super_admin", "dispatch"].includes(user?.role);
+
   const [dispatches, setDispatches] = useState([]);
+  const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(false);
+
   const [showForm, setShowForm] = useState(false);
-  const [editingDispatch, setEditingDispatch] = useState(null);
+  const [paymentModal, setPaymentModal] = useState(null);
+  const [paymentUpdating, setPaymentUpdating] = useState(false);
+
+  const [paymentForm, setPaymentForm] = useState({
+    amount: "",
+    remark: "",
+  });
 
   const [filters, setFilters] = useState({
     fromDate: "",
     toDate: "",
     paymentStatus: "",
+    dispatchStatus: "",
     companyName: "",
+    invoiceNumber: "",
+    page: 1,
+    limit: 10,
   });
 
   const formatDate = (date) => {
@@ -30,6 +48,10 @@ const DispatchPage = () => {
 
   const formatQty = (qty) => {
     return `${Number(qty || 0).toLocaleString("en-IN")} Kg`;
+  };
+
+  const formatStatus = (status) => {
+    return String(status || "-").replaceAll("_", " ");
   };
 
   const getPaymentStatusClass = (status) => {
@@ -57,9 +79,9 @@ const DispatchPage = () => {
 
       const response = await getDispatches(cleanFilters);
 
-      setDispatches(response.dispatches || []);
+      setDispatches(response.data || []);
+      setPagination(response.pagination || null);
     } catch (error) {
-      console.log(error);
       alert(error.response?.data?.message || "Failed to load dispatch data");
     } finally {
       setLoading(false);
@@ -76,6 +98,7 @@ const DispatchPage = () => {
     setFilters((prev) => ({
       ...prev,
       [name]: value,
+      page: 1,
     }));
   };
 
@@ -84,42 +107,115 @@ const DispatchPage = () => {
       fromDate: "",
       toDate: "",
       paymentStatus: "",
+      dispatchStatus: "",
       companyName: "",
+      invoiceNumber: "",
+      page: 1,
+      limit: 10,
     });
   };
 
   const openCreateForm = () => {
-    setEditingDispatch(null);
-    setShowForm(true);
-  };
-
-  const openEditForm = (dispatch) => {
-    setEditingDispatch(dispatch);
     setShowForm(true);
   };
 
   const closeForm = () => {
     setShowForm(false);
-    setEditingDispatch(null);
+  };
+
+  const openPaymentModal = (dispatch) => {
+    setPaymentModal(dispatch);
+    setPaymentForm({
+      amount: "",
+      remark: "",
+    });
+  };
+
+  const closePaymentModal = () => {
+    if (paymentUpdating) return;
+    setPaymentModal(null);
+    setPaymentForm({
+      amount: "",
+      remark: "",
+    });
+  };
+
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!paymentModal?._id) return;
+
+    const amount = Number(paymentForm.amount || 0);
+
+    if (!amount || amount <= 0) {
+      alert("Payment amount must be greater than 0");
+      return;
+    }
+
+    if (amount > Number(paymentModal.pendingAmount || 0)) {
+      alert("Payment amount cannot be greater than pending amount");
+      return;
+    }
+
+    try {
+      setPaymentUpdating(true);
+
+      await updateDispatchPayment(paymentModal._id, {
+        amount,
+        remark: paymentForm.remark,
+      });
+
+      alert("Payment updated successfully. Email has been sent.");
+      closePaymentModal();
+      loadDispatches();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to update payment");
+    } finally {
+      setPaymentUpdating(false);
+    }
+  };
+
+  const handleDelete = async (dispatchId) => {
+    if (!window.confirm("Are you sure you want to delete this dispatch?")) {
+      return;
+    }
+
+    try {
+      await deleteDispatch(dispatchId);
+      alert("Dispatch deleted successfully");
+      loadDispatches();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to delete dispatch");
+    }
+  };
+
+  const changePage = (page) => {
+    setFilters((prev) => ({
+      ...prev,
+      page,
+    }));
   };
 
   const renderDocuments = (item) => {
+    const billUrl = item.billPdf?.fileUrl;
+    const lrUrl = item.lrCopyPdf?.fileUrl;
+
     return (
       <div className="dispatch-doc-list">
-        {item.invoicePdf && (
+        {billUrl && (
           <a
-            href={item.invoicePdf}
+            href={getFullFileUrl(billUrl)}
             target="_blank"
             rel="noreferrer"
             className="dispatch-doc-link"
           >
-            Invoice
+            Bill
           </a>
         )}
 
-        {item.lrCopyPdf && (
+        {lrUrl && (
           <a
-            href={item.lrCopyPdf}
+            href={getFullFileUrl(lrUrl)}
             target="_blank"
             rel="noreferrer"
             className="dispatch-doc-link"
@@ -128,18 +224,7 @@ const DispatchPage = () => {
           </a>
         )}
 
-        {item.ewayBillPdf && (
-          <a
-            href={item.ewayBillPdf}
-            target="_blank"
-            rel="noreferrer"
-            className="dispatch-doc-link"
-          >
-            Eway
-          </a>
-        )}
-
-        {!item.invoicePdf && !item.lrCopyPdf && !item.ewayBillPdf && (
+        {!billUrl && !lrUrl && (
           <span className="dispatch-doc-disabled">No Docs</span>
         )}
       </div>
@@ -151,7 +236,7 @@ const DispatchPage = () => {
       <div className="dispatch-header">
         <div>
           <h2>Dispatch Management</h2>
-          <p>Invoice, dispatch and payment tracking dashboard</p>
+          <p>Approved order dispatch, bill/LR tracking and payment follow-up</p>
         </div>
 
         <button className="dispatch-new-btn" onClick={openCreateForm}>
@@ -162,13 +247,24 @@ const DispatchPage = () => {
       <div className="dispatch-filters-card">
         <div className="dispatch-filters-grid">
           <div className="dispatch-filter-field">
-            <label>Search Company Name</label>
+            <label>Company Name</label>
             <input
               type="text"
               name="companyName"
               value={filters.companyName}
               onChange={handleFilterChange}
-              placeholder="Type company name..."
+              placeholder="Search company..."
+            />
+          </div>
+
+          <div className="dispatch-filter-field">
+            <label>Invoice Number</label>
+            <input
+              type="text"
+              name="invoiceNumber"
+              value={filters.invoiceNumber}
+              onChange={handleFilterChange}
+              placeholder="Search invoice..."
             />
           </div>
 
@@ -201,11 +297,25 @@ const DispatchPage = () => {
               value={filters.paymentStatus}
               onChange={handleFilterChange}
             >
-              <option value="">All Status</option>
+              <option value="">All Payment</option>
               <option value="pending">Pending</option>
               <option value="partial">Partial</option>
               <option value="paid">Paid</option>
               <option value="overdue">Overdue</option>
+            </select>
+          </div>
+
+          <div className="dispatch-filter-field">
+            <label>Dispatch Status</label>
+            <select
+              name="dispatchStatus"
+              value={filters.dispatchStatus}
+              onChange={handleFilterChange}
+            >
+              <option value="">All Dispatch</option>
+              <option value="dispatched">Dispatched</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
 
@@ -221,15 +331,15 @@ const DispatchPage = () => {
         <table className="dispatch-table">
           <thead>
             <tr>
-              <th>Company</th>
+              <th>Company / Customer</th>
               <th>Invoice</th>
-              <th>Dispatch Date</th>
+              <th>Dispatch</th>
               <th>Qty</th>
               <th>Invoice Value</th>
-              <th>Pending</th>
-              <th>Payment Status</th>
+              <th>Payment</th>
+              <th>Due Date</th>
               <th>Documents</th>
-              <th>Dispatch Status</th>
+              <th>Status</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -249,27 +359,31 @@ const DispatchPage = () => {
               </tr>
             ) : (
               dispatches.map((item) => {
-                const salesOrder = item.salesOrder || item.salesOrderId || {};
                 const paymentStatus = item.paymentStatus || "pending";
 
                 return (
                   <tr key={item._id}>
-                    <td data-label="Company">
+                    <td data-label="Company / Customer">
                       <div className="dispatch-company-cell">
-                        <strong>{salesOrder.companyName || "-"}</strong>
-                        <span>{salesOrder.grade || "-"}</span>
+                        <strong>{item.companyName || "-"}</strong>
+                        <span>{item.contactPersonName || "-"}</span>
+                        <small>{item.contactPersonEmail || "-"}</small>
                       </div>
                     </td>
 
                     <td data-label="Invoice">
                       <div className="dispatch-company-cell">
                         <strong>{item.invoiceNumber || "-"}</strong>
-                        <span>Invoice Date: {formatDate(item.invoiceDate)}</span>
+                        <span>{formatDate(item.invoiceDate)}</span>
+                        <small>PO: {item.poNumber || "-"}</small>
                       </div>
                     </td>
 
-                    <td data-label="Dispatch Date">
-                      {formatDate(item.dispatchDate)}
+                    <td data-label="Dispatch">
+                      <div className="dispatch-company-cell">
+                        <strong>{formatDate(item.dispatchDate)}</strong>
+                        <span>LR: {item.lrNumber || "-"}</span>
+                      </div>
                     </td>
 
                     <td data-label="Qty">{formatQty(item.dispatchQty)}</td>
@@ -278,42 +392,60 @@ const DispatchPage = () => {
                       {formatCurrency(item.invoiceValue)}
                     </td>
 
-                    <td data-label="Pending">
+                    <td data-label="Payment">
                       <div className="dispatch-company-cell">
-                        <strong>{formatCurrency(item.pendingAmount)}</strong>
-                        <span>Paid: {formatCurrency(item.paidAmount)}</span>
+                        <span
+                          className={`dispatch-status ${getPaymentStatusClass(
+                            paymentStatus
+                          )}`}
+                        >
+                          {paymentStatus}
+                        </span>
+                        <small>Paid: {formatCurrency(item.paidAmount)}</small>
+                        <small>
+                          Pending: {formatCurrency(item.pendingAmount)}
+                        </small>
                       </div>
                     </td>
 
-                    <td data-label="Payment Status">
-                      <span
-                        className={`dispatch-status ${getPaymentStatusClass(
-                          paymentStatus
-                        )}`}
-                      >
-                        {paymentStatus}
-                      </span>
+                    <td data-label="Due Date">
+                      {formatDate(item.paymentDueDate)}
                     </td>
 
                     <td data-label="Documents">{renderDocuments(item)}</td>
 
-                    <td data-label="Dispatch Status">
-  <span
-    className={`dispatch-status dispatch-${item.dispatchStatus || "dispatched"}`}
-  >
-    {(item.dispatchStatus || "dispatched")
-      .replaceAll("_", " ")}
-  </span>
-</td>
+                    <td data-label="Status">
+                      <span
+                        className={`dispatch-status dispatch-${
+                          item.dispatchStatus || "dispatched"
+                        }`}
+                      >
+                        {formatStatus(item.dispatchStatus)}
+                      </span>
+                    </td>
 
                     <td data-label="Action">
-                      <button
-                        type="button"
-                        className="dispatch-edit-btn"
-                        onClick={() => openEditForm(item)}
-                      >
-                        Edit
-                      </button>
+                      <div className="dispatch-action-group">
+                        {isAdmin && Number(item.pendingAmount || 0) > 0 && (
+                          <button
+                            type="button"
+                            className="dispatch-edit-btn"
+                            onClick={() => openPaymentModal(item)}
+                          >
+                            Payment
+                          </button>
+                        )}
+
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            className="dispatch-delete-btn"
+                            onClick={() => handleDelete(item._id)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -329,15 +461,14 @@ const DispatchPage = () => {
             <div className="dispatch-mobile-empty">No dispatch records found</div>
           ) : (
             dispatches.map((item) => {
-              const salesOrder = item.salesOrder || item.salesOrderId || {};
               const paymentStatus = item.paymentStatus || "pending";
 
               return (
                 <div key={item._id} className="dispatch-mobile-card">
                   <div className="dispatch-mobile-card-top">
                     <div>
-                      <h3>{salesOrder.companyName || "-"}</h3>
-                      <p>{salesOrder.grade || "-"}</p>
+                      <h3>{item.companyName || "-"}</h3>
+                      <p>{item.contactPersonName || "-"}</p>
                     </div>
 
                     <span
@@ -370,75 +501,159 @@ const DispatchPage = () => {
                   </div>
 
                   <div className="dispatch-mobile-row">
+                    <span>Paid</span>
+                    <strong>{formatCurrency(item.paidAmount)}</strong>
+                  </div>
+
+                  <div className="dispatch-mobile-row">
                     <span>Pending</span>
                     <strong>{formatCurrency(item.pendingAmount)}</strong>
                   </div>
 
-                 <div className="dispatch-mobile-row">
-  <span>Dispatch Status</span>
-
-  <strong>
-    {(item.dispatchStatus || "dispatched")
-      .replaceAll("_", " ")}
-  </strong>
-</div>
-
-                  <div className="dispatch-mobile-docs">
-                    {item.invoicePdf && (
-                      <a
-                        href={item.invoicePdf}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Invoice
-                      </a>
-                    )}
-
-                    {item.lrCopyPdf && (
-                      <a
-                        href={item.lrCopyPdf}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        LR
-                      </a>
-                    )}
-
-                    {item.ewayBillPdf && (
-                      <a
-                        href={item.ewayBillPdf}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Eway
-                      </a>
-                    )}
-
-                    {!item.invoicePdf &&
-                      !item.lrCopyPdf &&
-                      !item.ewayBillPdf && <span>No Docs</span>}
+                  <div className="dispatch-mobile-row">
+                    <span>Due Date</span>
+                    <strong>{formatDate(item.paymentDueDate)}</strong>
                   </div>
 
-                  <button
-                    type="button"
-                    className="dispatch-mobile-edit-btn"
-                    onClick={() => openEditForm(item)}
-                  >
-                    Edit Dispatch
-                  </button>
+                  <div className="dispatch-mobile-row">
+                    <span>Dispatch Status</span>
+                    <strong>{formatStatus(item.dispatchStatus)}</strong>
+                  </div>
+
+                  <div className="dispatch-mobile-docs">
+                    {renderDocuments(item)}
+                  </div>
+
+                  {isAdmin && (
+                    <div className="dispatch-mobile-actions">
+                      {Number(item.pendingAmount || 0) > 0 && (
+                        <button
+                          type="button"
+                          className="dispatch-mobile-edit-btn"
+                          onClick={() => openPaymentModal(item)}
+                        >
+                          Update Payment
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className="dispatch-mobile-delete-btn"
+                        onClick={() => handleDelete(item._id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })
           )}
         </div>
+
+        {pagination && pagination.totalPages > 1 && (
+          <div className="dispatch-pagination">
+            <button
+              type="button"
+              disabled={pagination.currentPage <= 1}
+              onClick={() => changePage(pagination.currentPage - 1)}
+            >
+              Previous
+            </button>
+
+            <span>
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+
+            <button
+              type="button"
+              disabled={pagination.currentPage >= pagination.totalPages}
+              onClick={() => changePage(pagination.currentPage + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
-      {showForm && (
-        <DispatchForm
-          editData={editingDispatch}
-          onClose={closeForm}
-          refresh={loadDispatches}
-        />
+      {showForm && <DispatchForm onClose={closeForm} refresh={loadDispatches} />}
+
+      {paymentModal && (
+        <div className="dispatch-modal-overlay">
+          <div className="dispatch-payment-card">
+            <div className="dispatch-form-header">
+              <div>
+                <h2>Update Payment</h2>
+                <p>
+                  Invoice {paymentModal.invoiceNumber} · Pending{" "}
+                  {formatCurrency(paymentModal.pendingAmount)}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closePaymentModal}
+                disabled={paymentUpdating}
+              >
+                ×
+              </button>
+            </div>
+
+            <form className="dispatch-form" onSubmit={handlePaymentSubmit}>
+              <div className="dispatch-grid">
+                <div className="dispatch-field">
+                  <label>Received Amount ₹</label>
+                  <input
+                    type="number"
+                    value={paymentForm.amount}
+                    onChange={(e) =>
+                      setPaymentForm((prev) => ({
+                        ...prev,
+                        amount: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter received amount"
+                    disabled={paymentUpdating}
+                  />
+                </div>
+
+                <div className="dispatch-field dispatch-full">
+                  <label>Payment Remark</label>
+                  <textarea
+                    value={paymentForm.remark}
+                    onChange={(e) =>
+                      setPaymentForm((prev) => ({
+                        ...prev,
+                        remark: e.target.value,
+                      }))
+                    }
+                    placeholder="Example: Payment received by NEFT"
+                    disabled={paymentUpdating}
+                  />
+                </div>
+              </div>
+
+              <div className="dispatch-actions">
+                <button
+                  type="button"
+                  className="dispatch-cancel"
+                  onClick={closePaymentModal}
+                  disabled={paymentUpdating}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="dispatch-submit"
+                  disabled={paymentUpdating}
+                >
+                  {paymentUpdating ? "Updating..." : "Update Payment & Send Mail"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

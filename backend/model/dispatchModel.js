@@ -437,38 +437,38 @@ const dispatchSchema = new mongoose.Schema(
    AUTO CALCULATIONS
 ========================= */
 
-dispatchSchema.pre("validate", function (next) {
+dispatchSchema.pre("validate", function () {
   if (!this.dispatchDate) {
     this.dispatchDate = new Date();
   }
 
   if (
     this.paymentDueDays !== undefined &&
-    this.paymentDueDays !== null &&
-    !this.paymentDueDate
+    this.paymentDueDays !== null
   ) {
     const dueDate = new Date(this.dispatchDate);
-    dueDate.setDate(dueDate.getDate() + Number(this.paymentDueDays));
+    dueDate.setDate(dueDate.getDate() + Number(this.paymentDueDays || 0));
     this.paymentDueDate = dueDate;
   }
 
-  if (
-    this.invoiceValue !== undefined &&
-    this.paidAmount !== undefined
-  ) {
-    this.pendingAmount = Math.max(
-      Number(this.invoiceValue || 0) - Number(this.paidAmount || 0),
-      0
-    );
-  }
+  const invoiceValue = Number(this.invoiceValue || 0);
+  const paidAmount = Number(this.paidAmount || 0);
 
-  if (Number(this.pendingAmount || 0) === 0) {
+  this.pendingAmount = Math.max(invoiceValue - paidAmount, 0);
+
+  if (this.pendingAmount === 0 && invoiceValue > 0) {
     this.paymentStatus = "paid";
+  } else if (paidAmount > 0) {
+    this.paymentStatus = "partial";
+  } else {
+    const today = new Date();
+    if (this.paymentDueDate && today > this.paymentDueDate) {
+      this.paymentStatus = "overdue";
+    } else {
+      this.paymentStatus = "pending";
+    }
   }
-
-  next();
 });
-
 const Dispatch = mongoose.model("Dispatch", dispatchSchema);
 
 module.exports = Dispatch;

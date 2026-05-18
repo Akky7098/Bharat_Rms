@@ -1,175 +1,148 @@
 import React, { useEffect, useState } from "react";
-
-import { createDispatch, updateDispatch } from "../services/dispatchService";
-
-import { searchPendingDispatchSalesOrders } from "../services/salesOrderService";
-
+import {
+  createDispatch,
+  searchDispatchSalesOrders,
+} from "../services/dispatchService";
 import "./Dispatch.css";
 
-const DispatchForm = ({ editData = null, onClose, refresh }) => {
-  const isEditMode = Boolean(editData?._id);
-
+const DispatchForm = ({ onClose, refresh }) => {
   const [search, setSearch] = useState("");
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
   const [searchError, setSearchError] = useState("");
+  const [hasFocusedSearch, setHasFocusedSearch] = useState(false);
+
+  const [uploadProgress, setUploadProgress] = useState({
+    show: false,
+    percent: 0,
+    uploadedMB: 0,
+    totalMB: 0,
+    status: "",
+  });
 
   const [form, setForm] = useState({
     salesOrderId: "",
     invoiceNumber: "",
     invoiceDate: "",
-    dispatchDate: "",
+    dispatchDate: new Date().toISOString().split("T")[0],
     dispatchQty: "",
     invoiceValue: "",
-    paymentDays: "",
+    paymentDueDays: "",
     paidAmount: "0",
-    paymentStatus: "pending",
-    transporterName: "",
-    vehicleNumber: "",
-    lrNumber: "",
-    ewayBillNumber: "",
-    invoicePdf: "",
-    lrCopyPdf: "",
-    ewayBillPdf: "",
+    additionalCcEmailsText: "",
     dispatchStatus: "dispatched",
     internalRemark: "",
+    paymentRemark: "",
+    billPdf: null,
+    lrCopyPdf: null,
   });
-
-  const toInputDate = (date) => {
-    if (!date) return "";
-    return new Date(date).toISOString().split("T")[0];
-  };
 
   const formatDate = (date) => {
     if (!date) return "-";
     return new Date(date).toLocaleDateString("en-IN");
   };
 
-  const formatNumber = (value) => {
-    return Number(value || 0).toLocaleString("en-IN");
-  };
-
   const formatCurrency = (value) => {
     return `₹ ${Number(value || 0).toLocaleString("en-IN")}`;
+  };
+
+  const formatFileSize = (size) => {
+    if (!size) return "-";
+    const mb = size / (1024 * 1024);
+    if (mb >= 1) return `${mb.toFixed(2)} MB`;
+    return `${(size / 1024).toFixed(1)} KB`;
   };
 
   const calculatePendingAmount = () => {
     const invoiceValue = Number(form.invoiceValue || 0);
     const paidAmount = Number(form.paidAmount || 0);
-
     return Math.max(invoiceValue - paidAmount, 0);
   };
 
   const calculateDueDatePreview = () => {
-    if (!form.dispatchDate || form.paymentDays === "") return "-";
+    if (!form.dispatchDate || form.paymentDueDays === "") return "-";
 
     const dueDate = new Date(form.dispatchDate);
-    dueDate.setDate(dueDate.getDate() + Number(form.paymentDays || 0));
+    dueDate.setDate(dueDate.getDate() + Number(form.paymentDueDays || 0));
 
     return formatDate(dueDate);
   };
 
-  useEffect(() => {
-    if (!isEditMode || !editData) return;
-
-    const salesOrder = editData.salesOrder || editData.salesOrderId || {};
-
-    setSelectedOrder(salesOrder);
-    setSearch(salesOrder.companyName || "");
-
-    setForm({
-      salesOrderId: salesOrder._id || editData.salesOrderId?._id || editData.salesOrderId || "",
-      invoiceNumber: editData.invoiceNumber || "",
-      invoiceDate: toInputDate(editData.invoiceDate),
-      dispatchDate: toInputDate(editData.dispatchDate),
-      dispatchQty: editData.dispatchQty || "",
-      invoiceValue: editData.invoiceValue || "",
-      paymentDays: editData.paymentDays ?? "",
-      paidAmount: editData.paidAmount ?? "0",
-      paymentStatus: editData.paymentStatus || "pending",
-      transporterName: editData.transporterName || "",
-      vehicleNumber: editData.vehicleNumber || "",
-      lrNumber: editData.lrNumber || "",
-      ewayBillNumber: editData.ewayBillNumber || "",
-      invoicePdf: editData.invoicePdf || "",
-      lrCopyPdf: editData.lrCopyPdf || "",
-      ewayBillPdf: editData.ewayBillPdf || "",
-      dispatchStatus: editData.dispatchStatus || "dispatched",
-      internalRemark: editData.internalRemark || "",
-    });
-  }, [editData, isEditMode]);
-
-  const loadOrders = async (searchValue) => {
+  const loadOrders = async (searchValue = "") => {
     try {
       setLoadingOrders(true);
 
-      const response = await searchPendingDispatchSalesOrders({
+      const response = await searchDispatchSalesOrders({
         search: searchValue,
-        limit: 20,
+        limit: 6,
       });
 
       setOrders(response.data || []);
     } catch (error) {
-      console.log(error);
+      alert(error.response?.data?.message || "Failed to search sales orders");
     } finally {
       setLoadingOrders(false);
     }
   };
 
   useEffect(() => {
-    if (isEditMode) return;
-
-    if (search.trim().length < 1) {
-      setOrders([]);
+    if (!hasFocusedSearch || selectedOrder) {
       return;
     }
 
     const delay = setTimeout(() => {
       loadOrders(search);
-    }, 350);
+    }, 300);
 
     return () => clearTimeout(delay);
-  }, [search, isEditMode]);
+  }, [search, selectedOrder, hasFocusedSearch]);
+
+  const handleSearchFocus = () => {
+    if (selectedOrder || submitting) return;
+
+    setHasFocusedSearch(true);
+    setSearchError("");
+    loadOrders(search);
+  };
 
   const selectOrder = (order) => {
     setSelectedOrder(order);
+    setSearch(order.companyName || "");
     setSearchError("");
     setOrders([]);
-    setSearch(order.companyName);
 
     setForm((prev) => ({
       ...prev,
       salesOrderId: order._id,
-      paymentDays: "",
+      invoiceValue: order.orderValue || "",
+      paymentDueDays: "",
     }));
   };
 
   const clearSelectedOrder = () => {
-    if (isEditMode) return;
-
     setSelectedOrder(null);
     setSearch("");
     setOrders([]);
     setSearchError("");
+    setHasFocusedSearch(false);
 
     setForm((prev) => ({
       ...prev,
       salesOrderId: "",
+      invoiceValue: "",
     }));
   };
 
   const handleSearchChange = (e) => {
-    if (isEditMode) return;
-
     const value = e.target.value;
 
     setSearch(value);
     setSelectedOrder(null);
     setSearchError("");
+    setHasFocusedSearch(true);
 
     setForm((prev) => ({
       ...prev,
@@ -178,37 +151,32 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, files } = e.target;
 
-    setForm((prev) => {
-      const updated = {
+    if (files) {
+      setForm((prev) => ({
         ...prev,
-        [name]: value,
-      };
+        [name]: files[0],
+      }));
+      return;
+    }
 
-      const invoiceValue =
-        name === "invoiceValue" ? Number(value || 0) : Number(updated.invoiceValue || 0);
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-      const paidAmount =
-        name === "paidAmount" ? Number(value || 0) : Number(updated.paidAmount || 0);
-
-      if (name === "invoiceValue" || name === "paidAmount") {
-        if (paidAmount <= 0) {
-          updated.paymentStatus = "pending";
-        } else if (paidAmount >= invoiceValue && invoiceValue > 0) {
-          updated.paymentStatus = "paid";
-        } else if (paidAmount > 0 && paidAmount < invoiceValue) {
-          updated.paymentStatus = "partial";
-        }
-      }
-
-      return updated;
-    });
+  const getAdditionalCcEmails = () => {
+    return form.additionalCcEmailsText
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter((email) => email && email.includes("@"));
   };
 
   const validateForm = () => {
     if (!selectedOrder || !form.salesOrderId) {
-      setSearchError("Please select a valid sales order from dropdown");
+      setSearchError("Please select a valid approved sales order");
       return false;
     }
 
@@ -232,24 +200,13 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
       return false;
     }
 
-    if (
-      !isEditMode &&
-      selectedOrder?.pendingDispatchQty > 0 &&
-      Number(form.dispatchQty) > Number(selectedOrder.pendingDispatchQty)
-    ) {
-      alert(
-        `Dispatch quantity cannot be greater than pending quantity ${selectedOrder.pendingDispatchQty} Kg`
-      );
-      return false;
-    }
-
     if (Number(form.invoiceValue) <= 0) {
       alert("Invoice value must be greater than 0");
       return false;
     }
 
-    if (form.paymentDays === "" || Number(form.paymentDays) < 0) {
-      alert("Payment days is required");
+    if (form.paymentDueDays === "" || Number(form.paymentDueDays) < 0) {
+      alert("Payment due days is required");
       return false;
     }
 
@@ -263,16 +220,63 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
       return false;
     }
 
+    if (!form.billPdf) {
+      alert("Bill PDF is required");
+      return false;
+    }
+
+    if (!form.lrCopyPdf) {
+      alert("LR copy PDF is required");
+      return false;
+    }
+
+    if (form.billPdf.type !== "application/pdf") {
+      alert("Bill file must be PDF");
+      return false;
+    }
+
+    if (form.lrCopyPdf.type !== "application/pdf") {
+      alert("LR copy file must be PDF");
+      return false;
+    }
+
+    if (form.billPdf.size > 30 * 1024 * 1024) {
+      alert("Bill PDF must be under 30MB");
+      return false;
+    }
+
+    if (form.lrCopyPdf.size > 30 * 1024 * 1024) {
+      alert("LR copy PDF must be under 30MB");
+      return false;
+    }
+
     return true;
   };
 
   const buildPayload = () => ({
-    ...form,
+    salesOrderId: form.salesOrderId,
+    invoiceNumber: form.invoiceNumber.trim(),
+    invoiceDate: form.invoiceDate,
+    dispatchDate: form.dispatchDate,
     dispatchQty: Number(form.dispatchQty),
     invoiceValue: Number(form.invoiceValue),
-    paymentDays: Number(form.paymentDays),
+    paymentDueDays: Number(form.paymentDueDays),
     paidAmount: Number(form.paidAmount || 0),
+    additionalCcEmails: getAdditionalCcEmails(),
+    dispatchStatus: form.dispatchStatus,
+    internalRemark: form.internalRemark,
+    paymentRemark: form.paymentRemark,
   });
+
+  const resetUploadProgress = () => {
+    setUploadProgress({
+      show: false,
+      percent: 0,
+      uploadedMB: 0,
+      totalMB: 0,
+      status: "",
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -283,21 +287,57 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
     try {
       setSubmitting(true);
 
-      if (isEditMode) {
-        await updateDispatch(editData._id, buildPayload());
-        alert("Dispatch updated successfully");
-      } else {
-        await createDispatch(buildPayload());
-        alert("Dispatch created successfully");
-      }
+      const totalSize =
+        Number(form.billPdf.size || 0) + Number(form.lrCopyPdf.size || 0);
+
+      setUploadProgress({
+        show: true,
+        percent: 0,
+        uploadedMB: 0,
+        totalMB: totalSize / (1024 * 1024),
+        status: "Uploading dispatch documents...",
+      });
+
+      await createDispatch(
+        buildPayload(),
+        form.billPdf,
+        form.lrCopyPdf,
+        (progressEvent) => {
+          const loaded = progressEvent.loaded || 0;
+          const total = progressEvent.total || totalSize;
+          const percent = Math.round((loaded * 100) / total);
+
+          setUploadProgress({
+            show: true,
+            percent,
+            uploadedMB: loaded / (1024 * 1024),
+            totalMB: total / (1024 * 1024),
+            status:
+              percent >= 100
+                ? "Processing dispatch..."
+                : "Uploading dispatch documents...",
+          });
+        }
+      );
+
+      setUploadProgress((prev) => ({
+        ...prev,
+        percent: 100,
+        uploadedMB: prev.totalMB,
+        status: "Dispatch created successfully",
+      }));
+
+      alert("Dispatch created successfully. Email has been sent to customer.");
 
       refresh();
       onClose();
+
+      setTimeout(() => {
+        resetUploadProgress();
+      }, 1200);
     } catch (error) {
-      alert(
-        error.response?.data?.message ||
-          (isEditMode ? "Failed to update dispatch" : "Failed to create dispatch")
-      );
+      resetUploadProgress();
+      alert(error.response?.data?.message || "Failed to create dispatch");
     } finally {
       setSubmitting(false);
     }
@@ -308,15 +348,20 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
       <div className="dispatch-form-card">
         <div className="dispatch-form-header">
           <div>
-            <h2>{isEditMode ? "Update Dispatch" : "Create Dispatch"}</h2>
+            <h2>Create Dispatch</h2>
             <p>
-              {isEditMode
-                ? "Update invoice, payment and document details"
-                : "Select sales order, add invoice and dispatch details"}
+              Select approved sales order, upload bill and LR copy, and notify
+              customer.
             </p>
           </div>
 
-          <button type="button" onClick={onClose}>
+          <button
+            type="button"
+            onClick={() => {
+              if (!submitting) onClose();
+            }}
+            disabled={submitting}
+          >
             ×
           </button>
         </div>
@@ -324,49 +369,48 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
         <form className="dispatch-form" onSubmit={handleSubmit}>
           <div className="dispatch-search-section">
             <label>
-              Sales Order <span className="dispatch-required">*</span>
+              Approved Sales Order <span className="dispatch-required">*</span>
             </label>
 
             <input
               type="text"
-              placeholder="Type company name, example: MTN"
+              placeholder="Click to view latest approved orders, or search company name"
               value={search}
+              onFocus={handleSearchFocus}
               onChange={handleSearchChange}
-              disabled={isEditMode}
+              disabled={submitting}
               onBlur={() => {
                 setTimeout(() => {
-                  if (!isEditMode && !selectedOrder && search.trim()) {
-                    setSearchError("Please select a valid sales order from dropdown");
+                  if (!selectedOrder && search.trim()) {
+                    setSearchError(
+                      "Please select a valid sales order from dropdown"
+                    );
                   }
                 }, 180);
               }}
             />
-
-            {isEditMode && (
-              <small className="dispatch-edit-note">
-                Sales order cannot be changed while updating dispatch.
-              </small>
-            )}
 
             {searchError && (
               <small className="dispatch-search-error">{searchError}</small>
             )}
 
             {loadingOrders && (
-              <div className="dispatch-search-loading">Searching orders...</div>
+              <div className="dispatch-search-loading">
+                Searching approved orders...
+              </div>
             )}
 
-            {!isEditMode &&
-              !loadingOrders &&
-              search.trim() &&
+            {!loadingOrders &&
+              hasFocusedSearch &&
               orders.length === 0 &&
               !selectedOrder && (
                 <div className="dispatch-no-result">
-                  No pending sales order found for "{search}"
+                  No approved sales order found
+                  {search.trim() ? ` for "${search}"` : ""}
                 </div>
               )}
 
-            {!isEditMode && orders.length > 0 && (
+            {orders.length > 0 && (
               <div className="dispatch-search-results">
                 {orders.map((order) => (
                   <button
@@ -377,45 +421,46 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
                   >
                     <div className="dispatch-order-top">
                       <div>
-                        <strong>⭐ {order.companyName}</strong>
+                        <strong>{order.companyName}</strong>
                         <small>
-                          Order Date: {formatDate(order.orderDate)} · Sales:{" "}
-                          {order.salesPersonId?.name || "-"}
+                          SO: {order.salesOrderNo || "-"} · PO:{" "}
+                          {order.poNumber || "-"} · Sales:{" "}
+                          {order.salesPersonName || "-"}
                         </small>
                       </div>
 
-                      <span>{formatNumber(order.pendingDispatchQty)} Kg Pending</span>
+                      <span>{order.dispatchCount || 0} dispatch</span>
                     </div>
 
                     <div className="dispatch-order-mini-grid">
                       <div>
-                        <label>Grade</label>
-                        <p>{order.grade || "-"}</p>
+                        <label>Contact</label>
+                        <p>{order.contactPersonName || "-"}</p>
                       </div>
 
                       <div>
-                        <label>Size</label>
-                        <p>{order.size || "-"}</p>
+                        <label>Email</label>
+                        <p>{order.contactPersonEmail || "-"}</p>
                       </div>
 
                       <div>
-                        <label>Order Qty</label>
-                        <p>{formatNumber(order.quantityInKg)} Kg</p>
+                        <label>Mobile</label>
+                        <p>{order.contactPersonNumber || "-"}</p>
                       </div>
 
                       <div>
                         <label>Order Value</label>
-                        <p>{formatCurrency(order.valueInRupees)}</p>
+                        <p>{formatCurrency(order.orderValue)}</p>
                       </div>
 
                       <div>
-                        <label>Rate/Kg</label>
-                        <p>{formatCurrency(order.ratePerKg)}</p>
+                        <label>Payment Terms</label>
+                        <p>{order.paymentTerms || "-"}</p>
                       </div>
 
                       <div>
                         <label>Status</label>
-                        <p>{order.orderStatus || "pending_dispatch"}</p>
+                        <p>{order.approvalStatus || "-"}</p>
                       </div>
                     </div>
                   </button>
@@ -427,13 +472,15 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
           {selectedOrder && (
             <div className="dispatch-selected-order">
               <div className="dispatch-selected-title">
-                <strong>⭐ Selected Sales Order</strong>
+                <strong>Selected Sales Order</strong>
 
-                {!isEditMode && (
-                  <button type="button" onClick={clearSelectedOrder}>
-                    Change
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={clearSelectedOrder}
+                  disabled={submitting}
+                >
+                  Change
+                </button>
               </div>
 
               <div className="dispatch-selected-grid">
@@ -443,36 +490,46 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
                 </div>
 
                 <div>
-                  <span>Grade</span>
-                  <strong>{selectedOrder.grade || "-"}</strong>
+                  <span>SO No.</span>
+                  <strong>{selectedOrder.salesOrderNo || "-"}</strong>
                 </div>
 
                 <div>
-                  <span>Pending Qty</span>
-                  <strong>{formatNumber(selectedOrder.pendingDispatchQty)} Kg</strong>
+                  <span>PO No.</span>
+                  <strong>{selectedOrder.poNumber || "-"}</strong>
+                </div>
+
+                <div>
+                  <span>Contact Person</span>
+                  <strong>{selectedOrder.contactPersonName || "-"}</strong>
+                </div>
+
+                <div>
+                  <span>Customer Email</span>
+                  <strong>{selectedOrder.contactPersonEmail || "-"}</strong>
+                </div>
+
+                <div>
+                  <span>Sales Person</span>
+                  <strong>{selectedOrder.salesPersonName || "-"}</strong>
+                </div>
+
+                <div className="dispatch-selected-wide">
+                  <span>Material</span>
+                  <strong>{selectedOrder.sizeGradeQuantityRate || "-"}</strong>
                 </div>
 
                 <div>
                   <span>Order Value</span>
-                  <strong>{formatCurrency(selectedOrder.valueInRupees)}</strong>
-                </div>
-
-                <div>
-                  <span>Rate/Kg</span>
-                  <strong>{formatCurrency(selectedOrder.ratePerKg)}</strong>
-                </div>
-
-                <div>
-                  <span>Payment Terms</span>
-                  <strong>{selectedOrder.paymentTerms || "-"}</strong>
+                  <strong>{formatCurrency(selectedOrder.orderValue)}</strong>
                 </div>
               </div>
             </div>
           )}
 
           <div className="dispatch-section-title">
-            <h3>Invoice & Payment Details</h3>
-            <p>These fields control due date, payment status and reminder cronjob</p>
+            <h3>Invoice & Dispatch Details</h3>
+            <p>Invoice details and dispatch quantity for customer notification.</p>
           </div>
 
           <div className="dispatch-grid">
@@ -484,8 +541,8 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
                 name="invoiceNumber"
                 value={form.invoiceNumber}
                 onChange={handleChange}
-                placeholder="Example: INV-1024"
-                required
+                placeholder="Example: BSS/INV/1024"
+                disabled={submitting}
               />
             </div>
 
@@ -498,7 +555,7 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
                 name="invoiceDate"
                 value={form.invoiceDate}
                 onChange={handleChange}
-                required
+                disabled={submitting}
               />
             </div>
 
@@ -511,7 +568,7 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
                 name="dispatchDate"
                 value={form.dispatchDate}
                 onChange={handleChange}
-                required
+                disabled={submitting}
               />
             </div>
 
@@ -525,7 +582,7 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
                 value={form.dispatchQty}
                 onChange={handleChange}
                 placeholder="Enter dispatch quantity"
-                required
+                disabled={submitting}
               />
             </div>
 
@@ -539,23 +596,51 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
                 value={form.invoiceValue}
                 onChange={handleChange}
                 placeholder="Enter invoice amount"
-                required
+                disabled={submitting}
               />
             </div>
 
             <div className="dispatch-field">
+              <label>Dispatch Status</label>
+              <select
+                name="dispatchStatus"
+                value={form.dispatchStatus}
+                onChange={handleChange}
+                disabled={submitting}
+              >
+                <option value="dispatched">Dispatched</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="dispatch-section-title">
+            <h3>Payment Tracking</h3>
+            <p>
+              Due date will be calculated from dispatch date + payment due days.
+            </p>
+          </div>
+
+          <div className="dispatch-grid">
+            <div className="dispatch-field">
               <label>
-                Payment Days <span className="dispatch-required">*</span>
+                Payment Due Days <span className="dispatch-required">*</span>
               </label>
               <input
                 type="number"
-                name="paymentDays"
-                value={form.paymentDays}
+                name="paymentDueDays"
+                value={form.paymentDueDays}
                 onChange={handleChange}
-                placeholder="Example: 45"
+                placeholder="Example: 30"
                 min="0"
-                required
+                disabled={submitting}
               />
+            </div>
+
+            <div className="dispatch-field">
+              <label>Payment Due Date</label>
+              <input value={calculateDueDatePreview()} disabled readOnly />
             </div>
 
             <div className="dispatch-field">
@@ -567,120 +652,77 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
                 onChange={handleChange}
                 placeholder="0"
                 min="0"
+                disabled={submitting}
               />
-            </div>
-
-            <div className="dispatch-field">
-              <label>Payment Status</label>
-              <select
-                name="paymentStatus"
-                value={form.paymentStatus}
-                onChange={handleChange}
-              >
-                <option value="pending">Pending</option>
-                <option value="partial">Partial</option>
-                <option value="paid">Paid</option>
-                <option value="overdue">Overdue</option>
-              </select>
             </div>
 
             <div className="dispatch-field">
               <label>Pending Amount ₹</label>
-              <input value={calculatePendingAmount()} disabled readOnly />
+              <input value={formatCurrency(calculatePendingAmount())} disabled readOnly />
             </div>
 
-            <div className="dispatch-field">
-              <label>Payment Due Date</label>
-              <input value={calculateDueDatePreview()} disabled readOnly />
-            </div>
-
-            <div className="dispatch-field">
-              <label>Dispatch Status</label>
-              <select
-                name="dispatchStatus"
-                value={form.dispatchStatus}
+            <div className="dispatch-field dispatch-full">
+              <label>Payment Remark</label>
+              <textarea
+                name="paymentRemark"
+                value={form.paymentRemark}
                 onChange={handleChange}
-              >
-                <option value="dispatched">Dispatched</option>
-                <option value="in_transit">In Transit</option>
-                <option value="delivered">Delivered</option>
-              </select>
+                placeholder="Example: ₹4,00,000 received as advance"
+                disabled={submitting}
+              />
             </div>
           </div>
 
           <div className="dispatch-section-title">
-            <h3>Transport & Documents</h3>
-            <p>Optional fields for invoice, LR and e-way bill tracking</p>
+            <h3>PDF Documents</h3>
+            <p>Bill PDF and LR copy will be attached in customer email.</p>
           </div>
 
           <div className="dispatch-grid">
-            <div className="dispatch-field">
-              <label>Transporter Name</label>
+            <div className="dispatch-field dispatch-file-field">
+              <label>
+                Bill PDF <span className="dispatch-required">*</span>
+              </label>
               <input
-                name="transporterName"
-                value={form.transporterName}
+                type="file"
+                name="billPdf"
+                accept="application/pdf"
                 onChange={handleChange}
-                placeholder="Transport name"
+                disabled={submitting}
               />
+              {form.billPdf && (
+                <small>
+                  {form.billPdf.name} · {formatFileSize(form.billPdf.size)}
+                </small>
+              )}
             </div>
 
-            <div className="dispatch-field">
-              <label>Vehicle Number</label>
+            <div className="dispatch-field dispatch-file-field">
+              <label>
+                LR Copy PDF <span className="dispatch-required">*</span>
+              </label>
               <input
-                name="vehicleNumber"
-                value={form.vehicleNumber}
-                onChange={handleChange}
-                placeholder="Vehicle number"
-              />
-            </div>
-
-            <div className="dispatch-field">
-              <label>LR Number</label>
-              <input
-                name="lrNumber"
-                value={form.lrNumber}
-                onChange={handleChange}
-                placeholder="LR number"
-              />
-            </div>
-
-            <div className="dispatch-field">
-              <label>E-Way Bill Number</label>
-              <input
-                name="ewayBillNumber"
-                value={form.ewayBillNumber}
-                onChange={handleChange}
-                placeholder="E-way bill number"
-              />
-            </div>
-
-            <div className="dispatch-field dispatch-full">
-              <label>Invoice PDF Link</label>
-              <input
-                name="invoicePdf"
-                value={form.invoicePdf}
-                onChange={handleChange}
-                placeholder="Paste invoice PDF link"
-              />
-            </div>
-
-            <div className="dispatch-field dispatch-full">
-              <label>LR Copy PDF Link</label>
-              <input
+                type="file"
                 name="lrCopyPdf"
-                value={form.lrCopyPdf}
+                accept="application/pdf"
                 onChange={handleChange}
-                placeholder="Paste LR copy link"
+                disabled={submitting}
               />
+              {form.lrCopyPdf && (
+                <small>
+                  {form.lrCopyPdf.name} · {formatFileSize(form.lrCopyPdf.size)}
+                </small>
+              )}
             </div>
 
             <div className="dispatch-field dispatch-full">
-              <label>E-Way Bill PDF Link</label>
+              <label>Additional CC Emails</label>
               <input
-                name="ewayBillPdf"
-                value={form.ewayBillPdf}
+                name="additionalCcEmailsText"
+                value={form.additionalCcEmailsText}
                 onChange={handleChange}
-                placeholder="Paste e-way bill PDF link"
+                placeholder="accounts@client.com, purchase@client.com"
+                disabled={submitting}
               />
             </div>
 
@@ -691,15 +733,35 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
                 value={form.internalRemark}
                 onChange={handleChange}
                 placeholder="Any internal note for dispatch/accounts team"
+                disabled={submitting}
               />
             </div>
           </div>
+
+          {uploadProgress.show && (
+            <div className="dispatch-upload-progress">
+              <div className="dispatch-upload-head">
+                <strong>{uploadProgress.status}</strong>
+                <span>{uploadProgress.percent}%</span>
+              </div>
+
+              <div className="dispatch-upload-bar">
+                <div style={{ width: `${uploadProgress.percent}%` }} />
+              </div>
+
+              <small>
+                {uploadProgress.uploadedMB.toFixed(2)} MB of{" "}
+                {uploadProgress.totalMB.toFixed(2)} MB uploaded
+              </small>
+            </div>
+          )}
 
           <div className="dispatch-actions">
             <button
               type="button"
               className="dispatch-cancel"
               onClick={onClose}
+              disabled={submitting}
             >
               Cancel
             </button>
@@ -710,12 +772,8 @@ const DispatchForm = ({ editData = null, onClose, refresh }) => {
               disabled={submitting}
             >
               {submitting
-                ? isEditMode
-                  ? "Updating..."
-                  : "Creating..."
-                : isEditMode
-                ? "Update Dispatch"
-                : "Create Dispatch"}
+                ? "Creating Dispatch..."
+                : "Create Dispatch & Send Email"}
             </button>
           </div>
         </form>

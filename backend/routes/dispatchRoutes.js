@@ -40,6 +40,15 @@ router.get(
 );
 
 /* =========================
+   UPDATE PAYMENT
+========================= */
+
+router.patch(
+  "/:dispatchId/payment",
+  authMiddleware,
+  dispatchController.updateDispatchPayment
+);
+/* =========================
    GET DISPATCH BY ID
 ========================= */
 
@@ -49,15 +58,6 @@ router.get(
   dispatchController.getDispatchById
 );
 
-/* =========================
-   UPDATE PAYMENT
-========================= */
-
-router.patch(
-  "/:dispatchId/payment",
-  authMiddleware,
-  dispatchController.updateDispatchPayment
-);
 
 /* =========================
    DELETE DISPATCH
