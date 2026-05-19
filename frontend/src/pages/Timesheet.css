@@ -772,3 +772,298 @@
     padding: 12px;
   }
 }
+.attendance-action-card {
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
+.attendance-action-card h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.attendance-action-card p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.attendance-action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.attendance-checkin-btn,
+.attendance-checkout-btn,
+.attendance-regularize-btn,
+.calendar-regularize-btn {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.attendance-checkin-btn {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.attendance-checkout-btn {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.attendance-regularize-btn,
+.calendar-regularize-btn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.attendance-checkin-btn:hover,
+.attendance-checkout-btn:hover,
+.attendance-regularize-btn:hover,
+.calendar-regularize-btn:hover {
+  transform: translateY(-1px);
+}
+
+.attendance-checkin-btn:disabled,
+.attendance-checkout-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.week-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.week-pagination button {
+  border: 0;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 9px 13px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.week-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.week-pagination strong {
+  font-size: 13px;
+  color: #334155;
+  text-align: center;
+}
+
+.calendar-day.warning {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.dot.yellow {
+  background: #f59e0b;
+}
+
+.attendance-detail-box {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.attendance-detail-box div {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 13px;
+}
+
+.attendance-detail-box span {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.attendance-detail-box strong {
+  color: #0f172a;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.regularize-modal {
+  max-width: 520px;
+}
+
+.regularize-form {
+  display: grid;
+  gap: 14px;
+}
+
+.regularize-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 900;
+  color: #334155;
+  margin-bottom: 7px;
+}
+
+.regularize-field input,
+.regularize-field textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 14px;
+  outline: none;
+  background: #ffffff;
+}
+
+.regularize-field textarea {
+  min-height: 95px;
+  resize: vertical;
+}
+
+.regularize-field input:focus,
+.regularize-field textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.regularize-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.regularize-cancel-btn,
+.regularize-submit-btn {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.regularize-cancel-btn {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.regularize-submit-btn {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.regularize-cancel-btn:disabled,
+.regularize-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .attendance-action-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .attendance-action-buttons {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-checkin-btn,
+  .attendance-checkout-btn,
+  .attendance-regularize-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .week-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .week-pagination button {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .attendance-detail-box {
+    grid-template-columns: 1fr;
+  }
+
+  .regularize-actions {
+    flex-direction: column;
+  }
+
+  .regularize-cancel-btn,
+  .regularize-submit-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+.calendar-regularize-panel {
+  margin: 14px 0;
+  padding: 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+}
+
+.calendar-regularize-panel p {
+  margin: 0 0 12px;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 700;
+}
+
+.calendar-regularize-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .calendar-regularize-actions {
+    flex-direction: column;
+  }
+
+  .calendar-regularize-actions .calendar-regularize-btn {
+    width: 100%;
+  }
+}
