@@ -1,5 +1,6 @@
 require("dotenv").config();
 const startPaymentReminderCron = require("./cron/paymentReminderCron");
+const startAttendanceCron = require("./cron/attendanceCron");
 const app = require("./app");
 const connectDB = require("./db");
 
@@ -16,5 +17,6 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
    startPaymentReminderCron();
+   startAttendanceCron();
 });
 
