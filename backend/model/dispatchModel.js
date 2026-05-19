@@ -394,31 +394,26 @@ const dispatchSchema = new mongoose.Schema(
        PAYMENT REMINDER TRACKING
     ========================= */
 
-    paymentReminder: {
-      threeDaysBeforeSent: {
-        type: Boolean,
-        default: false,
-      },
-      dueDateSent: {
-        type: Boolean,
-        default: false,
-      },
-      overdueReminderCount: {
-        type: Number,
-        default: 0,
-      },
-      lastReminderSentAt: Date,
-      lastReminderType: {
-        type: String,
-        enum: [
-          "three_days_before_due",
-          "due_date",
-          "overdue",
-          null,
-        ],
-        default: null,
-      },
-    },
+  paymentReminder: {
+  beforeDueDateSent: {
+    type: Boolean,
+    default: false,
+  },
+  dueDateSent: {
+    type: Boolean,
+    default: false,
+  },
+  overdueReminderCount: {
+    type: Number,
+    default: 0,
+  },
+  lastReminderSentAt: Date,
+  lastReminderType: {
+    type: String,
+    enum: ["before_due_date", "due_date", "overdue", null],
+    default: null,
+  },
+},
 
     /* =========================
        DISPATCH STATUS

@@ -191,23 +191,28 @@ const searchPendingDispatchSalesOrders = async (query, user) => {
       `
     )
     .lean();
+const salesOrderIds = salesOrders.map((item) => item._id);
 
-  const formatted = await Promise.all(
-    salesOrders.map(async (salesOrder) => {
-      const dispatchCount = await Dispatch.countDocuments({
-        salesOrderId: salesOrder._id,
-        isActive: true,
-      });
+const dispatchedSalesOrders = await Dispatch.find({
+  salesOrderId: { $in: salesOrderIds },
+  isActive: true,
+})
+  .select("salesOrderId")
+  .lean();
 
-      return {
-        ...salesOrder,
-        dispatchCount,
-        alreadyDispatched: dispatchCount > 0,
-      };
-    })
-  );
+const dispatchedIdSet = new Set(
+  dispatchedSalesOrders.map((item) => String(item.salesOrderId))
+);
 
-  return formatted;
+const availableSalesOrders = salesOrders.filter((salesOrder) => {
+  return !dispatchedIdSet.has(String(salesOrder._id));
+});
+
+return availableSalesOrders.map((salesOrder) => ({
+  ...salesOrder,
+  dispatchCount: 0,
+  alreadyDispatched: false,
+}));
 };
 
 /* =========================
