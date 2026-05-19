@@ -28,6 +28,7 @@ const SalesOrderList = () => {
   const [editOrder, setEditOrder] = useState(null);
   const [activeTab, setActiveTab] = useState("approved");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [actionSubmitting, setActionSubmitting] = useState(false);
 
   const [approvalModal, setApprovalModal] = useState({
     open: false,
@@ -51,6 +52,17 @@ const SalesOrderList = () => {
     toDate: "",
     salesPersonId: "",
   });
+
+  const isRejectAction = approvalModal.type.includes("reject");
+  const isApproveAction = approvalModal.type.includes("approve");
+
+  const getActionButtonText = () => {
+    if (actionSubmitting) {
+      return isApproveAction ? "Approving..." : "Rejecting...";
+    }
+
+    return isApproveAction ? "Yes, Approve" : "Reject";
+  };
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -156,8 +168,9 @@ const SalesOrderList = () => {
 
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
     if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
-    if (current >= total - 3)
+    if (current >= total - 3) {
       return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+    }
 
     return [1, "...", current - 1, current, current + 1, "...", total];
   };
@@ -210,6 +223,8 @@ const SalesOrderList = () => {
   };
 
   const handleAdminApprove = (orderId) => {
+    if (actionSubmitting) return;
+
     setApprovalModal({
       open: true,
       type: "admin_approve",
@@ -218,6 +233,8 @@ const SalesOrderList = () => {
   };
 
   const handleAdminReject = (orderId) => {
+    if (actionSubmitting) return;
+
     setApprovalModal({
       open: true,
       type: "admin_reject",
@@ -227,6 +244,8 @@ const SalesOrderList = () => {
   };
 
   const handleManagerApprove = (orderId) => {
+    if (actionSubmitting) return;
+
     setApprovalModal({
       open: true,
       type: "manager_approve",
@@ -235,6 +254,8 @@ const SalesOrderList = () => {
   };
 
   const handleManagerReject = (orderId) => {
+    if (actionSubmitting) return;
+
     setApprovalModal({
       open: true,
       type: "manager_reject",
@@ -244,6 +265,8 @@ const SalesOrderList = () => {
   };
 
   const closeApprovalModal = () => {
+    if (actionSubmitting) return;
+
     setApprovalModal({
       open: false,
       type: "",
@@ -253,11 +276,15 @@ const SalesOrderList = () => {
   };
 
   const submitApprovalAction = async () => {
+    if (actionSubmitting) return;
+
     try {
       if (approvalModal.type.includes("reject") && !rejectionComment.trim()) {
         alert("Please enter rejection reason");
         return;
       }
+
+      setActionSubmitting(true);
 
       if (approvalModal.type === "admin_approve") {
         await approveSalesOrderByAdmin(approvalModal.orderId);
@@ -287,6 +314,8 @@ const SalesOrderList = () => {
       fetchSalesOrders();
     } catch (error) {
       alert(error.response?.data?.message || "Action failed");
+    } finally {
+      setActionSubmitting(false);
     }
   };
 
@@ -319,6 +348,7 @@ const SalesOrderList = () => {
             setEditOrder(null);
             setShowForm(true);
           }}
+          disabled={actionSubmitting}
         >
           + New Sales Order
         </button>
@@ -332,6 +362,7 @@ const SalesOrderList = () => {
               activeTab === "approved" ? "pending_rejected" : "approved"
             )
           }
+          disabled={actionSubmitting}
         >
           {activeTab === "approved" ? "Pending / Rejected" : "Approved"}
         </button>
@@ -346,6 +377,7 @@ const SalesOrderList = () => {
                 name="salesPersonId"
                 value={filters.salesPersonId}
                 onChange={handleFilterChange}
+                disabled={actionSubmitting}
               >
                 <option value="">All Sales Persons</option>
                 {salesPersons.map((person) => (
@@ -364,6 +396,7 @@ const SalesOrderList = () => {
               name="fromDate"
               value={filters.fromDate}
               onChange={handleFilterChange}
+              disabled={actionSubmitting}
             />
           </div>
 
@@ -374,13 +407,17 @@ const SalesOrderList = () => {
               name="toDate"
               value={filters.toDate}
               min={filters.fromDate || ""}
-              disabled={!filters.fromDate}
+              disabled={!filters.fromDate || actionSubmitting}
               onChange={handleFilterChange}
             />
           </div>
 
           <div className="filter-buttons">
-            <button className="clear-btn" onClick={clearFilters}>
+            <button
+              className="clear-btn"
+              onClick={clearFilters}
+              disabled={actionSubmitting}
+            >
               Clear
             </button>
           </div>
@@ -483,6 +520,7 @@ const SalesOrderList = () => {
                           <button
                             className="edit-btn"
                             onClick={() => openEditForm(order)}
+                            disabled={actionSubmitting}
                           >
                             Edit
                           </button>
@@ -493,6 +531,7 @@ const SalesOrderList = () => {
                             <button
                               className="approve-btn"
                               onClick={() => handleAdminApprove(order._id)}
+                              disabled={actionSubmitting}
                             >
                               Approve
                             </button>
@@ -500,6 +539,7 @@ const SalesOrderList = () => {
                             <button
                               className="reject-btn"
                               onClick={() => handleAdminReject(order._id)}
+                              disabled={actionSubmitting}
                             >
                               Reject
                             </button>
@@ -511,6 +551,7 @@ const SalesOrderList = () => {
                             <button
                               className="approve-btn"
                               onClick={() => handleManagerApprove(order._id)}
+                              disabled={actionSubmitting}
                             >
                               Approve
                             </button>
@@ -518,6 +559,7 @@ const SalesOrderList = () => {
                             <button
                               className="reject-btn"
                               onClick={() => handleManagerReject(order._id)}
+                              disabled={actionSubmitting}
                             >
                               Reject
                             </button>
@@ -602,6 +644,7 @@ const SalesOrderList = () => {
                         <button
                           className="edit-btn"
                           onClick={() => openEditForm(order)}
+                          disabled={actionSubmitting}
                         >
                           Edit
                         </button>
@@ -612,6 +655,7 @@ const SalesOrderList = () => {
                           <button
                             className="approve-btn"
                             onClick={() => handleAdminApprove(order._id)}
+                            disabled={actionSubmitting}
                           >
                             Approve
                           </button>
@@ -619,6 +663,7 @@ const SalesOrderList = () => {
                           <button
                             className="reject-btn"
                             onClick={() => handleAdminReject(order._id)}
+                            disabled={actionSubmitting}
                           >
                             Reject
                           </button>
@@ -630,6 +675,7 @@ const SalesOrderList = () => {
                           <button
                             className="approve-btn"
                             onClick={() => handleManagerApprove(order._id)}
+                            disabled={actionSubmitting}
                           >
                             Approve
                           </button>
@@ -637,6 +683,7 @@ const SalesOrderList = () => {
                           <button
                             className="reject-btn"
                             onClick={() => handleManagerReject(order._id)}
+                            disabled={actionSubmitting}
                           >
                             Reject
                           </button>
@@ -667,6 +714,7 @@ const SalesOrderList = () => {
                 key={page}
                 className={pagination.currentPage === page ? "active-page" : ""}
                 onClick={() => goToPage(page)}
+                disabled={actionSubmitting}
               >
                 {page}
               </button>
@@ -695,48 +743,56 @@ const SalesOrderList = () => {
       {approvalModal.open && (
         <div className="approval-modal-overlay">
           <div className="approval-modal-card">
-            <div className="approval-icon">
-              {approvalModal.type.includes("approve") ? "✓" : "!"}
+            <div
+              className={`approval-icon ${
+                isApproveAction ? "approval-icon-approve" : "approval-icon-reject"
+              }`}
+            >
+              {isApproveAction ? "✓" : "!"}
             </div>
 
-            <h3>
-              {approvalModal.type.includes("approve")
-                ? "Approve Sales Order"
-                : "Reject Sales Order"}
-            </h3>
+            <h3>{isApproveAction ? "Approve Sales Order" : "Reject Sales Order"}</h3>
 
             <p>
-              {approvalModal.type.includes("approve")
+              {isApproveAction
                 ? "Are you sure you want to approve this sales order?"
                 : "Please enter rejection reason below."}
             </p>
 
-            {approvalModal.type.includes("reject") && (
+            {isRejectAction && (
               <textarea
                 value={rejectionComment}
                 onChange={(e) => setRejectionComment(e.target.value)}
                 placeholder="Enter rejection reason"
+                disabled={actionSubmitting}
               />
             )}
 
             <div className="approval-modal-actions">
-              <button className="modal-cancel-btn" onClick={closeApprovalModal}>
+              <button
+                className="modal-cancel-btn"
+                onClick={closeApprovalModal}
+                disabled={actionSubmitting}
+              >
                 Cancel
               </button>
 
               <button
                 className={
-                  approvalModal.type.includes("approve")
-                    ? "modal-approve-btn"
-                    : "modal-reject-btn"
+                  isApproveAction ? "modal-approve-btn" : "modal-reject-btn"
                 }
                 onClick={submitApprovalAction}
+                disabled={actionSubmitting}
               >
-                {approvalModal.type.includes("approve")
-                  ? "Yes, Approve"
-                  : "Reject"}
+                {getActionButtonText()}
               </button>
             </div>
+
+            {actionSubmitting && (
+              <div className="approval-progress-note">
+                Please wait, processing request and sending email...
+              </div>
+            )}
           </div>
         </div>
       )}

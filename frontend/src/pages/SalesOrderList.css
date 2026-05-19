@@ -1239,3 +1239,51 @@
     width: 100%;
   }
 }
+.approve-btn:disabled,
+.reject-btn:disabled,
+.edit-btn:disabled,
+.modal-approve-btn:disabled,
+.modal-reject-btn:disabled,
+.modal-cancel-btn:disabled,
+.new-sales-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.approval-progress-note {
+  margin-top: 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.approval-icon-approve {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.approval-icon-reject {
+  background: #fee2e2;
+  color: #991b1b;
+}
+@media (max-width: 768px) {
+  .mobile-actions .approve-btn,
+  .mobile-actions .reject-btn {
+    pointer-events: auto;
+    min-height: 44px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .mobile-actions .approve-btn:disabled,
+  .mobile-actions .reject-btn:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+}

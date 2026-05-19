@@ -1166,3 +1166,20 @@ textarea[name="sizeGradeQuantityRate"] {
     width: 100%;
   }
 }
+
+.sales-form-group textarea[name="specialNote"] {
+  min-height: 78px;
+  resize: vertical;
+  background: #f8fafc;
+}
+
+.sales-form-group textarea[name="specialNote"]:focus {
+  background: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.sales-form-group.revision-highlight textarea[name="specialNote"] {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}

@@ -12,19 +12,16 @@ const paymentTermOptions = [
   "30_percent_advance_balance_on_readiness_of_material",
   "40_percent_advance_balance_on_readiness_of_material",
   "50_percent_advance_balance_on_readiness_of_material",
-
   "30_days_pdc_against_invoice",
   "45_days_pdc_against_invoice",
   "60_days_pdc_against_invoice",
   "75_days_pdc_against_invoice",
   "90_days_pdc_against_invoice",
-
   "30_days_from_date_of_invoice",
   "45_days_from_date_of_invoice",
   "60_days_from_date_of_invoice",
   "75_days_from_date_of_invoice",
   "90_days_from_date_of_invoice",
-
   "30_days_from_date_of_po_received",
   "45_days_from_date_of_po_received",
   "60_days_from_date_of_po_received",
@@ -87,16 +84,11 @@ const formatPaymentTermLabel = (term) => {
     "75_days_from_date_of_invoice": "75 Days from Date of Invoice",
     "90_days_from_date_of_invoice": "90 Days from Date of Invoice",
 
-    "30_days_from_date_of_po_received":
-      "30 Days from Date of PO Received",
-    "45_days_from_date_of_po_received":
-      "45 Days from Date of PO Received",
-    "60_days_from_date_of_po_received":
-      "60 Days from Date of PO Received",
-    "75_days_from_date_of_po_received":
-      "75 Days from Date of PO Received",
-    "90_days_from_date_of_po_received":
-      "90 Days from Date of PO Received",
+    "30_days_from_date_of_po_received": "30 Days from Date of PO Received",
+    "45_days_from_date_of_po_received": "45 Days from Date of PO Received",
+    "60_days_from_date_of_po_received": "60 Days from Date of PO Received",
+    "75_days_from_date_of_po_received": "75 Days from Date of PO Received",
+    "90_days_from_date_of_po_received": "90 Days from Date of PO Received",
   };
 
   return map[term] || formatLabel(term);
@@ -122,6 +114,7 @@ const initialForm = {
 
   previousPaymentAvailable: "",
   previousPaymentStatus: "",
+  specialNote: "",
 
   poAsPerQuotation: "",
 
@@ -218,7 +211,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       "shippingCombined",
     ]);
     addIf(["billing"], ["billingSameAsCompany", "billingCombined"]);
-    addIf(["shipping", "delivery address"], [
+    addIf(["shipping", "delivery address", "location"], [
       "shippingSameAsCompany",
       "shippingCombined",
     ]);
@@ -237,6 +230,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       "previousPaymentAvailable",
       "previousPaymentStatus",
     ]);
+    addIf(["special note", "note"], ["specialNote"]);
     addIf(["enquiry"], ["enquiryFormFilled"]);
     addIf(["size", "grade", "qty", "quantity", "rate"], [
       "sizeGradeQuantityRate",
@@ -248,14 +242,18 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
   useEffect(() => {
     if (!editOrder) return;
 
-    const billingObj = editOrder.billingAddress || {};
-    const shippingObj = editOrder.shippingAddress || {};
+    const billingObj =
+      typeof editOrder.billingAddress === "object" && editOrder.billingAddress
+        ? editOrder.billingAddress
+        : {};
 
-   const previousPaymentValue = editOrder.previousPaymentStatus || "no";
-const previousPaymentRemarkValue = editOrder.previousPaymentRemark || "";
-    const hasPreviousPayment =
-      previousPaymentValue &&
-      String(previousPaymentValue).toLowerCase() !== "no";
+    const shippingObj =
+      typeof editOrder.shippingAddress === "object" && editOrder.shippingAddress
+        ? editOrder.shippingAddress
+        : {};
+
+    const previousPaymentValue = editOrder.previousPaymentStatus || "no";
+    const previousPaymentRemarkValue = editOrder.previousPaymentRemark || "";
 
     setForm({
       ...initialForm,
@@ -279,33 +277,58 @@ const previousPaymentRemarkValue = editOrder.previousPaymentRemark || "";
       paymentTermsApprovedBy: editOrder.paymentTermsApprovedBy || "",
 
       previousPaymentAvailable:
-  String(previousPaymentValue).toLowerCase() === "yes" ? "yes" : "no",
-previousPaymentStatus: previousPaymentRemarkValue,
+        String(previousPaymentValue).toLowerCase() === "yes" ? "yes" : "no",
+      previousPaymentStatus: previousPaymentRemarkValue,
 
-      poAsPerQuotation: editOrder.poAsPerQuotation || "",
+      specialNote: editOrder.specialNote || "",
 
-      billingSameAsCompany: billingObj.sameAsCompanyAddress ? "true" : "false",
-      billingAddress: billingObj.address || "",
-      billingGstinNumber: billingObj.gstinNumber || "",
+      poAsPerQuotation:
+        editOrder.poAsPerQuotation || editOrder.poAsPerQuote || "",
 
-      shippingSameAsCompany: shippingObj.sameAsCompanyAddress
-        ? "true"
-        : "false",
-      shippingAddress: shippingObj.address || "",
-      shippingGstinNumber: shippingObj.gstinNumber || "",
+      billingSameAsCompany:
+        billingObj.sameAsCompanyAddress === false ? "false" : "true",
+      billingAddress:
+        billingObj.address ||
+        editOrder.billingAddressText ||
+        "",
+      billingGstinNumber:
+        billingObj.gstinNumber ||
+        editOrder.billingGstinNumber ||
+        "",
+
+      shippingSameAsCompany:
+        shippingObj.sameAsCompanyAddress === false ? "false" : "true",
+      shippingAddress:
+        shippingObj.address ||
+        editOrder.shippingAddressText ||
+        editOrder.location ||
+        "",
+      shippingGstinNumber:
+        shippingObj.gstinNumber ||
+        editOrder.shippingGstinNumber ||
+        "",
 
       enquiryFormFilled: editOrder.enquiryFormFilled || "",
 
       sizeGradeQuantityRate: editOrder.sizeGradeQuantityRate || "",
       supplyCondition: editOrder.supplyCondition || "as_per_standard",
-     otherSupplyConditions: editOrder.otherSupplyConditions || "",
+      otherSupplyConditions: editOrder.otherSupplyConditions || "",
 
-      cutLengthRequired: editOrder.cutLengthRequired || "",
-      cuttingCost: editOrder.cuttingCost || "",
-      cuttingExtraCharges: editOrder.cuttingExtraCharges || "",
+      cutLengthRequired:
+        editOrder.cutLengthRequired || editOrder.isCutLengthRequired || "",
+      cuttingCost: editOrder.cuttingCost || editOrder.cuttingCostType || "",
+      cuttingExtraCharges:
+        editOrder.cuttingExtraCharges ||
+        editOrder.cuttingExtraCharge ||
+        editOrder.cuttingCharges ||
+        "",
 
-      freight: editOrder.freight || "",
-      freightExtraCharges: editOrder.freightExtraCharges || "",
+      freight: editOrder.freight || editOrder.freightType || "",
+      freightExtraCharges:
+        editOrder.freightExtraCharges ||
+        editOrder.freightExtraCharge ||
+        editOrder.freightCharges ||
+        "",
 
       tolerance: editOrder.tolerance || "",
       endUseOfCustomer: editOrder.endUseOfCustomer || "",
@@ -314,7 +337,11 @@ previousPaymentStatus: previousPaymentRemarkValue,
 
       contactPersonName: editOrder.contactPersonName || "",
       contactPersonNumber: editOrder.contactPersonNumber || "",
-      contactPersonEmail: editOrder.contactPersonEmail || "",
+      contactPersonEmail:
+        editOrder.contactPersonEmail ||
+        editOrder.contactPersonEmailId ||
+        editOrder.customerEmail ||
+        "",
     });
   }, [editOrder]);
 
@@ -573,10 +600,12 @@ previousPaymentStatus: previousPaymentRemarkValue,
         ? form.paymentTermsApprovedBy
         : null,
 
-     previousPaymentStatus: previousPaymentYes ? "yes" : "no",
-previousPaymentRemark: previousPaymentYes
-  ? form.previousPaymentStatus.trim()
-  : "",
+      previousPaymentStatus: previousPaymentYes ? "yes" : "no",
+      previousPaymentRemark: previousPaymentYes
+        ? form.previousPaymentStatus.trim()
+        : "",
+
+      specialNote: form.specialNote.trim(),
 
       poAsPerQuotation: form.poAsPerQuotation,
 
@@ -585,8 +614,8 @@ previousPaymentRemark: previousPaymentYes
       supplyCondition: form.supplyCondition,
 
       otherSupplyConditions: isOtherSupplyCondition
-  ? form.otherSupplyConditions.trim()
-  : "",
+        ? form.otherSupplyConditions.trim()
+        : "",
 
       cutLengthRequired: form.cutLengthRequired,
       cuttingCost: form.cuttingCost,
@@ -875,6 +904,11 @@ previousPaymentRemark: previousPaymentYes
                 accept="application/pdf"
                 onChange={handleChange}
               />
+              {isEditMode && !form.customerPOFile && (
+                <small className="auto-hint">
+                  Existing PO file will remain unchanged unless you upload a new PDF.
+                </small>
+              )}
               {form.customerPOFile && (
                 <small className="file-selected">
                   Selected: {form.customerPOFile.name}
@@ -993,6 +1027,20 @@ previousPaymentRemark: previousPaymentYes
                 {errorText("previousPaymentStatus")}
               </div>
             )}
+
+            <div
+              className={fieldClass("specialNote", "sales-full-width")}
+              {...refProp("specialNote")}
+            >
+              <label>Special Note</label>
+              <textarea
+                name="specialNote"
+                value={form.specialNote}
+                onChange={handleChange}
+                placeholder="Optional note for this sales order"
+                rows={3}
+              />
+            </div>
 
             <div
               className={fieldClass("poAsPerQuotation")}
