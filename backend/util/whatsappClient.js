@@ -10,7 +10,7 @@ let latestQr = null;
 
 const whatsappSessionPath =
   process.env.WHATSAPP_SESSION_PATH ||
-  "/home/u607090171/nodejs/whatsapp-session";
+  "/home/u607090171/whatsapp-session";
 
 const ensureSessionFolder = () => {
   try {
@@ -19,6 +19,7 @@ const ensureSessionFolder = () => {
     }
 
     console.log("WHATSAPP SESSION PATH =>", whatsappSessionPath);
+    console.log("WHATSAPP SESSION EXISTS =>", fs.existsSync(whatsappSessionPath));
   } catch (error) {
     console.log("WHATSAPP SESSION FOLDER ERROR =>", error.message);
   }
@@ -72,6 +73,7 @@ const initWhatsappClient = () => {
 
   whatsappClient.on("authenticated", () => {
     console.log("WhatsApp authenticated");
+    console.log("WhatsApp session should be saved at:", whatsappSessionPath);
   });
 
   whatsappClient.on("ready", async () => {

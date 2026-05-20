@@ -71,7 +71,7 @@ function Dashboard() {
 
     { key: "coldCall", label: "Cold Call / Visit", icon: "📞" },
 
-    { key: "timesheet", label: "Timesheet", icon: "⏱️" },
+    { key: "timesheet", label: "Timesheet/Attendance", icon: "⏱️" },
   ];
 
   const activeItem = menuItems.find((item) => item.key === active);

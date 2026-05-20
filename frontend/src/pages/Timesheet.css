@@ -1,80 +1,227 @@
+/* =========================
+   PREMIUM TIMESHEET SYSTEM
+   Bharat Special Steels RMS
+========================= */
+
 .timesheet-container {
-  padding: 18px;
   width: 100%;
   min-height: calc(100vh - 40px);
-  background: #f4f7fb;
-  border-radius: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 32%),
+    radial-gradient(circle at top right, rgba(22, 163, 74, 0.1), transparent 30%),
+    #f3f6fb;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  color: #0f172a;
 }
 
 /* HEADER */
 .timesheet-header {
-  background: linear-gradient(135deg, #0f172a, #1e3a8a);
-  color: #fff;
-  padding: 16px 20px;
-  border-radius: 16px;
-  margin-bottom: 12px;
+  background: linear-gradient(135deg, #0b1220 0%, #172554 48%, #14532d 100%);
+  color: #ffffff;
+  padding: 20px 22px;
+  border-radius: 22px;
+  margin-bottom: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.22);
+  position: relative;
+  overflow: hidden;
+}
+
+.timesheet-header::after {
+  content: "";
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  right: -90px;
+  top: -130px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
 }
 
 .timesheet-header h2 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
 }
 
 .timesheet-header p {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
   color: #dbeafe;
   font-size: 13px;
+  font-weight: 500;
+}
+
+.timesheet-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
+}
+
+.fill-btn,
+.attendance-download-btn {
+  border: 0;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.2s ease;
+  white-space: nowrap;
 }
 
 .fill-btn {
-  border: none;
-  padding: 11px 18px;
-  border-radius: 12px;
-  background: #facc15;
+  background: linear-gradient(135deg, #facc15, #f59e0b);
   color: #111827;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 8px 18px rgba(250, 204, 21, 0.35);
+  box-shadow: 0 14px 26px rgba(245, 158, 11, 0.28);
 }
 
-.fill-btn.disabled {
+.attendance-download-btn {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+}
+
+.fill-btn:hover,
+.attendance-download-btn:hover {
+  transform: translateY(-2px);
+}
+
+.fill-btn.disabled,
+.fill-btn:disabled,
+.attendance-download-btn:disabled {
   background: #cbd5e1;
-  cursor: not-allowed;
+  color: #64748b;
   box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* COMMON CARDS */
 .timesheet-filter-card,
 .reports-card,
 .calendar-card,
-.updates-card {
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+.updates-card,
+.attendance-admin-card,
+.attendance-action-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 22px;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+/* ATTENDANCE ACTION */
+.attendance-action-card {
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-left: 5px solid #16a34a;
+}
+
+.attendance-action-card h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.attendance-action-card p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.attendance-action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.attendance-checkin-btn,
+.attendance-checkout-btn,
+.attendance-regularize-btn,
+.calendar-regularize-btn,
+.regularization-approve-btn,
+.regularization-reject-btn,
+.regularize-cancel-btn,
+.regularize-submit-btn,
+.ts-cancel-btn,
+.ts-submit-btn {
+  border: 0;
+  border-radius: 14px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.attendance-checkin-btn {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #166534;
+}
+
+.attendance-checkout-btn {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #991b1b;
+}
+
+.attendance-regularize-btn,
+.calendar-regularize-btn {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+}
+
+.calendar-regularize-btn.danger {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #991b1b;
+}
+
+.attendance-checkin-btn:hover,
+.attendance-checkout-btn:hover,
+.attendance-regularize-btn:hover,
+.calendar-regularize-btn:hover,
+.regularization-approve-btn:hover,
+.regularization-reject-btn:hover,
+.ts-submit-btn:hover {
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed !important;
+  transform: none !important;
 }
 
 /* FILTER */
 .timesheet-filter-card {
-  padding: 14px 16px;
-  margin-bottom: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
 }
 
 .filter-title h3 {
   margin: 0;
   font-size: 17px;
-  color: #0f172a;
+  font-weight: 900;
 }
 
 .filter-title p {
-  margin: 3px 0 10px;
-  font-size: 12px;
+  margin: 4px 0 13px;
   color: #64748b;
+  font-size: 12px;
 }
 
 .timesheet-filter-grid {
@@ -87,86 +234,123 @@
 .filter-field {
   display: flex;
   flex-direction: column;
+  gap: 6px;
 }
 
 .filter-field label {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
   color: #334155;
-  margin-bottom: 5px;
 }
 
 .filter-field select {
-  height: 38px;
-  width: 190px;
-  padding: 0 11px;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
+  height: 42px;
+  width: 210px;
+  padding: 0 13px;
+  border: 1px solid #dbe3ee;
+  border-radius: 14px;
   background: #f8fafc;
+  color: #0f172a;
   outline: none;
   font-size: 13px;
+  font-weight: 700;
+}
+
+.filter-field select:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
 /* MAIN GRID */
 .timesheet-main-grid {
   display: grid;
-  grid-template-columns: 1.7fr 1fr;
-  gap: 14px;
+  grid-template-columns: 1.65fr 1fr;
+  gap: 16px;
   align-items: start;
 }
 
 .timesheet-right {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
-/* SECTION HEADING */
+/* SECTION */
 .section-heading {
-  padding: 14px 16px;
+  padding: 15px 17px;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .section-heading h3 {
   margin: 0;
   font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: 900;
 }
 
 .section-heading span {
   background: #eef2ff;
   color: #1e3a8a;
-  padding: 5px 10px;
+  padding: 6px 11px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
 }
 
-/* REPORT CARDS */
+/* WEEK */
+.week-pagination {
+  margin: 14px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.week-pagination button {
+  border: 0;
+  border-radius: 12px;
+  background: #111827;
+  color: #ffffff;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.week-pagination strong {
+  color: #334155;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* REPORTS */
 .report-list {
   padding: 14px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
 .report-item {
-  background: #f8fafc;
-  border: 1px solid #dbe3ee;
-  border-radius: 16px;
-  padding: 14px;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
-  height: auto;
-  align-self: start;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 15px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  transition: 0.2s ease;
 }
 
 .report-item:hover {
-  background: #ffffff;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
 }
 
 .report-top {
@@ -174,7 +358,7 @@
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 10px;
-  padding-bottom: 8px;
+  padding-bottom: 9px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -193,9 +377,8 @@
   margin: 7px 0;
   font-size: 13px;
   color: #334155;
-  line-height: 1.45;
+  line-height: 1.5;
   white-space: pre-line;
-  word-break: normal;
   overflow-wrap: break-word;
 }
 
@@ -204,25 +387,21 @@
 }
 
 /* CALENDAR */
-.calendar-card .section-heading {
-  padding: 12px 16px;
-}
-
 .calendar-legend {
-  padding: 10px 16px 0;
+  padding: 12px 16px 0;
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   color: #475569;
 }
 
 .calendar-legend span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .dot {
@@ -231,23 +410,17 @@
   border-radius: 50%;
 }
 
-.dot.green {
-  background: #16a34a;
-}
-
-.dot.red {
-  background: #dc2626;
-}
-
-.dot.gray {
-  background: #94a3b8;
-}
+.dot.green { background: #16a34a; }
+.dot.red { background: #dc2626; }
+.dot.gray { background: #94a3b8; }
+.dot.yellow { background: #f59e0b; }
+.dot.red-light { background: #f87171; }
 
 .calendar-grid {
-  padding: 12px 14px 14px;
+  padding: 14px;
   display: grid;
   grid-template-columns: repeat(7, 42px);
-  gap: 8px;
+  gap: 9px;
   justify-content: center;
 }
 
@@ -255,8 +428,9 @@
   text-align: center;
   font-size: 10px;
   font-weight: 900;
-  color: #475569;
+  color: #64748b;
   height: 18px;
+  text-transform: uppercase;
 }
 
 .empty-day {
@@ -283,28 +457,35 @@
 
 .calendar-day strong {
   font-size: 13px;
-  font-weight: 900;
-}
-
-.calendar-day span {
-  display: none;
 }
 
 .calendar-day:hover {
   transform: scale(1.08);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
 }
 
 .calendar-day.submitted {
-  background: #15803d;
+  background: linear-gradient(135deg, #16a34a, #15803d);
   border-color: #166534;
   color: #ffffff;
 }
 
 .calendar-day.missing {
-  background: #991b1b;
+  background: linear-gradient(135deg, #dc2626, #991b1b);
   border-color: #7f1d1d;
   color: #ffffff;
+}
+
+.calendar-day.warning {
+  background: linear-gradient(135deg, #fef3c7, #f59e0b);
+  color: #78350f;
+  border-color: #f59e0b;
+}
+
+.calendar-day.short {
+  background: linear-gradient(135deg, #fecaca, #f87171);
+  color: #7f1d1d;
+  border-color: #f87171;
 }
 
 .calendar-day.off {
@@ -323,13 +504,13 @@
 .updates-list {
   padding: 14px;
   display: grid;
-  grid-template-columns: 1fr;
   gap: 10px;
 }
 
 .update-item {
-  padding: 13px;
-  border-radius: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid transparent;
 }
 
 .update-item strong {
@@ -341,46 +522,238 @@
 .update-item p {
   margin: 0;
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.45;
 }
 
 .update-item.danger {
-  background: #fee2e2;
+  background: #fef2f2;
   color: #991b1b;
-  border-left: 5px solid #dc2626;
+  border-color: #fecaca;
 }
 
 .update-item.warning {
-  background: #ffedd5;
+  background: #fff7ed;
   color: #9a3412;
-  border-left: 5px solid #f97316;
+  border-color: #fed7aa;
 }
 
 .update-item.success {
-  background: #dcfce7;
+  background: #f0fdf4;
   color: #166534;
-  border-left: 5px solid #16a34a;
+  border-color: #bbf7d0;
 }
 
 .update-item.neutral {
-  background: #f8fafc;
-  color: #334155;
-  border-left: 5px solid #2563eb;
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
 }
 
 .empty-state {
-  padding: 30px;
+  padding: 24px;
   text-align: center;
-  font-weight: 800;
+  font-weight: 900;
   color: #64748b;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+}
+
+/* ADMIN TABLE */
+.attendance-admin-card {
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.attendance-admin-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  padding: 6px 14px 14px;
+}
+
+.attendance-admin-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+}
+
+.attendance-admin-table th {
+  text-align: left;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 900;
+  padding: 9px 12px;
+  text-transform: uppercase;
+}
+
+.attendance-admin-table td {
+  background: #f8fafc;
+  padding: 14px 12px;
+  font-size: 13px;
+  color: #0f172a;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.attendance-admin-table td:first-child {
+  border-left: 1px solid #e2e8f0;
+  border-radius: 16px 0 0 16px;
+}
+
+.attendance-admin-table td:last-child {
+  border-right: 1px solid #e2e8f0;
+  border-radius: 0 16px 16px 0;
+}
+
+.attendance-admin-table td strong {
+  display: block;
+  font-weight: 900;
+}
+
+.attendance-admin-pill,
+.attendance-health-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.attendance-admin-pill {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.attendance-health-pill.complete {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.attendance-health-pill.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.attendance-health-pill.short {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.attendance-health-pill.missing {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* REGULARIZATION CARDS */
+.regularization-request-grid {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.regularization-request-card,
+.employee-attendance-day-card {
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+}
+
+.regularization-request-top,
+.employee-attendance-day-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.regularization-request-top h4,
+.employee-attendance-day-top h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.regularization-request-top p,
+.employee-attendance-day-top p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.regularization-request-top span {
+  background: #fff7ed;
+  color: #c2410c;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.regularization-request-info,
+.regularization-inline-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.regularization-request-info p,
+.regularization-inline-box p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.regularization-request-info p:last-child,
+.regularization-inline-box p:last-child {
+  margin-bottom: 0;
+}
+
+.regularization-request-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.regularization-request-actions.inline-actions {
+  margin-bottom: 12px;
+}
+
+.regularization-approve-btn,
+.regularization-reject-btn {
+  flex: 1;
+}
+
+.regularization-approve-btn {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #166534;
+}
+
+.regularization-reject-btn {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #991b1b;
 }
 
 /* MODAL */
-.timesheet-modal-overlay {
+.timesheet-modal-overlay,
+.timesheet-form-overlay {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.72);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
   z-index: 999;
   display: flex;
   justify-content: center;
@@ -388,45 +761,59 @@
   padding: 20px;
 }
 
-.timesheet-modal {
-  width: 760px;
+.timesheet-modal,
+.timesheet-form-card {
+  width: 780px;
   max-width: 96vw;
   max-height: 90vh;
   overflow-y: auto;
   background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.34);
 }
 
-.modal-header {
-  background: linear-gradient(135deg, #0f172a, #1e3a8a);
-  color: white;
-  padding: 18px 22px;
-  border-radius: 20px 20px 0 0;
+.attendance-day-modal {
+  width: 880px;
+}
+
+.regularize-modal {
+  max-width: 540px;
+}
+
+.modal-header,
+.timesheet-form-header {
+  background: linear-gradient(135deg, #0b1220, #172554 55%, #1e3a8a);
+  color: #ffffff;
+  padding: 20px 24px;
+  border-radius: 24px 24px 0 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.modal-header h3 {
+.modal-header h3,
+.timesheet-form-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 21px;
+  font-weight: 900;
 }
 
-.modal-header p {
-  margin: 4px 0 0;
+.modal-header p,
+.timesheet-form-header p {
+  margin: 5px 0 0;
   color: #dbeafe;
   font-size: 13px;
 }
 
-.modal-header button {
-  border: none;
-  width: 36px;
-  height: 36px;
+.modal-header button,
+.timesheet-form-header button {
+  border: 0;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  color: white;
-  font-size: 24px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-size: 26px;
   cursor: pointer;
 }
 
@@ -434,474 +821,21 @@
   padding: 16px;
 }
 
-.modal-report {
-  margin-bottom: 12px;
-}
-
-/* RESPONSIVE */
-@media (max-width: 1200px) {
-  .timesheet-main-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .report-list {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* TIMESHEET FORM POPUP */
-.timesheet-form-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.72);
-  backdrop-filter: blur(6px);
-  z-index: 999;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
-.timesheet-form-card {
-  width: 720px;
-  max-width: 96vw;
-  max-height: 92vh;
-  overflow-y: auto;
-  background: #ffffff;
-  border-radius: 22px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
-}
-
-.timesheet-form-header {
-  background: linear-gradient(135deg, #0f172a, #1e3a8a);
-  color: #ffffff;
-  padding: 22px 26px;
-  border-radius: 22px 22px 0 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.timesheet-form-header h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-}
-
-.timesheet-form-header p {
-  margin: 5px 0 0;
-  color: #dbeafe;
-  font-size: 13px;
-}
-
-.timesheet-form-header button {
-  width: 38px;
-  height: 38px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
-  font-size: 28px;
-  cursor: pointer;
-}
-
-.timesheet-form {
-  padding: 24px 26px 26px;
-}
-
-.today-box {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-left: 5px solid #2563eb;
-  border-radius: 14px;
-  padding: 13px 15px;
-  margin-bottom: 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.today-box span {
-  font-size: 13px;
-  color: #475569;
-  font-weight: 800;
-}
-
-.today-box strong {
-  color: #1e3a8a;
-  font-size: 15px;
-}
-
-.timesheet-form-group {
-  margin-bottom: 16px;
-}
-
-.timesheet-form-group label {
-  display: block;
-  font-size: 13px;
-  font-weight: 800;
-  color: #334155;
-  margin-bottom: 7px;
-}
-
-.timesheet-form-group textarea {
-  width: 100%;
-  resize: vertical;
-  min-height: 95px;
-  padding: 13px 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  outline: none;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #111827;
-  background: #f8fafc;
-  box-sizing: border-box;
-}
-
-.timesheet-form-group textarea:focus {
-  border-color: #2563eb;
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
-}
-
-.timesheet-form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 18px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.ts-cancel-btn,
-.ts-submit-btn {
-  height: 44px;
-  padding: 0 22px;
-  border: none;
-  border-radius: 12px;
-  font-weight: 800;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.ts-cancel-btn {
-  background: #e5e7eb;
-  color: #111827;
-}
-
-.ts-submit-btn {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
-}
-
-.ts-submit-btn:disabled {
-  background: #cbd5e1;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-/* ================= MOBILE TIMESHEET ALIGNMENT ONLY ================= */
-@media (max-width: 768px) {
-  .timesheet-container {
-    padding: 10px;
-    border-radius: 0;
-  }
-
-  .timesheet-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding: 14px;
-    border-radius: 14px;
-  }
-
-  .timesheet-header h2 {
-    font-size: 20px;
-  }
-
-  .timesheet-header p {
-    font-size: 12px;
-  }
-
-  .fill-btn {
-    width: 100%;
-    height: 44px;
-  }
-
-  .timesheet-filter-card {
-    padding: 12px;
-    border-radius: 14px;
-  }
-
-  .filter-title h3 {
-    font-size: 16px;
-  }
-
-  .filter-title p {
-    font-size: 12px;
-  }
-
-  .timesheet-filter-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .timesheet-filter-grid .filter-field {
-    width: 100%;
-  }
-
-  .timesheet-filter-grid .filter-field select {
-    width: 100%;
-    height: 42px;
-  }
-
-  .timesheet-main-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .timesheet-left,
-  .timesheet-right {
-    width: 100%;
-  }
-
-  .section-heading {
-    padding: 12px;
-    gap: 10px;
-  }
-
-  .section-heading h3 {
-    font-size: 16px;
-  }
-
-  .section-heading span {
-    font-size: 11px;
-    white-space: nowrap;
-  }
-
-  .report-list {
-    grid-template-columns: 1fr;
-    padding: 10px;
-    gap: 10px;
-  }
-
-  .report-item {
-    padding: 12px;
-    border-radius: 14px;
-  }
-
-  .report-top {
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .report-item p {
-    font-size: 12px;
-    line-height: 1.45;
-  }
-
-  .calendar-legend {
-    justify-content: flex-start;
-    padding: 10px 12px 0;
-  }
-
-  .calendar-grid {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 6px;
-    padding: 12px;
-  }
-
-  .week-name {
-    width: 100%;
-    font-size: 10px;
-  }
-
-  .empty-day {
-    width: 100%;
-    height: 36px;
-  }
-
-  .calendar-day {
-    width: 100%;
-    height: 36px;
-    min-height: 36px;
-    border-radius: 12px;
-  }
-
-  .calendar-day strong {
-    font-size: 12px;
-  }
-
-  .updates-list {
-    padding: 10px;
-    gap: 8px;
-  }
-
-  .update-item {
-    padding: 11px;
-    border-radius: 12px;
-  }
-
-  .timesheet-modal-overlay {
-    padding: 0;
-    align-items: stretch;
-  }
-
-  .timesheet-modal {
-    width: 100vw;
-    max-width: 100vw;
-    height: 100vh;
-    max-height: 100vh;
-    border-radius: 0;
-  }
-
-  .modal-header {
-    border-radius: 0;
-    padding: 14px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-
-  .modal-header h3 {
-    font-size: 17px;
-  }
-
-  .modal-body {
-    padding: 12px;
-  }
-}
-.attendance-action-card {
-  background: linear-gradient(135deg, #ffffff, #f8fafc);
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 18px 20px;
-  margin-bottom: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
-}
-
-.attendance-action-card h3 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 18px;
-  font-weight: 900;
-}
-
-.attendance-action-card p {
-  margin: 5px 0 0;
-  color: #64748b;
-  font-size: 13px;
-}
-
-.attendance-action-buttons {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.attendance-checkin-btn,
-.attendance-checkout-btn,
-.attendance-regularize-btn,
-.calendar-regularize-btn {
-  border: 0;
-  border-radius: 12px;
-  padding: 11px 16px;
-  font-size: 13px;
-  font-weight: 900;
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.attendance-checkin-btn {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.attendance-checkout-btn {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.attendance-regularize-btn,
-.calendar-regularize-btn {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.attendance-checkin-btn:hover,
-.attendance-checkout-btn:hover,
-.attendance-regularize-btn:hover,
-.calendar-regularize-btn:hover {
-  transform: translateY(-1px);
-}
-
-.attendance-checkin-btn:disabled,
-.attendance-checkout-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.week-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 14px;
-  padding: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-}
-
-.week-pagination button {
-  border: 0;
-  border-radius: 10px;
-  background: #0f172a;
-  color: #ffffff;
-  padding: 9px 13px;
-  font-size: 12px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.week-pagination button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.week-pagination strong {
-  font-size: 13px;
-  color: #334155;
-  text-align: center;
-}
-
-.calendar-day.warning {
-  background: #fef3c7;
-  color: #92400e;
-  border-color: #f59e0b;
-}
-
-.dot.yellow {
-  background: #f59e0b;
-}
-
 .attendance-detail-box {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+}
+
+.employee-detail-box {
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .attendance-detail-box div {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 13px;
 }
 
@@ -920,15 +854,111 @@
   text-transform: capitalize;
 }
 
-.regularize-modal {
-  max-width: 520px;
+.attendance-warning-box {
+  margin: 12px 0;
+  padding: 13px 14px;
+  border-radius: 16px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
 }
 
-.regularize-form {
-  display: grid;
-  gap: 14px;
+.attendance-warning-box.danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
 }
 
+.attendance-warning-box.sunday {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.calendar-regularize-panel {
+  margin: 14px 0;
+  padding: 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 16px;
+}
+
+.calendar-regularize-panel p {
+  margin: 0 0 12px;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 800;
+}
+
+.calendar-regularize-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.modal-report {
+  margin-top: 12px;
+}
+
+/* FORM */
+.premium-timesheet-form-card {
+  width: 740px;
+}
+
+.timesheet-form-badge {
+  display: inline-flex;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.timesheet-form {
+  padding: 24px 26px 26px;
+}
+
+.today-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 5px solid #2563eb;
+  border-radius: 16px;
+  padding: 14px 15px;
+  margin-bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.today-box span {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.today-box strong {
+  color: #1e3a8a;
+  font-size: 15px;
+}
+
+.today-box small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.timesheet-form-group {
+  margin-bottom: 16px;
+}
+
+.timesheet-form-group label,
 .regularize-field label {
   display: block;
   font-size: 13px;
@@ -937,15 +967,24 @@
   margin-bottom: 7px;
 }
 
+.timesheet-form-group textarea,
 .regularize-field input,
 .regularize-field textarea {
   width: 100%;
+  padding: 13px 14px;
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 11px 12px;
-  font-size: 14px;
+  border-radius: 16px;
   outline: none;
-  background: #ffffff;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111827;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.timesheet-form-group textarea {
+  resize: vertical;
+  min-height: 95px;
 }
 
 .regularize-field textarea {
@@ -953,46 +992,92 @@
   resize: vertical;
 }
 
+.timesheet-form-group textarea:focus,
 .regularize-field input:focus,
 .regularize-field textarea:focus {
   border-color: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13);
 }
 
+.timesheet-form-note {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.timesheet-form-actions,
 .regularize-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e7eb;
 }
 
-.regularize-cancel-btn,
-.regularize-submit-btn {
-  border: 0;
-  border-radius: 12px;
-  padding: 11px 16px;
-  font-size: 13px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
+.ts-cancel-btn,
 .regularize-cancel-btn {
-  background: #e2e8f0;
-  color: #334155;
+  background: #e5e7eb;
+  color: #111827;
 }
 
+.ts-submit-btn,
 .regularize-submit-btn {
-  background: #0f172a;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
   color: #ffffff;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24);
 }
 
-.regularize-cancel-btn:disabled,
-.regularize-submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.regularize-form {
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1200px) {
+  .timesheet-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-list,
+  .regularization-request-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-detail-box {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
+  .timesheet-container {
+    padding: 10px;
+    border-radius: 0;
+  }
+
+  .timesheet-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .timesheet-header h2 {
+    font-size: 20px;
+  }
+
+  .timesheet-header-actions,
+  .fill-btn,
+  .attendance-download-btn {
+    width: 100%;
+  }
+
   .attendance-action-card {
     flex-direction: column;
     align-items: stretch;
@@ -1000,16 +1085,30 @@
   }
 
   .attendance-action-buttons {
-    width: 100%;
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .attendance-checkin-btn,
-  .attendance-checkout-btn,
-  .attendance-regularize-btn {
+  .attendance-action-buttons button {
     width: 100%;
     min-height: 44px;
+  }
+
+  .timesheet-filter-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .filter-field select {
+    width: 100%;
+  }
+
+  .section-heading {
+    padding: 13px;
+  }
+
+  .section-heading h3 {
+    font-size: 16px;
   }
 
   .week-pagination {
@@ -1022,48 +1121,134 @@
     min-height: 42px;
   }
 
-  .attendance-detail-box {
+  .report-list {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .report-top {
+    flex-direction: column;
+  }
+
+  .calendar-legend {
+    justify-content: flex-start;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    padding: 12px;
+  }
+
+  .empty-day,
+  .calendar-day {
+    width: 100%;
+    height: 38px;
+    min-height: 38px;
+    border-radius: 12px;
+  }
+
+  .timesheet-modal-overlay,
+  .timesheet-form-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .timesheet-modal,
+  .timesheet-form-card,
+  .attendance-day-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-header,
+  .timesheet-form-header {
+    border-radius: 0;
+    padding: 15px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .modal-header h3,
+  .timesheet-form-header h2 {
+    font-size: 18px;
+  }
+
+  .modal-body,
+  .timesheet-form {
+    padding: 12px;
+  }
+
+  .attendance-detail-box,
+  .employee-detail-box {
     grid-template-columns: 1fr;
   }
 
+  .regularization-request-actions,
+  .calendar-regularize-actions,
+  .timesheet-form-actions,
   .regularize-actions {
     flex-direction: column;
   }
 
-  .regularize-cancel-btn,
-  .regularize-submit-btn {
+  .regularization-request-actions button,
+  .calendar-regularize-actions button,
+  .timesheet-form-actions button,
+  .regularize-actions button {
     width: 100%;
     min-height: 44px;
   }
-}
-.calendar-regularize-panel {
-  margin: 14px 0;
-  padding: 14px;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  border-radius: 14px;
-}
 
-.calendar-regularize-panel p {
-  margin: 0 0 12px;
-  color: #9a3412;
-  font-size: 13px;
-  line-height: 1.6;
-  font-weight: 700;
-}
+  .attendance-admin-table {
+    min-width: 700px;
+  }
 
-.calendar-regularize-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-@media (max-width: 768px) {
-  .calendar-regularize-actions {
+  .today-box {
     flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
+}
+/* ===== Attendance hierarchy + Excel/modal polish patch ===== */
 
-  .calendar-regularize-actions .calendar-regularize-btn {
-    width: 100%;
-  }
+.employee-attendance-day-card {
+  margin-bottom: 16px;
+}
+
+.regularization-inline-box {
+  margin: 12px 0;
+}
+
+.attendance-day-modal .empty-state {
+  margin-top: 12px;
+}
+
+.attendance-health-pill.complete {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.attendance-health-pill.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.attendance-health-pill.short {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.attendance-health-pill.missing {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.attendance-warning-box.sunday {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
 }
