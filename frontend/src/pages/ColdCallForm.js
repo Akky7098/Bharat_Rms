@@ -2,12 +2,21 @@ import React, { useState } from "react";
 import { createColdCall } from "../services/coldCallService";
 import "./ColdCallForm.css";
 
+const getTodayDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const ColdCallForm = ({ onClose, refresh }) => {
   const [loading, setLoading] = useState(false);
+  const todayDate = getTodayDate();
 
   const [form, setForm] = useState({
     activityType: "",
-    date: "",
+    date: todayDate,
     companyName: "",
     contactPersonName: "",
     contactPersonNumber: "",
@@ -15,40 +24,37 @@ const ColdCallForm = ({ onClose, refresh }) => {
 
   const [error, setError] = useState("");
 
-  // ✅ HANDLE CHANGE (number restriction added)
- const handleChange = (e) => {
-  const { name, value } = e.target;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
 
-  let finalValue = value;
+    let finalValue = value;
 
-  if (name === "contactPersonNumber") {
-    // allow paste, remove all non-digits
-    finalValue = value.replace(/\D/g, "").slice(0, 10);
-  }
-
-  setForm((prev) => ({
-    ...prev,
-    [name]: finalValue,
-  }));
-
-  if (name === "contactPersonNumber") {
-    if (finalValue.length === 0) {
-      setError("");
-    } else if (!/^[6-9]/.test(finalValue)) {
-      setError("Number must start from 6-9");
-    } else if (finalValue.length < 10) {
-      setError("Enter exactly 10 digits");
-    } else {
-      setError("");
+    if (name === "contactPersonNumber") {
+      finalValue = value.replace(/\D/g, "").slice(0, 10);
     }
-  }
-};
-  // ✅ VALIDATE BEFORE SUBMIT
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: finalValue,
+    }));
+
+    if (name === "contactPersonNumber") {
+      if (finalValue.length === 0) {
+        setError("");
+      } else if (!/^[6-9]/.test(finalValue)) {
+        setError("Number must start from 6-9");
+      } else if (finalValue.length < 10) {
+        setError("Enter exactly 10 digits");
+      } else {
+        setError("");
+      }
+    }
+  };
+
   const validate = () => {
     if (!form.activityType) return "Select activity type";
-    if (!form.date) return "Select date";
-    if (!form.companyName) return "Enter company name";
-    if (!form.contactPersonName) return "Enter contact person";
+    if (!form.companyName.trim()) return "Enter company name";
+    if (!form.contactPersonName.trim()) return "Enter contact person";
 
     if (!/^[6-9]\d{9}$/.test(form.contactPersonNumber)) {
       setError("Enter valid 10 digit mobile number");
@@ -67,10 +73,12 @@ const ColdCallForm = ({ onClose, refresh }) => {
     try {
       setLoading(true);
 
-      await createColdCall(form);
+      await createColdCall({
+        ...form,
+        date: todayDate,
+      });
 
       alert("Saved successfully");
-
       refresh();
       onClose();
     } catch (err) {
@@ -83,27 +91,26 @@ const ColdCallForm = ({ onClose, refresh }) => {
   return (
     <div className="cold-modal-overlay">
       <div className="cold-form-card">
-
         <div className="cold-form-header">
           <div>
             <h2>New Entry</h2>
             <p>Log call / visit / email activity</p>
           </div>
 
-          <button onClick={onClose} className="close-btn">
+          <button type="button" onClick={onClose} className="close-btn">
             ×
           </button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="cold-form-grid">
-
             <div className="form-group">
               <label>Activity</label>
               <select
                 name="activityType"
                 value={form.activityType}
                 onChange={handleChange}
+                disabled={loading}
               >
                 <option value="">Select</option>
                 <option value="calling">Calling</option>
@@ -112,14 +119,17 @@ const ColdCallForm = ({ onClose, refresh }) => {
               </select>
             </div>
 
-            <div className="form-group">
+            <div className="form-group cold-date-disabled-group">
               <label>Date</label>
               <input
                 type="date"
                 name="date"
-                value={form.date}
-                onChange={handleChange}
+                value={todayDate}
+                disabled
+                readOnly
+                className="cold-disabled-date"
               />
+              <small>Auto-filled with today’s date</small>
             </div>
 
             <div className="form-group full-width">
@@ -129,6 +139,7 @@ const ColdCallForm = ({ onClose, refresh }) => {
                 placeholder="Enter company name"
                 value={form.companyName}
                 onChange={handleChange}
+                disabled={loading}
               />
             </div>
 
@@ -139,6 +150,7 @@ const ColdCallForm = ({ onClose, refresh }) => {
                 placeholder="Enter person name"
                 value={form.contactPersonName}
                 onChange={handleChange}
+                disabled={loading}
               />
             </div>
 
@@ -150,21 +162,11 @@ const ColdCallForm = ({ onClose, refresh }) => {
                 value={form.contactPersonNumber}
                 onChange={handleChange}
                 maxLength={10}
+                disabled={loading}
               />
 
-              {/* ✅ ERROR BELOW FIELD */}
-              {error && (
-                <span style={{
-                  color: "#dc2626",
-                  fontSize: "12px",
-                  marginTop: "4px",
-                  display: "block"
-                }}>
-                  {error}
-                </span>
-              )}
+              {error && <span className="cold-field-error">{error}</span>}
             </div>
-
           </div>
 
           <div className="form-actions">
@@ -172,15 +174,12 @@ const ColdCallForm = ({ onClose, refresh }) => {
               type="button"
               className="cancel-btn"
               onClick={onClose}
+              disabled={loading}
             >
               Cancel
             </button>
 
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={loading}
-            >
+            <button type="submit" className="submit-btn" disabled={loading}>
               {loading ? "Saving..." : "Save"}
             </button>
           </div>

@@ -1091,11 +1091,17 @@ const getAttendanceRecordsByDay = useCallback(
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
 
-    link.href = url;
-    link.download = `attendance-payroll-${months[selectedMonth]}-${selectedYear}.xls`;
-    link.click();
+   link.href = url;
+link.download = `attendance-payroll-${months[selectedMonth]}-${selectedYear}.xls`;
+link.style.display = "none";
 
-    URL.revokeObjectURL(url);
+document.body.appendChild(link);
+link.click();
+
+setTimeout(() => {
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}, 300);
   };
 
   return (

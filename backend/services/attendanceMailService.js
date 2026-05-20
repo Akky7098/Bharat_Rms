@@ -103,6 +103,14 @@ const sendMissedCheckoutMailToUser = async (attendance) => {
 };
 
 const sendRegularizationRequestMailToAdmin = async (attendance) => {
+  const backendUrl = (process.env.BACKEND_URL || "http://localhost:5000").replace(
+    /\/$/,
+    ""
+  );
+
+  const approveUrl = `${backendUrl}/api/attendance/${attendance._id}/regularize/approve`;
+  const rejectUrl = `${backendUrl}/api/attendance/${attendance._id}/regularize/reject`;
+
   return transporter.sendMail({
     from: `"${COMPANY.name}" <${process.env.ADMIN_EMAIL}>`,
     to: process.env.ADMIN_EMAIL,
@@ -124,6 +132,32 @@ const sendRegularizationRequestMailToAdmin = async (attendance) => {
           ${infoRow("Requested Check-in", formatTime(attendance.regularization?.requestedCheckIn))}
           ${infoRow("Requested Check-out", formatTime(attendance.regularization?.requestedCheckOut))}
         </table>
+
+        <div style="margin-top:22px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:16px;padding:16px;">
+          <div style="font-size:14px;font-weight:900;color:#0f172a;margin-bottom:12px;">
+            Quick Action
+          </div>
+
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td width="50%" style="padding:6px;">
+                <a href="${approveUrl}" style="display:block;background:#16a34a;color:#ffffff;text-decoration:none;text-align:center;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:900;">
+                  Approve
+                </a>
+              </td>
+
+              <td width="50%" style="padding:6px;">
+                <a href="${rejectUrl}" style="display:block;background:#dc2626;color:#ffffff;text-decoration:none;text-align:center;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:900;">
+                  Reject
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <div style="margin-top:10px;font-size:12px;line-height:1.5;color:#64748b;">
+            If the link does not work, please approve/reject from the RMS attendance panel.
+          </div>
+        </div>
       `,
     }),
   });

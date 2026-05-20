@@ -6,9 +6,6 @@ const COMPANY = {
   shortName: "Bharat Special Steels",
   address:
     "107, First Floor, SSR Corporate Tower, near NHPC Metro, Faridabad, Haryana 121003",
-
-  // Put this in .env:
-  // COMPANY_LOGO_URL=https://dashboard.bharatspecialsteels.com/logo.png
   logoUrl:
     process.env.COMPANY_LOGO_URL ||
     "https://dashboard.bharatspecialsteels.com/logo.png",
@@ -24,7 +21,6 @@ const formatCurrency = (amount) => {
 
 const formatDate = (date) => {
   if (!date) return "-";
-
   return new Date(date).toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -95,34 +91,18 @@ const getBadgeTheme = (badge) => {
   const value = String(badge || "").toLowerCase();
 
   if (value.includes("partial")) {
-    return {
-      bg: "#fff7ed",
-      border: "#fed7aa",
-      color: "#9a3412",
-    };
+    return { bg: "#fff7ed", border: "#fed7aa", color: "#9a3412" };
   }
 
   if (value.includes("paid") || value.includes("complete")) {
-    return {
-      bg: "#ecfdf5",
-      border: "#bbf7d0",
-      color: "#166534",
-    };
+    return { bg: "#ecfdf5", border: "#bbf7d0", color: "#166534" };
   }
 
   if (value.includes("overdue")) {
-    return {
-      bg: "#fef2f2",
-      border: "#fecaca",
-      color: "#991b1b",
-    };
+    return { bg: "#fef2f2", border: "#fecaca", color: "#991b1b" };
   }
 
-  return {
-    bg: "#ecfeff",
-    border: "#99f6e4",
-    color: "#0f766e",
-  };
+  return { bg: "#ecfeff", border: "#99f6e4", color: "#0f766e" };
 };
 
 const baseEmailTemplate = ({
@@ -140,6 +120,7 @@ const baseEmailTemplate = ({
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
     @media only screen and (max-width: 620px) {
       .email-outer-padding {
@@ -155,62 +136,97 @@ const baseEmailTemplate = ({
       }
 
       .brand-header {
-        padding: 18px 16px !important;
+        padding: 13px 12px !important;
+      }
+
+      .desktop-badge-cell {
+        display: none !important;
+        width: 0 !important;
+        overflow: hidden !important;
+      }
+
+      .mobile-badge-row {
+        display: table-row !important;
+      }
+
+      .mobile-badge-cell {
+        display: table-cell !important;
+        padding-top: 9px !important;
+      }
+
+      .brand-logo-cell {
+        width: 42px !important;
+      }
+
+      .brand-logo-box {
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 9px !important;
+      }
+
+      .brand-logo-img {
+        width: 29px !important;
+        max-width: 29px !important;
       }
 
       .brand-name {
-        font-size: 18px !important;
-        line-height: 22px !important;
+        font-size: 15px !important;
+        line-height: 18px !important;
         white-space: nowrap !important;
       }
 
       .brand-subtitle {
-        font-size: 11px !important;
+        font-size: 9px !important;
+        line-height: 12px !important;
+      }
+
+      .badge-pill {
+        font-size: 9px !important;
+        line-height: 12px !important;
+        padding: 6px 8px !important;
+        white-space: nowrap !important;
       }
 
       .email-title-section {
-        padding: 24px 18px 14px !important;
+        padding: 18px 13px 8px !important;
       }
 
       .email-title {
-        font-size: 27px !important;
-        line-height: 34px !important;
+        font-size: 23px !important;
+        line-height: 29px !important;
       }
 
       .email-subtitle {
-        font-size: 14px !important;
-        line-height: 21px !important;
+        font-size: 12px !important;
+        line-height: 18px !important;
       }
 
       .email-content {
-        padding: 0 18px 24px !important;
-      }
-
-      .mobile-block {
-        display: block !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
+        padding: 0 13px 18px !important;
       }
 
       .mobile-card-padding {
-        padding: 6px 0 !important;
+        padding: 4px !important;
+      }
+
+      .card-box {
+        padding: 10px !important;
+        min-height: 52px !important;
+        border-radius: 12px !important;
+      }
+
+      .amount-box {
+        padding: 11px !important;
+        border-radius: 12px !important;
       }
 
       .amount-value {
-        font-size: 22px !important;
+        font-size: 18px !important;
+        line-height: 23px !important;
       }
 
       .email-footer {
-        padding: 18px !important;
-      }
-
-      .badge-cell {
-        text-align: left !important;
-        padding-top: 12px !important;
-      }
-
-      .brand-logo-cell {
-        width: 58px !important;
+        padding: 14px 13px !important;
       }
     }
   </style>
@@ -221,79 +237,87 @@ const baseEmailTemplate = ({
     ${preHeader}
   </div>
 
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef2f7;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef2f7;margin:0;padding:0;">
     <tr>
-      <td align="center" class="email-outer-padding" style="padding:28px 12px;">
+      <td align="center" class="email-outer-padding" style="padding:14px 6px;">
 
-        <table width="600" cellpadding="0" cellspacing="0" border="0" class="email-shell" style="width:600px;max-width:600px;background:#ffffff;border-radius:22px;overflow:hidden;border:1px solid #dfe7f1;box-shadow:0 18px 48px rgba(15,23,42,0.12);">
+        <table width="760" cellpadding="0" cellspacing="0" border="0" class="email-shell" style="width:760px;max-width:760px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dbe3ee;box-shadow:0 12px 34px rgba(15,23,42,0.10);">
 
-          <!-- HEADER -->
           <tr>
-            <td class="brand-header" style="padding:18px 22px;background:#0f172a;border-bottom:1px solid #1e293b;">
+            <td class="brand-header" style="padding:14px 18px;background:#0f172a;border-bottom:1px solid #1e293b;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td class="brand-logo-cell" width="58" style="width:58px;vertical-align:middle;">
-                    <table width="48" height="48" cellpadding="0" cellspacing="0" border="0" style="width:48px;height:48px;background:#ffffff;border-radius:12px;border:1px solid #334155;">
+                  <td class="brand-logo-cell" width="48" style="width:48px;vertical-align:middle;">
+                    <table width="40" height="40" cellpadding="0" cellspacing="0" border="0" class="brand-logo-box" style="width:40px;height:40px;background:#ffffff;border-radius:10px;border:1px solid #334155;">
                       <tr>
                         <td align="center" valign="middle">
-                          <img src="${COMPANY.logoUrl}" width="40" alt="${COMPANY.shortName}" style="display:block;width:40px;max-width:40px;height:auto;border:0;outline:none;text-decoration:none;" />
+                          <img class="brand-logo-img" src="${COMPANY.logoUrl}" width="32" alt="${COMPANY.shortName}" style="display:block;width:32px;max-width:32px;height:auto;border:0;outline:none;text-decoration:none;" />
                         </td>
                       </tr>
                     </table>
                   </td>
 
                   <td style="vertical-align:middle;">
-                    <div class="brand-name" style="font-size:20px;line-height:24px;font-weight:900;color:#ffffff;white-space:nowrap;">
+                    <div class="brand-name" style="font-size:18px;line-height:22px;font-weight:900;color:#ffffff;white-space:nowrap;">
                       ${COMPANY.shortName}
                     </div>
-                    <div class="brand-subtitle" style="font-size:12px;line-height:18px;color:#cbd5e1;margin-top:2px;">
+                    <div class="brand-subtitle" style="font-size:11px;line-height:15px;color:#cbd5e1;margin-top:1px;">
                       Automated Customer Notification
                     </div>
                   </td>
 
                   ${
                     badge
-                      ? `<td class="badge-cell" align="right" style="vertical-align:middle;">
-                          <span style="display:inline-block;background:${badgeTheme.bg};border:1px solid ${badgeTheme.border};color:${badgeTheme.color};border-radius:999px;padding:8px 13px;font-size:11px;line-height:14px;font-weight:900;white-space:nowrap;">
+                      ? `<td class="desktop-badge-cell" align="right" style="vertical-align:middle;width:1%;white-space:nowrap;">
+                          <span class="badge-pill" style="display:inline-block;background:${badgeTheme.bg};border:1px solid ${badgeTheme.border};color:${badgeTheme.color};border-radius:999px;padding:7px 10px;font-size:10px;line-height:13px;font-weight:900;white-space:nowrap;">
                             ${badge}
                           </span>
                         </td>`
                       : ""
                   }
                 </tr>
+
+                ${
+                  badge
+                    ? `<tr class="mobile-badge-row" style="display:none;">
+                        <td class="mobile-badge-cell" colspan="3" style="display:none;">
+                          <span class="badge-pill" style="display:inline-block;background:${badgeTheme.bg};border:1px solid ${badgeTheme.border};color:${badgeTheme.color};border-radius:999px;padding:7px 10px;font-size:10px;line-height:13px;font-weight:900;white-space:nowrap;">
+                            ${badge}
+                          </span>
+                        </td>
+                      </tr>`
+                    : ""
+                }
               </table>
             </td>
           </tr>
 
-          <!-- TITLE -->
           <tr>
-            <td class="email-title-section" style="padding:28px 24px 16px;background:#ffffff;">
-              <div class="email-title" style="font-size:30px;line-height:38px;font-weight:900;color:#0f172a;letter-spacing:-0.6px;">
+            <td class="email-title-section" style="padding:22px 22px 8px;background:#ffffff;">
+              <div class="email-title" style="font-size:28px;line-height:34px;font-weight:900;color:#0f172a;letter-spacing:-0.4px;">
                 ${title}
               </div>
-              <div class="email-subtitle" style="margin-top:7px;font-size:14px;line-height:22px;color:#64748b;">
+              <div class="email-subtitle" style="margin-top:5px;font-size:14px;line-height:20px;color:#64748b;">
                 ${subtitle}
               </div>
             </td>
           </tr>
 
-          <!-- CONTENT -->
           <tr>
-            <td class="email-content" style="padding:0 24px 28px;">
+            <td class="email-content" style="padding:0 22px 22px;">
               ${bodyContent}
             </td>
           </tr>
 
-          <!-- FOOTER -->
           <tr>
-            <td class="email-footer" style="padding:20px 24px;background:#f8fafc;border-top:1px solid #e5e7eb;">
-              <div style="font-size:14px;line-height:20px;font-weight:900;color:#0f172a;">
+            <td class="email-footer" style="padding:16px 22px;background:#f8fafc;border-top:1px solid #e5e7eb;">
+              <div style="font-size:14px;line-height:19px;font-weight:900;color:#0f172a;">
                 ${COMPANY.name}
               </div>
-              <div style="margin-top:5px;font-size:12px;line-height:19px;color:#64748b;">
+              <div style="margin-top:4px;font-size:12px;line-height:17px;color:#64748b;">
                 ${COMPANY.address}
               </div>
-              <div style="margin-top:12px;font-size:11px;line-height:17px;color:#94a3b8;">
+              <div style="margin-top:9px;font-size:11px;line-height:15px;color:#94a3b8;">
                 This is an automated notification from Bharat RMS. Please do not reply directly to this email.
               </div>
             </td>
@@ -311,7 +335,7 @@ const baseEmailTemplate = ({
 
 const sectionTitle = (title) => {
   return `
-<div style="margin:24px 0 10px;font-size:13px;line-height:18px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:.45px;">
+<div style="margin:18px 0 7px;font-size:12px;line-height:16px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:.4px;">
   ${title}
 </div>
 `;
@@ -319,12 +343,12 @@ const sectionTitle = (title) => {
 
 const infoCard = (label, value, color = "#111827") => {
   return `
-<td width="50%" class="mobile-block mobile-card-padding" style="padding:6px;vertical-align:top;">
-  <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:16px;padding:15px;min-height:68px;box-sizing:border-box;">
-    <div style="font-size:10px;line-height:14px;letter-spacing:.5px;text-transform:uppercase;font-weight:900;color:#64748b;">
+<td width="50%" class="mobile-card-padding" style="padding:4px;vertical-align:top;">
+  <div class="card-box" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:13px;padding:11px;min-height:54px;box-sizing:border-box;">
+    <div style="font-size:9px;line-height:12px;letter-spacing:.4px;text-transform:uppercase;font-weight:900;color:#64748b;">
       ${label}
     </div>
-    <div style="margin-top:7px;font-size:15px;line-height:22px;font-weight:900;color:${color};word-break:break-word;">
+    <div style="margin-top:5px;font-size:13px;line-height:18px;font-weight:900;color:${color};word-break:break-word;">
       ${value || "-"}
     </div>
   </div>
@@ -334,12 +358,12 @@ const infoCard = (label, value, color = "#111827") => {
 
 const amountCard = (label, value, bg, border, color) => {
   return `
-<td width="50%" class="mobile-block mobile-card-padding" style="padding:6px;vertical-align:top;">
-  <div style="background:${bg};border:1px solid ${border};border-radius:17px;padding:16px;box-sizing:border-box;">
-    <div style="font-size:10px;line-height:14px;letter-spacing:.5px;text-transform:uppercase;font-weight:900;color:${color};">
+<td width="50%" class="mobile-card-padding" style="padding:4px;vertical-align:top;">
+  <div class="amount-box" style="background:${bg};border:1px solid ${border};border-radius:13px;padding:12px;box-sizing:border-box;">
+    <div style="font-size:9px;line-height:12px;letter-spacing:.4px;text-transform:uppercase;font-weight:900;color:${color};">
       ${label}
     </div>
-    <div class="amount-value" style="margin-top:8px;font-size:24px;line-height:30px;font-weight:900;color:${color};word-break:break-word;">
+    <div class="amount-value" style="margin-top:6px;font-size:20px;line-height:25px;font-weight:900;color:${color};word-break:break-word;">
       ${value}
     </div>
   </div>
@@ -354,7 +378,7 @@ const messageBox = (
   color = "#334155"
 ) => {
   return `
-<div style="background:${bg};border:1px solid ${border};border-radius:18px;padding:17px 18px;font-size:14px;line-height:23px;color:${color};">
+<div style="background:${bg};border:1px solid ${border};border-radius:14px;padding:13px 14px;font-size:13px;line-height:21px;color:${color};">
   ${html}
 </div>
 `;
@@ -362,7 +386,7 @@ const messageBox = (
 
 const attachmentBox = (text) => {
   return `
-<div style="margin-top:18px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:15px 16px;font-size:13px;line-height:21px;color:#475569;">
+<div style="margin-top:13px;background:#ffffff;border:1px solid #e5e7eb;border-radius:13px;padding:11px 13px;font-size:12px;line-height:19px;color:#475569;">
   <strong style="color:#0f172a;">Attachment:</strong> ${text}
 </div>
 `;
@@ -537,7 +561,7 @@ const buildPaymentUpdateTemplate = (dispatch, payment) => {
 
       ${
         payment.remark
-          ? `<div style="margin-top:18px;">
+          ? `<div style="margin-top:13px;">
               ${messageBox(
                 `<strong>Remark:</strong> ${payment.remark}`,
                 "#ffffff",
@@ -548,7 +572,7 @@ const buildPaymentUpdateTemplate = (dispatch, payment) => {
           : ""
       }
 
-      <div style="margin-top:18px;">
+      <div style="margin-top:13px;">
         ${messageBox(
           isFullyPaid
             ? "This invoice is now marked as fully paid in our records."

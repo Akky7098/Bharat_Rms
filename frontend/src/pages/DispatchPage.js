@@ -255,10 +255,50 @@ const DispatchPage = () => {
   };
 
   const changePage = (page) => {
+    const safePage = Number(page);
+
+    if (
+      !safePage ||
+      safePage < 1 ||
+      safePage > Number(pagination?.totalPages || 1)
+    ) {
+      return;
+    }
+
     setFilters((prev) => ({
       ...prev,
-      page,
+      page: safePage,
     }));
+  };
+
+  const getPageNumbers = () => {
+    const total = Number(pagination?.totalPages) || 1;
+    const current = Number(pagination?.currentPage) || 1;
+
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const pages = [1];
+
+    if (current > 4) {
+      pages.push("...");
+    }
+
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+
+    for (let page = start; page <= end; page++) {
+      pages.push(page);
+    }
+
+    if (current < total - 3) {
+      pages.push("...");
+    }
+
+    pages.push(total);
+
+    return pages;
   };
 
   const renderDocuments = (item) => {
@@ -649,27 +689,51 @@ const DispatchPage = () => {
           )}
         </div>
 
-        {pagination && pagination.totalPages > 1 && (
+        {pagination && Number(pagination.totalRecords) > 0 && (
           <div className="dispatch-pagination">
             <button
               type="button"
-              disabled={pagination.currentPage <= 1}
-              onClick={() => changePage(pagination.currentPage - 1)}
+              onClick={() => changePage(Number(pagination.currentPage) - 1)}
+              disabled={Number(pagination.currentPage) <= 1}
             >
-              Previous
+              Prev
             </button>
 
-            <span>
-              Page {pagination.currentPage} of {pagination.totalPages}
-            </span>
+            <div className="dispatch-page-numbers">
+              {getPageNumbers().map((p, i) =>
+                p === "..." ? (
+                  <span key={`dots-${i}`}>...</span>
+                ) : (
+                  <button
+                    key={`${p}-${i}`}
+                    type="button"
+                    className={
+                      Number(pagination.currentPage) === Number(p)
+                        ? "dispatch-active-page"
+                        : ""
+                    }
+                    onClick={() => changePage(p)}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+            </div>
 
             <button
               type="button"
-              disabled={pagination.currentPage >= pagination.totalPages}
-              onClick={() => changePage(pagination.currentPage + 1)}
+              onClick={() => changePage(Number(pagination.currentPage) + 1)}
+              disabled={
+                Number(pagination.currentPage) >=
+                Number(pagination.totalPages || 1)
+              }
             >
               Next
             </button>
+
+            <span className="dispatch-total-records">
+              Total: {pagination.totalRecords}
+            </span>
           </div>
         )}
       </div>
@@ -717,24 +781,28 @@ const DispatchPage = () => {
 
                 <div className="dispatch-field">
                   <label>Dispatch Status</label>
-                 <select
-  value={paymentForm.dispatchStatus}
-  onChange={(e) =>
-    setPaymentForm((prev) => ({
-      ...prev,
-      dispatchStatus: e.target.value,
-    }))
-  }
-  disabled={paymentUpdating || paymentModal?.dispatchStatus === "delivered"}
->
-  <option value="dispatched">Dispatched</option>
-  <option value="delivered">Delivered</option>
-</select>
-{paymentModal?.dispatchStatus === "delivered" && (
-  <small className="dispatch-lock-note">
-    Delivery status is locked. Payment can still be updated.
-  </small>
-)}
+                  <select
+                    value={paymentForm.dispatchStatus}
+                    onChange={(e) =>
+                      setPaymentForm((prev) => ({
+                        ...prev,
+                        dispatchStatus: e.target.value,
+                      }))
+                    }
+                    disabled={
+                      paymentUpdating ||
+                      paymentModal?.dispatchStatus === "delivered"
+                    }
+                  >
+                    <option value="dispatched">Dispatched</option>
+                    <option value="delivered">Delivered</option>
+                  </select>
+
+                  {paymentModal?.dispatchStatus === "delivered" && (
+                    <small className="dispatch-lock-note">
+                      Delivery status is locked. Payment can still be updated.
+                    </small>
+                  )}
                 </div>
 
                 <div className="dispatch-field dispatch-full">

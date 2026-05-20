@@ -103,23 +103,36 @@ const ColdCallList = () => {
   };
 
   const getPageNumbers = () => {
-    const total = pagination.totalPages || 1;
-    const current = pagination.currentPage || 1;
+  const total = Number(pagination.totalPages) || 1;
+  const current = Number(pagination.currentPage) || 1;
 
-    if (total <= 7) {
-      return Array.from({ length: total }, (_, i) => i + 1);
-    }
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
 
-    if (current <= 4) {
-      return [1, 2, 3, 4, 5, "...", total];
-    }
+  const pages = [];
 
-    if (current >= total - 3) {
-      return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
-    }
+  pages.push(1);
 
-    return [1, "...", current - 1, current, current + 1, "...", total];
-  };
+  if (current > 4) {
+    pages.push("...");
+  }
+
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+
+  for (let page = start; page <= end; page++) {
+    pages.push(page);
+  }
+
+  if (current < total - 3) {
+    pages.push("...");
+  }
+
+  pages.push(total);
+
+  return pages;
+};
 
   const formatDate = (date) =>
     date ? new Date(date).toLocaleDateString() : "-";
@@ -307,12 +320,12 @@ const ColdCallList = () => {
               <span key={i}>...</span>
             ) : (
               <button
-                key={p}
-                className={pagination.currentPage === p ? "active-page" : ""}
-                onClick={() => goToPage(p)}
-              >
-                {p}
-              </button>
+  key={`${p}-${i}`}
+  className={Number(pagination.currentPage) === p ? "active-page" : ""}
+  onClick={() => goToPage(p)}
+>
+  {p}
+</button>
             )
           )}
         </div>
