@@ -10,7 +10,7 @@ let latestQr = null;
 
 const whatsappSessionPath =
   process.env.WHATSAPP_SESSION_PATH ||
-  "/home/u607090171/whatsapp-session";
+  path.join(process.env.HOME || "/home/u607090171", "whatsapp-session");
 
 const ensureSessionFolder = () => {
   try {
@@ -18,13 +18,16 @@ const ensureSessionFolder = () => {
       fs.mkdirSync(whatsappSessionPath, { recursive: true });
     }
 
+    const testFile = path.join(whatsappSessionPath, "_session_write_test.txt");
+    fs.writeFileSync(testFile, "ok");
+
     console.log("WHATSAPP SESSION PATH =>", whatsappSessionPath);
     console.log("WHATSAPP SESSION EXISTS =>", fs.existsSync(whatsappSessionPath));
+    console.log("WHATSAPP SESSION WRITE OK =>", fs.existsSync(testFile));
   } catch (error) {
     console.log("WHATSAPP SESSION FOLDER ERROR =>", error.message);
   }
 };
-
 const initWhatsappClient = () => {
   if (whatsappClient) return whatsappClient;
 
