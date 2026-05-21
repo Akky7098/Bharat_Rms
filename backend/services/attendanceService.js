@@ -49,7 +49,6 @@ const getWorkMode = async (user) => {
     "office"
   );
 };
-
 const buildLocationObject = async (body, workMode) => {
   const latitude = Number(body.latitude);
   const longitude = Number(body.longitude);
@@ -63,7 +62,11 @@ const buildLocationObject = async (body, workMode) => {
     throw new Error("Location permission is required to mark attendance.");
   }
 
-  const locationAddress = await reverseGeocode(latitude, longitude);
+  let locationAddress = "";
+
+  if (workMode === "work_from_home") {
+    locationAddress = await reverseGeocode(latitude, longitude);
+  }
 
   if (workMode === "work_from_home") {
     return {
@@ -91,7 +94,10 @@ const buildLocationObject = async (body, workMode) => {
     ipAddress,
     userAgent,
     deviceType,
-    locationAddress,
+
+    // Keep office location hidden in frontend, but save blank to avoid extra API load.
+    locationAddress: "",
+
     remark: body.remark || "",
   };
 };
@@ -113,7 +119,7 @@ const checkIn = async (body, user) => {
     throw new Error("You have already checked in today.");
   }
 
-  const checkInData = buildLocationObject(body, workMode);
+  const checkInData = await buildLocationObject(body, workMode);
 
   // Existing office rule remains strict.
   if (workMode === "office" && !checkInData.isWithinOffice) {
@@ -176,7 +182,7 @@ const checkOut = async (body, user) => {
     throw new Error("You have already checked out today.");
   }
 
-  const checkOutData = buildLocationObject(body, workMode);
+  const checkOutData = await buildLocationObject(body, workMode);
 
   // Existing office rule remains strict.
   if (workMode === "office" && !checkOutData.isWithinOffice) {

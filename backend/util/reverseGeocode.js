@@ -4,24 +4,34 @@ const reverseGeocode = async (latitude, longitude) => {
   try {
     if (!latitude || !longitude) return "";
 
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-
-    if (!apiKey) return "";
-
     const response = await axios.get(
-      "https://maps.googleapis.com/maps/api/geocode/json",
+      "https://nominatim.openstreetmap.org/reverse",
       {
         params: {
-          latlng: `${latitude},${longitude}`,
-          key: apiKey,
+          lat: latitude,
+          lon: longitude,
+          format: "jsonv2",
+          zoom: 18,
+          addressdetails: 1,
+        },
+        headers: {
+          "User-Agent": "BharatSpecialSteels-RMS/1.0",
         },
         timeout: 5000,
       }
     );
 
-    const result = response.data?.results?.[0];
+    const address = response.data?.address || {};
 
-    return result?.formatted_address || "";
+    const parts = [
+      address.road,
+      address.neighbourhood,
+      address.suburb,
+      address.city || address.town,
+      address.state,
+    ].filter(Boolean);
+
+    return parts.join(", ");
   } catch (error) {
     console.log("Reverse geocode failed:", error.message);
     return "";

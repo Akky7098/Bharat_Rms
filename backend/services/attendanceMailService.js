@@ -8,15 +8,40 @@ const COMPANY = {
 
 const formatDate = (date) => {
   if (!date) return "-";
-  return new Date(date).toLocaleDateString("en-IN");
+
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
 };
 
 const formatTime = (date) => {
   if (!date) return "-";
+
   return new Date(date).toLocaleTimeString("en-IN", {
     hour: "2-digit",
     minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
   });
+};
+
+const formatRegularizedTime = (date) => {
+  if (!date) return "-";
+
+  const d = new Date(date);
+  const hours = d.getUTCHours();
+  const minutes = d.getUTCMinutes();
+
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 || 12;
+
+  return `${String(displayHour).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )} ${suffix}`;
 };
 
 const baseTemplate = ({ title, subtitle, body }) => {
@@ -95,7 +120,7 @@ const sendMissedCheckoutMailToUser = async (attendance) => {
         </table>
 
         <div style="margin-top:18px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px;font-size:13px;line-height:1.6;color:#475569;">
-          If you were on a client visit or forgot to check out, please regularize from the RMS attendance page.
+          Please update regularization, otherwise this attendance may be marked as absent.
         </div>
       `,
     }),
@@ -129,8 +154,14 @@ const sendRegularizationRequestMailToAdmin = async (attendance) => {
           ${infoRow("Date", formatDate(attendance.attendanceDate))}
           ${infoRow("Type", attendance.regularization?.type)}
           ${infoRow("Reason", attendance.regularization?.reason)}
-          ${infoRow("Requested Check-in", formatTime(attendance.regularization?.requestedCheckIn))}
-          ${infoRow("Requested Check-out", formatTime(attendance.regularization?.requestedCheckOut))}
+          ${infoRow(
+            "Requested Check-in",
+            formatRegularizedTime(attendance.regularization?.requestedCheckIn)
+          )}
+          ${infoRow(
+            "Requested Check-out",
+            formatRegularizedTime(attendance.regularization?.requestedCheckOut)
+          )}
         </table>
 
         <div style="margin-top:22px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:16px;padding:16px;">
