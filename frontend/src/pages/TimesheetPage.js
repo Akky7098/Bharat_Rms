@@ -46,11 +46,6 @@ const formatTime = (date) => {
   });
 };
 
-/* IMPORTANT:
-   Regularization requestedCheckIn/requestedCheckOut is entered by user as local wall time.
-   If backend stores it as UTC date, normal formatTime adds +5:30.
-   This formatter reads UTC hour/minute to show same time entered by user.
-*/
 const formatRegularizedTime = (date) => {
   if (!date) return "-";
   const d = new Date(date);
@@ -102,6 +97,31 @@ const formatMinutes = (minutes) => {
 
 const formatStatus = (status) => {
   return String(status || "-").replaceAll("_", " ");
+};
+
+const isWorkFromHomeAttendance = (attendance) => {
+  return attendance?.workMode === "work_from_home";
+};
+
+const getWorkLocationText = (attendance) => {
+  if (!isWorkFromHomeAttendance(attendance)) return "";
+
+  return (
+    attendance?.checkIn?.locationAddress ||
+    attendance?.checkOut?.locationAddress ||
+    ""
+  );
+};
+
+const isSameEmployee = (employee, user) => {
+  const employeeId = employee?._id || employee?.id;
+  const userId = user?._id || user?.id;
+
+  return (
+    employeeId === userId ||
+    employee?.email === user?.email ||
+    employee?.name === user?.name
+  );
 };
 
 const TimesheetPage = () => {
@@ -179,7 +199,7 @@ const TimesheetPage = () => {
       if (id) map.set(id, emp);
     });
 
-    if (isAdmin && loggedInEmployee._id) {
+    if ((isAdmin || isSuperAdmin) && loggedInEmployee._id) {
       map.set(loggedInEmployee._id, loggedInEmployee);
     }
 
@@ -200,7 +220,7 @@ const TimesheetPage = () => {
     return Array.from(map.values()).sort((a, b) =>
       String(a.name || "").localeCompare(String(b.name || ""))
     );
-  }, [employees, attendanceList, isAdmin, loggedInEmployee]);
+  }, [employees, attendanceList, isAdmin, isSuperAdmin, loggedInEmployee]);
 
   const regularizationStartKey = useMemo(() => {
     const d = new Date();
@@ -345,33 +365,33 @@ const TimesheetPage = () => {
     }));
   };
 
- const getReportsByDay = useCallback(
-  (day) => {
-    return timesheets.filter((item) => {
-      const d = new Date(item.reportDate);
-      return (
-        d.getDate() === day &&
-        d.getMonth() === selectedMonth &&
-        d.getFullYear() === selectedYear
-      );
-    });
-  },
-  [timesheets, selectedMonth, selectedYear]
-);
+  const getReportsByDay = useCallback(
+    (day) => {
+      return timesheets.filter((item) => {
+        const d = new Date(item.reportDate);
+        return (
+          d.getDate() === day &&
+          d.getMonth() === selectedMonth &&
+          d.getFullYear() === selectedYear
+        );
+      });
+    },
+    [timesheets, selectedMonth, selectedYear]
+  );
 
-const getAttendanceRecordsByDay = useCallback(
-  (day) => {
-    return attendanceList.filter((item) => {
-      const d = new Date(item.attendanceDate);
-      return (
-        d.getDate() === day &&
-        d.getMonth() === selectedMonth &&
-        d.getFullYear() === selectedYear
-      );
-    });
-  },
-  [attendanceList, selectedMonth, selectedYear]
-);
+  const getAttendanceRecordsByDay = useCallback(
+    (day) => {
+      return attendanceList.filter((item) => {
+        const d = new Date(item.attendanceDate);
+        return (
+          d.getDate() === day &&
+          d.getMonth() === selectedMonth &&
+          d.getFullYear() === selectedYear
+        );
+      });
+    },
+    [attendanceList, selectedMonth, selectedYear]
+  );
 
   const getAttendanceByDay = (day) => {
     return getAttendanceRecordsByDay(day)[0] || null;
@@ -488,7 +508,48 @@ const getAttendanceRecordsByDay = useCallback(
 
     const records = getAttendanceRecordsByDay(day);
 
-    if (canManageUsers) {
+    if (isAdmin) {
+      const selfId = user._id || user.id;
+
+      const selfAttendance = records.find((item) => {
+        const attendanceEmployeeId = getEmployeeId(item.employeeId);
+        return (
+          attendanceEmployeeId === selfId ||
+          item.employeeName === user.name ||
+          item.employeeEmail === user.email
+        );
+      });
+
+      const reports = getReportsByDay(day);
+      const selfReport = reports.find((item) => {
+        const reportEmployeeId = getEmployeeId(item.employeeId);
+        return (
+          reportEmployeeId === selfId ||
+          item.employeeId?.name === user.name ||
+          item.employeeName === user.name
+        );
+      });
+
+      const minutes = Number(selfAttendance?.totalWorkingMinutes || 0);
+
+      if (selfAttendance?.regularization?.status === "approved") {
+        return selfReport ? "submitted" : "warning";
+      }
+
+      if (selfAttendance?.regularization?.status === "pending") return "warning";
+
+      if (selfAttendance?.attendanceStatus === "checked_out") {
+        if (minutes < REQUIRED_WORK_MINUTES) return "short";
+        if (!selfReport) return "warning";
+        return "submitted";
+      }
+
+      if (selfAttendance?.attendanceStatus === "checked_in") return "warning";
+
+      return "missing";
+    }
+
+    if (isSuperAdmin) {
       if (records.length === 0) return "missing";
 
       const hasPending = records.some(
@@ -561,39 +622,7 @@ const getAttendanceRecordsByDay = useCallback(
   const todayCheckedIn = Boolean(todayAttendance?.checkIn?.time);
   const todayCheckedOut = Boolean(todayAttendance?.checkOut?.time);
 
-  const selectedDayMinutes = Number(
-    selectedAttendance?.totalWorkingMinutes || 0
-  );
-
-  const selectedDayShortHours =
-    selectedAttendance?.attendanceStatus === "checked_out" &&
-    selectedDayMinutes > 0 &&
-    selectedDayMinutes < REQUIRED_WORK_MINUTES;
-
   const isSelectedSunday = selectedDateObj?.getDay() === 0;
-
-  const canRegularizeSelectedDay =
-    !isSuperAdmin &&
-    selectedDay &&
-    !isSelectedSunday &&
-    selectedDateKey >= regularizationStartKey &&
-    selectedDateKey <= todayKey &&
-    (!selectedAttendance ||
-      selectedAttendance.attendanceStatus === "not_checked_in" ||
-      selectedAttendance.attendanceStatus === "checked_in" ||
-      selectedAttendance.attendanceStatus === "absent" ||
-      selectedDayShortHours) &&
-    !["pending", "approved"].includes(
-      selectedAttendance?.regularization?.status
-    );
-
-  const canFillReportForSelectedDay =
-    canFillOwnReport &&
-    selectedDay &&
-    !isSelectedSunday &&
-    selectedReports.length === 0 &&
-    (selectedDateKey === todayKey ||
-      selectedAttendance?.regularization?.status === "approved");
 
   const missingDays = Array.from({ length: daysInSelectedMonth }, (_, i) => {
     const day = i + 1;
@@ -679,15 +708,15 @@ const getAttendanceRecordsByDay = useCallback(
         report: report || null,
       };
     });
-}, [
-  selectedDay,
-  filters.employeeId,
-  canManageUsers,
-  allEmployeesForView,
-  loggedInEmployee,
-  getAttendanceRecordsByDay,
-  getReportsByDay,
-]);
+  }, [
+    selectedDay,
+    filters.employeeId,
+    canManageUsers,
+    allEmployeesForView,
+    loggedInEmployee,
+    getAttendanceRecordsByDay,
+    getReportsByDay,
+  ]);
 
   const getBrowserLocation = () => {
     return new Promise((resolve, reject) => {
@@ -1091,17 +1120,17 @@ const getAttendanceRecordsByDay = useCallback(
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
 
-   link.href = url;
-link.download = `attendance-payroll-${months[selectedMonth]}-${selectedYear}.xls`;
-link.style.display = "none";
+    link.href = url;
+    link.download = `attendance-payroll-${months[selectedMonth]}-${selectedYear}.xls`;
+    link.style.display = "none";
 
-document.body.appendChild(link);
-link.click();
+    document.body.appendChild(link);
+    link.click();
 
-setTimeout(() => {
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}, 300);
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 300);
   };
 
   return (
@@ -1152,6 +1181,12 @@ setTimeout(() => {
                   )}`
                 : ""}
             </p>
+
+            {isWorkFromHomeAttendance(todayAttendance) && (
+              <p className="wfh-location-line">
+                <b>WFH Location:</b> {getWorkLocationText(todayAttendance)}
+              </p>
+            )}
           </div>
 
           <div className="attendance-action-buttons">
@@ -1284,6 +1319,12 @@ setTimeout(() => {
                       <tr key={item._id}>
                         <td>
                           <strong>{item.employeeName || "-"}</strong>
+                          {isWorkFromHomeAttendance(item) &&
+  getWorkLocationText(item) && (
+    <div className="wfh-location-mini">
+      {getWorkLocationText(item)}
+    </div>
+)}
                         </td>
                         <td>{getDisplayCheckIn(item)}</td>
                         <td>{getDisplayCheckOut(item)}</td>
@@ -1324,6 +1365,12 @@ setTimeout(() => {
                   <div>
                     <h4>{item.employeeName || "-"}</h4>
                     <p>{formatDate(item.attendanceDate)}</p>
+                    {isWorkFromHomeAttendance(item) &&
+  getWorkLocationText(item) && (
+    <p className="wfh-location-line">
+      <b>WFH Location:</b> {getWorkLocationText(item)}
+    </p>
+)}
                   </div>
                   <span>{formatStatus(item.regularization?.type)}</span>
                 </div>
@@ -1564,11 +1611,48 @@ setTimeout(() => {
 
               {selectedDayEmployeeRows.map(({ employee, attendance, report }) => {
                 const minutes = Number(attendance?.totalWorkingMinutes || 0);
-                const health = getHealth(attendance, report);
-                const isShort =
+                const isOwnRow = isSameEmployee(employee, user);
+
+                const rowShortHours =
                   attendance?.attendanceStatus === "checked_out" &&
                   minutes > 0 &&
                   minutes < REQUIRED_WORK_MINUTES;
+
+                const rowCanRegularize =
+                  isOwnRow &&
+                  canFillOwnReport &&
+                  selectedDay &&
+                  !isSelectedSunday &&
+                  selectedDateKey >= regularizationStartKey &&
+                  selectedDateKey <= todayKey &&
+                  (!attendance ||
+                    attendance.attendanceStatus === "not_checked_in" ||
+                    attendance.attendanceStatus === "checked_in" ||
+                    attendance.attendanceStatus === "absent" ||
+                    rowShortHours) &&
+                  !["pending", "approved"].includes(
+                    attendance?.regularization?.status
+                  );
+
+                const rowCanFillReport =
+                  isOwnRow &&
+                  canFillOwnReport &&
+                  selectedDay &&
+                  !isSelectedSunday &&
+                  !report &&
+                  (selectedDateKey === todayKey ||
+                    attendance?.regularization?.status === "approved");
+
+                const rowShowReportBlocked =
+                  isOwnRow &&
+                  canFillOwnReport &&
+                  !report &&
+                  selectedDateKey !== todayKey &&
+                  !isSelectedSunday &&
+                  attendance?.regularization?.status !== "approved";
+
+                const health = getHealth(attendance, report);
+                const isShort = rowShortHours;
 
                 return (
                   <div
@@ -1579,6 +1663,13 @@ setTimeout(() => {
                       <div>
                         <h4>{employee?.name || attendance?.employeeName || "-"}</h4>
                         <p>{formatDate(selectedDateObj)}</p>
+
+                        {isWorkFromHomeAttendance(attendance) &&
+  getWorkLocationText(attendance) && (
+    <p className="wfh-location-line">
+      <b>WFH Location:</b> {getWorkLocationText(attendance)}
+    </p>
+)}
                       </div>
 
                       <span className={`attendance-health-pill ${health.className}`}>
@@ -1675,13 +1766,14 @@ setTimeout(() => {
                       )}
 
                     {!isSuperAdmin &&
-                      attendance?.regularization?.status === "pending" && (
+                      attendance?.regularization?.status === "pending" &&
+                      isOwnRow && (
                         <div className="empty-state">
                           Regularization request already submitted.
                         </div>
                       )}
 
-                    {!isSuperAdmin && canRegularizeSelectedDay && (
+                    {!isSuperAdmin && rowCanRegularize && (
                       <div className="calendar-regularize-panel">
                         <p>
                           Attendance is missing, incomplete, or short for this date.
@@ -1747,18 +1839,14 @@ setTimeout(() => {
                       </div>
                     )}
 
-                    {!isSuperAdmin &&
-                      !report &&
-                      !canFillReportForSelectedDay &&
-                      selectedDateKey !== todayKey &&
-                      !isSelectedSunday && (
-                        <div className="attendance-warning-box">
-                          Previous date work report can be filled only after
-                          regularization is approved.
-                        </div>
-                      )}
+                    {rowShowReportBlocked && (
+                      <div className="attendance-warning-box">
+                        Previous date work report can be filled only after
+                        regularization is approved.
+                      </div>
+                    )}
 
-                    {!isSuperAdmin && canFillReportForSelectedDay && (
+                    {!isSuperAdmin && rowCanFillReport && (
                       <button
                         type="button"
                         className="calendar-regularize-btn"
