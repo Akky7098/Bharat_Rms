@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Attendance = require("../model/attendanceModel");
 const User = require("../model/userModel");
+const reverseGeocode = require("../util/reverseGeocode");
 const { verifyOfficeLocation } = require("../util/locationUtil");
 const {
   sendAttendanceCheckInMessage,
@@ -49,7 +50,7 @@ const getWorkMode = async (user) => {
   );
 };
 
-const buildLocationObject = (body, workMode) => {
+const buildLocationObject = async (body, workMode) => {
   const latitude = Number(body.latitude);
   const longitude = Number(body.longitude);
   const accuracy = Number(body.accuracy || 0);
@@ -62,26 +63,23 @@ const buildLocationObject = (body, workMode) => {
     throw new Error("Location permission is required to mark attendance.");
   }
 
+  const locationAddress = await reverseGeocode(latitude, longitude);
+
   if (workMode === "work_from_home") {
     return {
       latitude,
       longitude,
       accuracy,
-
-      // WFH is allowed from anywhere.
-      // We store exact live location for audit, not office validation.
       distanceFromOfficeMeters: null,
       isWithinOffice: false,
-
       ipAddress,
       userAgent,
       deviceType,
-      locationAddress: body.locationAddress || "",
+      locationAddress,
       remark: body.remark || "",
     };
   }
 
-  // Existing production office validation stays same.
   const result = verifyOfficeLocation({ latitude, longitude });
 
   return {
@@ -90,11 +88,10 @@ const buildLocationObject = (body, workMode) => {
     accuracy,
     distanceFromOfficeMeters: result.distance,
     isWithinOffice: result.isWithinOffice,
-
     ipAddress,
     userAgent,
     deviceType,
-    locationAddress: body.locationAddress || "",
+    locationAddress,
     remark: body.remark || "",
   };
 };
