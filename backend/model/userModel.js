@@ -27,6 +27,20 @@ const userSchema = new mongoose.Schema(
       enum: ["super_admin", "admin", "user"],
       default: "user",
     },
+    attendanceMode: {
+  type: String,
+  enum: ["office", "work_from_home"],
+  default: "office",
+},
+
+homeLocation: {
+  latitude: Number,
+  longitude: Number,
+  radiusMeters: {
+    type: Number,
+    default: 100,
+  },
+},
   },
   {
     timestamps: true,

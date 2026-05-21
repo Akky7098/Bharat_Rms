@@ -1,5 +1,8 @@
 const SalesOrder = require("../model/salesOrderModel");
 const finalApprovalService = require("../services/finalApprovalService");
+const {
+  sendFinalPdfToSalesGroup,
+} = require("../services/whatsappApprovalService");
 
 const validateToken = (salesOrder, token) => {
   return (
@@ -8,6 +11,20 @@ const validateToken = (salesOrder, token) => {
     salesOrder.managerEmailApproval.token === token
   );
 };
+
+const successPage = (title, message) => `
+  <div style="font-family:Arial;padding:30px;text-align:center;">
+    <h2 style="color:#16a34a;">${title}</h2>
+    <p>${message}</p>
+  </div>
+`;
+
+const errorPage = (title, message, color = "#dc2626") => `
+  <div style="font-family:Arial;padding:30px;text-align:center;">
+    <h2 style="color:${color};">${title}</h2>
+    <p>${message}</p>
+  </div>
+`;
 
 const approveFromWhatsapp = async (req, res) => {
   try {
@@ -23,17 +40,15 @@ const approveFromWhatsapp = async (req, res) => {
       return res.status(403).send("Invalid or expired approval link");
     }
 
-    // already approved
     if (salesOrder.approvalStatus === "approved") {
-      return res.send(`
-        <div style="font-family:Arial;padding:30px;">
-          <h2 style="color:#16a34a;">Sales Order Already Approved</h2>
-          <p>This Sales Order has already been approved by MD Sir.</p>
-        </div>
-      `);
+      return res.send(
+        successPage(
+          "Sales Order Already Approved",
+          "This Sales Order has already been approved by MD Sir."
+        )
+      );
     }
 
-    // already rejected / put on hold
     if (salesOrder.approvalStatus === "rejected_by_manager") {
       return res.send(`
         <div style="font-family:Arial;padding:30px;">
@@ -46,7 +61,6 @@ const approveFromWhatsapp = async (req, res) => {
       `);
     }
 
-    // invalid workflow state
     if (salesOrder.approvalStatus !== "pending_manager_approval") {
       return res.send(`
         <div style="font-family:Arial;padding:30px;">
@@ -57,23 +71,43 @@ const approveFromWhatsapp = async (req, res) => {
       `);
     }
 
-    await finalApprovalService.finalApproveSalesOrder(
-      salesOrder,
-      {
-        managerName: "MD Sir",
-        managerEmail: process.env.MANAGER_EMAIL,
-        managerId: null,
-      },
-      "whatsapp"
+    // ✅ Fast approval update only. No PDF generation here.
+    salesOrder.approvalStatus = "approved";
+    salesOrder.isEditableBySalesPerson = false;
+
+    salesOrder.managerApproval = {
+      ...(salesOrder.managerApproval || {}),
+      managerName: "MD Sir",
+      managerEmail: process.env.MANAGER_EMAIL,
+      managerId: null,
+      approvedAt: new Date(),
+    };
+
+    salesOrder.approvalHistory = salesOrder.approvalHistory || [];
+    salesOrder.approvalHistory.push({
+      action: "manager_approved",
+      remarks: "Approved by MD Sir from WhatsApp approval link",
+      createdAt: new Date(),
+    });
+
+    await salesOrder.save();
+
+    // ✅ Browser opens fast.
+    res.send(
+      successPage(
+        "Sales Order Approved Successfully",
+        "The Sales Order has been approved. The existing PDF will be shared with the sales group automatically."
+      )
     );
 
-    return res.send(`
-      <div style="font-family:Arial;padding:30px;">
-        <h2 style="color:#16a34a;">Sales Order Approved Successfully</h2>
-        <p>The Sales Order has been approved by MD Sir.</p>
-        <p>The final approved PDF has been sent to the WhatsApp sales group.</p>
-      </div>
-    `);
+    // ✅ Background task. Reuses already generated PDF.
+    setImmediate(async () => {
+      try {
+        await sendFinalPdfToSalesGroup(salesOrder);
+      } catch (error) {
+        console.log("Final WhatsApp PDF send failed:", error.message);
+      }
+    });
   } catch (error) {
     return res.status(500).send(error.message);
   }
@@ -106,12 +140,12 @@ const holdForm = async (req, res) => {
     }
 
     if (salesOrder.approvalStatus === "approved") {
-      return res.send(`
-        <div style="font-family:Arial;padding:30px;">
-          <h2 style="color:#16a34a;">Sales Order Already Approved</h2>
-          <p>This Sales Order has already been approved by MD Sir.</p>
-        </div>
-      `);
+      return res.send(
+        successPage(
+          "Sales Order Already Approved",
+          "This Sales Order has already been approved by MD Sir."
+        )
+      );
     }
 
     if (salesOrder.approvalStatus !== "pending_manager_approval") {
@@ -132,6 +166,7 @@ const holdForm = async (req, res) => {
     return res.status(500).send(error.message);
   }
 };
+
 const submitHoldFromWhatsapp = async (req, res) => {
   try {
     const { id, token } = req.params;
@@ -169,6 +204,7 @@ const submitHoldFromWhatsapp = async (req, res) => {
     return res.status(500).send(error.message);
   }
 };
+
 const openPdfFromWhatsapp = async (req, res) => {
   try {
     const { id, token } = req.params;
@@ -197,6 +233,7 @@ const openPdfFromWhatsapp = async (req, res) => {
     return res.status(500).send(error.message);
   }
 };
+
 module.exports = {
   approveFromWhatsapp,
   holdForm,

@@ -29,49 +29,72 @@ const getEndOfDay = (date = new Date()) => {
   return d;
 };
 
+const getDeviceType = (userAgent = "") => {
+  const ua = String(userAgent).toLowerCase();
+
+  if (/ipad|tablet/.test(ua)) return "tablet";
+  if (/mobile|android|iphone|ipod/.test(ua)) return "mobile";
+  if (ua) return "desktop";
+
+  return "unknown";
+};
+
 const getWorkMode = async (user) => {
   const fullUser = await User.findById(getUserId(user)).lean();
-  return fullUser?.attendanceWorkMode || "office";
+
+  return (
+    fullUser?.attendanceWorkMode ||
+    fullUser?.attendanceMode ||
+    "office"
+  );
 };
 
 const buildLocationObject = (body, workMode) => {
   const latitude = Number(body.latitude);
   const longitude = Number(body.longitude);
+  const accuracy = Number(body.accuracy || 0);
+
+  const ipAddress = body.ipAddress || "";
+  const userAgent = body.userAgent || "";
+  const deviceType = body.deviceType || getDeviceType(userAgent);
 
   if (!latitude || !longitude) {
-    if (workMode === "office") {
-      throw new Error("Location permission is required for office attendance.");
-    }
-
-    return {
-      latitude: latitude || null,
-      longitude: longitude || null,
-      accuracy: Number(body.accuracy || 0),
-      distanceFromOfficeMeters: null,
-      isWithinOffice: true,
-      remark: body.remark || "",
-    };
+    throw new Error("Location permission is required to mark attendance.");
   }
 
   if (workMode === "work_from_home") {
     return {
       latitude,
       longitude,
-      accuracy: Number(body.accuracy || 0),
+      accuracy,
+
+      // WFH is allowed from anywhere.
+      // We store exact live location for audit, not office validation.
       distanceFromOfficeMeters: null,
-      isWithinOffice: true,
+      isWithinOffice: false,
+
+      ipAddress,
+      userAgent,
+      deviceType,
+      locationAddress: body.locationAddress || "",
       remark: body.remark || "",
     };
   }
 
+  // Existing production office validation stays same.
   const result = verifyOfficeLocation({ latitude, longitude });
 
   return {
     latitude,
     longitude,
-    accuracy: Number(body.accuracy || 0),
+    accuracy,
     distanceFromOfficeMeters: result.distance,
     isWithinOffice: result.isWithinOffice,
+
+    ipAddress,
+    userAgent,
+    deviceType,
+    locationAddress: body.locationAddress || "",
     remark: body.remark || "",
   };
 };
@@ -95,6 +118,7 @@ const checkIn = async (body, user) => {
 
   const checkInData = buildLocationObject(body, workMode);
 
+  // Existing office rule remains strict.
   if (workMode === "office" && !checkInData.isWithinOffice) {
     throw new Error(
       `You are outside office location. Distance: ${checkInData.distanceFromOfficeMeters} meters.`
@@ -157,6 +181,7 @@ const checkOut = async (body, user) => {
 
   const checkOutData = buildLocationObject(body, workMode);
 
+  // Existing office rule remains strict.
   if (workMode === "office" && !checkOutData.isWithinOffice) {
     throw new Error(
       `You are outside office location. Distance: ${checkOutData.distanceFromOfficeMeters} meters.`
@@ -172,6 +197,7 @@ const checkOut = async (body, user) => {
     time: new Date(),
     ...checkOutData,
   };
+
   attendance.totalWorkingMinutes = totalWorkingMinutes;
   attendance.attendanceStatus = "checked_out";
 
@@ -268,17 +294,11 @@ const requestRegularization = async (body, user) => {
     throw new Error("Invalid regularization type.");
   }
 
-  if (
-    regularizationType === "missed_check_in" &&
-    !body.requestedCheckIn
-  ) {
+  if (regularizationType === "missed_check_in" && !body.requestedCheckIn) {
     throw new Error("Requested check-in time is required.");
   }
 
-  if (
-    regularizationType === "missed_check_out" &&
-    !body.requestedCheckOut
-  ) {
+  if (regularizationType === "missed_check_out" && !body.requestedCheckOut) {
     throw new Error("Requested check-out time is required.");
   }
 
@@ -338,6 +358,7 @@ const requestRegularization = async (body, user) => {
 
   return attendance;
 };
+
 const approveRegularization = async (attendanceId, body, user) => {
   if (!isAdmin(user) && !isSuperAdmin(user)) {
     throw new Error("Only admin or super admin can approve regularization.");
@@ -382,9 +403,11 @@ const approveRegularization = async (attendanceId, body, user) => {
   attendance.regularization.approvedAt = new Date();
 
   await attendance.save();
+
   sendRegularizationDecisionMailToUser(attendance, "approved").catch(
-  console.error
-);
+    console.error
+  );
+
   return attendance;
 };
 
@@ -401,12 +424,14 @@ const rejectRegularization = async (attendanceId, body, user) => {
 
   attendance.regularization.status = "rejected";
   attendance.regularization.rejectionReason = body.rejectionReason || "";
- attendance.attendanceStatus = "absent";
+  attendance.attendanceStatus = "absent";
 
   await attendance.save();
+
   sendRegularizationDecisionMailToUser(attendance, "rejected").catch(
-  console.error
-);
+    console.error
+  );
+
   return attendance;
 };
 

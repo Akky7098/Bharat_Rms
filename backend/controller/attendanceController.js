@@ -1,8 +1,26 @@
 const attendanceService = require("../services/attendanceService");
 
+const getClientIp = (req) => {
+  return (
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+    req.headers["x-real-ip"] ||
+    req.socket?.remoteAddress ||
+    req.ip ||
+    ""
+  );
+};
+
+const buildAuditPayload = (req) => {
+  return {
+    ...req.body,
+    ipAddress: getClientIp(req),
+    userAgent: req.headers["user-agent"] || "",
+  };
+};
+
 const checkIn = async (req, res) => {
   try {
-    const data = await attendanceService.checkIn(req.body, req.user);
+    const data = await attendanceService.checkIn(buildAuditPayload(req), req.user);
 
     return res.status(200).json({
       success: true,
@@ -16,7 +34,7 @@ const checkIn = async (req, res) => {
 
 const checkOut = async (req, res) => {
   try {
-    const data = await attendanceService.checkOut(req.body, req.user);
+    const data = await attendanceService.checkOut(buildAuditPayload(req), req.user);
 
     return res.status(200).json({
       success: true,

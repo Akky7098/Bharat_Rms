@@ -1,5 +1,53 @@
 const mongoose = require("mongoose");
 
+const locationAuditSchema = new mongoose.Schema(
+  {
+    time: Date,
+
+    latitude: Number,
+    longitude: Number,
+    accuracy: Number,
+
+    distanceFromOfficeMeters: Number,
+
+    isWithinOffice: {
+      type: Boolean,
+      default: false,
+    },
+
+    ipAddress: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    userAgent: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    deviceType: {
+      type: String,
+      enum: ["desktop", "mobile", "tablet", "unknown"],
+      default: "unknown",
+    },
+
+    locationAddress: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    remark: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+  },
+  { _id: false }
+);
+
 const attendanceSchema = new mongoose.Schema(
   {
     employeeId: {
@@ -32,39 +80,9 @@ const attendanceSchema = new mongoose.Schema(
       default: "office",
     },
 
-    checkIn: {
-      time: Date,
-      latitude: Number,
-      longitude: Number,
-      accuracy: Number,
-      distanceFromOfficeMeters: Number,
-      isWithinOffice: {
-        type: Boolean,
-        default: false,
-      },
-      remark: {
-        type: String,
-        trim: true,
-        default: "",
-      },
-    },
+    checkIn: locationAuditSchema,
 
-    checkOut: {
-      time: Date,
-      latitude: Number,
-      longitude: Number,
-      accuracy: Number,
-      distanceFromOfficeMeters: Number,
-      isWithinOffice: {
-        type: Boolean,
-        default: false,
-      },
-      remark: {
-        type: String,
-        trim: true,
-        default: "",
-      },
-    },
+    checkOut: locationAuditSchema,
 
     attendanceStatus: {
       type: String,
@@ -166,5 +184,8 @@ attendanceSchema.index(
   { employeeId: 1, attendanceDate: 1 },
   { unique: true }
 );
+
+attendanceSchema.index({ attendanceDate: 1 });
+attendanceSchema.index({ workMode: 1, attendanceDate: 1 });
 
 module.exports = mongoose.model("Attendance", attendanceSchema);
