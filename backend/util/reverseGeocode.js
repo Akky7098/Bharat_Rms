@@ -17,21 +17,28 @@ const reverseGeocode = async (latitude, longitude) => {
         headers: {
           "User-Agent": "BharatSpecialSteels-RMS/1.0",
         },
-        timeout: 5000,
+        timeout: 7000,
       }
     );
 
     const address = response.data?.address || {};
 
     const parts = [
+      address.building,
+      address.house_number,
       address.road,
       address.neighbourhood,
       address.suburb,
-      address.city || address.town,
+      address.village,
+      address.town,
+      address.city,
+      address.county,
       address.state,
     ].filter(Boolean);
 
-    return parts.join(", ");
+    const shortAddress = [...new Set(parts)].join(", ");
+
+    return shortAddress || response.data?.display_name || "";
   } catch (error) {
     console.log("Reverse geocode failed:", error.message);
     return "";
