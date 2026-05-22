@@ -143,7 +143,7 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
     const whatsappStatus = await forceCheckWhatsappStatus();
     const whatsappBrowser = getWhatsappBrowser();
 
-    if (whatsappStatus.ready && whatsappBrowser) {
+    if (whatsappBrowser) {
       console.log("PDF USING WHATSAPP CHROMIUM");
       browser = whatsappBrowser;
       shouldCloseBrowser = false;

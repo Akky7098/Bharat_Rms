@@ -12,22 +12,33 @@ const whatsappSessionPath =
   process.env.WHATSAPP_SESSION_PATH ||
   path.join(process.env.HOME || "/home/u607090171", "whatsapp-session");
 
+const authClientId = "bharat-rms-company-whatsapp";
+
+const whatsappCachePath = path.join(whatsappSessionPath, "wwebjs-cache");
+const chromiumUserDataPath = path.join(whatsappSessionPath, "chromium-profile");
+
 const ensureSessionFolder = () => {
   try {
-    if (!fs.existsSync(whatsappSessionPath)) {
-      fs.mkdirSync(whatsappSessionPath, { recursive: true });
-    }
+    fs.mkdirSync(whatsappSessionPath, { recursive: true });
+    fs.mkdirSync(whatsappCachePath, { recursive: true });
+    fs.mkdirSync(chromiumUserDataPath, { recursive: true });
 
     const testFile = path.join(whatsappSessionPath, "_session_write_test.txt");
     fs.writeFileSync(testFile, "ok");
 
     console.log("WHATSAPP SESSION PATH =>", whatsappSessionPath);
-    console.log("WHATSAPP SESSION EXISTS =>", fs.existsSync(whatsappSessionPath));
+    console.log(
+      "WHATSAPP LOCAL AUTH PATH =>",
+      path.join(whatsappSessionPath, `session-${authClientId}`)
+    );
+    console.log("WHATSAPP CACHE PATH =>", whatsappCachePath);
+    console.log("WHATSAPP CHROMIUM PROFILE PATH =>", chromiumUserDataPath);
     console.log("WHATSAPP SESSION WRITE OK =>", fs.existsSync(testFile));
   } catch (error) {
     console.log("WHATSAPP SESSION FOLDER ERROR =>", error.message);
   }
 };
+
 const initWhatsappClient = () => {
   if (whatsappClient) return whatsappClient;
 
@@ -42,12 +53,18 @@ const initWhatsappClient = () => {
 
   whatsappClient = new Client({
     authStrategy: new LocalAuth({
-      clientId: "bharat-rms-company-whatsapp",
+      clientId: authClientId,
       dataPath: whatsappSessionPath,
     }),
 
+    webVersionCache: {
+      type: "local",
+      path: whatsappCachePath,
+    },
+
     puppeteer: {
       headless: true,
+      userDataDir: chromiumUserDataPath,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -61,6 +78,7 @@ const initWhatsappClient = () => {
         "--disable-ipc-flooding-protection",
         "--single-process",
         "--no-zygote",
+        "--no-first-run",
       ],
     },
   });
@@ -76,7 +94,7 @@ const initWhatsappClient = () => {
 
   whatsappClient.on("authenticated", () => {
     console.log("WhatsApp authenticated");
-    console.log("WhatsApp session should be saved at:", whatsappSessionPath);
+    console.log("WhatsApp session saved at:", whatsappSessionPath);
   });
 
   whatsappClient.on("ready", async () => {
@@ -123,6 +141,15 @@ const initWhatsappClient = () => {
     }
 
     whatsappClient = null;
+
+    // Keep system self-healing, but do not delete session.
+    setTimeout(() => {
+      try {
+        initWhatsappClient();
+      } catch (error) {
+        console.log("WhatsApp auto re-init failed:", error.message);
+      }
+    }, 5000);
   });
 
   whatsappClient.initialize().catch((error) => {
@@ -148,32 +175,35 @@ const getWhatsappClient = () => {
 const forceCheckWhatsappStatus = async () => {
   try {
     if (!whatsappClient) {
+      initWhatsappClient();
+
       return {
         ready: false,
-        state: "NO_CLIENT",
+        state: "INITIALIZING",
+        qr: latestQr,
         sessionPath: whatsappSessionPath,
       };
     }
 
-    const state = await whatsappClient.getState();
+    const state = await whatsappClient.getState().catch(() => null);
 
-    if (state !== "CONNECTED") {
-      isReady = false;
+    if (state === "CONNECTED") {
+      isReady = true;
 
       return {
-        ready: false,
-        state: state || "NOT_CONNECTED",
+        ready: true,
+        state,
+        qr: null,
         sessionPath: whatsappSessionPath,
       };
     }
 
-    await whatsappClient.getChats();
-
-    isReady = true;
+    isReady = false;
 
     return {
-      ready: true,
-      state,
+      ready: false,
+      state: state || "NOT_CONNECTED",
+      qr: latestQr,
       sessionPath: whatsappSessionPath,
     };
   } catch (error) {
@@ -183,6 +213,7 @@ const forceCheckWhatsappStatus = async () => {
       ready: false,
       state: "DISCONNECTED",
       error: error.message,
+      qr: latestQr,
       sessionPath: whatsappSessionPath,
     };
   }
@@ -193,10 +224,20 @@ const isWhatsappReady = async () => {
   return status.ready;
 };
 
-const getLatestQr = () => latestQr;
+const getLatestQr = () => {
+  if (!whatsappClient && !isInitializing) {
+    initWhatsappClient();
+  }
+
+  return latestQr;
+};
 
 const getWhatsappBrowser = () => {
-  if (!whatsappClient) return null;
+  if (!whatsappClient) {
+    initWhatsappClient();
+    return null;
+  }
+
   return whatsappClient.pupBrowser || null;
 };
 
@@ -221,7 +262,6 @@ const destroyWhatsappClient = async () => {
   try {
     if (whatsappClient) {
       await whatsappClient.destroy();
-
       console.log("WhatsApp client destroyed");
     }
   } catch (error) {

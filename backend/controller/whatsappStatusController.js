@@ -1,14 +1,15 @@
 const QRCode = require("qrcode");
+
 const {
   getWhatsappClient,
-  isWhatsappReady,
+  forceCheckWhatsappStatus,
   getLatestQr,
   restartWhatsappClient,
 } = require("../util/whatsappClient");
 
 const getWhatsappStatus = async (req, res) => {
   try {
-    const { forceCheckWhatsappStatus, getLatestQr } = require("../util/whatsappClient");
+    getWhatsappClient();
 
     const status = await forceCheckWhatsappStatus();
 
@@ -29,20 +30,46 @@ const getWhatsappStatus = async (req, res) => {
 
 const showWhatsappQrPage = async (req, res) => {
   try {
-    const ready = await isWhatsappReady();
+    // IMPORTANT: force client startup first
+    getWhatsappClient();
+
+    const status = await forceCheckWhatsappStatus();
     const qr = getLatestQr();
 
-    if (ready) {
+    if (status.ready) {
       return res.send(`
         <html>
           <head>
             <title>WhatsApp Connected</title>
             <meta name="viewport" content="width=device-width, initial-scale=1" />
             <style>
-              body { font-family: Arial; background:#f1f5f9; margin:0; padding:20px; }
-              .card { max-width:430px; margin:50px auto; background:white; padding:24px; border-radius:16px; text-align:center; box-shadow:0 18px 50px rgba(0,0,0,.14); }
-              h2 { color:#16a34a; }
-              a { display:inline-block; margin-top:14px; color:#2563eb; font-weight:bold; }
+              body {
+                font-family: Arial;
+                background:#f1f5f9;
+                margin:0;
+                padding:20px;
+              }
+
+              .card {
+                max-width:430px;
+                margin:50px auto;
+                background:white;
+                padding:24px;
+                border-radius:16px;
+                text-align:center;
+                box-shadow:0 18px 50px rgba(0,0,0,.14);
+              }
+
+              h2 {
+                color:#16a34a;
+              }
+
+              a {
+                display:inline-block;
+                margin-top:14px;
+                color:#2563eb;
+                font-weight:bold;
+              }
             </style>
           </head>
           <body>
@@ -62,18 +89,45 @@ const showWhatsappQrPage = async (req, res) => {
           <head>
             <title>WhatsApp QR</title>
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <meta http-equiv="refresh" content="5" />
+            <meta http-equiv="refresh" content="8" />
             <style>
-              body { font-family: Arial; background:#f1f5f9; margin:0; padding:20px; }
-              .card { max-width:430px; margin:50px auto; background:white; padding:24px; border-radius:16px; text-align:center; box-shadow:0 18px 50px rgba(0,0,0,.14); }
-              h2 { color:#0f172a; }
-              button,a { display:inline-block; margin-top:14px; padding:12px 16px; border-radius:10px; background:#2563eb; color:white; text-decoration:none; font-weight:bold; border:0; }
+              body {
+                font-family: Arial;
+                background:#f1f5f9;
+                margin:0;
+                padding:20px;
+              }
+
+              .card {
+                max-width:430px;
+                margin:50px auto;
+                background:white;
+                padding:24px;
+                border-radius:16px;
+                text-align:center;
+                box-shadow:0 18px 50px rgba(0,0,0,.14);
+              }
+
+              h2 {
+                color:#0f172a;
+              }
+
+              a {
+                display:inline-block;
+                margin-top:14px;
+                padding:12px 16px;
+                border-radius:10px;
+                background:#2563eb;
+                color:white;
+                text-decoration:none;
+                font-weight:bold;
+              }
             </style>
           </head>
           <body>
             <div class="card">
               <h2>Generating WhatsApp QR...</h2>
-              <p>Please wait. This page refreshes automatically.</p>
+              <p>Please wait. QR generation can take 10–20 seconds.</p>
               <a href="/api/whatsapp/restart-page">Restart WhatsApp Client</a>
             </div>
           </body>
@@ -88,24 +142,68 @@ const showWhatsappQrPage = async (req, res) => {
         <head>
           <title>Scan WhatsApp QR</title>
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <meta http-equiv="refresh" content="20" />
+          <meta http-equiv="refresh" content="25" />
           <style>
-            body { font-family: Arial; background:#f1f5f9; margin:0; padding:20px; }
-            .card { max-width:430px; margin:35px auto; background:white; padding:24px; border-radius:16px; text-align:center; box-shadow:0 18px 50px rgba(0,0,0,.14); }
-            h2 { color:#0f172a; margin-bottom:8px; }
-            p { color:#475569; line-height:1.5; }
-            img { width:280px; max-width:100%; border:1px solid #e5e7eb; border-radius:12px; padding:10px; background:#fff; }
-            .note { background:#eff6ff; color:#1e3a8a; padding:10px; border-radius:10px; font-size:13px; margin-top:16px; }
-            a { display:inline-block; margin-top:14px; color:#2563eb; font-weight:bold; }
+            body {
+              font-family: Arial;
+              background:#f1f5f9;
+              margin:0;
+              padding:20px;
+            }
+
+            .card {
+              max-width:430px;
+              margin:35px auto;
+              background:white;
+              padding:24px;
+              border-radius:16px;
+              text-align:center;
+              box-shadow:0 18px 50px rgba(0,0,0,.14);
+            }
+
+            h2 {
+              color:#0f172a;
+              margin-bottom:8px;
+            }
+
+            p {
+              color:#475569;
+              line-height:1.5;
+            }
+
+            img {
+              width:280px;
+              max-width:100%;
+              border:1px solid #e5e7eb;
+              border-radius:12px;
+              padding:10px;
+              background:#fff;
+            }
+
+            .note {
+              background:#eff6ff;
+              color:#1e3a8a;
+              padding:10px;
+              border-radius:10px;
+              font-size:13px;
+              margin-top:16px;
+            }
+
+            a {
+              display:inline-block;
+              margin-top:14px;
+              color:#2563eb;
+              font-weight:bold;
+            }
           </style>
         </head>
         <body>
           <div class="card">
             <h2>Scan WhatsApp QR</h2>
-            <p>Open WhatsApp on company phone → Linked Devices → Link a Device.</p>
+            <p>Open WhatsApp → Linked Devices → Link Device</p>
             <img src="${qrImage}" alt="WhatsApp QR" />
             <div class="note">
-              After scanning, wait 10-20 seconds and refresh this page.
+              After scanning, wait 10–20 seconds.
             </div>
             <a href="/api/whatsapp/status-page">Refresh Status</a>
           </div>
@@ -124,7 +222,7 @@ const restartWhatsappPage = async (req, res) => {
     return res.send(`
       <html>
         <head>
-          <meta http-equiv="refresh" content="5;url=/api/whatsapp/status-page" />
+          <meta http-equiv="refresh" content="8;url=/api/whatsapp/status-page" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
         </head>
         <body style="font-family:Arial;padding:30px;">
