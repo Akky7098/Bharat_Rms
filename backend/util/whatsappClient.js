@@ -13,15 +13,12 @@ const whatsappSessionPath =
   path.join(process.env.HOME || "/home/u607090171", "whatsapp-session");
 
 const authClientId = "bharat-rms-company-whatsapp";
-
 const whatsappCachePath = path.join(whatsappSessionPath, "wwebjs-cache");
-const chromiumUserDataPath = path.join(whatsappSessionPath, "chromium-profile");
 
 const ensureSessionFolder = () => {
   try {
     fs.mkdirSync(whatsappSessionPath, { recursive: true });
     fs.mkdirSync(whatsappCachePath, { recursive: true });
-    fs.mkdirSync(chromiumUserDataPath, { recursive: true });
 
     const testFile = path.join(whatsappSessionPath, "_session_write_test.txt");
     fs.writeFileSync(testFile, "ok");
@@ -32,7 +29,6 @@ const ensureSessionFolder = () => {
       path.join(whatsappSessionPath, `session-${authClientId}`)
     );
     console.log("WHATSAPP CACHE PATH =>", whatsappCachePath);
-    console.log("WHATSAPP CHROMIUM PROFILE PATH =>", chromiumUserDataPath);
     console.log("WHATSAPP SESSION WRITE OK =>", fs.existsSync(testFile));
   } catch (error) {
     console.log("WHATSAPP SESSION FOLDER ERROR =>", error.message);
@@ -48,7 +44,6 @@ const initWhatsappClient = () => {
   }
 
   ensureSessionFolder();
-
   isInitializing = true;
 
   whatsappClient = new Client({
@@ -64,7 +59,6 @@ const initWhatsappClient = () => {
 
     puppeteer: {
       headless: true,
-      userDataDir: chromiumUserDataPath,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -121,7 +115,6 @@ const initWhatsappClient = () => {
     isReady = false;
     isInitializing = false;
     latestQr = null;
-
     console.log("WhatsApp auth failed:", msg);
   });
 
@@ -142,7 +135,6 @@ const initWhatsappClient = () => {
 
     whatsappClient = null;
 
-    // Keep system self-healing, but do not delete session.
     setTimeout(() => {
       try {
         initWhatsappClient();
