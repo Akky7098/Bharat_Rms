@@ -3,10 +3,7 @@ const Attendance = require("../model/attendanceModel");
 const User = require("../model/userModel");
 const reverseGeocode = require("../util/reverseGeocode");
 const { verifyOfficeLocation } = require("../util/locationUtil");
-const {
-  sendAttendanceCheckInMessage,
-  sendAttendanceCheckOutMessage,
-} = require("./attendanceWhatsappService");
+
 const {
   sendMissedCheckoutMailToUser,
   sendRegularizationRequestMailToAdmin,
@@ -157,7 +154,6 @@ const checkIn = async (body, user) => {
     }
   );
 
-  sendAttendanceCheckInMessage(attendance).catch(console.error);
 
   return attendance;
 };
@@ -207,7 +203,6 @@ const checkOut = async (body, user) => {
 
   await attendance.save();
 
-  sendAttendanceCheckOutMessage(attendance).catch(console.error);
 
   return attendance;
 };
