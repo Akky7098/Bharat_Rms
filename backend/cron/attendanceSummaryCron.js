@@ -15,7 +15,7 @@ const startAttendanceSummaryCron = () => {
   started = true;
 
   cron.schedule(
-    "20 15 * * *",
+    "15 10 * * *",
     async () => {
       try {
         console.log("Morning attendance summary cron started");
