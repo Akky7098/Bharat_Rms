@@ -14,7 +14,7 @@ const startSalesDailyInsightCron = () => {
   started = true;
 
   cron.schedule(
-    "10 16 * * *",
+  "18 16 * * *",
     async () => {
       try {
         console.log("Sales daily insight cron started");
