@@ -69,18 +69,19 @@ const buildLocationObject = async (body, workMode) => {
   }
 
   if (workMode === "work_from_home") {
-    return {
-      latitude,
-      longitude,
-      accuracy,
-      distanceFromOfficeMeters: null,
-      isWithinOffice: false,
-      ipAddress,
-      userAgent,
-      deviceType,
-      locationAddress,
-      remark: body.remark || "",
-    };
+   return {
+  latitude,
+  longitude,
+  accuracy,
+  distanceFromOfficeMeters: null,
+  isWithinOffice: false,
+  ipAddress,
+  userAgent,
+  deviceType,
+  locationAddress,
+  googleMapLink: `https://www.google.com/maps?q=${latitude},${longitude}`,
+  remark: body.remark || "",
+};
   }
 
   const result = verifyOfficeLocation({ latitude, longitude });

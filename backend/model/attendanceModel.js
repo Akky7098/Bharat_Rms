@@ -39,6 +39,12 @@ const locationAuditSchema = new mongoose.Schema(
       default: "",
     },
 
+    googleMapLink: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     remark: {
       type: String,
       trim: true,
