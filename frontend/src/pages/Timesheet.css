@@ -1282,3 +1282,50 @@ button:disabled {
 .attendance-day-modal .employee-attendance-day-top h4 {
   margin-bottom: 2px;
 }
+.wfh-location-line {
+  margin-top: 6px !important;
+  font-size: 12px !important;
+  line-height: 1.45;
+  color: #0f766e !important;
+  font-weight: 800;
+  max-width: 560px;
+  word-break: break-word;
+}
+
+.wfh-location-line b {
+  color: #0f172a;
+}
+
+.wfh-location-mini {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #0f766e;
+  font-weight: 800;
+  max-width: 300px;
+  word-break: break-word;
+}
+
+.wfh-map-link {
+  display: inline-flex;
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #ecfeff;
+  border: 1px solid #99f6e4;
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.wfh-map-link:hover {
+  background: #ccfbf1;
+}
+
+.wfh-map-link.mini {
+  margin-left: 6px;
+  padding: 2px 7px;
+  font-size: 10px;
+}

@@ -109,6 +109,16 @@ const getWorkLocationText = (attendance) => {
   return (
     attendance?.checkIn?.locationAddress ||
     attendance?.checkOut?.locationAddress ||
+    "Location captured"
+  );
+};
+
+const getWorkLocationMapLink = (attendance) => {
+  if (!isWorkFromHomeAttendance(attendance)) return "";
+
+  return (
+    attendance?.checkIn?.googleMapLink ||
+    attendance?.checkOut?.googleMapLink ||
     ""
   );
 };
@@ -1181,12 +1191,21 @@ const TimesheetPage = () => {
                   )}`
                 : ""}
             </p>
-
-            {isWorkFromHomeAttendance(todayAttendance) && (
-              <p className="wfh-location-line">
-                <b>WFH Location:</b> {getWorkLocationText(todayAttendance)}
-              </p>
-            )}
+{isWorkFromHomeAttendance(todayAttendance) && (
+  <div className="wfh-location-line">
+    <b>WFH Location:</b> {getWorkLocationText(todayAttendance)}
+    {getWorkLocationMapLink(todayAttendance) && (
+      <a
+        href={getWorkLocationMapLink(todayAttendance)}
+        target="_blank"
+        rel="noreferrer"
+        className="wfh-map-link"
+      >
+        View Exact Map
+      </a>
+    )}
+  </div>
+)}
           </div>
 
           <div className="attendance-action-buttons">
@@ -1319,11 +1338,20 @@ const TimesheetPage = () => {
                       <tr key={item._id}>
                         <td>
                           <strong>{item.employeeName || "-"}</strong>
-                          {isWorkFromHomeAttendance(item) &&
-  getWorkLocationText(item) && (
-    <div className="wfh-location-mini">
-      {getWorkLocationText(item)}
-    </div>
+                          {isWorkFromHomeAttendance(item) && (
+  <div className="wfh-location-mini">
+    {getWorkLocationText(item)}
+    {getWorkLocationMapLink(item) && (
+      <a
+        href={getWorkLocationMapLink(item)}
+        target="_blank"
+        rel="noreferrer"
+        className="wfh-map-link mini"
+      >
+        Map
+      </a>
+    )}
+  </div>
 )}
                         </td>
                         <td>{getDisplayCheckIn(item)}</td>
@@ -1664,11 +1692,20 @@ const TimesheetPage = () => {
                         <h4>{employee?.name || attendance?.employeeName || "-"}</h4>
                         <p>{formatDate(selectedDateObj)}</p>
 
-                        {isWorkFromHomeAttendance(attendance) &&
-  getWorkLocationText(attendance) && (
-    <p className="wfh-location-line">
-      <b>WFH Location:</b> {getWorkLocationText(attendance)}
-    </p>
+                       {isWorkFromHomeAttendance(attendance) && (
+  <div className="wfh-location-line">
+    <b>WFH Location:</b> {getWorkLocationText(attendance)}
+    {getWorkLocationMapLink(attendance) && (
+      <a
+        href={getWorkLocationMapLink(attendance)}
+        target="_blank"
+        rel="noreferrer"
+        className="wfh-map-link"
+      >
+        View Exact Map
+      </a>
+    )}
+  </div>
 )}
                       </div>
 

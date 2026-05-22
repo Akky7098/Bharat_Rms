@@ -14,18 +14,14 @@ const startSalesDailyInsightCron = () => {
   started = true;
 
  cron.schedule(
-  "32 16 * * *",
+  "0 20 * * *",
   async () => {
     try {
-      console.log("TEST SALES CRON STARTED");
-
+      console.log("Sales daily insight cron started");
       const result = await sendDailySalesInsight();
-
-      console.log(
-        `TEST SALES CRON DONE. Employees checked: ${result.checked}`
-      );
+      console.log(`Sales daily insight sent. Employees checked: ${result.checked}`);
     } catch (error) {
-      console.error("TEST SALES CRON FAILED:", error);
+      console.error("Sales daily insight failed:", error.message);
     }
   },
   {
