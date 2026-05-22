@@ -15,7 +15,7 @@ const startAttendanceCron = () => {
 
   // Every day at 8:00 AM India time
   cron.schedule(
-    "0 8 * * *",
+    "30 18 * * *",
     async () => {
       try {
         console.log("Attendance regularization cron started");
