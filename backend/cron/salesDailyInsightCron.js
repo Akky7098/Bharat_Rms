@@ -13,21 +13,25 @@ const startSalesDailyInsightCron = () => {
 
   started = true;
 
-  cron.schedule(
-  "18 16 * * *",
-    async () => {
-      try {
-        console.log("Sales daily insight cron started");
-        const result = await sendDailySalesInsight();
-        console.log(`Sales daily insight sent. Employees checked: ${result.checked}`);
-      } catch (error) {
-        console.error("Sales daily insight failed:", error.message);
-      }
-    },
-    {
-      timezone: "Asia/Kolkata",
+ cron.schedule(
+  "32 16 * * *",
+  async () => {
+    try {
+      console.log("TEST SALES CRON STARTED");
+
+      const result = await sendDailySalesInsight();
+
+      console.log(
+        `TEST SALES CRON DONE. Employees checked: ${result.checked}`
+      );
+    } catch (error) {
+      console.error("TEST SALES CRON FAILED:", error);
     }
-  );
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
   console.log("Sales daily insight cron scheduled");
 };
