@@ -4,6 +4,7 @@ const ColdCall = require("../model/coldCallModel");
 const SalesOrder = require("../model/salesOrderModel");
 const transporter = require("../util/mailTransporter");
 const { getWhatsappClient, isWhatsappReady } = require("../util/whatsappClient");
+const CronLock = require("../model/cronLockModel");
 
 const SALES_GROUP_ID = process.env.SALES_DAILY_WHATSAPP_GROUP_ID;
 const MANAGER_EMAIL =
@@ -21,7 +22,23 @@ const getISTRange = () => {
 
   return { start, end, now: istNow };
 };
+const getTodayKey = (prefix) => {
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata",
+  });
 
+  return `${prefix}_${today}`;
+};
+
+const acquireDailyLock = async (key) => {
+  try {
+    await CronLock.create({ key });
+    return true;
+  } catch (error) {
+    if (error.code === 11000) return false;
+    throw error;
+  }
+};
 const formatDate = (date) =>
   new Date(date).toLocaleDateString("en-IN", {
     day: "2-digit",
@@ -401,6 +418,15 @@ const buildEmailHtml = ({ date, rows }) => {
 };
 
 const sendDailySalesInsight = async () => {
+  const lockKey = getTodayKey("sales_daily_insight");
+
+  const allowed = await acquireDailyLock(lockKey);
+
+  if (!allowed) {
+    console.log("Sales daily insight already sent today. Skipping duplicate.");
+    return { checked: 0, skipped: true };
+  }
+
   const data = await buildEmployeeStats();
 
   const message = buildWhatsAppMessage(data);

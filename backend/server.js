@@ -4,6 +4,8 @@ const startPaymentReminderCron = require("./cron/paymentReminderCron");
 const startAttendanceCron = require("./cron/attendanceCron");
 const startAttendanceSummaryCron = require("./cron/attendanceSummaryCron");
 const startSalesDailyInsightCron = require("./cron/salesDailyInsightCron");
+const { initWhatsappClient } = require("./util/whatsappClient");
+const startWhatsappHealthCron = require("./cron/whatsappHealthCron");
 
 const app = require("./app");
 const connectDB = require("./db");
@@ -18,9 +20,10 @@ app.get("/", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-
+  initWhatsappClient();
   startPaymentReminderCron();
   startAttendanceCron();
   startAttendanceSummaryCron();
   startSalesDailyInsightCron();
+  startWhatsappHealthCron();
 });
