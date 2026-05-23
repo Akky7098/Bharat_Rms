@@ -13,20 +13,21 @@ const startAttendanceCron = () => {
 
   started = true;
 
-  // Every day at 8:00 AM India time
   cron.schedule(
-    "* * * * *",
+    "0 8 * * *",
     async () => {
       try {
-        console.log("Attendance regularization cron started");
+        console.log("Attendance regularization cron started at 8:00 AM IST");
 
         const result = await createMissedCheckoutRegularizationReminders();
 
         console.log(
-          `Attendance regularization cron completed. Checked: ${result.checked}, Created: ${result.created}`
+          `Attendance regularization cron completed. Checked: ${
+            result?.checked || 0
+          }, Created: ${result?.created || 0}`
         );
       } catch (error) {
-        console.error("Attendance regularization cron failed:", error.message);
+        console.error("Attendance regularization cron failed:", error);
       }
     },
     {
@@ -34,7 +35,7 @@ const startAttendanceCron = () => {
     }
   );
 
-  console.log("Attendance regularization cron scheduled");
+  console.log("Attendance regularization cron scheduled for 8:00 AM IST");
 };
 
 module.exports = startAttendanceCron;
