@@ -5,7 +5,132 @@ const formatDate = (date) => {
     d.getMonth() + 1
   ).padStart(2, "0")}.${d.getFullYear()}`;
 };
+const extractGradesFromSizeText = (value) => {
+  if (!value) return "";
 
+  const knownGrades = [
+    // HOT WORK TOOL STEEL
+    "DIN 1.2714/DB6",
+    "DIN 1.2714",
+    "DB6",
+    "DIN 1.2344/H13",
+    "DIN 1.2344 ESR",
+    "DIN 1.2344",
+    "H13 ESR",
+    "H13",
+    "DIN 1.2343/H11",
+    "DIN 1.2343",
+    "H11",
+
+    // COLD WORK TOOL STEEL
+    "DIN 1.2379/D2",
+    "DIN 1.2379",
+    "D2",
+    "DIN 1.2080/D3",
+    "DIN 1.2080",
+    "D3",
+    "DIN 1.2436",
+    "DIN 1.2436/X210CRW12",
+    "X210CRW12",
+    "DIN 1.2510/O1",
+    "DIN 1.2510",
+    "O1",
+
+    // PLASTIC MOULD STEEL
+    "DIN 1.2311/P20",
+    "DIN 1.2311",
+    "P20",
+    "DIN 1.2738/P20+NI",
+    "DIN 1.2738",
+    "P20+NI",
+    "P20+HH",
+    "PLASTIC MOULD STEEL",
+
+    // HIGH SPEED STEEL
+    "M2",
+    "M35",
+    "M42",
+
+    // ALLOY STEEL
+    "EN8",
+    "EN8D",
+    "EN9",
+    "EN18",
+    "EN19",
+    "EN24",
+    "EN31",
+    "EN31 BRIGHT BAR",
+    "EN36",
+    "EN41B",
+    "EN47",
+    "EN353",
+    "16MNCR5",
+    "20MNCR5",
+    "42CRMO4",
+    "4140",
+    "4340",
+    "8620",
+
+    // CARBON STEEL
+    "C45",
+    "C40",
+    "C20",
+    "IS2062",
+    "SAE1045",
+    "SAE1018",
+
+    // STAINLESS / SPECIAL
+    "SS410",
+    "SS420",
+    "SS431",
+    "SS304",
+    "SS316",
+
+    // COMMON RAW INPUT
+    "TOOL STEEL",
+    "HOT WORK",
+    "COLD WORK",
+    "ALLOY STEEL",
+    "CARBON STEEL"
+  ];
+
+  const found = [];
+
+  const lines = String(value)
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  lines.forEach((line) => {
+    const cleanLine = line
+      .replace(/^\s*\d+\s*[\.\)]\s*/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const upperLine = cleanLine.toUpperCase();
+
+    const matchedGrade = knownGrades.find((grade) =>
+      upperLine.includes(grade.toUpperCase())
+    );
+
+    if (matchedGrade && !found.includes(matchedGrade)) {
+      found.push(matchedGrade);
+      return;
+    }
+
+    const fallback = cleanLine
+      .split(
+        /\s*(?:,|\s-\s|\s+Dia\b|\s+DIA\b|\s+Qty\b|\s+QTY\b|\s+PCS\b|\s+Nos\b|\s+at\b|\s+AT\b)\s*/
+      )[0]
+      .trim();
+
+    if (fallback && !found.includes(fallback)) {
+      found.push(fallback);
+    }
+  });
+
+  return found.join("<br/>");
+};
 const preShipmentInspectionTemplate = (salesOrder) => {
   return `
 <!DOCTYPE html>
@@ -181,7 +306,7 @@ td {
 
 <tr>
   <td class="bold">Grade (As per PO)</td>
-  <td class="red">${salesOrder.sizeGradeQuantityRate || ""}</td>
+  <td class="red">${extractGradesFromSizeText(salesOrder.sizeGradeQuantityRate)}</td>
   <td></td>
 </tr>
 

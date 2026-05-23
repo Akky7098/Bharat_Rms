@@ -44,10 +44,24 @@ const formatFreight = (salesOrder) => {
 const highlightRs = (value) => {
   if (!value) return "";
 
-  return String(value).replace(
-    /(Rs\.?\s*[0-9,]+(?:\.[0-9]+)?(?:\/-)?(?:\s*\/\s*Kg|\s*\/Kg|\s*per\s*Kg)?|@\s*Rs\.?\s*[0-9,]+(?:\s*\/\s*Kg|\s*\/Kg)?)/gi,
+  let text = String(value);
+
+  text = text.replace(
+    /((?:@?\s*Rs\.?\s*)?\d[\d,]*(?:\.\d+)?\s*\/-\s*(?:per\s*kg|\/\s*kg|kg\+gst)?)/gi,
     `<span class="red">$1</span>`
   );
+
+  text = text.replace(
+    /(@\s*\d[\d,]*(?:\.\d+)?(?:\s*(?:per\s*kg|\/\s*kg|kg\+gst))?)/gi,
+    `<span class="red">$1</span>`
+  );
+
+  text = text.replace(
+    /((?:Rs\.?\s*)\d[\d,]*(?:\.\d+)?(?:\s*(?:per\s*kg|\/\s*kg|kg\+gst))?)/gi,
+    `<span class="red">$1</span>`
+  );
+
+  return text;
 };
 const formatIndianCurrency = (value) => {
   if (value === null || value === undefined || value === "") {
