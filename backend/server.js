@@ -28,21 +28,21 @@ const startApp = async () => {
     res.send("Backend is running");
   });
 
-  app.listen(PORT, () => {
+ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 
   if (process.env.ENABLE_BACKGROUND_JOBS === "true") {
     console.log("Starting background jobs...");
+
+    initWhatsappClient();
 
     startPaymentReminderCron();
     startAttendanceCron();
     startAttendanceSummaryCron();
     startSalesDailyInsightCron();
     startWhatsappHealthCron();
-
-    setTimeout(() => {
-      initWhatsappClient();
-    }, 10000);
+  } else {
+    console.log("Background jobs disabled.");
   }
 });
 };

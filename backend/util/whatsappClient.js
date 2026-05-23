@@ -98,17 +98,17 @@ const initWhatsappClient = () => {
 
     console.log("WhatsApp client is ready");
 
-    try {
-      const chats = await whatsappClient.getChats();
-      const groups = chats.filter((chat) => chat.isGroup);
+    // try {
+    //   const chats = await whatsappClient.getChats();
+    //   const groups = chats.filter((chat) => chat.isGroup);
 
-      console.log("Available WhatsApp Groups:");
-      groups.forEach((group) => {
-        console.log(`${group.name} => ${group.id._serialized}`);
-      });
-    } catch (error) {
-      console.log("Unable to list WhatsApp groups:", error.message);
-    }
+    //   console.log("Available WhatsApp Groups:");
+    //   groups.forEach((group) => {
+    //     console.log(`${group.name} => ${group.id._serialized}`);
+    //   });
+    // } catch (error) {
+    //   console.log("Unable to list WhatsApp groups:", error.message);
+    // }
   });
 
   whatsappClient.on("auth_failure", (msg) => {
