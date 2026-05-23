@@ -144,16 +144,28 @@ const initWhatsappClient = () => {
     }, 5000);
   });
 
-  whatsappClient.initialize().catch((error) => {
-    isReady = false;
-    isInitializing = false;
-    latestQr = null;
-    whatsappClient = null;
+  whatsappClient.initialize().catch(async (error) => {
+  isReady = false;
+  isInitializing = false;
+  latestQr = null;
 
-    console.log("WhatsApp initialize error:", error.message);
-  });
+  console.log("WhatsApp initialize error:", error.message);
 
-  return whatsappClient;
+  if (
+    error.message &&
+    error.message.includes("browser is already running")
+  ) {
+    console.log(
+      "Existing WhatsApp Chromium session detected. Health cron will recover connection."
+    );
+
+    return;
+  }
+
+  whatsappClient = null;
+});
+
+return whatsappClient;
 };
 
 const getWhatsappClient = () => {

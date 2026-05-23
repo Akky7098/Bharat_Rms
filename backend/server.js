@@ -29,22 +29,22 @@ const startApp = async () => {
   });
 
   app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 
-    if (process.env.ENABLE_BACKGROUND_JOBS === "true") {
-      console.log("Starting background jobs...");
+  if (process.env.ENABLE_BACKGROUND_JOBS === "true") {
+    console.log("Starting background jobs...");
 
+    startPaymentReminderCron();
+    startAttendanceCron();
+    startAttendanceSummaryCron();
+    startSalesDailyInsightCron();
+    startWhatsappHealthCron();
+
+    setTimeout(() => {
       initWhatsappClient();
-
-      startPaymentReminderCron();
-      startAttendanceCron();
-      startAttendanceSummaryCron();
-      startSalesDailyInsightCron();
-      startWhatsappHealthCron();
-    } else {
-      console.log("Background jobs disabled.");
-    }
-  });
+    }, 10000);
+  }
+});
 };
 
 startApp();
