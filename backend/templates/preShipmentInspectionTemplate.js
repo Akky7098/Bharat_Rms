@@ -9,57 +9,38 @@ const extractGradesFromSizeText = (value) => {
   if (!value) return "";
 
   const knownGrades = [
-    // HOT WORK TOOL STEEL
     "DIN 1.2714/DB6",
-    "DIN 1.2714",
-    "DB6",
     "DIN 1.2344/H13",
     "DIN 1.2344 ESR",
-    "DIN 1.2344",
-    "H13 ESR",
-    "H13",
     "DIN 1.2343/H11",
-    "DIN 1.2343",
-    "H11",
-
-    // COLD WORK TOOL STEEL
     "DIN 1.2379/D2",
-    "DIN 1.2379",
-    "D2",
     "DIN 1.2080/D3",
-    "DIN 1.2080",
-    "D3",
-    "DIN 1.2436",
     "DIN 1.2436/X210CRW12",
-    "X210CRW12",
     "DIN 1.2510/O1",
-    "DIN 1.2510",
-    "O1",
-
-    // PLASTIC MOULD STEEL
     "DIN 1.2311/P20",
-    "DIN 1.2311",
-    "P20",
     "DIN 1.2738/P20+NI",
+    "EN31 BRIGHT BAR",
+    "P20 PLASTIC MOULD STEEL",
+    "H13 ESR",
+    "DIN 1.2714",
+    "DIN 1.2344",
+    "DIN 1.2343",
+    "DIN 1.2379",
+    "DIN 1.2080",
+    "DIN 1.2436",
+    "DIN 1.2510",
+    "DIN 1.2311",
     "DIN 1.2738",
+    "X210CRW12",
     "P20+NI",
     "P20+HH",
-    "PLASTIC MOULD STEEL",
-
-    // HIGH SPEED STEEL
-    "M2",
-    "M35",
-    "M42",
-
-    // ALLOY STEEL
-    "EN8",
     "EN8D",
-    "EN9",
-    "EN18",
-    "EN19",
-    "EN24",
     "EN31",
-    "EN31 BRIGHT BAR",
+    "EN24",
+    "EN19",
+    "EN18",
+    "EN9",
+    "EN8",
     "EN36",
     "EN41B",
     "EN47",
@@ -70,67 +51,63 @@ const extractGradesFromSizeText = (value) => {
     "4140",
     "4340",
     "8620",
-
-    // CARBON STEEL
     "C45",
     "C40",
     "C20",
     "IS2062",
     "SAE1045",
     "SAE1018",
-
-    // STAINLESS / SPECIAL
     "SS410",
     "SS420",
     "SS431",
     "SS304",
     "SS316",
-
-    // COMMON RAW INPUT
-    "TOOL STEEL",
-    "HOT WORK",
-    "COLD WORK",
-    "ALLOY STEEL",
-    "CARBON STEEL"
-  ];
+    "M2",
+    "M35",
+    "M42",
+    "DB6",
+    "H13",
+    "H11",
+    "D2",
+    "D3",
+    "O1",
+    "P20",
+  ].sort((a, b) => b.length - a.length);
 
   const found = [];
 
-  const lines = String(value)
+  String(value)
     .split(/\n+/)
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .forEach((line) => {
+      const cleanLine = line
+        .replace(/^\s*\d+\s*[\.\)]\s*/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
 
-  lines.forEach((line) => {
-    const cleanLine = line
-      .replace(/^\s*\d+\s*[\.\)]\s*/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
+      const upperLine = cleanLine.toUpperCase();
 
-    const upperLine = cleanLine.toUpperCase();
+      const matchedGrade = knownGrades.find((grade) =>
+        upperLine.includes(grade.toUpperCase())
+      );
 
-    const matchedGrade = knownGrades.find((grade) =>
-      upperLine.includes(grade.toUpperCase())
-    );
+      if (matchedGrade) {
+        if (!found.includes(matchedGrade)) found.push(matchedGrade);
+        return;
+      }
 
-    if (matchedGrade && !found.includes(matchedGrade)) {
-      found.push(matchedGrade);
-      return;
-    }
+      const fallback = cleanLine
+        .split(/\s*(?:,|\s+-\s+|\bDIA\b|\bDIAMETER\b|\bQTY\b|\bSIZE\b|\bPCS\b|\bNOS\b|\bAT\b)\s*/i)[0]
+        .trim();
 
-    const fallback = cleanLine
-      .split(
-        /\s*(?:,|\s-\s|\s+Dia\b|\s+DIA\b|\s+Qty\b|\s+QTY\b|\s+PCS\b|\s+Nos\b|\s+at\b|\s+AT\b)\s*/
-      )[0]
-      .trim();
-
-    if (fallback && !found.includes(fallback)) {
-      found.push(fallback);
-    }
-  });
+      if (fallback && !found.includes(fallback)) {
+        found.push(fallback);
+      }
+    });
 
   return found.join("<br/>");
-};
+};  
 const preShipmentInspectionTemplate = (salesOrder) => {
   return `
 <!DOCTYPE html>
