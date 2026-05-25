@@ -419,10 +419,14 @@ const syncFromTallyReceivables = async (tallyData = [], user) => {
 
       await receivable.save();
       synced++;
-    } catch (error) {
-      skipped++;
-      errors.push(error.message);
-    }
+   } catch (error) {
+  skipped++;
+
+  console.error("TALLY SYNC ITEM ERROR:");
+  console.error(error);
+
+  errors.push(error.message);
+}
   }
 
   return {

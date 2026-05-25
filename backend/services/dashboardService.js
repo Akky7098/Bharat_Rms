@@ -1,5 +1,7 @@
 const SalesOrder = require("../model/salesOrderModel");
 const Enquiry = require("../model/enquiryModel");
+const mongoose = require("mongoose");
+const Receivable = require("../model/receivableModel");
 
 const getDateFilter = (fromDate, toDate, fieldName) => {
   const filter = {};
@@ -721,133 +723,180 @@ const getDashboardSummary = async (query, user) => {
 /* CASHFLOW DASHBOARD */
 /* ===================================== */
 
-const getCashflowSummary = async (
-  query,
-  user
-) => {
+const getCashflowSummary = async (query, user) => {
   const { fromDate, toDate } = query;
 
-  const filter = {
-    ...getDateFilter(
-      fromDate,
-      toDate,
-      "orderDate"
-    ),
-  };
+  const invoiceDateFilter = {};
 
-  if (
-    user.role !== "admin" &&
-    user.role !== "super_admin"
-  ) {
-    filter.salesPersonId = user.id;
+  if (fromDate || toDate) {
+    invoiceDateFilter["invoices.invoiceDate"] = {};
+
+    if (fromDate) {
+      invoiceDateFilter["invoices.invoiceDate"].$gte = new Date(fromDate);
+    }
+
+    if (toDate) {
+      const endDate = new Date(toDate);
+      endDate.setHours(23, 59, 59, 999);
+      invoiceDateFilter["invoices.invoiceDate"].$lte = endDate;
+    }
   }
 
-  const data =
-    await SalesOrder.aggregate([
-      {
-        $match: filter,
-      },
+  const baseFilter = {
+    isActive: true,
+  };
 
-      {
-        $group: {
-          _id: null,
+  if (user.role !== "admin" && user.role !== "super_admin" && user.role !== "accounts") {
+    baseFilter["salesPersons.userId"] = new mongoose.Types.ObjectId(
+      user._id || user.id
+    );
+  }
 
-          totalRevenue: {
-            $sum: "$valueInRupees",
-          },
+  const summaryData = await Receivable.aggregate([
+    {
+      $match: baseFilter,
+    },
+    {
+      $unwind: "$invoices",
+    },
+    {
+      $match: invoiceDateFilter,
+    },
+    {
+      $group: {
+        _id: null,
 
-          totalPaid: {
-            $sum: "$paidAmount",
-          },
+        totalRevenue: {
+          $sum: "$invoices.invoiceAmount",
+        },
 
-          totalPending: {
-            $sum: "$pendingAmount",
-          },
+        totalPaid: {
+          $sum: "$invoices.receivedAmount",
+        },
 
-          overdueAmount: {
-            $sum: {
-              $cond: [
-                {
-                  $eq: [
-                    "$paymentStatus",
-                    "overdue",
-                  ],
-                },
+        totalPending: {
+          $sum: "$invoices.pendingAmount",
+        },
 
-                "$pendingAmount",
-
-                0,
-              ],
-            },
+        overdueAmount: {
+          $sum: {
+            $cond: [
+              {
+                $eq: ["$invoices.status", "overdue"],
+              },
+              "$invoices.pendingAmount",
+              0,
+            ],
           },
         },
       },
-    ]);
+    },
+  ]);
 
-  const result = data[0] || {
+  const result = summaryData[0] || {
     totalRevenue: 0,
     totalPaid: 0,
     totalPending: 0,
     overdueAmount: 0,
   };
 
-  /* UPCOMING DUES */
+  const today = new Date();
 
-  const upcomingDuePayments =
-    await SalesOrder.find({
-      ...filter,
+  const nextThreeDays = new Date();
+  nextThreeDays.setDate(today.getDate() + 3);
+  nextThreeDays.setHours(23, 59, 59, 999);
 
-      paymentStatus: {
-        $in: [
-          "pending",
-          "partial",
-        ],
+  const upcomingDuePayments = await Receivable.aggregate([
+    {
+      $match: baseFilter,
+    },
+    {
+      $unwind: "$invoices",
+    },
+    {
+      $match: {
+        "invoices.status": {
+          $in: ["pending", "partial"],
+        },
+        "invoices.pendingAmount": {
+          $gt: 0,
+        },
+        "invoices.dueDate": {
+          $gte: today,
+          $lte: nextThreeDays,
+        },
       },
-
-      paymentDueDate: {
-        $gte: new Date(),
-
-        $lte: new Date(
-          Date.now() +
-            3 *
-              24 *
-              60 *
-              60 *
-              1000
-        ),
+    },
+    {
+      $sort: {
+        "invoices.dueDate": 1,
       },
-    })
-      .populate(
-        "salesPersonId",
-        "name email"
-      )
-      .sort({
-        paymentDueDate: 1,
-      })
-      .limit(5);
+    },
+    {
+      $limit: 5,
+    },
+    {
+      $project: {
+        _id: 1,
+        companyName: 1,
+        tallyLedgerName: 1,
+        invoiceNumber: "$invoices.invoiceNumber",
+        invoiceDate: "$invoices.invoiceDate",
+        paymentDueDate: "$invoices.dueDate",
+        invoiceAmount: "$invoices.invoiceAmount",
+        paidAmount: "$invoices.receivedAmount",
+        pendingAmount: "$invoices.pendingAmount",
+        paymentStatus: "$invoices.status",
+        overdueDays: "$invoices.overdueDays",
+        salesPersons: 1,
+      },
+    },
+  ]);
 
-  /* OVERDUE */
-
-  const overduePayments =
-    await SalesOrder.find({
-      ...filter,
-
-      paymentStatus: "overdue",
-    })
-      .populate(
-        "salesPersonId",
-        "name email"
-      )
-      .sort({
-        paymentDueDate: 1,
-      })
-      .limit(5);
+  const overduePayments = await Receivable.aggregate([
+    {
+      $match: baseFilter,
+    },
+    {
+      $unwind: "$invoices",
+    },
+    {
+      $match: {
+        "invoices.status": "overdue",
+        "invoices.pendingAmount": {
+          $gt: 0,
+        },
+      },
+    },
+    {
+      $sort: {
+        "invoices.dueDate": 1,
+      },
+    },
+    {
+      $limit: 5,
+    },
+    {
+      $project: {
+        _id: 1,
+        companyName: 1,
+        tallyLedgerName: 1,
+        invoiceNumber: "$invoices.invoiceNumber",
+        invoiceDate: "$invoices.invoiceDate",
+        paymentDueDate: "$invoices.dueDate",
+        invoiceAmount: "$invoices.invoiceAmount",
+        paidAmount: "$invoices.receivedAmount",
+        pendingAmount: "$invoices.pendingAmount",
+        paymentStatus: "$invoices.status",
+        overdueDays: "$invoices.overdueDays",
+        salesPersons: 1,
+      },
+    },
+  ]);
 
   return {
     ...result,
-
     upcomingDuePayments,
-
     overduePayments,
   };
 };

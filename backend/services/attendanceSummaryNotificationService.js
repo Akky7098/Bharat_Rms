@@ -7,7 +7,9 @@ const {
 } = require("../util/whatsappClient");
 
 const MANAGER_EMAIL =
-  process.env.MANAGER_EMAIL || process.env.ADMIN_EMAIL || "info@bharatspecialsteels.com";
+  process.env.MANAGER_EMAIL ||
+  process.env.ADMIN_EMAIL ||
+  "info@bharatspecialsteels.com";
 
 const WHATSAPP_GROUP_ID = process.env.ATTENDANCE_WHATSAPP_GROUP_ID;
 
@@ -15,7 +17,9 @@ const REQUIRED_WORK_MINUTES = 9 * 60;
 
 const getStartOfTodayIST = () => {
   const now = new Date();
-  const istDate = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const istDate = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
   istDate.setHours(0, 0, 0, 0);
   return istDate;
 };
@@ -58,12 +62,31 @@ const formatMinutes = (minutes) => {
   return `${mins}m`;
 };
 
+const getISTHourMinute = (date) => {
+  const d = new Date(date);
+  const ist = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+
+  return {
+    hour: ist.getHours(),
+    minute: ist.getMinutes(),
+  };
+};
+
+const isAfterTimeIST = (date, hour, minute) => {
+  if (!date) return false;
+
+  const t = getISTHourMinute(date);
+
+  return t.hour > hour || (t.hour === hour && t.minute > minute);
+};
+
 const normalizeId = (value) => String(value || "");
 
 const sendWhatsAppText = async (message) => {
   if (!WHATSAPP_GROUP_ID) return;
 
   const ready = await isWhatsappReady();
+
   if (!ready) {
     console.log("Attendance summary WhatsApp skipped: client not ready");
     return;
@@ -105,7 +128,9 @@ const getTodayData = async () => {
       };
     })
     .sort((a, b) =>
-      String(a.employee?.name || "").localeCompare(String(b.employee?.name || ""))
+      String(a.employee?.name || "").localeCompare(
+        String(b.employee?.name || "")
+      )
     );
 
   return {
@@ -136,14 +161,9 @@ const buildMorningWhatsAppMessage = ({ date, rows }) => {
     (r) => getEmployeeMode(r.employee, r.attendance) === "WFH"
   );
 
-  const late = present.filter((r) => {
-    const t = r.attendance?.checkIn?.time;
-    if (!t) return false;
-
-    const d = new Date(t);
-    const ist = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-    return ist.getHours() > 10 || (ist.getHours() === 10 && ist.getMinutes() > 15);
-  });
+  const late = present.filter((r) =>
+    isAfterTimeIST(r.attendance?.checkIn?.time, 9, 45)
+  );
 
   const line = (r) => {
     const name = r.employee?.name || r.attendance?.employeeName || "-";
@@ -168,6 +188,7 @@ ${
             r.attendance?.checkIn?.locationAddress ||
             r.attendance?.checkOut?.locationAddress ||
             "Location captured";
+
           return `• ${r.employee?.name || "-"} — ${formatTime(
             r.attendance?.checkIn?.time
           )}\n  ${address}`;
@@ -176,7 +197,7 @@ ${
     : "No WFH check-ins"
 }
 
-⚠️ *Late / After 10:15*
+⚠️ *Late / After 9:45*
 ${late.length ? late.map(line).join("\n") : "None"}
 
 ❌ *Not Checked In (${absent.length})*
@@ -185,26 +206,28 @@ ${absent.length ? absent.map((r) => `• ${r.employee?.name || "-"}`).join("\n")
 
 const buildEveningWhatsAppMessage = ({ date, rows }) => {
   const checkedOut = rows.filter((r) => r.attendance?.checkOut?.time);
-  const stillWorking = rows.filter(
-    (r) => r.attendance?.checkIn?.time && !r.attendance?.checkOut?.time
-  );
-  const notCheckedIn = rows.filter((r) => !r.attendance?.checkIn?.time);
 
-  const checkedOutLine = (r) => {
-    const name = r.employee?.name || r.attendance?.employeeName || "-";
-    return `• ${name} — ${formatTime(r.attendance?.checkOut?.time)} — ${formatMinutes(
-      r.attendance?.totalWorkingMinutes
-    )}`;
-  };
-
-  const stillWorkingLine = (r) => {
-    const name = r.employee?.name || r.attendance?.employeeName || "-";
-    return `• ${name} — Checked in ${formatTime(r.attendance?.checkIn?.time)}`;
-  };
+  const absent = rows.filter((r) => !r.attendance?.checkIn?.time);
 
   const shortHours = checkedOut.filter(
     (r) => Number(r.attendance?.totalWorkingMinutes || 0) < REQUIRED_WORK_MINUTES
   );
+
+  const checkedOutLine = (r) => {
+    const name = r.employee?.name || r.attendance?.employeeName || "-";
+
+    return `• ${name} — ${formatTime(
+      r.attendance?.checkOut?.time
+    )} — ${formatMinutes(r.attendance?.totalWorkingMinutes)}`;
+  };
+
+  const shortHoursLine = (r) => {
+    const name = r.employee?.name || r.attendance?.employeeName || "-";
+    const worked = Number(r.attendance?.totalWorkingMinutes || 0);
+    const shortBy = Math.max(REQUIRED_WORK_MINUTES - worked, 0);
+
+    return `• ${name} — Short by ${formatMinutes(shortBy)}`;
+  };
 
   return `📊 *Bharat RMS Attendance Closing Summary*
 Date: ${formatDate(date)}
@@ -213,14 +236,11 @@ Time: 7:00 PM
 ✅ *Checked Out (${checkedOut.length})*
 ${checkedOut.length ? checkedOut.map(checkedOutLine).join("\n") : "No check-outs yet"}
 
-⏳ *Still Working (${stillWorking.length})*
-${stillWorking.length ? stillWorking.map(stillWorkingLine).join("\n") : "None"}
-
 ⚠️ *Short Hours (${shortHours.length})*
-${shortHours.length ? shortHours.map(checkedOutLine).join("\n") : "None"}
+${shortHours.length ? shortHours.map(shortHoursLine).join("\n") : "None"}
 
-❌ *Not Checked In (${notCheckedIn.length})*
-${notCheckedIn.length ? notCheckedIn.map((r) => `• ${r.employee?.name || "-"}`).join("\n") : "None"}`;
+❌ *Absent (${absent.length})*
+${absent.length ? absent.map((r) => `• ${r.employee?.name || "-"}`).join("\n") : "None"}`;
 };
 
 const buildEmailHtml = ({ title, subtitle, rows, type }) => {
@@ -235,6 +255,8 @@ const buildEmailHtml = ({ title, subtitle, rows, type }) => {
         ? "Checked Out"
         : checkedIn
         ? "Still Working"
+        : type === "Evening"
+        ? "Absent"
         : "Not Checked In";
 
       const location =

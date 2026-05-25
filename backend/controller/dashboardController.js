@@ -45,18 +45,19 @@ const getCashflowSummary = async (req, res) => {
       req.user
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
+      message: "Tally receivable cashflow summary fetched successfully",
       data,
     });
   } catch (error) {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
-      message: error.message,
+      message:
+        error.message || "Failed to fetch Tally receivable cashflow summary",
     });
   }
 };
-
 module.exports = {
   getDashboardSummary,
   getActionRequiredInsights,
