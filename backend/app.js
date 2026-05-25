@@ -15,6 +15,7 @@ const whatsappApprovalRoutes = require("./routes/whatsappApprovalRoutes");
 const whatsappStatusRoutes = require("./routes/whatsappStatusRoutes");
 const documentRoutes = require("./routes/documentRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
+const receivableRoutes = require("./routes/receivableRoutes");
 const app = express();
 
 // OPEN CORS - temporary for testing
@@ -84,4 +85,5 @@ app.use("/api/whatsapp", whatsappStatusRoutes);
 app.use("/uploads", express.static("uploads"));
 app.use("/api/documents", documentRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/receivables", receivableRoutes);
 module.exports = app;
