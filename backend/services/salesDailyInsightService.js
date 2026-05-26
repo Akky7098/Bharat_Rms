@@ -5,26 +5,24 @@ const SalesOrder = require("../model/salesOrderModel");
 const transporter = require("../util/mailTransporter");
 const { getWhatsappClient, isWhatsappReady } = require("../util/whatsappClient");
 const CronLock = require("../model/cronLockModel");
-
-const {
-  generateSalesInsight,
-  generateManagementInsight,
-} = require("./aiInsightService");
+const { generateTeamSalesCoachInsight } = require("./aiInsightService");
 
 const SALES_GROUP_ID = process.env.SALES_DAILY_WHATSAPP_GROUP_ID;
-
 const MANAGER_EMAIL =
   process.env.MANAGER_EMAIL ||
   process.env.ADMIN_EMAIL ||
   "info@bharatspecialsteels.com";
 
-const getISTRange = () => {
+const EXCLUDED_FROM_SALES_REPORT = ["Sonia", "Deepak Arya"];
+
+const getISTRange = (daysBack = 0) => {
   const now = new Date();
   const istNow = new Date(
     now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
   );
 
   const start = new Date(istNow);
+  start.setDate(start.getDate() - daysBack);
   start.setHours(0, 0, 0, 0);
 
   const end = new Date(istNow);
@@ -37,7 +35,6 @@ const getTodayKey = (prefix) => {
   const today = new Date().toLocaleDateString("en-CA", {
     timeZone: "Asia/Kolkata",
   });
-
   return `${prefix}_${today}`;
 };
 
@@ -73,11 +70,12 @@ const daysOverdue = (date) => {
   return Math.max(Math.floor(diff / (1000 * 60 * 60 * 24)), 0);
 };
 
+const getEmployeeName = (emp) => emp?.name || "Unknown";
+
 const sendWhatsapp = async (message) => {
   if (!SALES_GROUP_ID) return;
 
   const ready = await isWhatsappReady();
-
   if (!ready) {
     console.log("Sales daily insight WhatsApp skipped: client not ready");
     return;
@@ -87,81 +85,21 @@ const sendWhatsapp = async (message) => {
   return client.sendMessage(SALES_GROUP_ID, message);
 };
 
-const getEmployeeName = (emp) => emp?.name || "Unknown";
-
 const getSalesEmployees = async () => {
   return User.find({
     role: { $in: ["user", "admin"] },
+    name: { $nin: EXCLUDED_FROM_SALES_REPORT },
   })
     .select("_id name email role")
     .lean();
 };
 
-const buildFallbackInsight = (row) => {
-  const name = getEmployeeName(row.employee);
+const getRangeStats = async (employees, daysBack) => {
+  const { start, end } = getISTRange(daysBack);
 
-  const priorityQuote = [...row.overdueQuotations].sort(
-    (a, b) => b.overdueDays - a.overdueDays || b.qty - a.qty
-  )[0];
-
-  if (
-    row.calls === 0 &&
-    row.visits === 0 &&
-    row.emails === 0 &&
-    row.enquiries === 0 &&
-    row.quotations === 0 &&
-    row.wonOrders === 0
-  ) {
-    return `🚨 ${name} recorded zero sales activity today. Management should verify whether field work happened but was not updated, or if this was a zero-productivity day.`;
-  }
-
-  if (row.wonOrders > 0 && priorityQuote) {
-    return `✅ ${name} won ${row.wonOrders} order(s), but pipeline risk remains. ${priorityQuote.companyName} quotation is overdue by ${priorityQuote.overdueDays} day(s); manager should check why this is still open.`;
-  }
-
-  if (row.overdueClosures.length >= 10) {
-    return `🚨 ${name} has ${row.overdueClosures.length} overdue closure follow-up(s). This indicates pipeline neglect; management should review old opportunities before allowing more new follow-ups.`;
-  }
-
-  if (row.calls >= 15 && row.quotations === 0 && row.wonOrders === 0) {
-    return `⚠ ${name} has high activity but no conversion. Management should review lead quality, call effectiveness, and whether follow-ups are moving toward quotation.`;
-  }
-
-  if (row.enquiries > 0 && row.quotations === 0) {
-    return `⚠ ${name} generated ${row.enquiries} enquiry(s) but no quotation moved. The bottleneck is quotation release or technical follow-up; manager intervention is needed.`;
-  }
-
-  if (row.overdueQuotations.length > 0) {
-    return `🚨 ${name} has ${row.overdueQuotations.length} feasible quotation(s) overdue. These should be closed before new low-value activity is reviewed.`;
-  }
-
-  if (row.quotations > 0 || row.wonOrders > 0) {
-    return `🟢 ${name} showed productive movement today with ${row.quotations} quotation(s) and ${row.wonOrders} won order(s). Keep focus on closing pending opportunities.`;
-  }
-
-  return `⚠ ${name} has activity but limited business movement. Management should ask what outcome came from today's calls and which customer will move next.`;
-};
-
-const buildEmployeeStats = async () => {
-  const { start, end, now } = getISTRange();
-
-  const [
-    employees,
-    enquiriesToday,
-    allPendingEnquiries,
-    coldCallsToday,
-    salesOrdersToday,
-    lostToday,
-  ] = await Promise.all([
-    getSalesEmployees(),
-
+  const [enquiries, coldCalls, orders, lost] = await Promise.all([
     Enquiry.find({
       enquiryDate: { $gte: start, $lte: end },
-    }).lean(),
-
-    Enquiry.find({
-      "feasibility.status": "feasible",
-      "closure.status": "pending",
     }).lean(),
 
     ColdCall.find({
@@ -182,7 +120,6 @@ const buildEmployeeStats = async () => {
 
   employees.forEach((emp) => {
     map.set(String(emp._id), {
-      employee: emp,
       calls: 0,
       visits: 0,
       emails: 0,
@@ -192,14 +129,10 @@ const buildEmployeeStats = async () => {
       wonValue: 0,
       lostOrders: 0,
       lostReasons: {},
-      overdueQuotations: [],
-      overdueClosures: [],
-      score: 0,
-      insight: "",
     });
   });
 
-  coldCallsToday.forEach((item) => {
+  coldCalls.forEach((item) => {
     const key = String(item.salesPersonId);
     if (!map.has(key)) return;
 
@@ -208,7 +141,7 @@ const buildEmployeeStats = async () => {
     if (item.activityType === "email") map.get(key).emails += 1;
   });
 
-  enquiriesToday.forEach((item) => {
+  enquiries.forEach((item) => {
     const key = String(item.salesPersonId);
     if (!map.has(key)) return;
 
@@ -219,7 +152,7 @@ const buildEmployeeStats = async () => {
     }
   });
 
-  salesOrdersToday.forEach((item) => {
+  orders.forEach((item) => {
     const key = String(item.salesPersonId);
     if (!map.has(key)) return;
 
@@ -227,15 +160,182 @@ const buildEmployeeStats = async () => {
     map.get(key).wonValue += Number(item.orderValue || 0);
   });
 
-  lostToday.forEach((item) => {
+  lost.forEach((item) => {
     const key = String(item.salesPersonId);
     if (!map.has(key)) return;
 
     const reason = item.closure?.lostRemark || "not_specified";
-
     map.get(key).lostOrders += 1;
     map.get(key).lostReasons[reason] =
       (map.get(key).lostReasons[reason] || 0) + 1;
+  });
+
+  return map;
+};
+
+const calculateProductivityScore = (row) => {
+  let score = 0;
+
+  score += row.calls * 1;
+  score += row.visits * 5;
+  score += row.emails * 1;
+  score += row.enquiries * 8;
+  score += row.quotations * 14;
+  score += row.wonOrders * 30;
+
+  score -= row.lostOrders * 6;
+  score -= row.overdueQuotations.length * 10;
+  score -= row.overdueClosures.length * 3;
+
+  if (
+    row.calls >= 15 &&
+    row.quotations === 0 &&
+    row.wonOrders === 0
+  ) {
+    score -= 15;
+  }
+
+  if (
+    row.calls === 0 &&
+    row.visits === 0 &&
+    row.emails === 0 &&
+    row.enquiries === 0 &&
+    row.quotations === 0 &&
+    row.wonOrders === 0
+  ) {
+    score -= 20;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+};
+
+const buildFallbackCoaching = (row) => {
+  const name = getEmployeeName(row.employee);
+
+  const priorityQuote = [...row.overdueQuotations].sort(
+    (a, b) => b.overdueDays - a.overdueDays || b.qty - a.qty
+  )[0];
+
+  const bullets = [];
+
+  if (row.productivityScore >= 75) {
+    bullets.push(`Strong productive movement today with a score of ${row.productivityScore}/100.`);
+  } else if (row.productivityScore >= 45) {
+    bullets.push(`Moderate productivity today with a score of ${row.productivityScore}/100.`);
+  } else {
+    bullets.push(`Low productivity today with a score of ${row.productivityScore}/100.`);
+  }
+
+  if (
+    row.calls === 0 &&
+    row.visits === 0 &&
+    row.emails === 0 &&
+    row.enquiries === 0 &&
+    row.quotations === 0 &&
+    row.wonOrders === 0
+  ) {
+    bullets.push(
+      "No measurable activity was updated today; if field work happened, RMS update discipline needs improvement."
+    );
+    bullets.push(
+      "Tomorrow first priority should be visible customer movement before noon."
+    );
+  }
+
+  if (row.calls >= 15 && row.quotations === 0 && row.wonOrders === 0) {
+    bullets.push(
+      `${row.calls} calls did not convert into quotation or order movement; review call quality and lead fit.`
+    );
+  }
+
+  if (row.enquiries > 0 && row.quotations === 0) {
+    bullets.push(
+      `${row.enquiries} enquiry(s) came in, but quotation movement is missing; tomorrow focus should shift to quotation release.`
+    );
+  }
+
+  if (priorityQuote) {
+    bullets.push(
+      `${priorityQuote.companyName} quotation is overdue by ${priorityQuote.overdueDays} day(s); close, escalate, or mark reality.`
+    );
+  }
+
+  if (row.overdueClosures.length >= 10) {
+    bullets.push(
+      `${row.overdueClosures.length} closure follow-up(s) are overdue; this is now a pipeline hygiene risk.`
+    );
+  }
+
+  if (row.wonOrders > 0) {
+    bullets.push(
+      `${row.wonOrders} order(s) won today; keep momentum but do not allow overdue pipeline to remain unattended.`
+    );
+  }
+
+  if (row.week7.calls > row.today.calls && row.today.calls === 0) {
+    bullets.push(
+      "Compared to the recent week, today's activity is visibly lower; check whether this is a pipeline issue or update gap."
+    );
+  }
+
+  if (!bullets.length) {
+    bullets.push(
+      "Activity is present, but management should ask which customer will move to quotation/order next."
+    );
+  }
+
+  return bullets.slice(0, 6);
+};
+
+const buildEmployeeStats = async () => {
+  const { start, end, now } = getISTRange();
+
+  const employees = await getSalesEmployees();
+
+  const [
+    todayStats,
+    week7Stats,
+    month30Stats,
+    allPendingEnquiries,
+  ] = await Promise.all([
+    getRangeStats(employees, 0),
+    getRangeStats(employees, 6),
+    getRangeStats(employees, 29),
+
+    Enquiry.find({
+      "feasibility.status": "feasible",
+      "closure.status": "pending",
+    }).lean(),
+  ]);
+
+  const map = new Map();
+
+  employees.forEach((emp) => {
+    const today = todayStats.get(String(emp._id)) || {};
+    const week7 = week7Stats.get(String(emp._id)) || {};
+    const month30 = month30Stats.get(String(emp._id)) || {};
+
+    map.set(String(emp._id), {
+      employee: emp,
+
+      calls: today.calls || 0,
+      visits: today.visits || 0,
+      emails: today.emails || 0,
+      enquiries: today.enquiries || 0,
+      quotations: today.quotations || 0,
+      wonOrders: today.wonOrders || 0,
+      wonValue: today.wonValue || 0,
+      lostOrders: today.lostOrders || 0,
+      lostReasons: today.lostReasons || {},
+
+      week7,
+      month30,
+
+      overdueQuotations: [],
+      overdueClosures: [],
+      productivityScore: 0,
+      coachingBullets: [],
+    });
   });
 
   allPendingEnquiries.forEach((item) => {
@@ -274,22 +374,12 @@ const buildEmployeeStats = async () => {
   });
 
   const rows = Array.from(map.values()).map((row) => {
-    row.score =
-      row.calls * 1 +
-      row.visits * 2 +
-      row.emails * 1 +
-      row.enquiries * 3 +
-      row.quotations * 5 +
-      row.wonOrders * 15 -
-      row.overdueQuotations.length * 5 -
-      row.overdueClosures.length * 3;
-
-    row.insight = buildFallbackInsight(row);
-
+    row.productivityScore = calculateProductivityScore(row);
+    row.coachingBullets = buildFallbackCoaching(row);
     return row;
   });
 
-  rows.sort((a, b) => b.score - a.score);
+  rows.sort((a, b) => b.productivityScore - a.productivityScore);
 
   return {
     date: start,
@@ -297,89 +387,190 @@ const buildEmployeeStats = async () => {
   };
 };
 
-const enrichRowsWithAIInsights = async (rows) => {
-  const updatedRows = [];
+const safeParseJson = (text) => {
+  try {
+    const clean = String(text || "")
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
-  for (const row of rows) {
-    try {
-      const priorityQuote = [...row.overdueQuotations].sort(
-        (a, b) => b.overdueDays - a.overdueDays || b.qty - a.qty
-      )[0];
-
-      const aiInsight = await generateSalesInsight({
-        employeeName: getEmployeeName(row.employee),
-        stats: {
-          calls: row.calls,
-          visits: row.visits,
-          emails: row.emails,
-          enquiries: row.enquiries,
-          quotations: row.quotations,
-          wonOrders: row.wonOrders,
-          lostOrders: row.lostOrders,
-          overdueQuotationCount: row.overdueQuotations.length,
-          overdueClosureCount: row.overdueClosures.length,
-          topOverdueQuotation: priorityQuote
-            ? `${priorityQuote.companyName}, ${priorityQuote.overdueDays} days overdue, Qty ${priorityQuote.qty || "-"} kg`
-            : "",
-        },
-      });
-
-      if (aiInsight) {
-        row.insight = aiInsight;
-      }
-    } catch (error) {
-      console.error(
-        `AI insight failed for ${getEmployeeName(row.employee)}:`,
-        error.message
-      );
-    }
-
-    updatedRows.push(row);
+    return JSON.parse(clean);
+  } catch {
+    return null;
   }
-
-  return updatedRows;
 };
 
-const buildFallbackManagementInsight = (totals, zeroActivityCount, activityNoConversionCount) => {
-  const actions = [];
+const applyAIInsights = async (rows, totals, priorityText) => {
+  try {
+    const payload = {
+      instruction:
+        "Daily sales performance coaching. Be firm, useful, professional, and action-oriented. Do not insult. Do not shame. Use today, last7Days, last30Days, pending and lost reason data.",
+      employees: rows.map((r) => ({
+        name: getEmployeeName(r.employee),
+        currentScore: r.productivityScore,
+
+        today: {
+          calls: r.calls,
+          visits: r.visits,
+          emails: r.emails,
+          enquiries: r.enquiries,
+          quotations: r.quotations,
+          wonOrders: r.wonOrders,
+          wonValue: r.wonValue,
+          lostOrders: r.lostOrders,
+          lostReasons: r.lostReasons,
+        },
+
+        last7Days: {
+          calls: r.week7.calls || 0,
+          visits: r.week7.visits || 0,
+          emails: r.week7.emails || 0,
+          enquiries: r.week7.enquiries || 0,
+          quotations: r.week7.quotations || 0,
+          wonOrders: r.week7.wonOrders || 0,
+          wonValue: r.week7.wonValue || 0,
+          lostOrders: r.week7.lostOrders || 0,
+          lostReasons: r.week7.lostReasons || {},
+        },
+
+        last30Days: {
+          calls: r.month30.calls || 0,
+          visits: r.month30.visits || 0,
+          emails: r.month30.emails || 0,
+          enquiries: r.month30.enquiries || 0,
+          quotations: r.month30.quotations || 0,
+          wonOrders: r.month30.wonOrders || 0,
+          wonValue: r.month30.wonValue || 0,
+          lostOrders: r.month30.lostOrders || 0,
+          lostReasons: r.month30.lostReasons || {},
+        },
+
+        conversionQuality: {
+          todayCallToEnquiryRatio:
+            r.calls > 0 ? Number((r.enquiries / r.calls).toFixed(2)) : null,
+          todayEnquiryToQuotationRatio:
+            r.enquiries > 0
+              ? Number((r.quotations / r.enquiries).toFixed(2))
+              : null,
+          weekCallToEnquiryRatio:
+            r.week7.calls > 0
+              ? Number((r.week7.enquiries / r.week7.calls).toFixed(2))
+              : null,
+          weekEnquiryToQuotationRatio:
+            r.week7.enquiries > 0
+              ? Number((r.week7.quotations / r.week7.enquiries).toFixed(2))
+              : null,
+        },
+
+        pending: {
+          overdueQuotationCount: r.overdueQuotations.length,
+          overdueClosureCount: r.overdueClosures.length,
+          topOverdueQuotations: [...r.overdueQuotations]
+            .sort((a, b) => b.overdueDays - a.overdueDays || b.qty - a.qty)
+            .slice(0, 3),
+        },
+      })),
+
+      teamTotals: totals,
+      priorityDelays: priorityText,
+    };
+
+    const aiReport = await generateTeamSalesCoachingReport({
+      reportData: payload,
+    });
+
+    if (!aiReport || !aiReport.employeeInsights) {
+      return { rows, managementBullets: null };
+    }
+
+    rows.forEach((row) => {
+      const name = getEmployeeName(row.employee);
+      const item = aiReport.employeeInsights[name];
+
+      if (!item) return;
+
+      if (typeof item.score === "number") {
+        row.productivityScore = Math.max(0, Math.min(100, item.score));
+      }
+
+      if (item.rankNote) {
+        row.rankNote = item.rankNote;
+      }
+
+      if (Array.isArray(item.bullets) && item.bullets.length) {
+        row.coachingBullets = item.bullets.slice(0, 6);
+      }
+    });
+
+    rows.sort((a, b) => b.productivityScore - a.productivityScore);
+
+    return {
+      rows,
+      managementBullets: Array.isArray(aiReport.managementInsight)
+        ? aiReport.managementInsight.slice(0, 5)
+        : null,
+    };
+  } catch (error) {
+    console.error("Team AI sales coaching failed:", error.message);
+    return { rows, managementBullets: null };
+  }
+};
+
+const buildFallbackManagementBullets = (totals, rows) => {
+  const zeroActivity = rows.filter(
+    (r) =>
+      r.calls === 0 &&
+      r.visits === 0 &&
+      r.emails === 0 &&
+      r.enquiries === 0 &&
+      r.quotations === 0 &&
+      r.wonOrders === 0
+  ).length;
+
+  const activityNoConversion = rows.filter(
+    (r) =>
+      (r.calls > 0 || r.visits > 0 || r.emails > 0 || r.enquiries > 0) &&
+      r.quotations === 0 &&
+      r.wonOrders === 0
+  ).length;
+
+  const bullets = [];
 
   if (totals.overdueQuotes > 0) {
-    actions.push(
-      `🚨 ${totals.overdueQuotes} feasible quotation(s) are overdue. Management should first ask why these quotes were not released/closed.`
+    bullets.push(
+      `${totals.overdueQuotes} feasible quotation(s) are overdue; review these before fresh low-value activity.`
     );
   }
 
   if (totals.overdueClosures > 0) {
-    actions.push(
-      `🚨 ${totals.overdueClosures} closure follow-up(s) are pending. This is a pipeline hygiene issue and needs salesperson-wise review.`
+    bullets.push(
+      `${totals.overdueClosures} closure follow-up(s) are pending; pipeline hygiene needs salesperson-wise review.`
     );
   }
 
-  if (zeroActivityCount > 0) {
-    actions.push(
-      `⚠ ${zeroActivityCount} employee(s) recorded zero activity. Verify whether field work happened but was not updated.`
+  if (zeroActivity > 0) {
+    bullets.push(
+      `${zeroActivity} salesperson(s) had zero visible activity; verify field work vs RMS update discipline.`
     );
   }
 
-  if (activityNoConversionCount > 0) {
-    actions.push(
-      `⚠ ${activityNoConversionCount} employee(s) had activity without quotation/order movement. Review lead quality and follow-up effectiveness.`
+  if (activityNoConversion > 0) {
+    bullets.push(
+      `${activityNoConversion} salesperson(s) show activity without conversion; review call quality and quotation movement.`
     );
   }
 
-  if (!actions.length) {
-    actions.push(
-      "🟢 No major delay pattern detected today. Focus tomorrow on maintaining quotation speed and closure discipline."
+  if (!bullets.length) {
+    bullets.push(
+      "No major red flag today; keep focus on quotation speed and closure discipline."
     );
   }
 
-  return actions.slice(0, 4).join("\n");
+  return bullets;
 };
 
 const buildWhatsAppMessage = async ({ date, rows }) => {
-  const rowsWithInsight = await enrichRowsWithAIInsights(rows);
-
-  const totals = rowsWithInsight.reduce(
+  const totals = rows.reduce(
     (acc, r) => {
       acc.calls += r.calls;
       acc.visits += r.visits;
@@ -407,39 +598,7 @@ const buildWhatsAppMessage = async ({ date, rows }) => {
     }
   );
 
-  const zeroActivityCount = rowsWithInsight.filter(
-    (r) =>
-      r.calls === 0 &&
-      r.visits === 0 &&
-      r.emails === 0 &&
-      r.enquiries === 0 &&
-      r.quotations === 0 &&
-      r.wonOrders === 0
-  ).length;
-
-  const activityNoConversionCount = rowsWithInsight.filter(
-    (r) =>
-      (r.calls > 0 || r.visits > 0 || r.emails > 0 || r.enquiries > 0) &&
-      r.quotations === 0 &&
-      r.wonOrders === 0
-  ).length;
-
-  const employeeLines = rowsWithInsight
-    .map((r, index) => {
-      const name = getEmployeeName(r.employee);
-
-      const overdueText =
-        r.overdueQuotations.length || r.overdueClosures.length
-          ? `\n⚠ Pending: ${r.overdueQuotations.length} quote overdue, ${r.overdueClosures.length} closure overdue`
-          : "";
-
-      return `${index + 1}. *${name}*
-📞 ${r.calls} | 🚗 ${r.visits} | 📧 ${r.emails} | 📝 Enq ${r.enquiries} | 💰 Quote ${r.quotations} | 🏆 Won ${r.wonOrders} | ❌ Lost ${r.lostOrders}${overdueText}
-💡 ${r.insight}`;
-    })
-    .join("\n\n");
-
-  const priorityDelays = rowsWithInsight
+  const priorityDelays = rows
     .flatMap((r) =>
       r.overdueQuotations.map((q) => ({
         employee: getEmployeeName(r.employee),
@@ -458,26 +617,38 @@ const buildWhatsAppMessage = async ({ date, rows }) => {
         .join("\n")
     : "No high priority quotation delay.";
 
-  let managementInsight = buildFallbackManagementInsight(
-    totals,
-    zeroActivityCount,
-    activityNoConversionCount
-  );
+  const aiResult = await applyAIInsights(rows, totals, priorityText);
+  const finalRows = aiResult.rows;
 
-  try {
-    const aiManagementInsight = await generateManagementInsight({
-      totals,
-      priorityDelays: priorityText,
-    });
+  const rankingText = finalRows
+    .map(
+      (r, index) =>
+        `${index + 1}. ${getEmployeeName(r.employee)} — ${r.productivityScore}/100`
+    )
+    .join("\n");
 
-    if (aiManagementInsight) {
-      managementInsight = aiManagementInsight;
-    }
-  } catch (error) {
-    console.error("AI management insight failed:", error.message);
-  }
+  const employeeText = finalRows
+    .map((r) => {
+      const name = getEmployeeName(r.employee);
 
-  return `📊 *Bharat RMS Sales Daily Command Centre*
+      const bullets = r.coachingBullets
+        .slice(0, 6)
+        .map((b) => `• ${b}`)
+        .join("\n");
+
+      return `👤 *${name}*
+Performance Score: *${r.productivityScore}/100*
+📞 ${r.calls} | 🚗 ${r.visits} | 📧 ${r.emails} | 📝 Enq ${r.enquiries} | 💰 Quote ${r.quotations} | 🏆 Won ${r.wonOrders} | ❌ Lost ${r.lostOrders}
+⚠ Pending: ${r.overdueQuotations.length} quote overdue, ${r.overdueClosures.length} closure overdue
+
+${bullets}`;
+    })
+    .join("\n\n");
+
+  const managementBullets =
+    aiResult.managementBullets || buildFallbackManagementBullets(totals, finalRows);
+
+  return `📊 *Bharat RMS Sales Performance Intelligence*
 Date: ${formatDate(date)} | ${formatTime(new Date())}
 
 👥 *Team Snapshot*
@@ -489,15 +660,16 @@ Date: ${formatDate(date)} | ${formatTime(new Date())}
 🏆 Orders Won: ${totals.wonOrders}
 ❌ Orders Lost: ${totals.lostOrders}
 
-👤 *Employee Scoreboard*
+🏆 *Productivity Ranking*
+${rankingText}
 
-${employeeLines}
+${employeeText}
 
 🔥 *High Priority Delays*
 ${priorityText}
 
-📌 *Management Insight*
-${managementInsight}`;
+📌 *Management Intelligence*
+${managementBullets.map((b) => `• ${b}`).join("\n")}`;
 };
 
 const buildEmailHtml = ({ date, rows }) => {
@@ -507,14 +679,14 @@ const buildEmailHtml = ({ date, rows }) => {
         <tr>
           <td style="padding:10px;border-bottom:1px solid #e5e7eb;font-weight:900;">${index + 1}</td>
           <td style="padding:10px;border-bottom:1px solid #e5e7eb;font-weight:900;">${getEmployeeName(r.employee)}</td>
+          <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${r.productivityScore}/100</td>
           <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${r.calls}</td>
-          <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${r.visits}</td>
           <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${r.enquiries}</td>
           <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${r.quotations}</td>
           <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${r.wonOrders}</td>
           <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${r.lostOrders}</td>
           <td style="padding:10px;border-bottom:1px solid #e5e7eb;color:#b45309;font-weight:800;">${r.overdueQuotations.length}</td>
-          <td style="padding:10px;border-bottom:1px solid #e5e7eb;color:#0f172a;">${r.insight}</td>
+          <td style="padding:10px;border-bottom:1px solid #e5e7eb;color:#0f172a;">${r.coachingBullets.map((b) => `• ${b}`).join("<br/>")}</td>
         </tr>
       `;
     })
@@ -524,53 +696,48 @@ const buildEmailHtml = ({ date, rows }) => {
 <!DOCTYPE html>
 <html>
 <body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:20px 0;background:#f4f7fb;">
-    <tr>
-      <td align="center">
-        <table width="900" cellpadding="0" cellspacing="0" style="width:96%;max-width:900px;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;">
-          <tr>
-            <td style="padding:18px 22px;background:#0f172a;color:#ffffff;">
-              <div style="font-size:18px;font-weight:900;">Bharat RMS Sales Daily Command Centre</div>
-              <div style="font-size:12px;color:#cbd5e1;margin-top:3px;">${formatDate(date)} · ${formatTime(new Date())}</div>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:22px;">
-              <h2 style="margin:0;font-size:24px;color:#0f172a;">Employee-wise Sales Performance</h2>
-              <p style="margin:7px 0 0;font-size:14px;color:#64748b;">Daily productivity, quotation speed, won/lost orders and management insight.</p>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:0 22px 24px;overflow-x:auto;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;font-size:13px;">
-                <tr style="background:#f8fafc;">
-                  <th align="left" style="padding:10px;">Rank</th>
-                  <th align="left" style="padding:10px;">Employee</th>
-                  <th align="left" style="padding:10px;">Calls</th>
-                  <th align="left" style="padding:10px;">Visits</th>
-                  <th align="left" style="padding:10px;">Enq</th>
-                  <th align="left" style="padding:10px;">Quote</th>
-                  <th align="left" style="padding:10px;">Won</th>
-                  <th align="left" style="padding:10px;">Lost</th>
-                  <th align="left" style="padding:10px;">Overdue</th>
-                  <th align="left" style="padding:10px;">Management Insight</th>
-                </tr>
-                ${tableRows}
-              </table>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:16px 22px;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:11px;color:#94a3b8;">
-              Automated sales performance summary from Bharat RMS.
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:20px 0;background:#f4f7fb;">
+<tr><td align="center">
+<table width="1000" cellpadding="0" cellspacing="0" style="width:96%;max-width:1000px;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;">
+<tr>
+<td style="padding:18px 22px;background:#0f172a;color:#ffffff;">
+<div style="font-size:18px;font-weight:900;">Bharat RMS Sales Performance Intelligence</div>
+<div style="font-size:12px;color:#cbd5e1;margin-top:3px;">${formatDate(date)} · ${formatTime(new Date())}</div>
+</td>
+</tr>
+<tr>
+<td style="padding:22px;">
+<h2 style="margin:0;font-size:24px;color:#0f172a;">Daily Sales Coaching & Management Review</h2>
+<p style="margin:7px 0 0;font-size:14px;color:#64748b;">Productivity score, conversion quality, pipeline risk and next-day coaching.</p>
+</td>
+</tr>
+<tr>
+<td style="padding:0 22px 24px;overflow-x:auto;">
+<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;font-size:13px;">
+<tr style="background:#f8fafc;">
+<th align="left" style="padding:10px;">Rank</th>
+<th align="left" style="padding:10px;">Employee</th>
+<th align="left" style="padding:10px;">Score</th>
+<th align="left" style="padding:10px;">Calls</th>
+<th align="left" style="padding:10px;">Enq</th>
+<th align="left" style="padding:10px;">Quote</th>
+<th align="left" style="padding:10px;">Won</th>
+<th align="left" style="padding:10px;">Lost</th>
+<th align="left" style="padding:10px;">Overdue</th>
+<th align="left" style="padding:10px;">Coaching Insight</th>
+</tr>
+${tableRows}
+</table>
+</td>
+</tr>
+<tr>
+<td style="padding:16px 22px;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:11px;color:#94a3b8;">
+Automated sales coaching report from Bharat RMS.
+</td>
+</tr>
+</table>
+</td></tr>
+</table>
 </body>
 </html>
 `;
@@ -578,7 +745,6 @@ const buildEmailHtml = ({ date, rows }) => {
 
 const sendDailySalesInsight = async () => {
   const lockKey = getTodayKey("sales_daily_insight");
-
   const allowed = await acquireDailyLock(lockKey);
 
   if (!allowed) {
@@ -596,7 +762,7 @@ const sendDailySalesInsight = async () => {
       from: `"Bharat Special Steels Pvt. Ltd." <${process.env.ADMIN_EMAIL}>`,
       to: MANAGER_EMAIL,
       cc: process.env.SUPER_ADMIN_EMAIL || "",
-      subject: `Sales Daily Command Centre | ${formatDate(data.date)}`,
+      subject: `Sales Performance Intelligence | ${formatDate(data.date)}`,
       html: buildEmailHtml(data),
     });
   }

@@ -7,43 +7,23 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const genAI =
   ENABLE_AI && GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-const generateSalesInsight = async ({ employeeName, stats }) => {
-  if (!genAI) return null;
+const extractJson = (text = "") => {
+  const clean = String(text)
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
 
-  const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
-  });
+  const start = clean.indexOf("{");
+  const end = clean.lastIndexOf("}");
 
-  const prompt = `
-You are a strict sales performance director for a steel company.
+  if (start === -1 || end === -1) {
+    throw new Error("AI response did not contain valid JSON");
+  }
 
-Give one sharp management insight for this salesperson.
-Do not use motivational or soft words.
-Do not say "stable" unless performance is clearly balanced.
-Focus on what management should ask or act on.
-
-Keep it within 2 lines.
-
-Salesperson: ${employeeName}
-
-Data:
-Calls: ${stats.calls}
-Visits: ${stats.visits}
-Emails: ${stats.emails}
-Enquiries: ${stats.enquiries}
-Quotations: ${stats.quotations}
-Orders Won: ${stats.wonOrders}
-Orders Lost: ${stats.lostOrders}
-Quotation Overdue Count: ${stats.overdueQuotationCount}
-Closure Overdue Count: ${stats.overdueClosureCount}
-Top Overdue Quotation: ${stats.topOverdueQuotation || "None"}
-`;
-
-  const result = await model.generateContent(prompt);
-  return result.response.text().trim();
+  return JSON.parse(clean.slice(start, end + 1));
 };
 
-const generateManagementInsight = async ({ totals, priorityDelays }) => {
+const generateTeamSalesCoachingReport = async ({ reportData }) => {
   if (!genAI) return null;
 
   const model = genAI.getGenerativeModel({
@@ -51,33 +31,63 @@ const generateManagementInsight = async ({ totals, priorityDelays }) => {
   });
 
   const prompt = `
-You are a sales director reviewing today's Bharat RMS sales report.
+You are an experienced steel sales director and performance coach for Bharat Special Steels.
 
-Write a strict management action summary.
-No generic text.
-Mention what management should ask tomorrow.
-Keep within 4 bullet points.
+Your job:
+- Give practical daily coaching for each salesperson.
+- Be firm when the same issue repeats.
+- Never insult, shame, embarrass, or use words like "void", "paralysis", "unacceptable".
+- Management should be able to act from this.
+- Salesperson should feel guided, not attacked.
+- Use trend data when available.
+- Identify productivity, not only activity.
+- Calls without enquiry/quotation/conversion should be flagged as low productivity.
+- Repeated overdue quotation/closure should be called out clearly.
+- Suggest what to do tomorrow.
+- Avoid same generic wording for every employee.
+- Keep WhatsApp readable.
 
-Team data:
-Calls: ${totals.calls}
-Visits: ${totals.visits}
-Emails: ${totals.emails}
-Enquiries: ${totals.enquiries}
-Quotations: ${totals.quotations}
-Orders Won: ${totals.wonOrders}
-Orders Lost: ${totals.lostOrders}
-Overdue Quotations: ${totals.overdueQuotes}
-Overdue Closures: ${totals.overdueClosures}
+Return ONLY valid JSON in this exact shape:
 
-High priority delays:
-${priorityDelays || "None"}
+{
+  "employeeInsights": {
+    "Employee Name": {
+      "score": 0,
+      "rankNote": "short productivity note",
+      "bullets": [
+        "bullet 1",
+        "bullet 2",
+        "bullet 3",
+        "bullet 4",
+        "bullet 5"
+      ]
+    }
+  },
+  "managementInsight": [
+    "bullet 1",
+    "bullet 2",
+    "bullet 3",
+    "bullet 4"
+  ]
+}
+
+Scoring guidance:
+- 85-100: high productive output
+- 70-84: good but needs cleanup
+- 50-69: activity exists but conversion/pipeline weak
+- 30-49: weak productivity
+- 0-29: serious attention needed
+
+Report data:
+${JSON.stringify(reportData, null, 2)}
 `;
 
   const result = await model.generateContent(prompt);
-  return result.response.text().trim();
+  const text = result.response.text();
+
+  return extractJson(text);
 };
 
 module.exports = {
-  generateSalesInsight,
-  generateManagementInsight,
+  generateTeamSalesCoachingReport,
 };
