@@ -5,7 +5,9 @@ const SalesOrder = require("../model/salesOrderModel");
 const transporter = require("../util/mailTransporter");
 const { getWhatsappClient, isWhatsappReady } = require("../util/whatsappClient");
 const CronLock = require("../model/cronLockModel");
-const { generateTeamSalesCoachInsight } = require("./aiInsightService");
+const {
+  generateTeamSalesCoachingReport,
+} = require("./aiInsightService");
 
 const SALES_GROUP_ID = process.env.SALES_DAILY_WHATSAPP_GROUP_ID;
 const MANAGER_EMAIL =
@@ -272,11 +274,11 @@ const buildFallbackCoaching = (row) => {
     );
   }
 
-  if (row.week7.calls > row.today.calls && row.today.calls === 0) {
-    bullets.push(
-      "Compared to the recent week, today's activity is visibly lower; check whether this is a pipeline issue or update gap."
-    );
-  }
+  if ((row.week7.calls || 0) > row.calls && row.calls === 0) {
+  bullets.push(
+    "Compared to the recent week, today's activity is visibly lower; check whether this is a pipeline issue or update gap."
+  );
+}
 
   if (!bullets.length) {
     bullets.push(
