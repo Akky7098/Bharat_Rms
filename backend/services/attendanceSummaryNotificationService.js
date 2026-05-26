@@ -404,9 +404,13 @@ const sendMorningAttendanceDigest = async () => {
 };
 
 const sendEveningAttendanceDigest = async () => {
+  console.log("Evening digest service started");
+
   const data = await getTodayData();
+  console.log("Evening data loaded:", data.rows.length);
 
   await sendWhatsAppText(buildEveningWhatsAppMessage(data));
+  console.log("Evening WhatsApp step completed");
 
   await sendEmailReport({
     title: "Evening Attendance Closing Summary",
@@ -414,6 +418,8 @@ const sendEveningAttendanceDigest = async () => {
     rows: data.rows,
     type: "Evening",
   });
+
+  console.log("Evening email sent");
 
   return {
     checked: data.rows.length,

@@ -30,21 +30,28 @@ const startAttendanceSummaryCron = () => {
     }
   );
 
-  cron.schedule(
-    "0 19 * * *",
-    async () => {
-      try {
-        console.log("Evening attendance summary cron started");
-        const result = await sendEveningAttendanceDigest();
-        console.log(`Evening attendance summary sent. Checked: ${result.checked}`);
-      } catch (error) {
-        console.error("Evening attendance summary failed:", error.message);
-      }
-    },
-    {
-      timezone: "Asia/Kolkata",
+ cron.schedule(
+  "20 19 * * *",
+  async () => {
+    console.log("🔥 Evening attendance cron HIT at 7:20 PM IST");
+
+    try {
+      console.log("Step 1: calling sendEveningAttendanceDigest");
+
+      const result = await sendEveningAttendanceDigest();
+
+      console.log(
+        `✅ Evening attendance summary completed. Employees checked: ${result.checked}`
+      );
+    } catch (error) {
+      console.error("❌ Evening attendance summary failed:");
+      console.error(error);
     }
-  );
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
   console.log("Attendance summary cron scheduled");
 };
