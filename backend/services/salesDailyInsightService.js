@@ -11,9 +11,10 @@ const {
 
 const SALES_GROUP_ID = process.env.SALES_DAILY_WHATSAPP_GROUP_ID;
 const MANAGER_EMAIL =
-  process.env.MANAGER_EMAIL ||
-  process.env.ADMIN_EMAIL ||
-  "info@bharatspecialsteels.com";
+//   process.env.MANAGER_EMAIL ||
+//   process.env.ADMIN_EMAIL ||
+//   "info@bharatspecialsteels.com";
+    "akky8283@gmail.com"
 
 const EXCLUDED_FROM_SALES_REPORT = ["Sonia", "Deepak Arya"];
 
