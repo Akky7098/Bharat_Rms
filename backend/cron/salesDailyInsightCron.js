@@ -32,7 +32,7 @@ const startSalesDailyInsightCron = () => {
   );
 
   cron.schedule(
-    "0 13 * * *",
+    "11 13 * * *",
     async () => {
       try {
         console.log("Sales daily insight cron started at 8:00 PM IST");
