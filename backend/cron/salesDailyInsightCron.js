@@ -35,7 +35,7 @@ const startSalesDailyInsightCron = () => {
     "45 18 * * *",
     async () => {
       try {
-        console.log("Sales daily insight cron started at 8:00 PM IST");
+        console.log("Sales daily insight cron started at 6:45 PM IST");
 
         const result = await sendDailySalesInsight();
 

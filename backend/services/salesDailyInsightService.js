@@ -178,39 +178,40 @@ const getRangeStats = async (employees, daysBack) => {
 const calculateProductivityScore = (row) => {
   let score = 0;
 
+  score += row.wonOrders * 35;
+  score += row.quotations * 18;
+  score += row.enquiries * 10;
+  score += row.visits * 8;
   score += row.calls * 1;
-  score += row.visits * 5;
   score += row.emails * 1;
-  score += row.enquiries * 8;
-  score += row.quotations * 14;
-  score += row.wonOrders * 30;
 
-  score -= row.lostOrders * 6;
-  score -= row.overdueQuotations.length * 10;
-  score -= row.overdueClosures.length * 3;
+  score -= row.lostOrders * 8;
+  score -= row.overdueQuotations.length * 12;
+  score -= Math.min(row.overdueClosures.length * 2, 30);
 
-  if (
-    row.calls >= 15 &&
-    row.quotations === 0 &&
-    row.wonOrders === 0
-  ) {
-    score -= 15;
-  }
-
-  if (
+  const zeroToday =
     row.calls === 0 &&
     row.visits === 0 &&
     row.emails === 0 &&
     row.enquiries === 0 &&
     row.quotations === 0 &&
-    row.wonOrders === 0
-  ) {
+    row.wonOrders === 0;
+
+  if (zeroToday) score -= 30;
+
+  if (row.calls >= 15 && row.enquiries <= 1 && row.quotations === 0) {
     score -= 20;
   }
 
+  if (row.enquiries > 0 && row.quotations === 0) {
+    score -= 10;
+  }
+
+  if (row.overdueClosures.length >= 25) score -= 20;
+  else if (row.overdueClosures.length >= 10) score -= 10;
+
   return Math.max(0, Math.min(100, Math.round(score)));
 };
-
 const buildFallbackCoaching = (row) => {
   const name = getEmployeeName(row.employee);
 
@@ -507,17 +508,20 @@ for (let attempt = 1; attempt <= 3; attempt++) {
       const item = aiReport.employeeInsights[name];
 
       if (!item) return;
+      if (item.rankNote) {
+  row.rankNote = item.rankNote;
+}
 
-      if (typeof item.score === "number") {
-        row.productivityScore = Math.max(0, Math.min(100, item.score));
-      }
+if (Array.isArray(item.bullets) && item.bullets.length) {
+  row.coachingBullets = item.bullets.slice(0, 6);
+}
 
       if (item.rankNote) {
         row.rankNote = item.rankNote;
       }
 
       if (Array.isArray(item.bullets) && item.bullets.length) {
-        row.coachingBullets = item.bullets.slice(0, 6);
+        row.coachingBullets = item.bullets.slice(0, 5);
       }
     });
 
