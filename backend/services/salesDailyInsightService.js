@@ -478,9 +478,26 @@ const applyAIInsights = async (rows, totals, priorityText) => {
       priorityDelays: priorityText,
     };
 
-    const aiReport = await generateTeamSalesCoachingReport({
+    let aiReport = null;
+
+for (let attempt = 1; attempt <= 3; attempt++) {
+  try {
+    aiReport = await generateTeamSalesCoachingReport({
       reportData: payload,
     });
+
+    if (aiReport) break;
+  } catch (error) {
+    console.error(
+      `AI sales coaching attempt ${attempt} failed:`,
+      error.message
+    );
+
+    if (attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 15000));
+    }
+  }
+}
 
     if (!aiReport || !aiReport.employeeInsights) {
       return { rows, managementBullets: null };
