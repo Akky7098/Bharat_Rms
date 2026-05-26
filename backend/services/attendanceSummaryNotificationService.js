@@ -62,24 +62,6 @@ const formatMinutes = (minutes) => {
   return `${mins}m`;
 };
 
-const getISTHourMinute = (date) => {
-  const d = new Date(date);
-  const ist = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-
-  return {
-    hour: ist.getHours(),
-    minute: ist.getMinutes(),
-  };
-};
-
-const isAfterTimeIST = (date, hour, minute) => {
-  if (!date) return false;
-
-  const t = getISTHourMinute(date);
-
-  return t.hour > hour || (t.hour === hour && t.minute > minute);
-};
-
 const normalizeId = (value) => String(value || "");
 
 const sendWhatsAppText = async (message) => {
@@ -161,9 +143,17 @@ const buildMorningWhatsAppMessage = ({ date, rows }) => {
     (r) => getEmployeeMode(r.employee, r.attendance) === "WFH"
   );
 
-  const late = present.filter((r) =>
-    isAfterTimeIST(r.attendance?.checkIn?.time, 9, 45)
-  );
+  const late = present.filter((r) => {
+    const t = r.attendance?.checkIn?.time;
+    if (!t) return false;
+
+    const d = new Date(t);
+    const ist = new Date(
+      d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    );
+
+    return ist.getHours() > 9 || (ist.getHours() === 9 && ist.getMinutes() > 45);
+  });
 
   const line = (r) => {
     const name = r.employee?.name || r.attendance?.employeeName || "-";
@@ -201,11 +191,19 @@ ${
 ${late.length ? late.map(line).join("\n") : "None"}
 
 ❌ *Not Checked In (${absent.length})*
-${absent.length ? absent.map((r) => `• ${r.employee?.name || "-"}`).join("\n") : "None"}`;
+${
+  absent.length
+    ? absent.map((r) => `• ${r.employee?.name || "-"}`).join("\n")
+    : "None"
+}`;
 };
 
 const buildEveningWhatsAppMessage = ({ date, rows }) => {
   const checkedOut = rows.filter((r) => r.attendance?.checkOut?.time);
+
+  const stillWorking = rows.filter(
+    (r) => r.attendance?.checkIn?.time && !r.attendance?.checkOut?.time
+  );
 
   const absent = rows.filter((r) => !r.attendance?.checkIn?.time);
 
@@ -219,6 +217,27 @@ const buildEveningWhatsAppMessage = ({ date, rows }) => {
     return `• ${name} — ${formatTime(
       r.attendance?.checkOut?.time
     )} — ${formatMinutes(r.attendance?.totalWorkingMinutes)}`;
+  };
+
+  const stillWorkingLine = (r) => {
+    const name = r.employee?.name || r.attendance?.employeeName || "-";
+    const checkInTime = r.attendance?.checkIn?.time;
+
+    const workedMinutes = Math.max(
+      Math.round((new Date() - new Date(checkInTime)) / 60000),
+      0
+    );
+
+    const remainingMinutes = Math.max(REQUIRED_WORK_MINUTES - workedMinutes, 0);
+
+    const remainingText =
+      remainingMinutes > 0
+        ? `${formatMinutes(remainingMinutes)} left`
+        : "Shift completed";
+
+    return `• ${name} — Checked in ${formatTime(
+      checkInTime
+    )} — ${remainingText}`;
   };
 
   const shortHoursLine = (r) => {
@@ -236,11 +255,22 @@ Time: 7:00 PM
 ✅ *Checked Out (${checkedOut.length})*
 ${checkedOut.length ? checkedOut.map(checkedOutLine).join("\n") : "No check-outs yet"}
 
+⏳ *Still Working (${stillWorking.length})*
+${
+  stillWorking.length
+    ? stillWorking.map(stillWorkingLine).join("\n")
+    : "None"
+}
+
 ⚠️ *Short Hours (${shortHours.length})*
 ${shortHours.length ? shortHours.map(shortHoursLine).join("\n") : "None"}
 
 ❌ *Absent (${absent.length})*
-${absent.length ? absent.map((r) => `• ${r.employee?.name || "-"}`).join("\n") : "None"}`;
+${
+  absent.length
+    ? absent.map((r) => `• ${r.employee?.name || "-"}`).join("\n")
+    : "None"
+}`;
 };
 
 const buildEmailHtml = ({ title, subtitle, rows, type }) => {

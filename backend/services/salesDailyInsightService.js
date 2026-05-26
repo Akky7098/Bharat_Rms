@@ -6,13 +6,23 @@ const transporter = require("../util/mailTransporter");
 const { getWhatsappClient, isWhatsappReady } = require("../util/whatsappClient");
 const CronLock = require("../model/cronLockModel");
 
+const {
+  generateSalesInsight,
+  generateManagementInsight,
+} = require("./aiInsightService");
+
 const SALES_GROUP_ID = process.env.SALES_DAILY_WHATSAPP_GROUP_ID;
+
 const MANAGER_EMAIL =
-  process.env.MANAGER_EMAIL || process.env.ADMIN_EMAIL || "info@bharatspecialsteels.com";
+  process.env.MANAGER_EMAIL ||
+  process.env.ADMIN_EMAIL ||
+  "info@bharatspecialsteels.com";
 
 const getISTRange = () => {
   const now = new Date();
-  const istNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const istNow = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
 
   const start = new Date(istNow);
   start.setHours(0, 0, 0, 0);
@@ -22,6 +32,7 @@ const getISTRange = () => {
 
   return { start, end, now: istNow };
 };
+
 const getTodayKey = (prefix) => {
   const today = new Date().toLocaleDateString("en-CA", {
     timeZone: "Asia/Kolkata",
@@ -39,6 +50,7 @@ const acquireDailyLock = async (key) => {
     throw error;
   }
 };
+
 const formatDate = (date) =>
   new Date(date).toLocaleDateString("en-IN", {
     day: "2-digit",
@@ -65,6 +77,7 @@ const sendWhatsapp = async (message) => {
   if (!SALES_GROUP_ID) return;
 
   const ready = await isWhatsappReady();
+
   if (!ready) {
     console.log("Sales daily insight WhatsApp skipped: client not ready");
     return;
@@ -82,6 +95,51 @@ const getSalesEmployees = async () => {
   })
     .select("_id name email role")
     .lean();
+};
+
+const buildFallbackInsight = (row) => {
+  const name = getEmployeeName(row.employee);
+
+  const priorityQuote = [...row.overdueQuotations].sort(
+    (a, b) => b.overdueDays - a.overdueDays || b.qty - a.qty
+  )[0];
+
+  if (
+    row.calls === 0 &&
+    row.visits === 0 &&
+    row.emails === 0 &&
+    row.enquiries === 0 &&
+    row.quotations === 0 &&
+    row.wonOrders === 0
+  ) {
+    return `🚨 ${name} recorded zero sales activity today. Management should verify whether field work happened but was not updated, or if this was a zero-productivity day.`;
+  }
+
+  if (row.wonOrders > 0 && priorityQuote) {
+    return `✅ ${name} won ${row.wonOrders} order(s), but pipeline risk remains. ${priorityQuote.companyName} quotation is overdue by ${priorityQuote.overdueDays} day(s); manager should check why this is still open.`;
+  }
+
+  if (row.overdueClosures.length >= 10) {
+    return `🚨 ${name} has ${row.overdueClosures.length} overdue closure follow-up(s). This indicates pipeline neglect; management should review old opportunities before allowing more new follow-ups.`;
+  }
+
+  if (row.calls >= 15 && row.quotations === 0 && row.wonOrders === 0) {
+    return `⚠ ${name} has high activity but no conversion. Management should review lead quality, call effectiveness, and whether follow-ups are moving toward quotation.`;
+  }
+
+  if (row.enquiries > 0 && row.quotations === 0) {
+    return `⚠ ${name} generated ${row.enquiries} enquiry(s) but no quotation moved. The bottleneck is quotation release or technical follow-up; manager intervention is needed.`;
+  }
+
+  if (row.overdueQuotations.length > 0) {
+    return `🚨 ${name} has ${row.overdueQuotations.length} feasible quotation(s) overdue. These should be closed before new low-value activity is reviewed.`;
+  }
+
+  if (row.quotations > 0 || row.wonOrders > 0) {
+    return `🟢 ${name} showed productive movement today with ${row.quotations} quotation(s) and ${row.wonOrders} won order(s). Keep focus on closing pending opportunities.`;
+  }
+
+  return `⚠ ${name} has activity but limited business movement. Management should ask what outcome came from today's calls and which customer will move next.`;
 };
 
 const buildEmployeeStats = async () => {
@@ -176,7 +234,8 @@ const buildEmployeeStats = async () => {
     const reason = item.closure?.lostRemark || "not_specified";
 
     map.get(key).lostOrders += 1;
-    map.get(key).lostReasons[reason] = (map.get(key).lostReasons[reason] || 0) + 1;
+    map.get(key).lostReasons[reason] =
+      (map.get(key).lostReasons[reason] || 0) + 1;
   });
 
   allPendingEnquiries.forEach((item) => {
@@ -225,23 +284,7 @@ const buildEmployeeStats = async () => {
       row.overdueQuotations.length * 5 -
       row.overdueClosures.length * 3;
 
-    const priorityQuote = [...row.overdueQuotations].sort(
-      (a, b) => b.overdueDays - a.overdueDays || b.qty - a.qty
-    )[0];
-
-    if (row.wonOrders > 0 && priorityQuote) {
-      row.insight = `${getEmployeeName(row.employee)} converted well today, but ${priorityQuote.companyName} quotation is overdue by ${priorityQuote.overdueDays} day(s). This can cause order loss if not closed immediately.`;
-    } else if (row.calls >= 15 && row.quotations === 0) {
-      row.insight = `${getEmployeeName(row.employee)} has strong calling activity, but no quotation moved today. Focus should shift from calling to quotation conversion.`;
-    } else if (row.enquiries > 0 && row.quotations === 0) {
-      row.insight = `${getEmployeeName(row.employee)} generated enquiries but quotation conversion is pending. First priority tomorrow should be quotation release.`;
-    } else if (row.calls === 0 && row.enquiries === 0 && row.quotations === 0 && row.wonOrders === 0) {
-      row.insight = `${getEmployeeName(row.employee)} has no sales activity updated today. Please verify if field work happened but was not updated in RMS.`;
-    } else if (row.overdueQuotations.length > 0) {
-      row.insight = `${getEmployeeName(row.employee)} has ${row.overdueQuotations.length} feasible quotation(s) overdue. These should be completed before new low-value follow-ups.`;
-    } else {
-      row.insight = `${getEmployeeName(row.employee)} activity is stable. Keep follow-ups updated to avoid leakage.`;
-    }
+    row.insight = buildFallbackInsight(row);
 
     return row;
   });
@@ -254,8 +297,89 @@ const buildEmployeeStats = async () => {
   };
 };
 
-const buildWhatsAppMessage = ({ date, rows }) => {
-  const totals = rows.reduce(
+const enrichRowsWithAIInsights = async (rows) => {
+  const updatedRows = [];
+
+  for (const row of rows) {
+    try {
+      const priorityQuote = [...row.overdueQuotations].sort(
+        (a, b) => b.overdueDays - a.overdueDays || b.qty - a.qty
+      )[0];
+
+      const aiInsight = await generateSalesInsight({
+        employeeName: getEmployeeName(row.employee),
+        stats: {
+          calls: row.calls,
+          visits: row.visits,
+          emails: row.emails,
+          enquiries: row.enquiries,
+          quotations: row.quotations,
+          wonOrders: row.wonOrders,
+          lostOrders: row.lostOrders,
+          overdueQuotationCount: row.overdueQuotations.length,
+          overdueClosureCount: row.overdueClosures.length,
+          topOverdueQuotation: priorityQuote
+            ? `${priorityQuote.companyName}, ${priorityQuote.overdueDays} days overdue, Qty ${priorityQuote.qty || "-"} kg`
+            : "",
+        },
+      });
+
+      if (aiInsight) {
+        row.insight = aiInsight;
+      }
+    } catch (error) {
+      console.error(
+        `AI insight failed for ${getEmployeeName(row.employee)}:`,
+        error.message
+      );
+    }
+
+    updatedRows.push(row);
+  }
+
+  return updatedRows;
+};
+
+const buildFallbackManagementInsight = (totals, zeroActivityCount, activityNoConversionCount) => {
+  const actions = [];
+
+  if (totals.overdueQuotes > 0) {
+    actions.push(
+      `🚨 ${totals.overdueQuotes} feasible quotation(s) are overdue. Management should first ask why these quotes were not released/closed.`
+    );
+  }
+
+  if (totals.overdueClosures > 0) {
+    actions.push(
+      `🚨 ${totals.overdueClosures} closure follow-up(s) are pending. This is a pipeline hygiene issue and needs salesperson-wise review.`
+    );
+  }
+
+  if (zeroActivityCount > 0) {
+    actions.push(
+      `⚠ ${zeroActivityCount} employee(s) recorded zero activity. Verify whether field work happened but was not updated.`
+    );
+  }
+
+  if (activityNoConversionCount > 0) {
+    actions.push(
+      `⚠ ${activityNoConversionCount} employee(s) had activity without quotation/order movement. Review lead quality and follow-up effectiveness.`
+    );
+  }
+
+  if (!actions.length) {
+    actions.push(
+      "🟢 No major delay pattern detected today. Focus tomorrow on maintaining quotation speed and closure discipline."
+    );
+  }
+
+  return actions.slice(0, 4).join("\n");
+};
+
+const buildWhatsAppMessage = async ({ date, rows }) => {
+  const rowsWithInsight = await enrichRowsWithAIInsights(rows);
+
+  const totals = rowsWithInsight.reduce(
     (acc, r) => {
       acc.calls += r.calls;
       acc.visits += r.visits;
@@ -283,7 +407,24 @@ const buildWhatsAppMessage = ({ date, rows }) => {
     }
   );
 
-  const employeeLines = rows
+  const zeroActivityCount = rowsWithInsight.filter(
+    (r) =>
+      r.calls === 0 &&
+      r.visits === 0 &&
+      r.emails === 0 &&
+      r.enquiries === 0 &&
+      r.quotations === 0 &&
+      r.wonOrders === 0
+  ).length;
+
+  const activityNoConversionCount = rowsWithInsight.filter(
+    (r) =>
+      (r.calls > 0 || r.visits > 0 || r.emails > 0 || r.enquiries > 0) &&
+      r.quotations === 0 &&
+      r.wonOrders === 0
+  ).length;
+
+  const employeeLines = rowsWithInsight
     .map((r, index) => {
       const name = getEmployeeName(r.employee);
 
@@ -298,7 +439,7 @@ const buildWhatsAppMessage = ({ date, rows }) => {
     })
     .join("\n\n");
 
-  const priorityDelays = rows
+  const priorityDelays = rowsWithInsight
     .flatMap((r) =>
       r.overdueQuotations.map((q) => ({
         employee: getEmployeeName(r.employee),
@@ -316,6 +457,25 @@ const buildWhatsAppMessage = ({ date, rows }) => {
         )
         .join("\n")
     : "No high priority quotation delay.";
+
+  let managementInsight = buildFallbackManagementInsight(
+    totals,
+    zeroActivityCount,
+    activityNoConversionCount
+  );
+
+  try {
+    const aiManagementInsight = await generateManagementInsight({
+      totals,
+      priorityDelays: priorityText,
+    });
+
+    if (aiManagementInsight) {
+      managementInsight = aiManagementInsight;
+    }
+  } catch (error) {
+    console.error("AI management insight failed:", error.message);
+  }
 
   return `📊 *Bharat RMS Sales Daily Command Centre*
 Date: ${formatDate(date)} | ${formatTime(new Date())}
@@ -337,8 +497,7 @@ ${employeeLines}
 ${priorityText}
 
 📌 *Management Insight*
-${totals.overdueQuotes} feasible quotation(s) are overdue and ${totals.overdueClosures} closure follow-up(s) are pending.
-Ask the concerned salesperson about overdue high-value feasible enquiries first, before reviewing low-value activity.`;
+${managementInsight}`;
 };
 
 const buildEmailHtml = ({ date, rows }) => {
@@ -429,7 +588,7 @@ const sendDailySalesInsight = async () => {
 
   const data = await buildEmployeeStats();
 
-  const message = buildWhatsAppMessage(data);
+  const message = await buildWhatsAppMessage(data);
   await sendWhatsapp(message);
 
   if (MANAGER_EMAIL) {

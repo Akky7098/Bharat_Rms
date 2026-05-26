@@ -516,30 +516,38 @@ const generateSalesOrderPdf = async (salesOrder) => {
     }
 
     const sanitizeFileName = (value = "") => {
-  return String(value)
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
-    .replace(/\s+/g, "_")
-    .trim();
-};
+      return String(value)
+        .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+        .replace(/\s+/g, "_")
+        .trim();
+    };
 
-const formatFileDate = (date) => {
-  const d = new Date(date || new Date());
+    const formatFileDate = (date) => {
+      const d = new Date(date || new Date());
 
-  return `${String(d.getDate()).padStart(2, "0")}-${String(
-    d.getMonth() + 1
-  ).padStart(2, "0")}-${d.getFullYear()}`;
-};
+      return `${String(d.getDate()).padStart(2, "0")}-${String(
+        d.getMonth() + 1
+      ).padStart(2, "0")}-${d.getFullYear()}`;
+    };
 
-const companyName = sanitizeFileName(
-  salesOrder.companyName || "Customer"
-);
+    const companyName = sanitizeFileName(
+      salesOrder.companyName || "Customer"
+    );
 
-const createdDate = formatFileDate(
-  salesOrder.createdAt || new Date()
-);
+    const createdDate = formatFileDate(
+      salesOrder.createdAt || new Date()
+    );
 
-const finalFileName =
-  `Sales_Order_Form_${companyName}_${createdDate}.pdf`;
+    const uniqueRef = sanitizeFileName(
+      salesOrder.salesOrderNo ||
+        salesOrder.poNumber ||
+        salesOrder.checklistNumber ||
+        salesOrder._id ||
+        Date.now()
+    );
+
+    const finalFileName = `Sales_Order_Form_${companyName}_${uniqueRef}_${createdDate}.pdf`;
+
     const finalFilePath = path.join(pdfDirectory, finalFileName);
 
     const mergedPdf = await PDFDocument.create();
