@@ -369,8 +369,16 @@ const approveRegularization = async (attendanceId, body, user) => {
     throw new Error("Attendance not found.");
   }
 
-  if (attendance.regularization.status !== "pending") {
+  if (!attendance.regularization || attendance.regularization.status !== "pending") {
     throw new Error("No pending regularization found.");
+  }
+
+  if (!attendance.checkIn) {
+    attendance.checkIn = {};
+  }
+
+  if (!attendance.checkOut) {
+    attendance.checkOut = {};
   }
 
   if (attendance.regularization.requestedCheckIn) {
@@ -390,8 +398,9 @@ const approveRegularization = async (attendanceId, body, user) => {
       ),
       0
     );
-    attendance.attendanceStatus = "regularized";
   }
+
+  attendance.attendanceStatus = "regularized";
 
   attendance.regularization.status = "approved";
   attendance.regularization.approvedBy = {
@@ -409,7 +418,6 @@ const approveRegularization = async (attendanceId, body, user) => {
 
   return attendance;
 };
-
 const rejectRegularization = async (attendanceId, body, user) => {
   if (!isAdmin(user) && !isSuperAdmin(user)) {
     throw new Error("Only admin or super admin can reject regularization.");

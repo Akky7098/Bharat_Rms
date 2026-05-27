@@ -128,13 +128,12 @@ const sendMissedCheckoutMailToUser = async (attendance) => {
 };
 
 const sendRegularizationRequestMailToAdmin = async (attendance) => {
-  const backendUrl = (process.env.BACKEND_URL || "http://localhost:5000").replace(
-    /\/$/,
-    ""
-  );
+  const frontendUrl = (
+    process.env.FRONTEND_URL ||
+    "https://dashboard.bharatspecialsteels.com"
+  ).replace(/\/$/, "");
 
-  const approveUrl = `${backendUrl}/api/attendance/${attendance._id}/regularize/approve`;
-  const rejectUrl = `${backendUrl}/api/attendance/${attendance._id}/regularize/reject`;
+  const reviewUrl = `${frontendUrl}/dashboard#timesheet`;
 
   return transporter.sendMail({
     from: `"${COMPANY.name}" <${process.env.ADMIN_EMAIL}>`,
@@ -146,7 +145,7 @@ const sendRegularizationRequestMailToAdmin = async (attendance) => {
       subtitle: `${attendance.employeeName} submitted an attendance regularization request.`,
       body: `
         <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:16px;padding:16px;font-size:14px;line-height:1.7;color:#1e40af;">
-          A regularization request has been submitted. Please review and approve/reject from the RMS attendance panel.
+          A regularization request has been submitted. Please review and approve/reject it from the Bharat RMS attendance panel.
         </div>
 
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
@@ -166,27 +165,15 @@ const sendRegularizationRequestMailToAdmin = async (attendance) => {
 
         <div style="margin-top:22px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:16px;padding:16px;">
           <div style="font-size:14px;font-weight:900;color:#0f172a;margin-bottom:12px;">
-            Quick Action
+            Action Required
           </div>
 
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td width="50%" style="padding:6px;">
-                <a href="${approveUrl}" style="display:block;background:#16a34a;color:#ffffff;text-decoration:none;text-align:center;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:900;">
-                  Approve
-                </a>
-              </td>
-
-              <td width="50%" style="padding:6px;">
-                <a href="${rejectUrl}" style="display:block;background:#dc2626;color:#ffffff;text-decoration:none;text-align:center;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:900;">
-                  Reject
-                </a>
-              </td>
-            </tr>
-          </table>
+          <a href="${reviewUrl}" style="display:block;background:#2563eb;color:#ffffff;text-decoration:none;text-align:center;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:900;">
+            Open Bharat RMS Attendance Panel
+          </a>
 
           <div style="margin-top:10px;font-size:12px;line-height:1.5;color:#64748b;">
-            If the link does not work, please approve/reject from the RMS attendance panel.
+            Please login to Bharat RMS and approve or reject this request from the attendance panel.
           </div>
         </div>
       `,
