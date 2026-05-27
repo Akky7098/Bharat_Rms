@@ -348,8 +348,58 @@ const sendManagerApprovalRequestEmail = async (salesOrder) => {
     `,
   });
 };
+const sendSalesOrderCreatedToAdminEmail = async (salesOrder) => {
+  const adminEmail = "sales@bharatspecialsteels.com";
 
+  if (!adminEmail) return null;
+
+  const orderRef = getOrderRef(salesOrder);
+
+  return transporter.sendMail({
+    from: `"Bharat Special Steel" <bsspl97@gmail.com>`,
+    to: adminEmail,
+
+    subject: `Bharat Special Steel | New Sales Order Created | ${orderRef} | ${salesOrder.companyName}`,
+
+    headers: getUniqueMailHeaders(salesOrder, "admin-sales-order-created"),
+
+    html: `
+      <div style="font-family:Arial,sans-serif;color:#111;line-height:1.5;">
+        <h2 style="color:#0f172a;margin-bottom:8px;">
+          New Sales Order Created
+        </h2>
+
+        <p>
+          A new Sales Order has been created by
+          <b>${salesOrder.salesPersonName || "Sales User"}</b>.
+        </p>
+
+        <p>
+          Please check and approve it from the Bharat RMS dashboard.
+        </p>
+
+        ${getOrderRows(
+          salesOrder,
+          `<tr><td><b>Status</b></td><td><b>${formatStatus(
+            salesOrder.approvalStatus
+          )}</b></td></tr>`
+        )}
+
+        <p style="margin-top:22px;">
+          <a href="${getBaseUrl()}" target="_blank" style="background:#0f172a;color:white;padding:12px 18px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block;">
+            Open Dashboard
+          </a>
+        </p>
+
+        <p style="margin-top:30px;">
+          Bharat Special Steel
+        </p>
+      </div>
+    `,
+  });
+};
 module.exports = {
+  sendSalesOrderCreatedToAdminEmail,
   sendSalesOrderApprovedEmail,
   sendSalesOrderRejectedEmail,
   sendAdminRejectionNotification,

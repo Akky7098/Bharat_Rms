@@ -400,11 +400,37 @@ const createSalesOrder = async (
 
     const savedOrder = await salesOrder.save();
 
+    try {
+      await emailService.sendSalesOrderCreatedToAdminEmail(savedOrder);
+
+      savedOrder.approvalHistory.push({
+        role: "system",
+        action: "email_sent",
+        comment: "Sales order creation email sent to admin",
+      });
+
+      await savedOrder.save();
+    } catch (emailError) {
+      console.log(
+        "SALES ORDER CREATE ADMIN EMAIL ERROR =>",
+        emailError.message
+      );
+
+      savedOrder.approvalHistory.push({
+        role: "system",
+        action: "failed",
+        comment: `Sales order creation admin email failed: ${emailError.message}`,
+      });
+
+      await savedOrder.save();
+    }
+
     return savedOrder;
   } catch (error) {
     throw error;
   }
 };
+
 const generateSalesOrderPdfById = async (salesOrderId) => {
   try {
     const salesOrder = await SalesOrder.findById(salesOrderId);
