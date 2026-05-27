@@ -19,12 +19,17 @@ const successPage = (title, message) => `
   </div>
 `;
 
-const errorPage = (title, message, color = "#dc2626") => `
-  <div style="font-family:Arial;padding:30px;text-align:center;">
-    <h2 style="color:${color};">${title}</h2>
-    <p>${message}</p>
-  </div>
-`;
+const fixApprovalHistoryRoles = (salesOrder) => {
+  salesOrder.approvalHistory = (salesOrder.approvalHistory || []).map((item) => {
+    const plain = item?.toObject ? item.toObject() : item;
+
+    return {
+      ...plain,
+      role: plain.role || "system",
+      comment: plain.comment || plain.remarks || "",
+    };
+  });
+};
 
 const approveFromWhatsapp = async (req, res) => {
   try {
@@ -71,7 +76,6 @@ const approveFromWhatsapp = async (req, res) => {
       `);
     }
 
-    // ✅ Fast approval update only. No PDF generation here.
     salesOrder.approvalStatus = "approved";
     salesOrder.isEditableBySalesPerson = false;
 
@@ -83,16 +87,24 @@ const approveFromWhatsapp = async (req, res) => {
       approvedAt: new Date(),
     };
 
+    salesOrder.managerEmailApproval = {
+      ...(salesOrder.managerEmailApproval || {}),
+      approvedByWhatsappLinkAt: new Date(),
+    };
+
     salesOrder.approvalHistory = salesOrder.approvalHistory || [];
+
     salesOrder.approvalHistory.push({
+      role: "manager",
       action: "manager_approved",
-      remarks: "Approved by MD Sir from WhatsApp approval link",
+      comment: "Approved by MD Sir from WhatsApp approval link",
       createdAt: new Date(),
     });
 
+    fixApprovalHistoryRoles(salesOrder);
+
     await salesOrder.save();
 
-    // ✅ Browser opens fast.
     res.send(
       successPage(
         "Sales Order Approved Successfully",
@@ -100,7 +112,6 @@ const approveFromWhatsapp = async (req, res) => {
       )
     );
 
-    // ✅ Background task. Reuses already generated PDF.
     setImmediate(async () => {
       try {
         await sendFinalPdfToSalesGroup(salesOrder);
@@ -181,6 +192,8 @@ const submitHoldFromWhatsapp = async (req, res) => {
     if (!validateToken(salesOrder, token)) {
       return res.status(403).send("Invalid or expired approval link");
     }
+
+    fixApprovalHistoryRoles(salesOrder);
 
     await finalApprovalService.holdSalesOrderByMd(
       salesOrder,

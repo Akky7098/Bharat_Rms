@@ -324,6 +324,7 @@ td {
   font-weight: 700;
   text-align: center;
   line-height: 1.35;
+  font-size: 15px;
 }
 </style>
 </head>
