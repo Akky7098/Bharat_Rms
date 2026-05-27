@@ -31,7 +31,7 @@ const startAttendanceSummaryCron = () => {
   );
 
  cron.schedule(
-  "30 19 * * *",
+  "15 20 * * *",
   async () => {
     console.log("🔥 Evening attendance cron HIT at 7:20 PM IST");
 

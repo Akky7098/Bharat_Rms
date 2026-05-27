@@ -36,10 +36,10 @@ const startApp = async () => {
 
     initWhatsappClient();
 
-    startPaymentReminderCron();
+   // startPaymentReminderCron();
     startAttendanceCron();
     startAttendanceSummaryCron();
-    startSalesDailyInsightCron();
+   // startSalesDailyInsightCron();
     startWhatsappHealthCron();
   } else {
     console.log("Background jobs disabled.");
