@@ -2,6 +2,7 @@ const cron = require("node-cron");
 const {
   forceCheckWhatsappStatus,
   restartWhatsappClient,
+  isWhatsappHealthPausedForPdf,
 } = require("../util/whatsappClient");
 
 let started = false;
@@ -18,6 +19,11 @@ const startWhatsappHealthCron = () => {
     "*/5 * * * *",
     async () => {
       try {
+        if (isWhatsappHealthPausedForPdf()) {
+          console.log("WhatsApp health check skipped: PDF generation running");
+          return;
+        }
+
         const status = await forceCheckWhatsappStatus();
 
         console.log(

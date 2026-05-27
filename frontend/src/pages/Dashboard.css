@@ -553,3 +553,21 @@
     min-width: 255px;
   }
 }
+.menu button[title="Receivables"] .menu-icon,
+.mobile-menu-list button span {
+  flex-shrink: 0;
+}
+
+.sidebar-collapsed .menu button {
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-list button {
+    min-height: 46px;
+  }
+
+  .main {
+    padding-bottom: 18px;
+  }
+}

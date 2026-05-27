@@ -311,7 +311,7 @@ specialNote: {
 
     cuttingCost: {
       type: String,
-      enum: ["extra", "inclusive"],
+      enum: ["extra", "inclusive","not_applicable"],
       required: true,
     },
     cuttingExtraCharges: {

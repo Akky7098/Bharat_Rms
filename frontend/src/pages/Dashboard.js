@@ -8,6 +8,7 @@ import ColdCallList from "./ColdCallList";
 import TimesheetPage from "./TimesheetPage";
 import DispatchPage from "./DispatchPage";
 import DocumentPage from "./DocumentPage";
+import ReceivablePage from "./ReceivablePage";
 
 function Dashboard() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -21,6 +22,7 @@ function Dashboard() {
     if (hash === "cold-call") return "coldCall";
     if (hash === "timesheet") return "timesheet";
     if (hash === "dispatch") return "dispatch";
+    if (hash === "receivables") return "receivables";
 
     return "dashboard";
   };
@@ -40,6 +42,7 @@ function Dashboard() {
       coldCall: "cold-call",
       timesheet: "timesheet",
       dispatch: "dispatch",
+      receivables: "receivables",
     };
 
     window.history.replaceState(null, "", `/dashboard#${hashMap[active]}`);
@@ -68,6 +71,8 @@ function Dashboard() {
     { key: "salesOrder", label: "Sales Order", icon: "💼" },
 
     { key: "dispatch", label: "Dispatch", icon: "🚚" },
+
+    { key: "receivables", label: "Receivables", icon: "💰" },
 
     { key: "coldCall", label: "Cold Call / Visit", icon: "📞" },
 
@@ -234,6 +239,8 @@ function Dashboard() {
           {active === "salesOrder" && <SalesOrderList />}
 
           {active === "dispatch" && <DispatchPage />}
+
+          {active === "receivables" && <ReceivablePage />}
 
           {active === "coldCall" && <ColdCallList />}
 

@@ -8,6 +8,9 @@ let isReady = false;
 let isInitializing = false;
 let latestQr = null;
 
+// PDF pause flag
+let isPdfUsingWhatsappBrowser = false;
+
 const whatsappSessionPath =
   process.env.WHATSAPP_SESSION_PATH ||
   path.join(process.env.HOME || "/home/u607090171", "whatsapp-session");
@@ -33,6 +36,20 @@ const ensureSessionFolder = () => {
   } catch (error) {
     console.log("WHATSAPP SESSION FOLDER ERROR =>", error.message);
   }
+};
+
+const pauseWhatsappHealthForPdf = () => {
+  isPdfUsingWhatsappBrowser = true;
+  console.log("WhatsApp health paused for PDF generation");
+};
+
+const resumeWhatsappHealthAfterPdf = () => {
+  isPdfUsingWhatsappBrowser = false;
+  console.log("WhatsApp health resumed after PDF generation");
+};
+
+const isWhatsappHealthPausedForPdf = () => {
+  return isPdfUsingWhatsappBrowser;
 };
 
 const initWhatsappClient = () => {
@@ -97,18 +114,6 @@ const initWhatsappClient = () => {
     latestQr = null;
 
     console.log("WhatsApp client is ready");
-
-    // try {
-    //   const chats = await whatsappClient.getChats();
-    //   const groups = chats.filter((chat) => chat.isGroup);
-
-    //   console.log("Available WhatsApp Groups:");
-    //   groups.forEach((group) => {
-    //     console.log(`${group.name} => ${group.id._serialized}`);
-    //   });
-    // } catch (error) {
-    //   console.log("Unable to list WhatsApp groups:", error.message);
-    // }
   });
 
   whatsappClient.on("auth_failure", (msg) => {
@@ -137,7 +142,11 @@ const initWhatsappClient = () => {
 
     setTimeout(() => {
       try {
-        initWhatsappClient();
+        if (!isPdfUsingWhatsappBrowser) {
+          initWhatsappClient();
+        } else {
+          console.log("WhatsApp auto re-init skipped: PDF generation running");
+        }
       } catch (error) {
         console.log("WhatsApp auto re-init failed:", error.message);
       }
@@ -145,27 +154,24 @@ const initWhatsappClient = () => {
   });
 
   whatsappClient.initialize().catch(async (error) => {
-  isReady = false;
-  isInitializing = false;
-  latestQr = null;
+    isReady = false;
+    isInitializing = false;
+    latestQr = null;
 
-  console.log("WhatsApp initialize error:", error.message);
+    console.log("WhatsApp initialize error:", error.message);
 
-  if (
-    error.message &&
-    error.message.includes("browser is already running")
-  ) {
-    console.log(
-      "Existing WhatsApp Chromium session detected. Health cron will recover connection."
-    );
+    if (error.message && error.message.includes("browser is already running")) {
+      console.log(
+        "Existing WhatsApp Chromium session detected. Health cron will recover connection."
+      );
 
-    return;
-  }
+      return;
+    }
 
-  whatsappClient = null;
-});
+    whatsappClient = null;
+  });
 
-return whatsappClient;
+  return whatsappClient;
 };
 
 const getWhatsappClient = () => {
@@ -178,6 +184,15 @@ const getWhatsappClient = () => {
 
 const forceCheckWhatsappStatus = async () => {
   try {
+    if (isPdfUsingWhatsappBrowser) {
+      return {
+        ready: isReady,
+        state: "PDF_GENERATION_RUNNING",
+        qr: latestQr,
+        sessionPath: whatsappSessionPath,
+      };
+    }
+
     if (!whatsappClient) {
       initWhatsappClient();
 
@@ -229,7 +244,7 @@ const isWhatsappReady = async () => {
 };
 
 const getLatestQr = () => {
-  if (!whatsappClient && !isInitializing) {
+  if (!whatsappClient && !isInitializing && !isPdfUsingWhatsappBrowser) {
     initWhatsappClient();
   }
 
@@ -246,6 +261,11 @@ const getWhatsappBrowser = () => {
 };
 
 const restartWhatsappClient = async () => {
+  if (isPdfUsingWhatsappBrowser) {
+    console.log("WhatsApp restart skipped: PDF generation running");
+    return whatsappClient;
+  }
+
   try {
     if (whatsappClient) {
       await whatsappClient.destroy();
@@ -287,5 +307,10 @@ module.exports = {
   destroyWhatsappClient,
   getWhatsappBrowser,
   forceCheckWhatsappStatus,
+
+  pauseWhatsappHealthForPdf,
+  resumeWhatsappHealthAfterPdf,
+  isWhatsappHealthPausedForPdf,
+
   MessageMedia,
 };

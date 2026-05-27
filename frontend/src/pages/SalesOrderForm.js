@@ -27,6 +27,7 @@ const paymentTermOptions = [
   "60_days_from_date_of_po_received",
   "75_days_from_date_of_po_received",
   "90_days_from_date_of_po_received",
+  "other",
 ];
 
 const supplyConditionOptions = [
@@ -89,10 +90,93 @@ const formatPaymentTermLabel = (term) => {
     "60_days_from_date_of_po_received": "60 Days from Date of PO Received",
     "75_days_from_date_of_po_received": "75 Days from Date of PO Received",
     "90_days_from_date_of_po_received": "90 Days from Date of PO Received",
+    other: "Other",
   };
 
   return map[term] || formatLabel(term);
 };
+
+const normalizeForCompare = (value = "") =>
+  String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/%/g, "_percent")
+    .replace(/\+/g, "_")
+    .replace(/\//g, "_or_")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+const resolveOptionValue = (value, allowedValues, fallback = "") => {
+  if (value === undefined || value === null || value === "") return fallback;
+
+  const cleanValue = String(value).trim();
+  if (allowedValues.includes(cleanValue)) return cleanValue;
+
+  const normalizedValue = normalizeForCompare(cleanValue);
+  const matched = allowedValues.find(
+    (option) => normalizeForCompare(option) === normalizedValue
+  );
+
+  return matched || fallback;
+};
+
+const yesNoValue = (value, fallback = "") => {
+  if (value === true) return "yes";
+  if (value === false) return "no";
+
+  const clean = String(value || "").trim().toLowerCase();
+  if (["yes", "y", "true", "1"].includes(clean)) return "yes";
+  if (["no", "n", "false", "0"].includes(clean)) return "no";
+
+  return fallback;
+};
+
+const boolSelectValue = (value, fallback = "true") => {
+  if (value === true) return "true";
+  if (value === false) return "false";
+
+  const clean = String(value || "").trim().toLowerCase();
+  if (["true", "yes", "1"].includes(clean)) return "true";
+  if (["false", "no", "0"].includes(clean)) return "false";
+
+  return fallback;
+};
+
+const supplyConditionValues = supplyConditionOptions.map((item) => item.value);
+
+const normalizeSupplyCondition = (value) => {
+  if (!value) return "as_per_standard";
+
+  const direct = resolveOptionValue(value, supplyConditionValues, "");
+  if (direct) return direct;
+
+  const normalized = normalizeForCompare(value);
+  const aliasMap = {
+    as_per_standard: "as_per_standard",
+    as_standard: "as_per_standard",
+    as_rolled_as_forged: "as_rolled_or_as_forged",
+    as_rolled_or_forged: "as_rolled_or_as_forged",
+    as_rolled_forged_annealed: "as_rolled_or_forged_annealed",
+    as_rolled_as_forged_annealed: "as_rolled_or_forged_annealed",
+    as_rolled_forged_normalised: "as_rolled_or_as_forged_normalised",
+    as_rolled_as_forged_normalised: "as_rolled_or_as_forged_normalised",
+    as_rolled_forged_qt: "as_rolled_or_as_forged_qt",
+    as_rolled_as_forged_qt: "as_rolled_or_as_forged_qt",
+    others: "other",
+  };
+
+  return aliasMap[normalized] || "other";
+};
+
+const normalizePaymentTerm = (value) =>
+  resolveOptionValue(value, paymentTermOptions, value ? "other" : "");
+
+const normalizeCuttingCost = (value) =>
+  resolveOptionValue(value, ["extra", "inclusive", "not_applicable"], "");
+
+const normalizeFreight = (value) =>
+  resolveOptionValue(value, ["extra", "self", "inclusive"], "");
 
 const getToday = () => new Date().toISOString().split("T")[0];
 
@@ -108,6 +192,7 @@ const initialForm = {
   customerPOFile: null,
 
   paymentTerms: "",
+  otherPaymentTerms: "",
   orderValue: "",
   isPaymentTermsApprovedByManagement: "false",
   paymentTermsApprovedBy: "",
@@ -265,10 +350,16 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       poNumber: editOrder.poNumber || "",
       checklistNumber: editOrder.checklistNumber || "",
 
-      customerType: editOrder.customerType || "existing",
+      customerType: resolveOptionValue(
+        editOrder.customerType,
+        ["existing", "new"],
+        "existing"
+      ),
       customerPOFile: null,
 
-      paymentTerms: editOrder.paymentTerms || "",
+      paymentTerms: normalizePaymentTerm(editOrder.paymentTerms),
+      otherPaymentTerms:
+        editOrder.otherPaymentTerms || editOrder.otherPaymentTerm || "",
       orderValue: editOrder.orderValue || "",
 
       isPaymentTermsApprovedByManagement:
@@ -276,54 +367,53 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
       paymentTermsApprovedBy: editOrder.paymentTermsApprovedBy || "",
 
-      previousPaymentAvailable:
-        String(previousPaymentValue).toLowerCase() === "yes" ? "yes" : "no",
+      previousPaymentAvailable: yesNoValue(previousPaymentValue, "no"),
       previousPaymentStatus: previousPaymentRemarkValue,
 
       specialNote: editOrder.specialNote || "",
 
-      poAsPerQuotation:
-        editOrder.poAsPerQuotation || editOrder.poAsPerQuote || "",
+      poAsPerQuotation: yesNoValue(
+        editOrder.poAsPerQuotation || editOrder.poAsPerQuote,
+        ""
+      ),
 
-      billingSameAsCompany:
-        billingObj.sameAsCompanyAddress === false ? "false" : "true",
-      billingAddress:
-        billingObj.address ||
-        editOrder.billingAddressText ||
-        "",
+      billingSameAsCompany: boolSelectValue(
+        billingObj.sameAsCompanyAddress ?? editOrder.billingSameAsCompany,
+        "true"
+      ),
+      billingAddress: billingObj.address || editOrder.billingAddressText || "",
       billingGstinNumber:
-        billingObj.gstinNumber ||
-        editOrder.billingGstinNumber ||
-        "",
+        billingObj.gstinNumber || editOrder.billingGstinNumber || "",
 
-      shippingSameAsCompany:
-        shippingObj.sameAsCompanyAddress === false ? "false" : "true",
+      shippingSameAsCompany: boolSelectValue(
+        shippingObj.sameAsCompanyAddress ?? editOrder.shippingSameAsCompany,
+        "true"
+      ),
       shippingAddress:
-        shippingObj.address ||
-        editOrder.shippingAddressText ||
-        editOrder.location ||
-        "",
+        shippingObj.address || editOrder.shippingAddressText || editOrder.location || "",
       shippingGstinNumber:
-        shippingObj.gstinNumber ||
-        editOrder.shippingGstinNumber ||
-        "",
+        shippingObj.gstinNumber || editOrder.shippingGstinNumber || "",
 
-      enquiryFormFilled: editOrder.enquiryFormFilled || "",
+      enquiryFormFilled: yesNoValue(editOrder.enquiryFormFilled, ""),
 
       sizeGradeQuantityRate: editOrder.sizeGradeQuantityRate || "",
-      supplyCondition: editOrder.supplyCondition || "as_per_standard",
+      supplyCondition: normalizeSupplyCondition(editOrder.supplyCondition),
       otherSupplyConditions: editOrder.otherSupplyConditions || "",
 
-      cutLengthRequired:
-        editOrder.cutLengthRequired || editOrder.isCutLengthRequired || "",
-      cuttingCost: editOrder.cuttingCost || editOrder.cuttingCostType || "",
+      cutLengthRequired: yesNoValue(
+        editOrder.cutLengthRequired ?? editOrder.isCutLengthRequired,
+        ""
+      ),
+      cuttingCost: normalizeCuttingCost(
+        editOrder.cuttingCost || editOrder.cuttingCostType
+      ),
       cuttingExtraCharges:
         editOrder.cuttingExtraCharges ||
         editOrder.cuttingExtraCharge ||
         editOrder.cuttingCharges ||
         "",
 
-      freight: editOrder.freight || editOrder.freightType || "",
+      freight: normalizeFreight(editOrder.freight || editOrder.freightType),
       freightExtraCharges:
         editOrder.freightExtraCharges ||
         editOrder.freightExtraCharge ||
@@ -333,7 +423,10 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       tolerance: editOrder.tolerance || "",
       endUseOfCustomer: editOrder.endUseOfCustomer || "",
       deliveryTime: editOrder.deliveryTime || "",
-      testCertificateRequired: "yes",
+      testCertificateRequired: yesNoValue(
+        editOrder.testCertificateRequired,
+        "yes"
+      ),
 
       contactPersonName: editOrder.contactPersonName || "",
       contactPersonNumber: editOrder.contactPersonNumber || "",
@@ -357,6 +450,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
   }, [isEditMode, rejectionComment, revisionFields]);
 
   const isPaymentApproved = form.isPaymentTermsApprovedByManagement === "true";
+  const isOtherPaymentTerms = form.paymentTerms === "other";
   const isOtherSupplyCondition = form.supplyCondition === "other";
   const billingDifferent = form.billingSameAsCompany === "false";
   const shippingDifferent = form.shippingSameAsCompany === "false";
@@ -462,6 +556,10 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       newErrors.orderValue = "Order value must be greater than 0";
     }
 
+    if (isOtherPaymentTerms && !form.otherPaymentTerms.trim()) {
+      newErrors.otherPaymentTerms = "Enter other payment terms";
+    }
+
     if (isPaymentApproved && !form.paymentTermsApprovedBy) {
       newErrors.paymentTermsApprovedBy = "Select approved person";
     }
@@ -472,14 +570,6 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
     if (isOtherSupplyCondition && !form.otherSupplyConditions.trim()) {
       newErrors.otherSupplyConditions = "Enter supply condition";
-    }
-
-    if (cuttingExtra && !form.cuttingExtraCharges.trim()) {
-      newErrors.cuttingExtraCharges = "Enter cutting extra charges";
-    }
-
-    if (freightExtra && !form.freightExtraCharges.trim()) {
-      newErrors.freightExtraCharges = "Enter freight extra charges";
     }
 
     if (!/^[0-9]{10}$/.test(form.contactPersonNumber)) {
@@ -557,6 +647,10 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
         updated.shippingGstinNumber = "";
       }
 
+      if (name === "paymentTerms" && value !== "other") {
+        updated.otherPaymentTerms = "";
+      }
+
       if (name === "previousPaymentAvailable" && value === "no") {
         updated.previousPaymentStatus = "";
       }
@@ -593,6 +687,9 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       contactPersonEmail: form.contactPersonEmail.trim(),
 
       paymentTerms: form.paymentTerms,
+      otherPaymentTerms: isOtherPaymentTerms
+        ? form.otherPaymentTerms.trim()
+        : "",
       orderValue: Number(form.orderValue),
 
       isPaymentTermsApprovedByManagement: isPaymentApproved,
@@ -906,7 +1003,8 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
               />
               {isEditMode && !form.customerPOFile && (
                 <small className="auto-hint">
-                  Existing PO file will remain unchanged unless you upload a new PDF.
+                  Existing PO file will remain unchanged unless you upload a new
+                  PDF.
                 </small>
               )}
               {form.customerPOFile && (
@@ -942,6 +1040,23 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
               </select>
               {errorText("paymentTerms")}
             </div>
+
+            {isOtherPaymentTerms && (
+              <div
+                className={fieldClass("otherPaymentTerms", "sales-full-width")}
+                {...refProp("otherPaymentTerms")}
+              >
+                <label>{mandatoryLabel("Other Payment Terms")}</label>
+                <textarea
+                  name="otherPaymentTerms"
+                  value={form.otherPaymentTerms}
+                  onChange={handleChange}
+                  placeholder="Example: 25% advance, balance within 7 days after dispatch"
+                  rows={3}
+                />
+                {errorText("otherPaymentTerms")}
+              </div>
+            )}
 
             <div className={fieldClass("orderValue")} {...refProp("orderValue")}>
               <label>{mandatoryLabel("Order Value")}</label>
@@ -1238,7 +1353,10 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
               {errorText("cutLengthRequired")}
             </div>
 
-            <div className={fieldClass("cuttingCost")} {...refProp("cuttingCost")}>
+            <div
+              className={fieldClass("cuttingCost")}
+              {...refProp("cuttingCost")}
+            >
               <label>{mandatoryLabel("Cutting Cost")}</label>
               <select
                 name="cuttingCost"
@@ -1248,6 +1366,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
                 <option value="">Select</option>
                 <option value="extra">Extra</option>
                 <option value="inclusive">Inclusive</option>
+                <option value="not_applicable">Not Applicable</option>
               </select>
               {errorText("cuttingCost")}
             </div>
@@ -1257,7 +1376,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
                 className={fieldClass("cuttingExtraCharges")}
                 {...refProp("cuttingExtraCharges")}
               >
-                <label>{mandatoryLabel("Cutting Extra Charges")}</label>
+                <label>Cutting Extra Charges</label>
                 <input
                   name="cuttingExtraCharges"
                   value={form.cuttingExtraCharges}
@@ -1288,7 +1407,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
                 className={fieldClass("freightExtraCharges")}
                 {...refProp("freightExtraCharges")}
               >
-                <label>{mandatoryLabel("Freight Extra Charges")}</label>
+                <label>Freight Extra Charges</label>
                 <input
                   name="freightExtraCharges"
                   value={form.freightExtraCharges}

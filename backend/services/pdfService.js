@@ -129,61 +129,45 @@ const formatDate = (date) => {
 };
 
 const generateSalesOrderPdfBuffer = async (salesOrder) => {
-  await ensureChromium();
-
   const html = salesOrderTemplate(salesOrder);
 
-  let browser;
   let page;
-  let shouldCloseBrowser = false;
+
+  const {
+    getWhatsappBrowser,
+    pauseWhatsappHealthForPdf,
+    resumeWhatsappHealthAfterPdf,
+  } = require("../util/whatsappClient");
 
   try {
-    const { getWhatsappBrowser, forceCheckWhatsappStatus } = require("../util/whatsappClient");
+    pauseWhatsappHealthForPdf();
 
-    const whatsappStatus = await forceCheckWhatsappStatus();
     const whatsappBrowser = getWhatsappBrowser();
 
-    if (whatsappBrowser) {
-      console.log("PDF USING WHATSAPP CHROMIUM");
-      browser = whatsappBrowser;
-      shouldCloseBrowser = false;
-    } else {
-      console.log("PDF USING OWN CHROMIUM");
-
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--disable-extensions",
-          "--disable-background-networking",
-          "--disable-background-timer-throttling",
-          "--disable-renderer-backgrounding",
-          "--disable-features=TranslateUI",
-          "--disable-ipc-flooding-protection",
-          "--single-process",
-          "--no-zygote",
-          "--no-first-run",
-        ],
-      });
-
-      shouldCloseBrowser = true;
+    if (!whatsappBrowser || !whatsappBrowser.isConnected()) {
+      throw new Error(
+        "WhatsApp Chromium is not connected. Please restart the Node app once and try again."
+      );
     }
 
-    page = await browser.newPage();
+    console.log("PDF USING WHATSAPP CHROMIUM");
+
+    page = await whatsappBrowser.newPage();
 
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
-      timeout: 300000,
+      timeout: 120000,
     });
 
     await page.emulateMediaType("screen");
 
-    await page.evaluateHandle("document.fonts.ready");
+    try {
+      await page.evaluateHandle("document.fonts.ready");
+    } catch (error) {
+      console.log("PDF font wait skipped:", error.message);
+    }
 
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     const pdfBuffer = await page.pdf({
       format: "A4",
@@ -199,12 +183,11 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
 
     return pdfBuffer;
   } finally {
-    if (page) await page.close().catch(() => {});
-
-    // IMPORTANT: do not close WhatsApp browser
-    if (browser && shouldCloseBrowser) {
-      await browser.close().catch(() => {});
+    if (page) {
+      await page.close().catch(() => {});
     }
+
+    resumeWhatsappHealthAfterPdf();
   }
 };
 const addSalesOrderHtmlPages = async (mergedPdf, salesOrder) => {
