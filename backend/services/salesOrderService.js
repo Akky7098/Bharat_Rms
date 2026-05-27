@@ -506,9 +506,7 @@ const getAllSalesOrders = async (query, user) => {
     // ROLE FILTER
     if (user.role === "admin" || user.role === "super_admin") {
       if (salesPersonId) {
-        filter.salesPersonId = new mongoose.Types.ObjectId(
-          salesPersonId
-        );
+        filter.salesPersonId = new mongoose.Types.ObjectId(salesPersonId);
       }
     } else {
       filter.salesPersonId = new mongoose.Types.ObjectId(user.id);
@@ -557,8 +555,7 @@ const getAllSalesOrders = async (query, user) => {
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const totalRecords =
-      await SalesOrder.countDocuments(filter);
+    const totalRecords = await SalesOrder.countDocuments(filter);
 
     const salesOrders = await SalesOrder.aggregate([
       {
@@ -623,33 +620,61 @@ const getAllSalesOrders = async (query, user) => {
 
           poNumber: 1,
           checklistNumber: 1,
-
           customerType: 1,
-          paymentTerms: 1,
-          orderValue: 1,
 
+          // Commercial
+          paymentTerms: 1,
+          otherPaymentTerms: 1,
+          orderValue: 1,
+          isPaymentTermsApprovedByManagement: 1,
+          paymentTermsApprovedBy: 1,
+          previousPaymentStatus: 1,
+          previousPaymentRemark: 1,
+          specialNote: 1,
+          poAsPerQuotation: 1,
+
+          // Billing / Shipping / Enquiry
+          billingAddress: 1,
+          shippingAddress: 1,
+          enquiryFormFilled: 1,
+          enquiryNumber: 1,
+
+          // Material
           sizeGradeQuantityRate: 1,
           supplyCondition: 1,
+          otherSupplyConditions: 1,
           cutLengthRequired: 1,
           cuttingCost: 1,
+          cuttingExtraCharges: 1,
           freight: 1,
+          freightExtraCharges: 1,
           tolerance: 1,
           deliveryTime: 1,
           endUseOfCustomer: 1,
+          testCertificateRequired: 1,
+
+          // Status
           approvalStatus: 1,
           isEditableBySalesPerson: 1,
+          revisionCount: 1,
+          lastSubmittedAt: 1,
 
+          // Contact
           contactPersonName: 1,
           contactPersonNumber: 1,
+          contactPersonEmail: 1,
           contactPersonEmailId: 1,
 
+          // Files
           pdf: 1,
           finalSalesOrderPackage: 1,
           preShipmentInspectionPdf: 1,
           customerPOFile: 1,
 
+          // Approval comments/history
           managerApproval: 1,
           adminApproval: 1,
+          approvalHistory: 1,
 
           "salesPersonId._id": 1,
           "salesPersonId.name": 1,
@@ -668,9 +693,7 @@ const getAllSalesOrders = async (query, user) => {
       pagination: {
         totalRecords,
         currentPage: Number(page),
-        totalPages: Math.ceil(
-          totalRecords / Number(limit)
-        ),
+        totalPages: Math.ceil(totalRecords / Number(limit)),
         limit: Number(limit),
       },
     };
@@ -714,29 +737,49 @@ const updateSalesOrder = async (
       throw new Error("Sales order not found");
     }
 
-    // ALLOW EDIT ONLY WHEN REJECTED
     if (!salesOrder.isEditableBySalesPerson) {
-      throw new Error(
-        "Sales order cannot be edited right now"
-      );
+      throw new Error("Sales order cannot be edited right now");
     }
 
-    Object.assign(salesOrder, payload);
+    // Preserve existing file if no new upload
+    const preservedCustomerPOFile = salesOrder.customerPOFile;
 
-    salesOrder.revisionCount += 1;
+    // Update only payload fields
+    Object.keys(payload).forEach((key) => {
+      if (
+        payload[key] !== undefined &&
+        payload[key] !== null
+      ) {
+        salesOrder[key] = payload[key];
+      }
+    });
+
+    // Restore PO file if frontend did not replace
+    if (!salesOrder.customerPOFile) {
+      salesOrder.customerPOFile = preservedCustomerPOFile;
+    }
+
+    // Reset approval states
+    salesOrder.approvalStatus = "pending_admin_review";
+    salesOrder.isEditableBySalesPerson = false;
+
+    // clear old approval markers
+    salesOrder.adminApproval = {};
+    salesOrder.managerApproval = {};
+
+    salesOrder.checkedByAdminId = null;
+    salesOrder.checkedByAdminName = null;
+
+    salesOrder.revisionCount =
+      (salesOrder.revisionCount || 0) + 1;
 
     salesOrder.lastSubmittedAt = new Date();
-
-    salesOrder.approvalStatus =
-      "pending_admin_review";
-
-    salesOrder.isEditableBySalesPerson = false;
 
     salesOrder.approvalHistory.push({
       actionBy: loggedInUser._id,
       role: "salesperson",
       action: "resubmitted",
-      comment: "Sales order updated and resubmitted",
+      comment: "Sales order updated and resubmitted after hold",
     });
 
     const updatedOrder = await salesOrder.save();

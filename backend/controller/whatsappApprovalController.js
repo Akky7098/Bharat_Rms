@@ -54,18 +54,6 @@ const approveFromWhatsapp = async (req, res) => {
       );
     }
 
-    if (salesOrder.approvalStatus === "rejected_by_manager") {
-      return res.send(`
-        <div style="font-family:Arial;padding:30px;">
-          <h2 style="color:#dc2626;">Sales Order Already Put On Hold</h2>
-          <p>This Sales Order has already been put on hold by MD Sir.</p>
-          <p><b>Reason:</b> ${
-            salesOrder.managerApproval?.rejectionComment || "-"
-          }</p>
-        </div>
-      `);
-    }
-
     if (salesOrder.approvalStatus !== "pending_manager_approval") {
       return res.send(`
         <div style="font-family:Arial;padding:30px;">
@@ -74,6 +62,62 @@ const approveFromWhatsapp = async (req, res) => {
           <p><b>Current Status:</b> ${salesOrder.approvalStatus}</p>
         </div>
       `);
+    }
+
+    if (req.method === "GET") {
+      return res.send(`
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Approve Sales Order</title>
+  </head>
+
+  <body style="margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
+    <div style="background:#fff;width:100%;max-width:440px;border-radius:20px;padding:24px 18px;text-align:center;box-shadow:0 18px 40px rgba(15,23,42,.18);box-sizing:border-box;">
+      
+      <div style="width:66px;height:66px;border-radius:50%;background:#dcfce7;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:40px;color:#16a34a;font-weight:bold;">
+        ✓
+      </div>
+
+      <h2 style="margin:0 0 10px;color:#111827;font-size:22px;line-height:1.25;">
+        Approve Sales Order
+      </h2>
+
+      <p style="color:#475569;font-size:15px;line-height:1.5;margin:0 0 16px;">
+        Are you sure you want to approve this sales order?
+      </p>
+
+      <div style="text-align:left;background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:13px;margin:16px 0;font-size:13px;color:#111827;line-height:1.45;">
+        <p style="margin:0 0 8px;"><b>Company:</b> ${salesOrder.companyName || "-"}</p>
+        <p style="margin:0 0 8px;"><b>PO Number:</b> ${salesOrder.poNumber || "-"}</p>
+        <p style="margin:0;"><b>Sales Person:</b> ${salesOrder.salesPersonName || "-"}</p>
+      </div>
+
+      <form method="POST" action="/api/whatsapp-approval/approve/${id}/${token}" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+        <button
+          type="button"
+          onclick="history.back()"
+          style="flex:1;min-width:130px;padding:14px 10px;border:0;border-radius:12px;background:#e5e7eb;color:#111827;font-weight:bold;font-size:15px;cursor:pointer;"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          style="flex:1;min-width:130px;padding:14px 10px;border:0;border-radius:12px;background:#16a34a;color:white;font-weight:bold;font-size:15px;cursor:pointer;"
+        >
+          Yes, Approve
+        </button>
+      </form>
+
+      <p style="margin:16px 0 0;color:#64748b;font-size:12px;line-height:1.4;">
+        Approval will be completed only after pressing “Yes, Approve”.
+      </p>
+    </div>
+  </body>
+  </html>
+`);
     }
 
     salesOrder.approvalStatus = "approved";
