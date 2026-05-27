@@ -121,11 +121,33 @@ const resolveOptionValue = (value, allowedValues, fallback = "") => {
   return matched || fallback;
 };
 
+const getValueByPath = (obj, path) => {
+  if (!obj || !path) return undefined;
+
+  return path.split(".").reduce((acc, key) => {
+    if (acc === undefined || acc === null) return undefined;
+    return acc[key];
+  }, obj);
+};
+
+const getFirstFromOrder = (order, paths, fallback = "") => {
+  for (const path of paths) {
+    const value = getValueByPath(order, path);
+
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return fallback;
+};
+
 const yesNoValue = (value, fallback = "") => {
   if (value === true) return "yes";
   if (value === false) return "no";
 
   const clean = String(value || "").trim().toLowerCase();
+
   if (["yes", "y", "true", "1"].includes(clean)) return "yes";
   if (["no", "n", "false", "0"].includes(clean)) return "no";
 
@@ -137,6 +159,7 @@ const boolSelectValue = (value, fallback = "true") => {
   if (value === false) return "false";
 
   const clean = String(value || "").trim().toLowerCase();
+
   if (["true", "yes", "1"].includes(clean)) return "true";
   if (["false", "no", "0"].includes(clean)) return "false";
 
@@ -152,6 +175,7 @@ const normalizeSupplyCondition = (value) => {
   if (direct) return direct;
 
   const normalized = normalizeForCompare(value);
+
   const aliasMap = {
     as_per_standard: "as_per_standard",
     as_standard: "as_per_standard",
@@ -177,6 +201,52 @@ const normalizeCuttingCost = (value) =>
 
 const normalizeFreight = (value) =>
   resolveOptionValue(value, ["extra", "self", "inclusive"], "");
+
+const getLatestHoldComment = (order) => {
+  if (!order) return "";
+
+  const directComments = [
+    order.managerApproval?.rejectionComment,
+    order.adminApproval?.rejectionComment,
+    order.managerRejectionComment,
+    order.adminRejectionComment,
+    order.rejectionComment,
+    order.holdComment,
+  ].filter(Boolean);
+
+  if (directComments.length) {
+    return directComments[directComments.length - 1];
+  }
+
+  if (Array.isArray(order.approvalHistory)) {
+    const holdEntry = [...order.approvalHistory].reverse().find((item) => {
+      const action = String(item?.action || "").toLowerCase();
+      const comment = String(
+        item?.rejectionComment || item?.comment || item?.remarks || ""
+      ).trim();
+
+      if (!comment) return false;
+
+      return (
+        action.includes("rejected") ||
+        action.includes("hold") ||
+        action.includes("admin_rejected") ||
+        action.includes("manager_rejected")
+      );
+    });
+
+    if (holdEntry) {
+      return (
+        holdEntry.rejectionComment ||
+        holdEntry.comment ||
+        holdEntry.remarks ||
+        ""
+      );
+    }
+  }
+
+  return "";
+};
 
 const getToday = () => new Date().toISOString().split("T")[0];
 
@@ -245,32 +315,12 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
   const fieldRefs = useRef({});
 
-  const rejectionComment = useMemo(() => {
-    const comments = [];
-
-    if (editOrder?.rejectionComment) comments.push(editOrder.rejectionComment);
-    if (editOrder?.adminRejectionComment)
-      comments.push(editOrder.adminRejectionComment);
-    if (editOrder?.managerRejectionComment)
-      comments.push(editOrder.managerRejectionComment);
-    if (editOrder?.adminApproval?.rejectionComment)
-      comments.push(editOrder.adminApproval.rejectionComment);
-    if (editOrder?.managerApproval?.rejectionComment)
-      comments.push(editOrder.managerApproval.rejectionComment);
-
-    if (Array.isArray(editOrder?.approvalHistory)) {
-      editOrder.approvalHistory.forEach((item) => {
-        if (item?.rejectionComment) comments.push(item.rejectionComment);
-        if (item?.comment) comments.push(item.comment);
-        if (item?.remarks) comments.push(item.remarks);
-      });
-    }
-
-    return comments.filter(Boolean).join(" | ");
+  const holdComment = useMemo(() => {
+    return getLatestHoldComment(editOrder);
   }, [editOrder]);
 
   const revisionFields = useMemo(() => {
-    const text = String(rejectionComment || "").toLowerCase();
+    const text = String(holdComment || "").toLowerCase();
     const fields = new Set();
 
     const addIf = (keywords, fieldNames) => {
@@ -281,6 +331,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
     addIf(["payment term", "payment terms", "payment"], [
       "paymentTerms",
+      "otherPaymentTerms",
       "isPaymentTermsApprovedByManagement",
       "paymentTermsApprovedBy",
     ]);
@@ -310,6 +361,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
     ]);
     addIf(["order value", "value", "amount"], ["orderValue"]);
     addIf(["po number", "po no", "po"], ["poNumber", "customerPOFile"]);
+    addIf(["po as per quotation", "quotation"], ["poAsPerQuotation"]);
     addIf(["checklist"], ["checklistNumber"]);
     addIf(["previous payment", "old payment"], [
       "previousPaymentAvailable",
@@ -322,7 +374,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
     ]);
 
     return fields;
-  }, [rejectionComment]);
+  }, [holdComment]);
 
   useEffect(() => {
     if (!editOrder) return;
@@ -337,117 +389,223 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
         ? editOrder.shippingAddress
         : {};
 
-    const previousPaymentValue = editOrder.previousPaymentStatus || "no";
-    const previousPaymentRemarkValue = editOrder.previousPaymentRemark || "";
+    const previousPaymentValue = getFirstFromOrder(
+      editOrder,
+      ["previousPaymentStatus", "previousPaymentAvailable"],
+      "no"
+    );
+
+    const previousPaymentRemarkValue = getFirstFromOrder(editOrder, [
+      "previousPaymentRemark",
+      "previousPaymentDetails",
+      "previousPaymentStatusRemark",
+      "previousPaymentComment",
+    ]);
+
+    const savedPaymentTerms = getFirstFromOrder(editOrder, [
+      "paymentTerms",
+      "paymentTerm",
+    ]);
+
+    const savedSupplyCondition = getFirstFromOrder(editOrder, [
+      "supplyCondition",
+      "supplyConditions",
+    ]);
+
+    const savedCuttingCost = getFirstFromOrder(editOrder, [
+      "cuttingCost",
+      "cuttingCostType",
+      "cutting",
+    ]);
+
+    const savedFreight = getFirstFromOrder(editOrder, [
+      "freight",
+      "freightType",
+      "freightCost",
+    ]);
+
+    const savedPoAsPerQuotation = getFirstFromOrder(editOrder, [
+      "poAsPerQuotation",
+      "poAsPerQuote",
+      "poAsPerQuotationStatus",
+      "isPoAsPerQuotation",
+    ]);
+
+    const savedEnquiryFilled = getFirstFromOrder(editOrder, [
+      "enquiryFormFilled",
+      "enquiryFilled",
+      "isEnquiryFormFilled",
+      "enquiryFormStatus",
+    ]);
 
     setForm({
       ...initialForm,
 
-      companyName: editOrder.companyName || "",
-      companyAddress: editOrder.companyAddress || "",
-      gstinNumber: editOrder.gstinNumber || "",
+      companyName: getFirstFromOrder(editOrder, ["companyName"]),
+      companyAddress: getFirstFromOrder(editOrder, ["companyAddress"]),
+      gstinNumber: getFirstFromOrder(editOrder, ["gstinNumber", "gstNumber"]),
 
-      poNumber: editOrder.poNumber || "",
-      checklistNumber: editOrder.checklistNumber || "",
+      poNumber: getFirstFromOrder(editOrder, ["poNumber", "purchaseOrderNo"]),
+      checklistNumber: getFirstFromOrder(editOrder, ["checklistNumber"]),
 
       customerType: resolveOptionValue(
-        editOrder.customerType,
+        getFirstFromOrder(editOrder, ["customerType"]),
         ["existing", "new"],
         "existing"
       ),
+
       customerPOFile: null,
 
-      paymentTerms: normalizePaymentTerm(editOrder.paymentTerms),
-      otherPaymentTerms:
-        editOrder.otherPaymentTerms || editOrder.otherPaymentTerm || "",
-      orderValue: editOrder.orderValue || "",
+      paymentTerms: normalizePaymentTerm(savedPaymentTerms),
+      otherPaymentTerms: getFirstFromOrder(editOrder, [
+        "otherPaymentTerms",
+        "otherPaymentTerm",
+      ]),
 
-      isPaymentTermsApprovedByManagement:
-        editOrder.isPaymentTermsApprovedByManagement ? "true" : "false",
+      orderValue: getFirstFromOrder(editOrder, ["orderValue", "totalOrderValue"]),
 
-      paymentTermsApprovedBy: editOrder.paymentTermsApprovedBy || "",
+      isPaymentTermsApprovedByManagement: boolSelectValue(
+        getFirstFromOrder(editOrder, [
+          "isPaymentTermsApprovedByManagement",
+          "paymentTermsApproved",
+        ]),
+        "false"
+      ),
+
+      paymentTermsApprovedBy: getFirstFromOrder(editOrder, [
+        "paymentTermsApprovedBy",
+      ]),
 
       previousPaymentAvailable: yesNoValue(previousPaymentValue, "no"),
       previousPaymentStatus: previousPaymentRemarkValue,
 
-      specialNote: editOrder.specialNote || "",
+      specialNote: getFirstFromOrder(editOrder, [
+        "specialNote",
+        "specialNotes",
+        "note",
+        "remarks",
+      ]),
 
-      poAsPerQuotation: yesNoValue(
-        editOrder.poAsPerQuotation || editOrder.poAsPerQuote,
-        ""
-      ),
-
+      poAsPerQuotation: yesNoValue(savedPoAsPerQuotation, ""),
       billingSameAsCompany: boolSelectValue(
         billingObj.sameAsCompanyAddress ?? editOrder.billingSameAsCompany,
         "true"
       ),
-      billingAddress: billingObj.address || editOrder.billingAddressText || "",
-      billingGstinNumber:
-        billingObj.gstinNumber || editOrder.billingGstinNumber || "",
+      billingAddress: getFirstFromOrder(
+        editOrder,
+        ["billingAddress.address", "billingAddressText", "billingAddressValue"],
+        billingObj.address || ""
+      ),
+      billingGstinNumber: getFirstFromOrder(
+        editOrder,
+        ["billingAddress.gstinNumber", "billingGstinNumber"],
+        billingObj.gstinNumber || ""
+      ),
 
       shippingSameAsCompany: boolSelectValue(
         shippingObj.sameAsCompanyAddress ?? editOrder.shippingSameAsCompany,
         "true"
       ),
-      shippingAddress:
-        shippingObj.address || editOrder.shippingAddressText || editOrder.location || "",
-      shippingGstinNumber:
-        shippingObj.gstinNumber || editOrder.shippingGstinNumber || "",
+      shippingAddress: getFirstFromOrder(
+        editOrder,
+        [
+          "shippingAddress.address",
+          "shippingAddressText",
+          "shippingAddressValue",
+          "location",
+        ],
+        shippingObj.address || ""
+      ),
+      shippingGstinNumber: getFirstFromOrder(
+        editOrder,
+        ["shippingAddress.gstinNumber", "shippingGstinNumber"],
+        shippingObj.gstinNumber || ""
+      ),
 
-      enquiryFormFilled: yesNoValue(editOrder.enquiryFormFilled, ""),
+      enquiryFormFilled: yesNoValue(savedEnquiryFilled, ""),
 
-      sizeGradeQuantityRate: editOrder.sizeGradeQuantityRate || "",
-      supplyCondition: normalizeSupplyCondition(editOrder.supplyCondition),
-      otherSupplyConditions: editOrder.otherSupplyConditions || "",
+      sizeGradeQuantityRate: getFirstFromOrder(editOrder, [
+        "sizeGradeQuantityRate",
+        "materialDetails",
+      ]),
+
+      supplyCondition: normalizeSupplyCondition(savedSupplyCondition),
+      otherSupplyConditions: getFirstFromOrder(editOrder, [
+        "otherSupplyConditions",
+        "otherSupplyCondition",
+      ]),
 
       cutLengthRequired: yesNoValue(
-        editOrder.cutLengthRequired ?? editOrder.isCutLengthRequired,
+        getFirstFromOrder(editOrder, [
+          "cutLengthRequired",
+          "isCutLengthRequired",
+          "cutLength",
+        ]),
         ""
       ),
-      cuttingCost: normalizeCuttingCost(
-        editOrder.cuttingCost || editOrder.cuttingCostType
+
+      cuttingCost: normalizeCuttingCost(savedCuttingCost),
+      cuttingExtraCharges: getFirstFromOrder(editOrder, [
+        "cuttingExtraCharges",
+        "cuttingExtraCharge",
+        "cuttingCharges",
+        "cuttingCharge",
+      ]),
+
+      freight: normalizeFreight(savedFreight),
+      freightExtraCharges: getFirstFromOrder(editOrder, [
+        "freightExtraCharges",
+        "freightExtraCharge",
+        "freightCharges",
+        "freightCharge",
+        "transportCharges",
+        "transportExtraCharges",
+      ]),
+
+      tolerance: getFirstFromOrder(editOrder, ["tolerance"]),
+      endUseOfCustomer: resolveOptionValue(
+        getFirstFromOrder(editOrder, ["endUseOfCustomer", "endUse"]),
+        ["machining", "forging"],
+        ""
       ),
-      cuttingExtraCharges:
-        editOrder.cuttingExtraCharges ||
-        editOrder.cuttingExtraCharge ||
-        editOrder.cuttingCharges ||
-        "",
+      deliveryTime: getFirstFromOrder(editOrder, ["deliveryTime"]),
 
-      freight: normalizeFreight(editOrder.freight || editOrder.freightType),
-      freightExtraCharges:
-        editOrder.freightExtraCharges ||
-        editOrder.freightExtraCharge ||
-        editOrder.freightCharges ||
-        "",
-
-      tolerance: editOrder.tolerance || "",
-      endUseOfCustomer: editOrder.endUseOfCustomer || "",
-      deliveryTime: editOrder.deliveryTime || "",
       testCertificateRequired: yesNoValue(
-        editOrder.testCertificateRequired,
+        getFirstFromOrder(editOrder, ["testCertificateRequired"]),
         "yes"
       ),
 
-      contactPersonName: editOrder.contactPersonName || "",
-      contactPersonNumber: editOrder.contactPersonNumber || "",
-      contactPersonEmail:
-        editOrder.contactPersonEmail ||
-        editOrder.contactPersonEmailId ||
-        editOrder.customerEmail ||
-        "",
+      contactPersonName: getFirstFromOrder(editOrder, [
+        "contactPersonName",
+        "customerName",
+      ]),
+      contactPersonNumber: getFirstFromOrder(editOrder, [
+        "contactPersonNumber",
+        "contactPersonMobile",
+        "customerMobile",
+        "customerContactNo",
+      ]),
+      contactPersonEmail: getFirstFromOrder(editOrder, [
+        "contactPersonEmail",
+        "contactPersonEmailId",
+        "customerEmail",
+        "customerEmailId",
+        "email",
+      ]),
     });
   }, [editOrder]);
 
   useEffect(() => {
-    if (!isEditMode || !rejectionComment) return;
+    if (!isEditMode || !holdComment) return;
 
     setTimeout(() => {
       const firstRevisionField = Array.from(revisionFields)[0];
+
       if (firstRevisionField) {
         scrollToField(firstRevisionField);
       }
     }, 350);
-  }, [isEditMode, rejectionComment, revisionFields]);
+  }, [isEditMode, holdComment, revisionFields]);
 
   const isPaymentApproved = form.isPaymentTermsApprovedByManagement === "true";
   const isOtherPaymentTerms = form.paymentTerms === "other";
@@ -485,6 +643,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       });
 
       const input = el.querySelector("input, select, textarea");
+
       if (input && !input.disabled) {
         setTimeout(() => input.focus(), 300);
       }
@@ -690,6 +849,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       otherPaymentTerms: isOtherPaymentTerms
         ? form.otherPaymentTerms.trim()
         : "",
+
       orderValue: Number(form.orderValue),
 
       isPaymentTermsApprovedByManagement: isPaymentApproved,
@@ -824,9 +984,11 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
       if (salesOrderId) {
         setPdfGenerating(true);
+
         try {
           const pdfResponse = await generateSalesOrderPdf(salesOrderId);
           const generatedUrl = getPdfUrlFromResponse(pdfResponse);
+
           if (generatedUrl) setPdfUrl(generatedUrl);
         } catch (pdfError) {
           console.log(pdfError);
@@ -867,700 +1029,712 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
     errors[name] ? (
       <small className="sales-field-error">{errors[name]}</small>
     ) : null;
-
-  return (
-    <div className="sales-form-overlay">
-      <div className="sales-form-card premium-sales-form">
-        <div className="sales-form-header sales-premium-header">
-          <div>
-            <h2>{isEditMode ? "Edit Sales Order" : "New Sales Order"}</h2>
-            <p>
-              Fill customer PO details and generate final Sales Order package.
-            </p>
-          </div>
-
-          <button type="button" className="sales-close-btn" onClick={onClose}>
-            ×
-          </button>
+ return (
+  <div className="sales-form-overlay">
+    <div className="sales-form-card premium-sales-form">
+      <div className="sales-form-header sales-premium-header">
+        <div>
+          <h2>{isEditMode ? "Edit Sales Order" : "New Sales Order"}</h2>
+          <p>
+            Fill customer PO details and generate final Sales Order package.
+          </p>
         </div>
 
-        {isEditMode && rejectionComment && (
-          <div className="revision-comment-box">
-            <strong>Revision Comment:</strong> {rejectionComment}
+        <button type="button" className="sales-close-btn" onClick={onClose}>
+          ×
+        </button>
+      </div>
+
+      {isEditMode && holdComment && (
+        <div
+          className="revision-comment-box"
+          style={{
+            maxHeight: "110px",
+            overflowY: "auto",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          }}
+        >
+         <strong>
+  {editOrder?.approvalStatus === "rejected_by_admin"
+    ? "Hold by Admin:"
+    : "Hold by Manager:"}
+</strong>{" "}
+{holdComment}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-section-title premium-section-title">
+          <span>01</span> Customer & PO Details
+        </div>
+
+        <div className="sales-form-grid">
+          <div className="sales-form-group">
+            <label>Order Date</label>
+            <input type="date" value={getToday()} disabled />
+            <small className="auto-hint">Auto set on submission</small>
+          </div>
+
+          <div
+            className={fieldClass("companyName")}
+            {...refProp("companyName")}
+          >
+            <label>{mandatoryLabel("Company Name")}</label>
+            <input
+              name="companyName"
+              value={form.companyName}
+              onChange={handleChange}
+              placeholder="Example: ABC Engineering Pvt Ltd"
+            />
+            {errorText("companyName")}
+          </div>
+
+          <div
+            className={fieldClass("gstinNumber")}
+            {...refProp("gstinNumber")}
+          >
+            <label>{mandatoryLabel("Company GSTIN")}</label>
+            <input
+              name="gstinNumber"
+              value={form.gstinNumber}
+              onChange={handleChange}
+              maxLength={15}
+              placeholder="Example: 27ABCDE1234F1Z5"
+            />
+            {errorText("gstinNumber")}
+          </div>
+
+          <div
+            className={fieldClass("companyAddress", "sales-full-width")}
+            {...refProp("companyAddress")}
+          >
+            <label>{mandatoryLabel("Company Address")}</label>
+            <textarea
+              name="companyAddress"
+              value={form.companyAddress}
+              onChange={handleChange}
+              placeholder="Example: Plot No, Industrial Area, City, State - Pincode"
+            />
+            {errorText("companyAddress")}
+          </div>
+
+          <div className={fieldClass("poNumber")} {...refProp("poNumber")}>
+            <label>{mandatoryLabel("PO Number")}</label>
+            <input
+              name="poNumber"
+              value={form.poNumber}
+              onChange={handleChange}
+              placeholder="Example: PO/2026/001"
+            />
+            {errorText("poNumber")}
+          </div>
+
+          <div
+            className={fieldClass("checklistNumber")}
+            {...refProp("checklistNumber")}
+          >
+            <label>Checklist Number</label>
+            <input
+              name="checklistNumber"
+              value={form.checklistNumber}
+              onChange={handleChange}
+              placeholder="Example: CHK-001"
+            />
+          </div>
+
+          <div
+            className={fieldClass("customerType")}
+            {...refProp("customerType")}
+          >
+            <label>{mandatoryLabel("Customer Type")}</label>
+            <select
+              name="customerType"
+              value={form.customerType}
+              onChange={handleChange}
+            >
+              <option value="existing">Existing</option>
+              <option value="new">New</option>
+            </select>
+            <small className="auto-hint">Existing selected by default</small>
+            {errorText("customerType")}
+          </div>
+
+          <div
+            className={fieldClass("customerPOFile")}
+            {...refProp("customerPOFile")}
+          >
+            <label>
+              {isEditMode
+                ? "Replace Customer PO PDF"
+                : mandatoryLabel("Customer PO PDF")}
+            </label>
+            <input
+              type="file"
+              name="customerPOFile"
+              accept="application/pdf"
+              onChange={handleChange}
+            />
+            {isEditMode && !form.customerPOFile && (
+              <small className="auto-hint">
+                Existing PO file will remain unchanged unless you upload a new
+                PDF.
+              </small>
+            )}
+            {form.customerPOFile && (
+              <small className="file-selected">
+                Selected: {form.customerPOFile.name}
+              </small>
+            )}
+            {errorText("customerPOFile")}
+          </div>
+        </div>
+
+        <div className="form-section-title premium-section-title">
+          <span>02</span> Commercial, Address & Enquiry
+        </div>
+
+        <div className="sales-form-grid">
+          <div
+            className={fieldClass("paymentTerms", "sales-full-width")}
+            {...refProp("paymentTerms")}
+          >
+            <label>{mandatoryLabel("Payment Terms")}</label>
+            <select
+              name="paymentTerms"
+              value={form.paymentTerms}
+              onChange={handleChange}
+            >
+              <option value="">Select payment terms</option>
+              {paymentTermOptions.map((term) => (
+                <option key={term} value={term}>
+                  {formatPaymentTermLabel(term)}
+                </option>
+              ))}
+            </select>
+            {errorText("paymentTerms")}
+          </div>
+
+          {isOtherPaymentTerms && (
+            <div
+              className={fieldClass("otherPaymentTerms", "sales-full-width")}
+              {...refProp("otherPaymentTerms")}
+            >
+              <label>{mandatoryLabel("Other Payment Terms")}</label>
+              <textarea
+                name="otherPaymentTerms"
+                value={form.otherPaymentTerms}
+                onChange={handleChange}
+                placeholder="Example: 25% advance, balance within 7 days after dispatch"
+                rows={3}
+              />
+              {errorText("otherPaymentTerms")}
+            </div>
+          )}
+
+          <div className={fieldClass("orderValue")} {...refProp("orderValue")}>
+            <label>{mandatoryLabel("Order Value")}</label>
+            <input
+              type="number"
+              name="orderValue"
+              value={form.orderValue}
+              onChange={handleChange}
+              placeholder="Example: 250000"
+            />
+            {errorText("orderValue")}
+          </div>
+
+          <div
+            className={fieldClass("isPaymentTermsApprovedByManagement")}
+            {...refProp("isPaymentTermsApprovedByManagement")}
+          >
+            <label>{mandatoryLabel("Payment Terms Approved?")}</label>
+            <select
+              name="isPaymentTermsApprovedByManagement"
+              value={form.isPaymentTermsApprovedByManagement}
+              onChange={handleChange}
+            >
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </div>
+
+          {isPaymentApproved && (
+            <div
+              className={fieldClass("paymentTermsApprovedBy")}
+              {...refProp("paymentTermsApprovedBy")}
+            >
+              <label>{mandatoryLabel("Approved By")}</label>
+              <select
+                name="paymentTermsApprovedBy"
+                value={form.paymentTermsApprovedBy}
+                onChange={handleChange}
+              >
+                <option value="">Select approver</option>
+                {approverOptions.map((person) => (
+                  <option key={person} value={person}>
+                    {formatLabel(person)}
+                  </option>
+                ))}
+              </select>
+              {errorText("paymentTermsApprovedBy")}
+            </div>
+          )}
+
+          <div
+            className={fieldClass("previousPaymentAvailable")}
+            {...refProp("previousPaymentAvailable")}
+          >
+            <label>{mandatoryLabel("Previous Payment?")}</label>
+            <select
+              name="previousPaymentAvailable"
+              value={form.previousPaymentAvailable}
+              onChange={handleChange}
+            >
+              <option value="">Select</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+            {errorText("previousPaymentAvailable")}
+          </div>
+
+          {previousPaymentYes && (
+            <div
+              className={fieldClass(
+                "previousPaymentStatus",
+                "sales-full-width"
+              )}
+              {...refProp("previousPaymentStatus")}
+            >
+              <label>{mandatoryLabel("Previous Payment Details")}</label>
+              <textarea
+                name="previousPaymentStatus"
+                value={form.previousPaymentStatus}
+                onChange={handleChange}
+                placeholder="Example: Date of Inv: 10/05/2026 | Inv No: INV-102 | Invoice Value: 2,50,000 | Due Date: 25/05/2026 | Overdue Days: 0"
+              />
+              {errorText("previousPaymentStatus")}
+            </div>
+          )}
+
+          <div
+            className={fieldClass("specialNote", "sales-full-width")}
+            {...refProp("specialNote")}
+          >
+            <label>Special Note</label>
+            <textarea
+              name="specialNote"
+              value={form.specialNote}
+              onChange={handleChange}
+              placeholder="Optional note for this sales order"
+              rows={3}
+            />
+          </div>
+
+          <div
+            className={fieldClass("poAsPerQuotation")}
+            {...refProp("poAsPerQuotation")}
+          >
+            <label>{mandatoryLabel("PO As Per Quotation")}</label>
+            <select
+              name="poAsPerQuotation"
+              value={form.poAsPerQuotation}
+              onChange={handleChange}
+            >
+              <option value="">Select</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+            {errorText("poAsPerQuotation")}
+          </div>
+
+          <div
+            className={fieldClass("billingSameAsCompany")}
+            {...refProp("billingSameAsCompany")}
+          >
+            <label>Billing Same As Company?</label>
+            <select
+              name="billingSameAsCompany"
+              value={form.billingSameAsCompany}
+              onChange={handleChange}
+            >
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+
+          {billingDifferent && (
+            <div
+              className={fieldClass("billingCombined", "sales-full-width")}
+              {...refProp("billingCombined")}
+            >
+              <label>{mandatoryLabel("Billing Address With GSTIN")}</label>
+              <div className="combined-address-box">
+                <textarea
+                  name="billingAddress"
+                  value={form.billingAddress}
+                  onChange={handleChange}
+                  placeholder="Billing Address: office address with city, state and pincode"
+                />
+                <div className="combined-gstin-row">
+                  <span>GSTIN</span>
+                  <input
+                    name="billingGstinNumber"
+                    value={form.billingGstinNumber}
+                    onChange={handleChange}
+                    maxLength={15}
+                    placeholder="27ABCDE1234F1Z5"
+                  />
+                </div>
+              </div>
+              {errorText("billingCombined")}
+            </div>
+          )}
+
+          <div
+            className={fieldClass("shippingSameAsCompany")}
+            {...refProp("shippingSameAsCompany")}
+          >
+            <label>Shipping Same As Company?</label>
+            <select
+              name="shippingSameAsCompany"
+              value={form.shippingSameAsCompany}
+              onChange={handleChange}
+            >
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+
+          {shippingDifferent && (
+            <div
+              className={fieldClass("shippingCombined", "sales-full-width")}
+              {...refProp("shippingCombined")}
+            >
+              <label>{mandatoryLabel("Shipping Address With GSTIN")}</label>
+              <div className="combined-address-box">
+                <textarea
+                  name="shippingAddress"
+                  value={form.shippingAddress}
+                  onChange={handleChange}
+                  placeholder="Shipping Address: delivery location with city, state and pincode"
+                />
+                <div className="combined-gstin-row">
+                  <span>GSTIN</span>
+                  <input
+                    name="shippingGstinNumber"
+                    value={form.shippingGstinNumber}
+                    onChange={handleChange}
+                    maxLength={15}
+                    placeholder="27ABCDE1234F1Z5"
+                  />
+                </div>
+              </div>
+              {errorText("shippingCombined")}
+            </div>
+          )}
+
+          <div
+            className={fieldClass("enquiryFormFilled")}
+            {...refProp("enquiryFormFilled")}
+          >
+            <label>{mandatoryLabel("Enquiry Form Filled?")}</label>
+            <select
+              name="enquiryFormFilled"
+              value={form.enquiryFormFilled}
+              onChange={handleChange}
+            >
+              <option value="">Select</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+            {errorText("enquiryFormFilled")}
+          </div>
+        </div>
+
+        <div className="form-section-title premium-section-title">
+          <span>03</span> Material Details
+        </div>
+
+        <div className="sales-form-grid">
+          <div
+            className={fieldClass(
+              "sizeGradeQuantityRate",
+              "sales-full-width"
+            )}
+            {...refProp("sizeGradeQuantityRate")}
+          >
+            <label>{mandatoryLabel("Size / Grade / Qty / Rate")}</label>
+            <textarea
+              name="sizeGradeQuantityRate"
+              value={form.sizeGradeQuantityRate}
+              onChange={handleChange}
+              rows={8}
+              placeholder="Example: Size: 100 Dia x 5000 Long | Grade: H13 | Qty: 500 Kg | Rate: 250/Kg"
+            />
+            {errorText("sizeGradeQuantityRate")}
+          </div>
+
+          <div
+            className={fieldClass("supplyCondition")}
+            {...refProp("supplyCondition")}
+          >
+            <label>{mandatoryLabel("Supply Condition")}</label>
+            <select
+              name="supplyCondition"
+              value={form.supplyCondition}
+              onChange={handleChange}
+            >
+              {supplyConditionOptions.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            {errorText("supplyCondition")}
+          </div>
+
+          {isOtherSupplyCondition && (
+            <div
+              className={fieldClass("otherSupplyConditions")}
+              {...refProp("otherSupplyConditions")}
+            >
+              <label>{mandatoryLabel("Other Supply Conditions")}</label>
+              <input
+                name="otherSupplyConditions"
+                value={form.otherSupplyConditions}
+                onChange={handleChange}
+                placeholder="Enter custom supply condition"
+              />
+              {errorText("otherSupplyConditions")}
+            </div>
+          )}
+
+          <div
+            className={fieldClass("cutLengthRequired")}
+            {...refProp("cutLengthRequired")}
+          >
+            <label>{mandatoryLabel("Cut Length Required")}</label>
+            <select
+              name="cutLengthRequired"
+              value={form.cutLengthRequired}
+              onChange={handleChange}
+            >
+              <option value="">Select</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+            {errorText("cutLengthRequired")}
+          </div>
+
+          <div
+            className={fieldClass("cuttingCost")}
+            {...refProp("cuttingCost")}
+          >
+            <label>{mandatoryLabel("Cutting Cost")}</label>
+            <select
+              name="cuttingCost"
+              value={form.cuttingCost}
+              onChange={handleChange}
+            >
+              <option value="">Select</option>
+              <option value="extra">Extra</option>
+              <option value="inclusive">Inclusive</option>
+              <option value="not_applicable">Not Applicable</option>
+            </select>
+            {errorText("cuttingCost")}
+          </div>
+
+          {cuttingExtra && (
+            <div
+              className={fieldClass("cuttingExtraCharges")}
+              {...refProp("cuttingExtraCharges")}
+            >
+              <label>Cutting Extra Charges</label>
+              <input
+                name="cuttingExtraCharges"
+                value={form.cuttingExtraCharges}
+                onChange={handleChange}
+                placeholder="Example: ₹5/Kg or ₹2500 extra"
+              />
+              {errorText("cuttingExtraCharges")}
+            </div>
+          )}
+
+          <div className={fieldClass("freight")} {...refProp("freight")}>
+            <label>{mandatoryLabel("Freight")}</label>
+            <select
+              name="freight"
+              value={form.freight}
+              onChange={handleChange}
+            >
+              <option value="">Select</option>
+              <option value="extra">Extra</option>
+              <option value="self">Self-Pickup</option>
+              <option value="inclusive">Inclusive</option>
+            </select>
+            {errorText("freight")}
+          </div>
+
+          {freightExtra && (
+            <div
+              className={fieldClass("freightExtraCharges")}
+              {...refProp("freightExtraCharges")}
+            >
+              <label>Freight Extra Charges</label>
+              <input
+                name="freightExtraCharges"
+                value={form.freightExtraCharges}
+                onChange={handleChange}
+                placeholder="Example: ₹3500 extra"
+              />
+              {errorText("freightExtraCharges")}
+            </div>
+          )}
+
+          <div className={fieldClass("tolerance")} {...refProp("tolerance")}>
+            <label>{mandatoryLabel("Tolerance")}</label>
+            <input
+              name="tolerance"
+              value={form.tolerance}
+              onChange={handleChange}
+              placeholder="Example: +2 / -0 mm"
+            />
+            {errorText("tolerance")}
+          </div>
+
+          <div
+            className={fieldClass("endUseOfCustomer")}
+            {...refProp("endUseOfCustomer")}
+          >
+            <label>{mandatoryLabel("End Use Of Customer")}</label>
+            <select
+              name="endUseOfCustomer"
+              value={form.endUseOfCustomer}
+              onChange={handleChange}
+            >
+              <option value="">Select</option>
+              <option value="machining">Machining</option>
+              <option value="forging">Forging</option>
+            </select>
+            {errorText("endUseOfCustomer")}
+          </div>
+
+          <div
+            className={fieldClass("deliveryTime")}
+            {...refProp("deliveryTime")}
+          >
+            <label>{mandatoryLabel("Delivery Time")}</label>
+            <input
+              name="deliveryTime"
+              value={form.deliveryTime}
+              onChange={handleChange}
+              placeholder="Example: 2-3 weeks from PO confirmation"
+            />
+            {errorText("deliveryTime")}
+          </div>
+
+          <div className="sales-form-group">
+            <label>Test Certificate</label>
+            <input value="YES - Auto" disabled />
+            <small className="auto-hint">Always included</small>
+          </div>
+        </div>
+
+        <div className="form-section-title premium-section-title">
+          <span>04</span> Contact Details
+        </div>
+
+        <div className="sales-form-grid">
+          <div
+            className={fieldClass("contactPersonName")}
+            {...refProp("contactPersonName")}
+          >
+            <label>{mandatoryLabel("Contact Person Name")}</label>
+            <input
+              name="contactPersonName"
+              value={form.contactPersonName}
+              onChange={handleChange}
+              placeholder="Example: Rajesh Kumar"
+            />
+            {errorText("contactPersonName")}
+          </div>
+
+          <div
+            className={fieldClass("contactPersonNumber")}
+            {...refProp("contactPersonNumber")}
+          >
+            <label>{mandatoryLabel("Contact Person Number")}</label>
+            <input
+              name="contactPersonNumber"
+              value={form.contactPersonNumber}
+              onChange={handleChange}
+              maxLength={10}
+              placeholder="10 digit mobile number"
+            />
+            {errorText("contactPersonNumber")}
+          </div>
+
+          <div
+            className={fieldClass("contactPersonEmail")}
+            {...refProp("contactPersonEmail")}
+          >
+            <label>{mandatoryLabel("Contact Person Email")}</label>
+            <input
+              type="email"
+              name="contactPersonEmail"
+              value={form.contactPersonEmail}
+              onChange={handleChange}
+              placeholder="Example: purchase@company.com"
+            />
+            {errorText("contactPersonEmail")}
+          </div>
+        </div>
+
+        {pdfGenerating && (
+          <div className="pdf-generation-box">
+            Generating final Sales Order PDF...
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-section-title premium-section-title">
-            <span>01</span> Customer & PO Details
+        {pdfUrl && (
+          <div className="pdf-ready-box">
+            PDF generated successfully.{" "}
+            <a href={pdfUrl} target="_blank" rel="noreferrer">
+              Open PDF
+            </a>
           </div>
+        )}
 
-          <div className="sales-form-grid">
-            <div className="sales-form-group">
-              <label>Order Date</label>
-              <input type="date" value={getToday()} disabled />
-              <small className="auto-hint">Auto set on submission</small>
-            </div>
+        <div className="sales-form-actions">
+          <button
+            type="button"
+            className="sales-cancel-btn"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
 
-            <div
-              className={fieldClass("companyName")}
-              {...refProp("companyName")}
-            >
-              <label>{mandatoryLabel("Company Name")}</label>
-              <input
-                name="companyName"
-                value={form.companyName}
-                onChange={handleChange}
-                placeholder="Example: ABC Engineering Pvt Ltd"
-              />
-              {errorText("companyName")}
-            </div>
-
-            <div
-              className={fieldClass("gstinNumber")}
-              {...refProp("gstinNumber")}
-            >
-              <label>{mandatoryLabel("Company GSTIN")}</label>
-              <input
-                name="gstinNumber"
-                value={form.gstinNumber}
-                onChange={handleChange}
-                maxLength={15}
-                placeholder="Example: 27ABCDE1234F1Z5"
-              />
-              {errorText("gstinNumber")}
-            </div>
-
-            <div
-              className={fieldClass("companyAddress", "sales-full-width")}
-              {...refProp("companyAddress")}
-            >
-              <label>{mandatoryLabel("Company Address")}</label>
-              <textarea
-                name="companyAddress"
-                value={form.companyAddress}
-                onChange={handleChange}
-                placeholder="Example: Plot No, Industrial Area, City, State - Pincode"
-              />
-              {errorText("companyAddress")}
-            </div>
-
-            <div className={fieldClass("poNumber")} {...refProp("poNumber")}>
-              <label>{mandatoryLabel("PO Number")}</label>
-              <input
-                name="poNumber"
-                value={form.poNumber}
-                onChange={handleChange}
-                placeholder="Example: PO/2026/001"
-              />
-              {errorText("poNumber")}
-            </div>
-
-            <div
-              className={fieldClass("checklistNumber")}
-              {...refProp("checklistNumber")}
-            >
-              <label>Checklist Number</label>
-              <input
-                name="checklistNumber"
-                value={form.checklistNumber}
-                onChange={handleChange}
-                placeholder="Example: CHK-001"
-              />
-            </div>
-
-            <div
-              className={fieldClass("customerType")}
-              {...refProp("customerType")}
-            >
-              <label>{mandatoryLabel("Customer Type")}</label>
-              <select
-                name="customerType"
-                value={form.customerType}
-                onChange={handleChange}
-              >
-                <option value="existing">Existing</option>
-                <option value="new">New</option>
-              </select>
-              <small className="auto-hint">Existing selected by default</small>
-              {errorText("customerType")}
-            </div>
-
-            <div
-              className={fieldClass("customerPOFile")}
-              {...refProp("customerPOFile")}
-            >
-              <label>
-                {isEditMode
-                  ? "Replace Customer PO PDF"
-                  : mandatoryLabel("Customer PO PDF")}
-              </label>
-              <input
-                type="file"
-                name="customerPOFile"
-                accept="application/pdf"
-                onChange={handleChange}
-              />
-              {isEditMode && !form.customerPOFile && (
-                <small className="auto-hint">
-                  Existing PO file will remain unchanged unless you upload a new
-                  PDF.
-                </small>
-              )}
-              {form.customerPOFile && (
-                <small className="file-selected">
-                  Selected: {form.customerPOFile.name}
-                </small>
-              )}
-              {errorText("customerPOFile")}
-            </div>
-          </div>
-
-          <div className="form-section-title premium-section-title">
-            <span>02</span> Commercial, Address & Enquiry
-          </div>
-
-          <div className="sales-form-grid">
-            <div
-              className={fieldClass("paymentTerms", "sales-full-width")}
-              {...refProp("paymentTerms")}
-            >
-              <label>{mandatoryLabel("Payment Terms")}</label>
-              <select
-                name="paymentTerms"
-                value={form.paymentTerms}
-                onChange={handleChange}
-              >
-                <option value="">Select payment terms</option>
-                {paymentTermOptions.map((term) => (
-                  <option key={term} value={term}>
-                    {formatPaymentTermLabel(term)}
-                  </option>
-                ))}
-              </select>
-              {errorText("paymentTerms")}
-            </div>
-
-            {isOtherPaymentTerms && (
-              <div
-                className={fieldClass("otherPaymentTerms", "sales-full-width")}
-                {...refProp("otherPaymentTerms")}
-              >
-                <label>{mandatoryLabel("Other Payment Terms")}</label>
-                <textarea
-                  name="otherPaymentTerms"
-                  value={form.otherPaymentTerms}
-                  onChange={handleChange}
-                  placeholder="Example: 25% advance, balance within 7 days after dispatch"
-                  rows={3}
-                />
-                {errorText("otherPaymentTerms")}
-              </div>
-            )}
-
-            <div className={fieldClass("orderValue")} {...refProp("orderValue")}>
-              <label>{mandatoryLabel("Order Value")}</label>
-              <input
-                type="number"
-                name="orderValue"
-                value={form.orderValue}
-                onChange={handleChange}
-                placeholder="Example: 250000"
-              />
-              {errorText("orderValue")}
-            </div>
-
-            <div
-              className={fieldClass("isPaymentTermsApprovedByManagement")}
-              {...refProp("isPaymentTermsApprovedByManagement")}
-            >
-              <label>{mandatoryLabel("Payment Terms Approved?")}</label>
-              <select
-                name="isPaymentTermsApprovedByManagement"
-                value={form.isPaymentTermsApprovedByManagement}
-                onChange={handleChange}
-              >
-                <option value="false">No</option>
-                <option value="true">Yes</option>
-              </select>
-            </div>
-
-            {isPaymentApproved && (
-              <div
-                className={fieldClass("paymentTermsApprovedBy")}
-                {...refProp("paymentTermsApprovedBy")}
-              >
-                <label>{mandatoryLabel("Approved By")}</label>
-                <select
-                  name="paymentTermsApprovedBy"
-                  value={form.paymentTermsApprovedBy}
-                  onChange={handleChange}
-                >
-                  <option value="">Select approver</option>
-                  {approverOptions.map((person) => (
-                    <option key={person} value={person}>
-                      {formatLabel(person)}
-                    </option>
-                  ))}
-                </select>
-                {errorText("paymentTermsApprovedBy")}
-              </div>
-            )}
-
-            <div
-              className={fieldClass("previousPaymentAvailable")}
-              {...refProp("previousPaymentAvailable")}
-            >
-              <label>{mandatoryLabel("Previous Payment?")}</label>
-              <select
-                name="previousPaymentAvailable"
-                value={form.previousPaymentAvailable}
-                onChange={handleChange}
-              >
-                <option value="">Select</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              {errorText("previousPaymentAvailable")}
-            </div>
-
-            {previousPaymentYes && (
-              <div
-                className={fieldClass(
-                  "previousPaymentStatus",
-                  "sales-full-width"
-                )}
-                {...refProp("previousPaymentStatus")}
-              >
-                <label>{mandatoryLabel("Previous Payment Details")}</label>
-                <textarea
-                  name="previousPaymentStatus"
-                  value={form.previousPaymentStatus}
-                  onChange={handleChange}
-                  placeholder="Example: Date of Inv: 10/05/2026 | Inv No: INV-102 | Invoice Value: 2,50,000 | Due Date: 25/05/2026 | Overdue Days: 0"
-                />
-                {errorText("previousPaymentStatus")}
-              </div>
-            )}
-
-            <div
-              className={fieldClass("specialNote", "sales-full-width")}
-              {...refProp("specialNote")}
-            >
-              <label>Special Note</label>
-              <textarea
-                name="specialNote"
-                value={form.specialNote}
-                onChange={handleChange}
-                placeholder="Optional note for this sales order"
-                rows={3}
-              />
-            </div>
-
-            <div
-              className={fieldClass("poAsPerQuotation")}
-              {...refProp("poAsPerQuotation")}
-            >
-              <label>{mandatoryLabel("PO As Per Quotation")}</label>
-              <select
-                name="poAsPerQuotation"
-                value={form.poAsPerQuotation}
-                onChange={handleChange}
-              >
-                <option value="">Select</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              {errorText("poAsPerQuotation")}
-            </div>
-
-            <div
-              className={fieldClass("billingSameAsCompany")}
-              {...refProp("billingSameAsCompany")}
-            >
-              <label>Billing Same As Company?</label>
-              <select
-                name="billingSameAsCompany"
-                value={form.billingSameAsCompany}
-                onChange={handleChange}
-              >
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            </div>
-
-            {billingDifferent && (
-              <div
-                className={fieldClass("billingCombined", "sales-full-width")}
-                {...refProp("billingCombined")}
-              >
-                <label>{mandatoryLabel("Billing Address With GSTIN")}</label>
-                <div className="combined-address-box">
-                  <textarea
-                    name="billingAddress"
-                    value={form.billingAddress}
-                    onChange={handleChange}
-                    placeholder="Billing Address: office address with city, state and pincode"
-                  />
-                  <div className="combined-gstin-row">
-                    <span>GSTIN</span>
-                    <input
-                      name="billingGstinNumber"
-                      value={form.billingGstinNumber}
-                      onChange={handleChange}
-                      maxLength={15}
-                      placeholder="27ABCDE1234F1Z5"
-                    />
-                  </div>
-                </div>
-                {errorText("billingCombined")}
-              </div>
-            )}
-
-            <div
-              className={fieldClass("shippingSameAsCompany")}
-              {...refProp("shippingSameAsCompany")}
-            >
-              <label>Shipping Same As Company?</label>
-              <select
-                name="shippingSameAsCompany"
-                value={form.shippingSameAsCompany}
-                onChange={handleChange}
-              >
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            </div>
-
-            {shippingDifferent && (
-              <div
-                className={fieldClass("shippingCombined", "sales-full-width")}
-                {...refProp("shippingCombined")}
-              >
-                <label>{mandatoryLabel("Shipping Address With GSTIN")}</label>
-                <div className="combined-address-box">
-                  <textarea
-                    name="shippingAddress"
-                    value={form.shippingAddress}
-                    onChange={handleChange}
-                    placeholder="Shipping Address: delivery location with city, state and pincode"
-                  />
-                  <div className="combined-gstin-row">
-                    <span>GSTIN</span>
-                    <input
-                      name="shippingGstinNumber"
-                      value={form.shippingGstinNumber}
-                      onChange={handleChange}
-                      maxLength={15}
-                      placeholder="27ABCDE1234F1Z5"
-                    />
-                  </div>
-                </div>
-                {errorText("shippingCombined")}
-              </div>
-            )}
-
-            <div
-              className={fieldClass("enquiryFormFilled")}
-              {...refProp("enquiryFormFilled")}
-            >
-              <label>{mandatoryLabel("Enquiry Form Filled?")}</label>
-              <select
-                name="enquiryFormFilled"
-                value={form.enquiryFormFilled}
-                onChange={handleChange}
-              >
-                <option value="">Select</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              {errorText("enquiryFormFilled")}
-            </div>
-          </div>
-
-          <div className="form-section-title premium-section-title">
-            <span>03</span> Material Details
-          </div>
-
-          <div className="sales-form-grid">
-            <div
-              className={fieldClass(
-                "sizeGradeQuantityRate",
-                "sales-full-width"
-              )}
-              {...refProp("sizeGradeQuantityRate")}
-            >
-              <label>{mandatoryLabel("Size / Grade / Qty / Rate")}</label>
-              <textarea
-                name="sizeGradeQuantityRate"
-                value={form.sizeGradeQuantityRate}
-                onChange={handleChange}
-                rows={8}
-                placeholder="Example: Size: 100 Dia x 5000 Long | Grade: H13 | Qty: 500 Kg | Rate: 250/Kg"
-              />
-              {errorText("sizeGradeQuantityRate")}
-            </div>
-
-            <div
-              className={fieldClass("supplyCondition")}
-              {...refProp("supplyCondition")}
-            >
-              <label>{mandatoryLabel("Supply Condition")}</label>
-              <select
-                name="supplyCondition"
-                value={form.supplyCondition}
-                onChange={handleChange}
-              >
-                {supplyConditionOptions.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-              {errorText("supplyCondition")}
-            </div>
-
-            {isOtherSupplyCondition && (
-              <div
-                className={fieldClass("otherSupplyConditions")}
-                {...refProp("otherSupplyConditions")}
-              >
-                <label>{mandatoryLabel("Other Supply Conditions")}</label>
-                <input
-                  name="otherSupplyConditions"
-                  value={form.otherSupplyConditions}
-                  onChange={handleChange}
-                  placeholder="Enter custom supply condition"
-                />
-                {errorText("otherSupplyConditions")}
-              </div>
-            )}
-
-            <div
-              className={fieldClass("cutLengthRequired")}
-              {...refProp("cutLengthRequired")}
-            >
-              <label>{mandatoryLabel("Cut Length Required")}</label>
-              <select
-                name="cutLengthRequired"
-                value={form.cutLengthRequired}
-                onChange={handleChange}
-              >
-                <option value="">Select</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              {errorText("cutLengthRequired")}
-            </div>
-
-            <div
-              className={fieldClass("cuttingCost")}
-              {...refProp("cuttingCost")}
-            >
-              <label>{mandatoryLabel("Cutting Cost")}</label>
-              <select
-                name="cuttingCost"
-                value={form.cuttingCost}
-                onChange={handleChange}
-              >
-                <option value="">Select</option>
-                <option value="extra">Extra</option>
-                <option value="inclusive">Inclusive</option>
-                <option value="not_applicable">Not Applicable</option>
-              </select>
-              {errorText("cuttingCost")}
-            </div>
-
-            {cuttingExtra && (
-              <div
-                className={fieldClass("cuttingExtraCharges")}
-                {...refProp("cuttingExtraCharges")}
-              >
-                <label>Cutting Extra Charges</label>
-                <input
-                  name="cuttingExtraCharges"
-                  value={form.cuttingExtraCharges}
-                  onChange={handleChange}
-                  placeholder="Example: ₹5/Kg or ₹2500 extra"
-                />
-                {errorText("cuttingExtraCharges")}
-              </div>
-            )}
-
-            <div className={fieldClass("freight")} {...refProp("freight")}>
-              <label>{mandatoryLabel("Freight")}</label>
-              <select
-                name="freight"
-                value={form.freight}
-                onChange={handleChange}
-              >
-                <option value="">Select</option>
-                <option value="extra">Extra</option>
-                <option value="self">Self-Pickup</option>
-                <option value="inclusive">Inclusive</option>
-              </select>
-              {errorText("freight")}
-            </div>
-
-            {freightExtra && (
-              <div
-                className={fieldClass("freightExtraCharges")}
-                {...refProp("freightExtraCharges")}
-              >
-                <label>Freight Extra Charges</label>
-                <input
-                  name="freightExtraCharges"
-                  value={form.freightExtraCharges}
-                  onChange={handleChange}
-                  placeholder="Example: ₹3500 extra"
-                />
-                {errorText("freightExtraCharges")}
-              </div>
-            )}
-
-            <div className={fieldClass("tolerance")} {...refProp("tolerance")}>
-              <label>{mandatoryLabel("Tolerance")}</label>
-              <input
-                name="tolerance"
-                value={form.tolerance}
-                onChange={handleChange}
-                placeholder="Example: +2 / -0 mm"
-              />
-              {errorText("tolerance")}
-            </div>
-
-            <div
-              className={fieldClass("endUseOfCustomer")}
-              {...refProp("endUseOfCustomer")}
-            >
-              <label>{mandatoryLabel("End Use Of Customer")}</label>
-              <select
-                name="endUseOfCustomer"
-                value={form.endUseOfCustomer}
-                onChange={handleChange}
-              >
-                <option value="">Select</option>
-                <option value="machining">Machining</option>
-                <option value="forging">Forging</option>
-              </select>
-              {errorText("endUseOfCustomer")}
-            </div>
-
-            <div
-              className={fieldClass("deliveryTime")}
-              {...refProp("deliveryTime")}
-            >
-              <label>{mandatoryLabel("Delivery Time")}</label>
-              <input
-                name="deliveryTime"
-                value={form.deliveryTime}
-                onChange={handleChange}
-                placeholder="Example: 2-3 weeks from PO confirmation"
-              />
-              {errorText("deliveryTime")}
-            </div>
-
-            <div className="sales-form-group">
-              <label>Test Certificate</label>
-              <input value="YES - Auto" disabled />
-              <small className="auto-hint">Always included</small>
-            </div>
-          </div>
-
-          <div className="form-section-title premium-section-title">
-            <span>04</span> Contact Details
-          </div>
-
-          <div className="sales-form-grid">
-            <div
-              className={fieldClass("contactPersonName")}
-              {...refProp("contactPersonName")}
-            >
-              <label>{mandatoryLabel("Contact Person Name")}</label>
-              <input
-                name="contactPersonName"
-                value={form.contactPersonName}
-                onChange={handleChange}
-                placeholder="Example: Rajesh Kumar"
-              />
-              {errorText("contactPersonName")}
-            </div>
-
-            <div
-              className={fieldClass("contactPersonNumber")}
-              {...refProp("contactPersonNumber")}
-            >
-              <label>{mandatoryLabel("Contact Person Number")}</label>
-              <input
-                name="contactPersonNumber"
-                value={form.contactPersonNumber}
-                onChange={handleChange}
-                maxLength={10}
-                placeholder="10 digit mobile number"
-              />
-              {errorText("contactPersonNumber")}
-            </div>
-
-            <div
-              className={fieldClass("contactPersonEmail")}
-              {...refProp("contactPersonEmail")}
-            >
-              <label>{mandatoryLabel("Contact Person Email")}</label>
-              <input
-                type="email"
-                name="contactPersonEmail"
-                value={form.contactPersonEmail}
-                onChange={handleChange}
-                placeholder="Example: purchase@company.com"
-              />
-              {errorText("contactPersonEmail")}
-            </div>
-          </div>
-
-          {pdfGenerating && (
-            <div className="pdf-generation-box">
-              Generating final Sales Order PDF...
-            </div>
-          )}
-
-          {pdfUrl && (
-            <div className="pdf-ready-box">
-              PDF generated successfully.{" "}
-              <a href={pdfUrl} target="_blank" rel="noreferrer">
-                Open PDF
-              </a>
-            </div>
-          )}
-
-          <div className="sales-form-actions">
-            <button
-              type="button"
-              className="sales-cancel-btn"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              className="sales-submit-btn"
-              disabled={isSubmitting || pdfGenerating}
-            >
-              {isSubmitting
-                ? isEditMode
-                  ? "Updating..."
-                  : "Creating..."
-                : pdfGenerating
-                ? "Generating PDF..."
-                : isEditMode
-                ? "Update & Generate PDF"
-                : "Create & Generate PDF"}
-            </button>
-          </div>
-        </form>
-      </div>
+          <button
+            type="submit"
+            className="sales-submit-btn"
+            disabled={isSubmitting || pdfGenerating}
+          >
+            {isSubmitting
+              ? isEditMode
+                ? "Updating..."
+                : "Creating..."
+              : pdfGenerating
+              ? "Generating PDF..."
+              : isEditMode
+              ? "Update & Generate PDF"
+              : "Create & Generate PDF"}
+          </button>
+        </div>
+      </form>
     </div>
-  );
+  </div>
+);
 };
 
 export default SalesOrderForm;

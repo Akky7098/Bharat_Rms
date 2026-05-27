@@ -58,10 +58,10 @@ const SalesOrderList = () => {
 
   const getActionButtonText = () => {
     if (actionSubmitting) {
-      return isApproveAction ? "Approving..." : "Rejecting...";
+      return isApproveAction ? "Approving..." : "Holding...";
     }
 
-    return isApproveAction ? "Yes, Approve" : "Reject";
+    return isApproveAction ? "Yes, Approve" : "Hold";
   };
 
   useEffect(() => {
@@ -186,8 +186,39 @@ const SalesOrderList = () => {
   };
 
   const formatStatus = (status) => {
-    if (!status) return "-";
-    return String(status).replaceAll("_", " ").toUpperCase();
+    const map = {
+      approved: "APPROVED",
+      pending_admin_review: "PENDING ADMIN REVIEW",
+      pending_manager_approval: "PENDING MANAGER APPROVAL",
+      rejected_by_admin: "HOLD BY ADMIN",
+      rejected_by_manager: "HOLD BY MANAGER",
+    };
+
+    return map[status] || String(status || "-").replaceAll("_", " ").toUpperCase();
+  };
+
+  const getHoldComment = (order) => {
+    if (!order) return "";
+
+    if (order.approvalStatus === "rejected_by_manager") {
+      return (
+        order.managerApproval?.rejectionComment ||
+        order.managerRejectionComment ||
+        order.rejectionComment ||
+        ""
+      );
+    }
+
+    if (order.approvalStatus === "rejected_by_admin") {
+      return (
+        order.adminApproval?.rejectionComment ||
+        order.adminRejectionComment ||
+        order.rejectionComment ||
+        ""
+      );
+    }
+
+    return "";
   };
 
   const getPdfUrl = (order) => {
@@ -280,7 +311,7 @@ const SalesOrderList = () => {
 
     try {
       if (approvalModal.type.includes("reject") && !rejectionComment.trim()) {
-        alert("Please enter rejection reason");
+        alert("Please enter hold reason");
         return;
       }
 
@@ -295,7 +326,7 @@ const SalesOrderList = () => {
         await rejectSalesOrderByAdmin(approvalModal.orderId, {
           rejectionComment: rejectionComment.trim(),
         });
-        alert("Sales order rejected by admin.");
+        alert("Sales order put on hold by admin.");
       }
 
       if (approvalModal.type === "manager_approve") {
@@ -307,7 +338,7 @@ const SalesOrderList = () => {
         await rejectSalesOrderByManager(approvalModal.orderId, {
           rejectionComment: rejectionComment.trim(),
         });
-        alert("Sales order rejected by manager.");
+        alert("Sales order put on hold by manager.");
       }
 
       closeApprovalModal();
@@ -329,6 +360,24 @@ const SalesOrderList = () => {
     setEditOrder(null);
   };
 
+  const renderStatusBlock = (order) => {
+    const holdComment = getHoldComment(order);
+
+    return (
+      <>
+        <span className={`status-pill ${order.approvalStatus}`}>
+          {formatStatus(order.approvalStatus)}
+        </span>
+
+        {holdComment && (
+          <div className="hold-comment-text">
+            <strong>Comment:</strong> {holdComment}
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div
       className={`sales-order-container ${
@@ -338,7 +387,7 @@ const SalesOrderList = () => {
       <div className="sales-order-header">
         <div>
           <h2>Sales Order Sheet</h2>
-          <p>Approved, pending and rejected sales orders</p>
+          <p>Approved, pending and hold sales orders</p>
         </div>
 
         <button
@@ -364,7 +413,7 @@ const SalesOrderList = () => {
           }
           disabled={actionSubmitting}
         >
-          {activeTab === "approved" ? "Pending / Rejected" : "Approved"}
+          {activeTab === "approved" ? "Pending / Hold" : "Approved"}
         </button>
       </div>
 
@@ -494,11 +543,7 @@ const SalesOrderList = () => {
 
                       <td>{formatStatus(order.paymentTerms)}</td>
 
-                      <td>
-                        <span className={`status-pill ${order.approvalStatus}`}>
-                          {formatStatus(order.approvalStatus)}
-                        </span>
-                      </td>
+                      <td>{renderStatusBlock(order)}</td>
 
                       <td>
                         {pdfUrl ? (
@@ -541,7 +586,7 @@ const SalesOrderList = () => {
                               onClick={() => handleAdminReject(order._id)}
                               disabled={actionSubmitting}
                             >
-                              Reject
+                              Hold
                             </button>
                           </div>
                         )}
@@ -561,7 +606,7 @@ const SalesOrderList = () => {
                               onClick={() => handleManagerReject(order._id)}
                               disabled={actionSubmitting}
                             >
-                              Reject
+                              Hold
                             </button>
                           </div>
                         )}
@@ -585,6 +630,7 @@ const SalesOrderList = () => {
           ) : (
             visibleOrders.map((order) => {
               const pdfUrl = getPdfUrl(order);
+              const holdComment = getHoldComment(order);
 
               return (
                 <div key={order._id} className="sales-card">
@@ -602,6 +648,12 @@ const SalesOrderList = () => {
                     <span>Rs. {formatCurrency(order.orderValue)}</span>
                     <span>{order.paymentTerms || "-"}</span>
                   </div>
+
+                  {holdComment && (
+                    <div className="hold-comment-text mobile-hold-comment">
+                      <strong>Comment:</strong> {holdComment}
+                    </div>
+                  )}
 
                   <div className="sales-card-body">
                     {canViewSalesPersonFilter && (
@@ -665,7 +717,7 @@ const SalesOrderList = () => {
                             onClick={() => handleAdminReject(order._id)}
                             disabled={actionSubmitting}
                           >
-                            Reject
+                            Hold
                           </button>
                         </>
                       )}
@@ -685,7 +737,7 @@ const SalesOrderList = () => {
                             onClick={() => handleManagerReject(order._id)}
                             disabled={actionSubmitting}
                           >
-                            Reject
+                            Hold
                           </button>
                         </>
                       )}
@@ -751,19 +803,19 @@ const SalesOrderList = () => {
               {isApproveAction ? "✓" : "!"}
             </div>
 
-            <h3>{isApproveAction ? "Approve Sales Order" : "Reject Sales Order"}</h3>
+            <h3>{isApproveAction ? "Approve Sales Order" : "Hold Sales Order"}</h3>
 
             <p>
               {isApproveAction
                 ? "Are you sure you want to approve this sales order?"
-                : "Please enter rejection reason below."}
+                : "Please enter hold reason below."}
             </p>
 
             {isRejectAction && (
               <textarea
                 value={rejectionComment}
                 onChange={(e) => setRejectionComment(e.target.value)}
-                placeholder="Enter rejection reason"
+                placeholder="Enter hold reason"
                 disabled={actionSubmitting}
               />
             )}

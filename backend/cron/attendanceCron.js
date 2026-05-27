@@ -5,6 +5,27 @@ const {
 
 let started = false;
 
+const runAttendanceRegularizationCron = async () => {
+  try {
+    console.log("Attendance regularization cron started...");
+
+    const result = await createMissedCheckoutRegularizationReminders();
+
+    console.log(
+      `Attendance regularization cron completed. Checked: ${
+        result?.checked || 0
+      }, Created: ${result?.created || 0}, Mail Sent: ${
+        result?.mailSent || 0
+      }, Mail Failed: ${result?.mailFailed || 0}`
+    );
+  } catch (error) {
+    console.error(
+      "Attendance regularization cron failed:",
+      error?.message || error
+    );
+  }
+};
+
 const startAttendanceCron = () => {
   if (started) {
     console.log("Attendance regularization cron already started");
@@ -13,22 +34,16 @@ const startAttendanceCron = () => {
 
   started = true;
 
+  // Run once after server starts
+  setTimeout(() => {
+    runAttendanceRegularizationCron();
+  }, 5000);
+
+  // Run daily at 8:00 AM IST
   cron.schedule(
     "0 8 * * *",
     async () => {
-      try {
-        console.log("Attendance regularization cron started at 8:00 AM IST");
-
-        const result = await createMissedCheckoutRegularizationReminders();
-
-        console.log(
-          `Attendance regularization cron completed. Checked: ${
-            result?.checked || 0
-          }, Created: ${result?.created || 0}`
-        );
-      } catch (error) {
-        console.error("Attendance regularization cron failed:", error);
-      }
+      await runAttendanceRegularizationCron();
     },
     {
       timezone: "Asia/Kolkata",
