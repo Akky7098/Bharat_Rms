@@ -2,10 +2,23 @@ const emailService = require("./emailService");
 const pdfService = require("./pdfService");
 const whatsappApprovalService = require("./whatsappApprovalService");
 
-const {
-  destroyWhatsappClient,
-  initWhatsappClient,
-} = require("../util/whatsappClient");
+const { initWhatsappClient } = require("../util/whatsappClient");
+
+const fixApprovalHistoryRoles = (salesOrder) => {
+  salesOrder.approvalHistory = (salesOrder.approvalHistory || []).map((item) => {
+    const plain = item?.toObject ? item.toObject() : item;
+
+    return {
+      ...plain,
+      role: plain.role || "system",
+    };
+  });
+};
+
+const safeSaveSalesOrder = async (salesOrder) => {
+  fixApprovalHistoryRoles(salesOrder);
+  return await salesOrder.save();
+};
 
 const finalApproveSalesOrder = async (
   salesOrder,
@@ -59,9 +72,7 @@ const finalApproveSalesOrder = async (
     comment: `Sales order approved by MD Sir from ${source}`,
   });
 
-  await salesOrder.save();
-
- 
+  await safeSaveSalesOrder(salesOrder);
 
   try {
     const pdfDetails = await pdfService.generateSalesOrderPdf(salesOrder);
@@ -80,7 +91,7 @@ const finalApproveSalesOrder = async (
       comment: "Final approved PDF generated",
     });
 
-    await salesOrder.save();
+    await safeSaveSalesOrder(salesOrder);
   } catch (pdfError) {
     console.log("PDF GENERATION FAILED =>", pdfError.message);
 
@@ -90,7 +101,7 @@ const finalApproveSalesOrder = async (
       comment: `PDF generation failed: ${pdfError.message}`,
     });
 
-    await salesOrder.save();
+    await safeSaveSalesOrder(salesOrder);
     throw pdfError;
   }
 
@@ -117,7 +128,7 @@ const finalApproveSalesOrder = async (
       comment: "Final approval email sent to salesperson",
     });
 
-    await salesOrder.save();
+    await safeSaveSalesOrder(salesOrder);
   } catch (emailError) {
     console.log("FINAL APPROVAL EMAIL ERROR =>", emailError.message);
 
@@ -127,7 +138,7 @@ const finalApproveSalesOrder = async (
       comment: `Final approval email failed: ${emailError.message}`,
     });
 
-    await salesOrder.save();
+    await safeSaveSalesOrder(salesOrder);
   }
 
   try {
@@ -150,7 +161,7 @@ const finalApproveSalesOrder = async (
       comment: "Final approved PDF sent to WhatsApp sales group",
     });
 
-    await salesOrder.save();
+    await safeSaveSalesOrder(salesOrder);
   } catch (waError) {
     console.log("GROUP WHATSAPP ERROR =>", waError.message);
 
@@ -165,7 +176,7 @@ const finalApproveSalesOrder = async (
       comment: `WhatsApp group PDF sending failed: ${waError.message}`,
     });
 
-    await salesOrder.save();
+    await safeSaveSalesOrder(salesOrder);
   }
 
   return salesOrder;
@@ -224,7 +235,7 @@ const holdSalesOrderByMd = async (
     comment: rejectionComment.trim(),
   });
 
-  await salesOrder.save();
+  await safeSaveSalesOrder(salesOrder);
 
   try {
     const emailResult = await emailService.sendSalesOrderRejectedEmail(
@@ -249,7 +260,7 @@ const holdSalesOrderByMd = async (
       comment: "Hold email sent to salesperson",
     });
 
-    await salesOrder.save();
+    await safeSaveSalesOrder(salesOrder);
   } catch (emailError) {
     console.log("HOLD EMAIL ERROR =>", emailError.message);
 
@@ -259,7 +270,7 @@ const holdSalesOrderByMd = async (
       comment: `Hold email failed: ${emailError.message}`,
     });
 
-    await salesOrder.save();
+    await safeSaveSalesOrder(salesOrder);
   }
 
   return salesOrder;
