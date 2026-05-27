@@ -175,7 +175,7 @@ const salesOrderSchema = new mongoose.Schema(
     // =========================
     // PAYMENT DETAILS
     // =========================
-    paymentTerms: {
+   paymentTerms: {
   type: String,
   enum: [
     "10_percent_advance_balance_on_readiness_of_material",
@@ -201,8 +201,16 @@ const salesOrderSchema = new mongoose.Schema(
     "60_days_from_date_of_po_received",
     "75_days_from_date_of_po_received",
     "90_days_from_date_of_po_received",
+
+    "other",
   ],
   required: true,
+},
+
+otherPaymentTerms: {
+  type: String,
+  trim: true,
+  default: "",
 },
 
     orderValue: {
