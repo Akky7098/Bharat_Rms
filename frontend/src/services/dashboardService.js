@@ -23,3 +23,17 @@ export const getCashflowSummary = async (params = {}) => {
 
   return response.data;
 };
+
+export const getMisScoring = async (params = {}) => {
+  const response = await axios.get(
+    `${API_URL}/mis-scoring`,
+    {
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+      params,
+    }
+  );
+
+  return response.data;
+};

@@ -1,9 +1,21 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { PieChart, Pie, Cell, Tooltip } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 
 import {
   getDashboardSummary,
   getCashflowSummary,
+  getMisScoring,
 } from "../services/dashboardService";
 
 import { getNotifications } from "../services/notificationService";
@@ -25,6 +37,14 @@ const COLORS = [
 const DashboardHome = () => {
   const [data, setData] = useState(null);
   const [cashflow, setCashflow] = useState(null);
+  const [misScoring, setMisScoring] = useState({
+    hotLeads: 0,
+    warmLeads: 0,
+    coldLeads: 0,
+    totalLeads: 0,
+    salesPersonScores: [],
+  });
+
   const [notifications, setNotifications] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -69,13 +89,25 @@ const DashboardHome = () => {
           Number(customFilters.year)
         );
 
-        const [dashboardResponse, cashflowResponse] = await Promise.all([
-          getDashboardSummary(dateRange),
-          getCashflowSummary(dateRange),
-        ]);
+        const [dashboardResponse, cashflowResponse, misScoringResponse] =
+          await Promise.all([
+            getDashboardSummary(dateRange),
+            getCashflowSummary(dateRange),
+            getMisScoring(dateRange),
+          ]);
 
         setData(dashboardResponse.data);
         setCashflow(cashflowResponse.data);
+
+        setMisScoring(
+          misScoringResponse.data || {
+            hotLeads: 0,
+            warmLeads: 0,
+            coldLeads: 0,
+            totalLeads: 0,
+            salesPersonScores: [],
+          }
+        );
       } catch (error) {
         console.log(error);
       }
@@ -104,6 +136,7 @@ const DashboardHome = () => {
     };
 
     setFilters(updated);
+    fetchDashboard(updated);
   };
 
   const getPriorityIcon = (priority) => {
@@ -121,7 +154,16 @@ const DashboardHome = () => {
     return new Date(date).toLocaleDateString("en-IN");
   };
 
+  const getMisBarColor = (score) => {
+    if (score >= 75) return "#16a34a";
+    if (score >= 45) return "#f97316";
+    return "#dc2626";
+  };
+
   if (!data) return <div>Loading...</div>;
+
+  const misChartData = misScoring?.salesPersonScores || [];
+  
 
   return (
     <div className="dashboard-home">
@@ -183,16 +225,10 @@ const DashboardHome = () => {
           <p>{formatCurrency(data.totalRevenue)}</p>
         </div>
 
-       <div className="card orders">
-  <h3>
-    {user?.role === "super_admin"
-      ? "Pending Manager Approval"
-      : user?.role === "admin"
-      ? "Pending Admin Approval"
-      : "Pending Orders"}
-  </h3>
-  <p>{data.pendingOrders || 0}</p>
-</div>
+        <div className="card orders">
+          <h3>Pending Sales Order</h3>
+          <p>{data.pendingOrders || 0}</p>
+        </div>
 
         <div className="card enquiries">
           <h3>Total Enquiries</h3>
@@ -217,6 +253,21 @@ const DashboardHome = () => {
         <div className="card active">
           <h3>Active Enquiries</h3>
           <p>{data.activeEnquiries || 0}</p>
+        </div>
+
+        <div className="card hot">
+          <h3>Hot Leads</h3>
+          <p>{misScoring.hotLeads || 0}</p>
+        </div>
+
+        <div className="card warm">
+          <h3>Warm Leads</h3>
+          <p>{misScoring.warmLeads || 0}</p>
+        </div>
+
+        <div className="card cold">
+          <h3>Cold Leads</h3>
+          <p>{misScoring.coldLeads || 0}</p>
         </div>
       </div>
 
@@ -308,13 +359,125 @@ const DashboardHome = () => {
             <div className="lost-reason-mini">
               <b>Top Reason:</b>{" "}
               {data.topLostReason
-  ? `${data.topLostReason.reason || data.topLostReason.rawReason} (${
-      data.topLostReason.count
-    })`
-  : "No reason found"}
+                ? `${data.topLostReason.reason || data.topLostReason.rawReason} (${
+                    data.topLostReason.count
+                  })`
+                : "No reason found"}
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="chart-card mis-card">
+        <div className="mis-header">
+          <div>
+            <h3>MIS Scoring Overview</h3>
+            <p>
+              Steel enquiry quality, follow-up discipline and conversion
+              performance
+            </p>
+          </div>
+
+          <div className="mis-total-pill">
+            Total Leads: {misScoring.totalLeads || 0}
+          </div>
+        </div>
+
+        {!misChartData.length ? (
+          <div className="cashflow-empty">No MIS scoring data available</div>
+        ) : (
+          <>
+            <div className="mis-employee-grid">
+  {misChartData.map((item, index) => {
+    const score = Number(item.score || 0);
+
+    const scoreClass =
+      score >= 75 ? "excellent" : score >= 45 ? "average" : "poor";
+
+    return (
+      <div
+        key={item.salesPersonId || index}
+        className={`mis-employee-card ${scoreClass}`}
+      >
+        <div className="mis-employee-top">
+          <div>
+            <span className="mis-rank">#{index + 1}</span>
+            <h4>{item.name}</h4>
+          </div>
+
+          <strong>{score}/100</strong>
+        </div>
+
+        <div className="mis-progress">
+          <span style={{ width: `${score}%` }}></span>
+        </div>
+
+        <div className="mis-employee-stats">
+          <div>
+            <b>{item.totalEnquiries || 0}</b>
+            <span>Enquiries</span>
+          </div>
+
+          <div>
+            <b>{item.wonEnquiries || 0}</b>
+            <span>Won</span>
+          </div>
+
+          <div>
+            <b>{item.lostEnquiries || 0}</b>
+            <span>Lost</span>
+          </div>
+
+          <div>
+            <b>{item.delayedEnquiries || 0}</b>
+            <span>Delayed</span>
+          </div>
+        </div>
+      </div>
+    );
+  })}
+</div>
+   <div className="mis-chart-compact">
+  <h4>Salesperson MIS Score Comparison</h4>
+
+  <ResponsiveContainer width="100%" height={280}>
+    <BarChart
+      data={misChartData}
+      layout="vertical"
+      margin={{ top: 10, right: 25, left: 35, bottom: 10 }}
+    >
+      <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+
+      <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} />
+
+      <YAxis
+        type="category"
+        dataKey="name"
+        width={120}
+        tick={{ fontSize: 12, fontWeight: 700 }}
+      />
+
+      <Tooltip
+        formatter={(value, name) => {
+          if (name === "score") return [`${value}/100`, "MIS Score"];
+          return [value, name];
+        }}
+        labelFormatter={(label) => `Sales Person: ${label}`}
+      />
+
+      <Bar dataKey="score" radius={[0, 12, 12, 0]}>
+        {misChartData.map((entry, index) => (
+          <Cell key={index} fill={getMisBarColor(entry.score)} />
+        ))}
+      </Bar>
+    </BarChart>
+  </ResponsiveContainer>
+</div>
+            
+
+           
+          </>
+        )}
       </div>
 
       {cashflow && (
@@ -390,18 +553,55 @@ const DashboardHome = () => {
         </div>
       )}
 
-      <div className="chart-card">
-        <h3>Top Grades</h3>
+      <div className="chart-card top-grade-card">
+  <div className="top-grade-header">
+    <div>
+      <h3>Top Steel Grades</h3>
+      <p>Most ordered grades from approved sales orders</p>
+    </div>
+  </div>
 
-        {(data.gradeWiseQuantity || []).map((g, i) => (
-          <div key={i} className="grade-row">
-            <span>{g.grade}</span>
-            <span>
-  {g.orders || 0} order(s) · {formatCurrency(g.revenue || 0)}
-</span>
+  <div className="top-grade-list">
+    {(data.gradeWiseQuantity || []).length === 0 ? (
+      <p className="cashflow-empty">No grade data available</p>
+    ) : (
+      (data.gradeWiseQuantity || []).map((g, i) => {
+        const maxOrders =
+          Math.max(
+            ...(data.gradeWiseQuantity || []).map(
+              (x) => Number(x.orders || 0)
+            )
+          ) || 1;
+
+        const width =
+          (Number(g.orders || 0) / maxOrders) * 100;
+
+        return (
+          <div key={i} className="top-grade-item">
+            <div className="top-grade-top">
+              <div>
+                <strong>{g.grade || "Not Specified"}</strong>
+                <p>
+                  {g.orders || 0} order(s) ·{" "}
+                  {formatCurrency(g.revenue || 0)}
+                </p>
+              </div>
+
+              <span>#{i + 1}</span>
+            </div>
+
+            <div className="top-grade-progress">
+              <div
+                className="top-grade-fill"
+                style={{ width: `${width}%` }}
+              ></div>
+            </div>
           </div>
-        ))}
-      </div>
+        );
+      })
+    )}
+  </div>
+</div>
 
       {showNotifications && (
         <div className="notification-overlay">

@@ -668,3 +668,229 @@
     font-size: 11px;
   }
 }
+/* =========================
+   MIS SCORING - FINAL
+========================= */
+
+/* MIS Employee Score Cards */
+
+.mis-employee-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.mis-employee-card {
+  position: relative;
+  border-radius: 22px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.mis-employee-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+}
+
+.mis-employee-card.excellent::before {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
+.mis-employee-card.average::before {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+
+.mis-employee-card.poor::before {
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+}
+
+.mis-employee-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.mis-rank {
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 900;
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 999px;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+}
+
+.mis-employee-card h4 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.mis-employee-top strong {
+  font-size: 22px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.mis-progress {
+  margin-top: 16px;
+  height: 9px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.mis-progress span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
+}
+
+.mis-employee-stats {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mis-employee-stats div {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 9px 6px;
+  text-align: center;
+}
+
+.mis-employee-stats b {
+  display: block;
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.mis-employee-stats span {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+@media (max-width: 1400px) {
+  .mis-employee-grid {
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 992px) {
+  .mis-employee-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .mis-employee-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.mis-chart-compact {
+  margin-top: 22px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.mis-chart-compact h4 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+}
+/* =========================
+   TOP STEEL GRADES
+========================= */
+
+.top-grade-card {
+  margin-top: 24px;
+}
+
+.top-grade-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.top-grade-header p {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.top-grade-list {
+  margin-top: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.top-grade-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 16px 18px;
+}
+
+.top-grade-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.top-grade-top strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.top-grade-top p {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.top-grade-top span {
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.top-grade-progress {
+  margin-top: 14px;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.top-grade-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
+}

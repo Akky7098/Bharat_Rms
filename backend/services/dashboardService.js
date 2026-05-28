@@ -274,50 +274,83 @@ const getDashboardSummary = async (query, user) => {
         : 0,
   }));
 
-  const gradeWiseQuantity = await SalesOrder.aggregate([
-    { $match: approvedSalesOrderFilter },
-    {
-      $project: {
-        orderValue: 1,
-        sizeGradeQuantityRate: 1,
-        extractedGrades: {
-          $regexFindAll: {
-            input: "$sizeGradeQuantityRate",
-            regex: /(?:grade|gr)\s*[:\-]?\s*([A-Za-z0-9.+\-\/]+)/gi,
+ const gradeWiseQuantity = await SalesOrder.aggregate([
+  {
+    $match: approvedSalesOrderFilter,
+  },
+  {
+    $project: {
+      orderValue: 1,
+      sizeGradeQuantityRate: {
+        $ifNull: ["$sizeGradeQuantityRate", ""],
+      },
+    },
+  },
+  {
+    $addFields: {
+      gradeMatch: {
+        $regexFind: {
+          input: "$sizeGradeQuantityRate",
+          regex: /(?:grade|gr)\s*[:\-]?\s*([A-Za-z0-9.+\-\/]+)/i,
+        },
+      },
+    },
+  },
+  {
+    $addFields: {
+      extractedGrade: {
+        $arrayElemAt: ["$gradeMatch.captures", 0],
+      },
+    },
+  },
+  {
+    $project: {
+      orderValue: 1,
+      grade: {
+        $cond: [
+          {
+            $or: [
+              { $eq: ["$extractedGrade", null] },
+              { $eq: ["$extractedGrade", ""] },
+            ],
           },
-        },
+          "Not Specified",
+          {
+            $toUpper: {
+              $trim: {
+                input: "$extractedGrade",
+              },
+            },
+          },
+        ],
       },
     },
-    { $unwind: { path: "$extractedGrades", preserveNullAndEmptyArrays: true } },
-    {
-      $project: {
-        grade: {
-          $ifNull: [
-            { $arrayElemAt: ["$extractedGrades.captures", 0] },
-            "Not Specified",
-          ],
-        },
-        orderValue: 1,
-      },
+  },
+  {
+    $group: {
+      _id: "$grade",
+      revenue: { $sum: "$orderValue" },
+      orders: { $sum: 1 },
     },
-    {
-      $group: {
-        _id: "$grade",
-        revenue: { $sum: "$orderValue" },
-        orders: { $sum: 1 },
-      },
+  },
+  {
+    $project: {
+      _id: 0,
+      grade: "$_id",
+      revenue: 1,
+      orders: 1,
     },
-    {
-      $project: {
-        _id: 0,
-        grade: "$_id",
-        revenue: 1,
-        orders: 1,
-      },
+  },
+  {
+    $sort: {
+      orders: -1,
+      revenue: -1,
     },
-    { $sort: { orders: -1, revenue: -1 } },
-    { $limit: 10 },
-  ]);
+  },
+  {
+    $limit: 10,
+  },
+]);
 
   const delayedEmployeeData = await Enquiry.aggregate([
     {
