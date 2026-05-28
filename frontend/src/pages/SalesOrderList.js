@@ -186,16 +186,16 @@ const SalesOrderList = () => {
   };
 
   const formatStatus = (status) => {
-    const map = {
-      approved: "APPROVED",
-      pending_admin_review: "PENDING ADMIN REVIEW",
-      pending_manager_approval: "PENDING MANAGER APPROVAL",
-      rejected_by_admin: "HOLD BY ADMIN",
-      rejected_by_manager: "HOLD BY MANAGER",
-    };
-
-    return map[status] || String(status || "-").replaceAll("_", " ").toUpperCase();
+  const map = {
+    approved: "APPROVED",
+    pending_admin_review: "PENDING SONIA REVIEW",
+    pending_manager_approval: "PENDING MD SIR APPROVAL",
+    rejected_by_admin: "HOLD BY SONIA",
+    rejected_by_manager: "HOLD BY MD SIR",
   };
+
+  return map[status] || String(status || "-").replaceAll("_", " ").toUpperCase();
+};
 
   const getHoldComment = (order) => {
     if (!order) return "";
@@ -222,19 +222,21 @@ const SalesOrderList = () => {
   };
 
   const getPdfUrl = (order) => {
-    const fileUrl =
-      order.finalSalesOrderPackage?.fileUrl ||
-      order.pdf?.fileUrl ||
-      order.preShipmentInspectionPdf?.fileUrl;
+  const fileUrl =
+    order.pdf?.fileUrl ||
+    order.finalSalesOrderPackage?.fileUrl ||
+    order.preShipmentInspectionPdf?.fileUrl;
 
-    if (!fileUrl) return "";
+  if (!fileUrl) return "";
 
-    return fileUrl.startsWith("http")
-      ? fileUrl
-      : `${BACKEND_URL.replace(/\/$/, "")}${
-          fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`
-        }`;
-  };
+  const fullUrl = fileUrl.startsWith("http")
+    ? fileUrl
+    : `${BACKEND_URL.replace(/\/$/, "")}${
+        fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`
+      }`;
+
+  return `${fullUrl}?t=${order.updatedAt || Date.now()}`;
+};
 
   const canEditOrder = (order) => {
     return (

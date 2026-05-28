@@ -162,9 +162,23 @@ const getSalesOrderById = async (req, res) => {
 // ===============================
 const updateSalesOrder = async (req, res) => {
   try {
+    const payload = {
+      ...req.body,
+    };
+
+    if (req.file) {
+      payload.customerPOFile = {
+        originalName: req.file.originalname,
+        fileName: req.file.filename,
+        filePath: req.file.path,
+        fileUrl: `/uploads/customer-po/${req.file.filename}`,
+        uploadedAt: new Date(),
+      };
+    }
+
     const salesOrder = await salesOrderService.updateSalesOrder(
       req.params.id,
-      req.body,
+      payload,
       req.user
     );
 
@@ -180,7 +194,6 @@ const updateSalesOrder = async (req, res) => {
     });
   }
 };
-
 // ===============================
 // ADMIN APPROVE
 // ===============================

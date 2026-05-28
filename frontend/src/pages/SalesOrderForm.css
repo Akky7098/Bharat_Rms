@@ -1232,3 +1232,24 @@ textarea[name="sizeGradeQuantityRate"] {
     font-size: 14px;
   }
 }
+.sales-form-card {
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sales-form-card form {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 110px;
+}
+
+.sales-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 16px 22px;
+}
