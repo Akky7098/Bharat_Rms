@@ -529,18 +529,19 @@ const generateSalesOrderPdf = async (salesOrder) => {
         Date.now()
     );
 
-    // IMPORTANT: this makes every regenerated PDF unique
     const revisionNo = salesOrder.revisionCount
       ? `REV_${salesOrder.revisionCount}`
       : "REV_0";
 
-    const generatedStamp = new Date()
-      .toISOString()
-      .replace(/[:.]/g, "-");
+    const uniquePdfId = `${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 10)}`;
 
-    const finalFileName = `Sales_Order_Form_${companyName}_${uniqueRef}_${createdDate}_${revisionNo}_${generatedStamp}.pdf`;
+    const finalFileName = `Sales_Order_Form_${companyName}_${uniqueRef}_${createdDate}_${revisionNo}_${uniquePdfId}.pdf`;
 
     const finalFilePath = path.join(pdfDirectory, finalFileName);
+
+    console.log("NEW SALES ORDER PDF CREATED =>", finalFileName);
 
     const mergedPdf = await PDFDocument.create();
 
