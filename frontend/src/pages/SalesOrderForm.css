@@ -1236,20 +1236,25 @@ textarea[name="sizeGradeQuantityRate"] {
   max-height: 92vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .sales-form-card form {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 110px;
+  padding-bottom: 90px;
 }
 
 .sales-form-actions {
   position: sticky;
   bottom: 0;
-  z-index: 50;
+  z-index: 80;
   background: #ffffff;
   border-top: 1px solid #e5e7eb;
   padding: 16px 22px;
+}
+
+.revision-comment-box {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 90;
 }

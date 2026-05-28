@@ -22,6 +22,13 @@ const formatText = (value) => {
     )
     .join(" ");
 };
+const formatPaymentTerms = (salesOrder) => {
+  if (salesOrder.paymentTerms === "other") {
+    return salesOrder.otherPaymentTerms || "Other";
+  }
+
+  return formatText(salesOrder.paymentTerms);
+};
 const formatCuttingCost = (salesOrder) => {
   if (salesOrder.cuttingCost === "extra") {
     return salesOrder.cuttingExtraCharges
@@ -401,7 +408,7 @@ td {
   <td class="sno">1.</td>
   <td class="label-col">Payment Terms</td>
   <td class="value-col">
-    ${formatText(salesOrder.paymentTerms)}
+    ${formatPaymentTerms(salesOrder)}
   </td>
 </tr>
 

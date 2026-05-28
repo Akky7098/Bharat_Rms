@@ -56,6 +56,7 @@ router.get(
 router.put(
   "/:id",
   authMiddleware,
+  uploadSalesOrderFiles.single("customerPOFile"),
   salesOrderController.updateSalesOrder
 );
 

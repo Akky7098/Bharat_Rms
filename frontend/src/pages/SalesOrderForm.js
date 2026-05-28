@@ -970,13 +970,16 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
 
       let savedResponse;
 
-      if (isEditMode) {
-        savedResponse = await updateSalesOrder(editOrder._id, payload);
-      } else {
-        savedResponse = await createSalesOrder(
-          appendToFormData(new FormData(), payload)
-        );
-      }
+    const formData = appendToFormData(new FormData(), payload);
+
+if (isEditMode) {
+  savedResponse = await updateSalesOrder(
+    editOrder._id,
+    formData
+  );
+} else {
+  savedResponse = await createSalesOrder(formData);
+}
 
       const salesOrderId = isEditMode
         ? editOrder._id
@@ -1055,12 +1058,13 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
             wordBreak: "break-word",
           }}
         >
-         <strong>
+        <strong>
   {editOrder?.approvalStatus === "rejected_by_admin"
-    ? "Hold by Admin:"
-    : "Hold by Manager:"}
+    ? "Hold by Sonia:"
+    : "Hold by MD Sir:"}
 </strong>{" "}
 {holdComment}
+  
         </div>
       )}
 
