@@ -529,7 +529,16 @@ const generateSalesOrderPdf = async (salesOrder) => {
         Date.now()
     );
 
-    const finalFileName = `Sales_Order_Form_${companyName}_${uniqueRef}_${createdDate}.pdf`;
+    // IMPORTANT: this makes every regenerated PDF unique
+    const revisionNo = salesOrder.revisionCount
+      ? `REV_${salesOrder.revisionCount}`
+      : "REV_0";
+
+    const generatedStamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-");
+
+    const finalFileName = `Sales_Order_Form_${companyName}_${uniqueRef}_${createdDate}_${revisionNo}_${generatedStamp}.pdf`;
 
     const finalFilePath = path.join(pdfDirectory, finalFileName);
 
@@ -554,6 +563,7 @@ const generateSalesOrderPdf = async (salesOrder) => {
       filePath: finalFilePath,
       fileUrl: `/uploads/sales-orders/${finalFileName}`,
       generatedAt: new Date(),
+      revisionNo: salesOrder.revisionCount || 0,
     };
   } catch (error) {
     console.log("PDF GENERATION ERROR =>", error);

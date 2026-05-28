@@ -741,34 +741,39 @@ const updateSalesOrder = async (
       throw new Error("Sales order cannot be edited right now");
     }
 
-    // Preserve existing file if no new upload
     const preservedCustomerPOFile = salesOrder.customerPOFile;
 
-    // Update only payload fields
     Object.keys(payload).forEach((key) => {
-      if (
-        payload[key] !== undefined &&
-        payload[key] !== null
-      ) {
+      // never allow frontend to update generated pdf directly
+      if (key === "pdf") return;
+
+      // PO file handled safely below
+      if (key === "customerPOFile") return;
+
+      if (payload[key] !== undefined && payload[key] !== null) {
         salesOrder[key] = payload[key];
       }
     });
 
-    // Restore PO file if frontend did not replace
-    if (!salesOrder.customerPOFile) {
+    // If new PO uploaded, replace. Otherwise keep old PO.
+    if (
+      payload.customerPOFile &&
+      payload.customerPOFile.filePath
+    ) {
+      salesOrder.customerPOFile = payload.customerPOFile;
+    } else {
       salesOrder.customerPOFile = preservedCustomerPOFile;
     }
 
-    // Reset approval states
     salesOrder.approvalStatus = "pending_admin_review";
     salesOrder.isEditableBySalesPerson = false;
 
-    // clear old approval markers
     salesOrder.adminApproval = {};
     salesOrder.managerApproval = {};
 
     salesOrder.checkedByAdminId = null;
     salesOrder.checkedByAdminName = null;
+    salesOrder.checkedAt = null;
 
     salesOrder.revisionCount =
       (salesOrder.revisionCount || 0) + 1;
@@ -780,11 +785,10 @@ const updateSalesOrder = async (
       role: "salesperson",
       action: "resubmitted",
       comment: "Sales order updated and resubmitted after hold",
+      actionAt: new Date(),
     });
 
-    const updatedOrder = await salesOrder.save();
-
-    return updatedOrder;
+    return await salesOrder.save();
   } catch (error) {
     throw error;
   }

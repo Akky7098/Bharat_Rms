@@ -73,7 +73,7 @@ const getOrderRows = (salesOrder, extraRows = "") => {
 const sendSalesOrderApprovedEmail = async (
   salesOrder,
   approvedBy = "Management",
-  ccEmails = []
+  ccEmails = ["sales@bharatspecialsteels.com"]
 ) => {
   if (!salesOrder.salesPersonEmail) return null;
 
@@ -127,7 +127,7 @@ const sendSalesOrderApprovedEmail = async (
 const sendSalesOrderRejectedEmail = async (
   salesOrder,
   rejectionComment,
-  ccEmails = []
+  ccEmails = ["sales@bharatspecialsteels.com"]
 ) => {
   if (!salesOrder.salesPersonEmail) return null;
 
@@ -202,7 +202,7 @@ const sendAdminApprovalNotification = async (
   return transporter.sendMail({
     from: `"Bharat Special Steel" <bsspl97@gmail.com>`,
     to: adminEmail,
-
+    
     subject: `Bharat Special Steel | ${actionText} | Sales Order ${orderRef} | ${salesOrder.companyName}`,
 
     headers: getUniqueMailHeaders(salesOrder, "manager-approval-notification"),
