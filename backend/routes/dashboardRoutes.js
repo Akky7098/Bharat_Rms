@@ -24,5 +24,10 @@ router.get(
   authMiddleware,
   dashboardController.getCashflowSummary
 );
+router.get(
+  "/mis-scoring",
+  authMiddleware,
+  dashboardController.getMisScoring
+);
 
 module.exports = router;

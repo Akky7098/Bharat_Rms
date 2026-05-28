@@ -58,8 +58,27 @@ const getCashflowSummary = async (req, res) => {
     });
   }
 };
+const getMisScoring = async (req, res) => {
+  try {
+    const data = await dashboardService.getMisScoring(
+      req.query,
+      req.user
+    );
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 module.exports = {
   getDashboardSummary,
   getActionRequiredInsights,
   getCashflowSummary,
+  getMisScoring,
 };

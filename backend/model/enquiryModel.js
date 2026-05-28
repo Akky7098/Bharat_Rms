@@ -7,10 +7,11 @@ const enquirySchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    enquiryNumber: {
+   enquiryNumber: {
   type: String,
-  unique: true,
   trim: true,
+  unique: true,
+  sparse: true,
 },
     enquiryDate: {
       type: Date,

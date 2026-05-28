@@ -1243,8 +1243,131 @@ const getActionRequiredInsights = async (query, user) => {
         : "No urgent action required",
   };
 };
+const getMisScoring = async (query, user) => {
+  const { fromDate, toDate } = query;
+
+  const enquiryFilter = {
+    ...getDateFilter(fromDate, toDate, "enquiryDate"),
+  };
+
+  if (user.role !== "admin" && user.role !== "super_admin") {
+    enquiryFilter.salesPersonId = user.id;
+  }
+
+  const enquiries = await Enquiry.find(enquiryFilter)
+    .populate("salesPersonId", "name email")
+    .lean();
+
+  const salesMap = {};
+
+  let hotLeads = 0;
+  let warmLeads = 0;
+  let coldLeads = 0;
+
+  enquiries.forEach((enquiry) => {
+    const salesPerson = enquiry.salesPersonId;
+    if (!salesPerson) return;
+
+    const salesPersonId = String(salesPerson._id);
+
+    if (!salesMap[salesPersonId]) {
+      salesMap[salesPersonId] = {
+        salesPersonId: salesPerson._id,
+        name: salesPerson.name,
+        email: salesPerson.email,
+        totalScore: 0,
+        score: 0,
+        hotLeads: 0,
+        warmLeads: 0,
+        coldLeads: 0,
+        totalEnquiries: 0,
+        wonEnquiries: 0,
+        lostEnquiries: 0,
+        delayedEnquiries: 0,
+        pendingEnquiries: 0,
+      };
+    }
+
+    let score = 50;
+
+    if (enquiry.feasibility?.status === "feasible") score += 15;
+    if (enquiry.feasibility?.status === "not_feasible") score -= 25;
+
+    if (enquiry.quotation?.completed) score += 10;
+
+    if (enquiry.closure?.status === "won") {
+      score += 25;
+      salesMap[salesPersonId].wonEnquiries += 1;
+    }
+
+    if (enquiry.closure?.status === "lost") {
+      score -= 30;
+      salesMap[salesPersonId].lostEnquiries += 1;
+    }
+
+    if (Number(enquiry.quantityInKg || 0) >= 500) score += 10;
+
+    const now = new Date();
+
+    const isDelayed =
+      (enquiry.feasibility?.planDate &&
+        enquiry.feasibility?.completed !== true &&
+        new Date(enquiry.feasibility.planDate) < now) ||
+      (enquiry.quotation?.planDate &&
+        enquiry.quotation?.completed !== true &&
+        new Date(enquiry.quotation.planDate) < now) ||
+      (enquiry.closure?.planDate &&
+        enquiry.closure?.completed !== true &&
+        new Date(enquiry.closure.planDate) < now);
+
+    if (isDelayed) {
+      score -= 20;
+      salesMap[salesPersonId].delayedEnquiries += 1;
+    }
+
+    if (!["won", "lost"].includes(enquiry.closure?.status)) {
+      salesMap[salesPersonId].pendingEnquiries += 1;
+    }
+
+    score = Math.max(0, Math.min(score, 100));
+
+    if (score >= 75) {
+      hotLeads += 1;
+      salesMap[salesPersonId].hotLeads += 1;
+    } else if (score >= 45) {
+      warmLeads += 1;
+      salesMap[salesPersonId].warmLeads += 1;
+    } else {
+      coldLeads += 1;
+      salesMap[salesPersonId].coldLeads += 1;
+    }
+
+    salesMap[salesPersonId].totalScore += score;
+    salesMap[salesPersonId].totalEnquiries += 1;
+  });
+
+  const salesPersonScores = Object.values(salesMap)
+    .map((item) => ({
+      ...item,
+      score:
+        item.totalEnquiries > 0
+          ? Number((item.totalScore / item.totalEnquiries).toFixed(1))
+          : 0,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map(({ totalScore, ...item }) => item);
+
+  return {
+    hotLeads,
+    warmLeads,
+    coldLeads,
+    totalLeads: hotLeads + warmLeads + coldLeads,
+    salesPersonScores,
+  };
+};
 module.exports = {
   getDashboardSummary,
   getCashflowSummary,
   getActionRequiredInsights,
+  getMisScoring,
 };

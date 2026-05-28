@@ -40,23 +40,17 @@ const createEnquiry = async (body, user, file) => {
 
   const allowedSupplyConditions = [
     "as_per_standard",
-
     "as_rolled",
     "as_forged",
-
     "as_rolled_or_as_forged",
-
     "as_rolled_annealed",
     "as_forged_annealed",
     "as_rolled_or_forged_annealed",
-
     "as_rolled_normalised",
     "as_rolled_or_as_forged_normalised",
-
     "as_rolled_qt",
     "as_forged_qt",
     "as_rolled_or_as_forged_qt",
-
     "other",
   ];
 
@@ -87,17 +81,9 @@ const createEnquiry = async (body, user, file) => {
 
   const baseDate = new Date();
 
-  const feasibilityPlanDate = new Date(
-    baseDate.getTime() + 1 * 60 * 60 * 1000
-  );
-
-  const quotationPlanDate = new Date(
-    baseDate.getTime() + 24 * 60 * 60 * 1000
-  );
-
-  const closurePlanDate = new Date(
-    baseDate.getTime() + 2 * 24 * 60 * 60 * 1000
-  );
+  const feasibilityPlanDate = new Date(baseDate.getTime() + 1 * 60 * 60 * 1000);
+  const quotationPlanDate = new Date(baseDate.getTime() + 24 * 60 * 60 * 1000);
+  const closurePlanDate = new Date(baseDate.getTime() + 2 * 24 * 60 * 60 * 1000);
 
   let sizePdf = {
     fileName: "",
@@ -114,19 +100,40 @@ const createEnquiry = async (body, user, file) => {
     };
   }
 
-  const firstNameRaw = String(user.name || "User")
-    .trim()
-    .split(" ")[0];
+  const firstNameRaw = String(user.name || "User").trim().split(" ")[0] || "User";
 
   const firstName =
     firstNameRaw.charAt(0).toUpperCase() +
     firstNameRaw.slice(1).toLowerCase();
 
-  const enquiryCount = await Enquiry.countDocuments({
-    salesPersonId: user.id,
+  const escapedFirstName = firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const existingEnquiries = await Enquiry.find({
+    enquiryNumber: {
+      $regex: `^${escapedFirstName}-\\d+$`,
+      $options: "i",
+    },
+  })
+    .select("enquiryNumber")
+    .lean();
+
+  let lastNumber = 0;
+
+  existingEnquiries.forEach((item) => {
+    const match = String(item.enquiryNumber || "").match(/-(\d+)$/);
+
+    if (match) {
+      const number = Number(match[1]);
+      if (number > lastNumber) lastNumber = number;
+    }
   });
 
-  const enquiryNumber = `${firstName}-${enquiryCount + 1}`;
+  let enquiryNumber = `${firstName}-${lastNumber + 1}`;
+
+  while (await Enquiry.exists({ enquiryNumber })) {
+    lastNumber += 1;
+    enquiryNumber = `${firstName}-${lastNumber + 1}`;
+  }
 
   const enquiry = await Enquiry.create({
     salesPersonId: user.id,
@@ -144,9 +151,13 @@ const createEnquiry = async (body, user, file) => {
     shape,
     size,
     quantityInKg: Number(quantityInKg),
+
     supplyCondition,
     otherSupplyConditions:
-      supplyCondition === "other" ? String(otherSupplyConditions || "").trim() : "",
+      supplyCondition === "other"
+        ? String(otherSupplyConditions || "").trim()
+        : "",
+
     modeOfEnquiry,
 
     sizePdf,
