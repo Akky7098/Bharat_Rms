@@ -183,10 +183,16 @@ const DashboardHome = () => {
           <p>{formatCurrency(data.totalRevenue)}</p>
         </div>
 
-        <div className="card orders">
-          <h3>Total Orders</h3>
-          <p>{data.totalOrders}</p>
-        </div>
+       <div className="card orders">
+  <h3>
+    {user?.role === "super_admin"
+      ? "Pending Manager Approval"
+      : user?.role === "admin"
+      ? "Pending Admin Approval"
+      : "Pending Orders"}
+  </h3>
+  <p>{data.pendingOrders || 0}</p>
+</div>
 
         <div className="card enquiries">
           <h3>Total Enquiries</h3>
@@ -302,10 +308,10 @@ const DashboardHome = () => {
             <div className="lost-reason-mini">
               <b>Top Reason:</b>{" "}
               {data.topLostReason
-                ? `${data.topLostReason._id || data.topLostReason.reason} (${
-                    data.topLostReason.count
-                  })`
-                : "No reason found"}
+  ? `${data.topLostReason.reason || data.topLostReason.rawReason} (${
+      data.topLostReason.count
+    })`
+  : "No reason found"}
             </div>
           </div>
         </div>
@@ -390,7 +396,9 @@ const DashboardHome = () => {
         {(data.gradeWiseQuantity || []).map((g, i) => (
           <div key={i} className="grade-row">
             <span>{g.grade}</span>
-            <span>{Number(g.quantity || 0).toLocaleString("en-IN")} Kg</span>
+            <span>
+  {g.orders || 0} order(s) · {formatCurrency(g.revenue || 0)}
+</span>
           </div>
         ))}
       </div>

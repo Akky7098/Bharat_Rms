@@ -282,6 +282,7 @@ const initialForm = {
   shippingGstinNumber: "",
 
   enquiryFormFilled: "",
+   enquiryNumber: "",
 
   sizeGradeQuantityRate: "",
   supplyCondition: "as_per_standard",
@@ -368,7 +369,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       "previousPaymentStatus",
     ]);
     addIf(["special note", "note"], ["specialNote"]);
-    addIf(["enquiry"], ["enquiryFormFilled"]);
+    addIf(["enquiry"], ["enquiryFormFilled", "enquiryNumber"]);
     addIf(["size", "grade", "qty", "quantity", "rate"], [
       "sizeGradeQuantityRate",
     ]);
@@ -523,6 +524,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       ),
 
       enquiryFormFilled: yesNoValue(savedEnquiryFilled, ""),
+      enquiryNumber: getFirstFromOrder(editOrder, ["enquiryNumber"]),
 
       sizeGradeQuantityRate: getFirstFromOrder(editOrder, [
         "sizeGradeQuantityRate",
@@ -664,7 +666,7 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       ["previousPaymentAvailable", "Previous payment selection is required"],
       ["poAsPerQuotation", "PO as per quotation is required"],
       ["enquiryFormFilled", "Enquiry form status is required"],
-      ["sizeGradeQuantityRate", "Size / Grade / Qty / Rate is required"],
+      ["sizeGradeQuantityRate", "Grade/ Size / Qty / Price is required"],
       ["supplyCondition", "Supply condition is required"],
       ["cutLengthRequired", "Cut length required is required"],
       ["cuttingCost", "Cutting cost is required"],
@@ -686,12 +688,22 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
     if (form.gstinNumber && !validateGstin(form.gstinNumber.trim())) {
       newErrors.gstinNumber = "Please enter valid GSTIN";
     }
+    if (form.enquiryFormFilled === "no") {
+  newErrors.enquiryFormFilled =
+    "You cannot create sales order without enquiry number";
+}
 
+if (
+  form.enquiryFormFilled === "yes" &&
+  !form.enquiryNumber.trim()
+) {
+  newErrors.enquiryNumber = "Enquiry number is required";
+}
     if (billingDifferent) {
       if (!form.billingAddress.trim()) {
         newErrors.billingCombined = "Billing address is required";
       }
-
+      
       if (!form.billingGstinNumber.trim()) {
         newErrors.billingCombined = "Billing GSTIN is required";
       } else if (!validateGstin(form.billingGstinNumber.trim())) {
@@ -821,7 +833,9 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       if (name === "cuttingCost" && value !== "extra") {
         updated.cuttingExtraCharges = "";
       }
-
+      if (name === "enquiryFormFilled" && value === "no") {
+  updated.enquiryNumber = "";
+}
       if (name === "freight" && value !== "extra") {
         updated.freightExtraCharges = "";
       }
@@ -912,7 +926,10 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       testCertificateRequired: "yes",
 
       enquiryFormFilled: form.enquiryFormFilled,
-      enquiryNumber: "",
+      enquiryNumber:
+  form.enquiryFormFilled === "yes"
+    ? form.enquiryNumber.trim()
+    : "",
     };
   };
 
@@ -1438,11 +1455,26 @@ if (isEditMode) {
             </div>
           )}
 
-          <div
+         <div
             className={fieldClass("enquiryFormFilled")}
             {...refProp("enquiryFormFilled")}
           >
             <label>{mandatoryLabel("Enquiry Form Filled?")}</label>
+            {form.enquiryFormFilled === "yes" && (
+  <div
+    className={fieldClass("enquiryNumber")}
+    {...refProp("enquiryNumber")}
+  >
+    <label>{mandatoryLabel("Enquiry Number")}</label>
+    <input
+      name="enquiryNumber"
+      value={form.enquiryNumber}
+      onChange={handleChange}
+      placeholder="Example: Deepika-1"
+    />
+    {errorText("enquiryNumber")}
+  </div>
+)}
             <select
               name="enquiryFormFilled"
               value={form.enquiryFormFilled}
@@ -1468,13 +1500,13 @@ if (isEditMode) {
             )}
             {...refProp("sizeGradeQuantityRate")}
           >
-            <label>{mandatoryLabel("Size / Grade / Qty / Rate")}</label>
+            <label>{mandatoryLabel(" Grade/ Size / Qty / Price")}</label>
             <textarea
               name="sizeGradeQuantityRate"
               value={form.sizeGradeQuantityRate}
               onChange={handleChange}
               rows={8}
-              placeholder="Example: Size: 100 Dia x 5000 Long | Grade: H13 | Qty: 500 Kg | Rate: 250/Kg"
+              placeholder="Example:H13,100 Dia x 5000 Long,Qty: 500 Kg @ Price: 250/Kg"
             />
             {errorText("sizeGradeQuantityRate")}
           </div>

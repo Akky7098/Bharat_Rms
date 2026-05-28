@@ -1258,3 +1258,22 @@ textarea[name="sizeGradeQuantityRate"] {
   position: relative;
   z-index: 90;
 }
+
+.sales-form-group.has-error input,
+.sales-form-group.has-error select,
+.sales-form-group.has-error textarea {
+  border-color: #dc2626 !important;
+  background: #fff5f5 !important;
+}
+
+.sales-field-error {
+  margin-top: 6px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.required-star {
+  color: #dc2626;
+  font-weight: 900;
+}

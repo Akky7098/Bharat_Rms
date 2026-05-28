@@ -6,7 +6,8 @@ import EnquiryForm from "./EnquiryForm";
 import WorkflowUpdate from "./WorkflowUpdate";
 
 const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "https://bharatspecialsteels.bharatspecialsteels.com";
+  process.env.REACT_APP_API_BASE_URL ||
+  "https://bharatspecialsteels.bharatspecialsteels.com";
 
 const EnquiryList = () => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -51,12 +52,12 @@ const EnquiryList = () => {
 
       const response = await getAllEnquiries(cleanFilters);
       setEnquiries(response.data || []);
-      setPagination(response.pagination);
+      setPagination(response.pagination || pagination);
     } catch (error) {
       console.log(error);
       alert(error.response?.data?.message || "Failed to load enquiries");
     }
-  }, [filters]);
+  }, [filters, pagination]);
 
   const fetchSalesPersons = useCallback(async () => {
     try {
@@ -123,25 +124,7 @@ const EnquiryList = () => {
       }));
     }
   };
-const formatSizeText = (value) => {
-  if (!value) return "-";
 
-  return String(value)
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map((item, index) => (
-      <React.Fragment key={index}>
-        {item}
-        {index !== String(value).split(",").filter(Boolean).length - 1 && (
-          <>
-            ,
-            <br />
-          </>
-        )}
-      </React.Fragment>
-    ));
-};
   const prevPage = () => {
     if (pagination.currentPage > 1) {
       setFilters((prev) => ({
@@ -153,8 +136,8 @@ const formatSizeText = (value) => {
 
   const renderPages = () => {
     const pages = [];
-    const total = pagination.totalPages;
-    const current = pagination.currentPage;
+    const total = pagination.totalPages || 1;
+    const current = pagination.currentPage || 1;
 
     for (let i = 1; i <= total; i++) {
       if (
@@ -184,28 +167,68 @@ const formatSizeText = (value) => {
     setShowWorkflow(true);
   };
 
- const formatDate = (date) => {
-  if (!date) return "-";
+  const formatDate = (date) => {
+    if (!date) return "-";
+    return new Date(date).toLocaleDateString("en-GB");
+  };
 
-  return new Date(date).toLocaleDateString("en-GB");
-};
+  const formatDateTime = (date) => {
+    if (!date) return "-";
 
-const formatDateTime = (date) => {
-  if (!date) return "-";
+    return new Date(date).toLocaleString("en-GB", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
 
-  const parsedDate = new Date(date);
+  const formatEnumLabel = (value) => {
+    if (!value) return "-";
 
-  return parsedDate.toLocaleString("en-GB", {
-    timeZone: "Asia/Kolkata",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-};
+    return String(value)
+      .replaceAll("_or_", " / ")
+      .replaceAll("_", " ")
+      .split(" ")
+      .map((word) =>
+        word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : ""
+      )
+      .join(" ");
+  };
+
+  const formatSupplyCondition = (enquiry) => {
+    if (enquiry.supplyCondition === "other") {
+      return enquiry.otherSupplyConditions || "Other";
+    }
+
+    return formatEnumLabel(enquiry.supplyCondition);
+  };
+
+  const formatSizeText = (value) => {
+    if (!value) return "-";
+
+    const parts = String(value)
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    return parts.map((item, index) => (
+      <React.Fragment key={index}>
+        {item}
+        {index !== parts.length - 1 && (
+          <>
+            ,
+            <br />
+          </>
+        )}
+      </React.Fragment>
+    ));
+  };
+
   const isOverdue = (planDate, completed) => {
     if (!planDate) return false;
     return !completed && new Date() > new Date(planDate);
@@ -260,6 +283,9 @@ const formatDateTime = (date) => {
 
     return "";
   };
+
+  const stickyColSpan = isAdmin ? 4 : 3;
+  const totalColSpan = isAdmin ? 25 : 24;
 
   return (
     <div className={`enquiry-container ${isAdmin ? "admin-view" : "user-view"}`}>
@@ -317,21 +343,11 @@ const formatDateTime = (date) => {
           </div>
 
           <div className="enquiry-color-remarks">
-            <div>
-              <span className="remark-dot delayed"></span> Delayed
-            </div>
-            <div>
-              <span className="remark-dot feasible"></span> Feasible
-            </div>
-            <div>
-              <span className="remark-dot not-feasible"></span> Not Feasible
-            </div>
-            <div>
-              <span className="remark-dot won"></span> Won
-            </div>
-            <div>
-              <span className="remark-dot lost"></span> Lost
-            </div>
+            <div><span className="remark-dot delayed"></span> Delayed</div>
+            <div><span className="remark-dot feasible"></span> Feasible</div>
+            <div><span className="remark-dot not-feasible"></span> Not Feasible</div>
+            <div><span className="remark-dot won"></span> Won</div>
+            <div><span className="remark-dot lost"></span> Lost</div>
           </div>
 
           <div className="filter-buttons">
@@ -351,19 +367,48 @@ const formatDateTime = (date) => {
           <table className="enquiry-table">
             <thead>
               <tr>
+                <th
+                  className="sticky-col sticky-head workflow-empty-head"
+                  colSpan={stickyColSpan}
+                ></th>
+
+                <th colSpan={11} className="workflow-empty-head"></th>
+
+                <th colSpan={3} className="workflow-step-head">
+                  Step 1 - Feasibility
+                </th>
+
+                <th colSpan={3} className="workflow-step-head">
+                  Step 2 - Quotation
+                </th>
+
+                <th colSpan={3} className="workflow-step-head">
+                  Step 3 - Closure
+                </th>
+
+                <th className="workflow-empty-head"></th>
+              </tr>
+
+              <tr>
+                <th className="sticky-col sticky-head col-enquiry-no">
+                  Enquiry No
+                </th>
+
                 <th className="sticky-col sticky-head col-date">
                   Enquiry Date
                 </th>
 
                 {isAdmin && (
                   <th className="sticky-col sticky-head col-sales">
-                    Sales Person
+                    Sales<br />Person
                   </th>
                 )}
 
-                <th className="sticky-col sticky-head col-company">Company</th>
+                <th className="sticky-col sticky-head col-company">
+                  Company
+                </th>
 
-                <th>Customer Name</th>
+                <th>Customer</th>
                 <th>Contact</th>
                 <th>Email</th>
                 <th>Address</th>
@@ -375,21 +420,18 @@ const formatDateTime = (date) => {
                 <th>Supply</th>
                 <th>Mode</th>
 
-                <th>Feasible Plan</th>
-                <th>Feasible Actual</th>
-                <th>Feasible Status</th>
-                <th>Done</th>
-
-                <th>Quotation Plan</th>
-                <th>Quotation Actual</th>
-                <th>Quotation Link</th>
-                <th>Done</th>
-
-                <th>Closure Plan</th>
-                <th>Closure Actual</th>
+                <th>Plan</th>
+                <th>Actual</th>
                 <th>Status</th>
-                <th>Lost Remark</th>
-                <th>Done</th>
+
+                <th>Plan</th>
+                <th>Actual</th>
+                <th>Link</th>
+
+                <th>Plan</th>
+                <th>Actual</th>
+                <th>Status</th>
+
                 <th>Action</th>
               </tr>
             </thead>
@@ -397,7 +439,7 @@ const formatDateTime = (date) => {
             <tbody>
               {enquiries.length === 0 ? (
                 <tr>
-                  <td colSpan={28} className="no-data">
+                  <td colSpan={totalColSpan} className="no-data">
                     No enquiries found
                   </td>
                 </tr>
@@ -407,9 +449,13 @@ const formatDateTime = (date) => {
 
                   return (
                     <tr key={enquiry._id} className={getRowClass(enquiry)}>
+                      <td className="sticky-col col-enquiry-no">
+                        {enquiry.enquiryNumber || "-"}
+                      </td>
+
                       <td className="sticky-col col-date">
-  {formatDateTime(enquiry.createdAt)}
-</td>
+                        {formatDateTime(enquiry.createdAt)}
+                      </td>
 
                       {isAdmin && (
                         <td className="sticky-col col-sales">
@@ -418,22 +464,29 @@ const formatDateTime = (date) => {
                       )}
 
                       <td className="sticky-col col-company">
-                        {enquiry.companyName}
+                        {enquiry.companyName || "-"}
                       </td>
 
-                      <td>{enquiry.customerName}</td>
-                      <td>{enquiry.customerContactNo}</td>
-                      <td>{enquiry.customerEmailId || "-"}</td>
+                      <td>{enquiry.customerName || "-"}</td>
+
+                      <td className="nowrap-cell">
+                        {enquiry.customerContactNo || "-"}
+                      </td>
+
+                      <td className="nowrap-cell">
+                        {enquiry.customerEmailId || "-"}
+                      </td>
+
                       <td>{enquiry.customerAddress || "-"}</td>
-                      <td>{enquiry.productCategory}</td>
-                      <td>{enquiry.grade}</td>
-                      <td>{enquiry.shape}</td>
+                      <td>{formatEnumLabel(enquiry.productCategory)}</td>
+                      <td>{enquiry.grade || "-"}</td>
+                      <td>{formatEnumLabel(enquiry.shape)}</td>
 
                       <td className="size-cell">
                         <div className="size-cell-content">
-                         <div className="size-lines">
-  {formatSizeText(enquiry.size)}
-</div>
+                          <div className="size-lines">
+                            {formatSizeText(enquiry.size)}
+                          </div>
 
                           {sizePdfUrl && (
                             <a
@@ -448,14 +501,13 @@ const formatDateTime = (date) => {
                         </div>
                       </td>
 
-                      <td>{enquiry.quantityInKg}</td>
-                      <td>{enquiry.supplyCondition || "-"}</td>
-                      <td>{enquiry.modeOfEnquiry}</td>
+                      <td>{enquiry.quantityInKg || "-"}</td>
+                      <td>{formatSupplyCondition(enquiry)}</td>
+                      <td>{formatEnumLabel(enquiry.modeOfEnquiry)}</td>
 
                       <td>{formatDateTime(enquiry.feasibility?.planDate)}</td>
                       <td>{formatDateTime(enquiry.feasibility?.actualDate)}</td>
-                      <td>{enquiry.feasibility?.status || "-"}</td>
-                      <td>{enquiry.feasibility?.completed ? "Yes" : "No"}</td>
+                      <td>{formatEnumLabel(enquiry.feasibility?.status)}</td>
 
                       <td>{formatDateTime(enquiry.quotation?.planDate)}</td>
                       <td>{formatDateTime(enquiry.quotation?.actualDate)}</td>
@@ -472,13 +524,20 @@ const formatDateTime = (date) => {
                           "-"
                         )}
                       </td>
-                      <td>{enquiry.quotation?.completed ? "Yes" : "No"}</td>
 
                       <td>{formatDateTime(enquiry.closure?.planDate)}</td>
                       <td>{formatDateTime(enquiry.closure?.actualDate)}</td>
-                      <td>{enquiry.closure?.status || "-"}</td>
-                      <td>{enquiry.closure?.lostRemark || "-"}</td>
-                      <td>{enquiry.closure?.completed ? "Yes" : "No"}</td>
+                      <td>
+                        {formatEnumLabel(enquiry.closure?.status)}
+                        {enquiry.closure?.status === "lost" &&
+                          enquiry.closure?.lostRemark && (
+                            <div className="lost-remark-inline">
+                              {enquiry.closure.lostRemark === "others"
+                                ? enquiry.closure.lostRemarkOtherText || "-"
+                                : formatEnumLabel(enquiry.closure.lostRemark)}
+                            </div>
+                          )}
+                      </td>
 
                       <td>
                         <button
@@ -510,14 +569,15 @@ const formatDateTime = (date) => {
                 >
                   <div className="mobile-card-top">
                     <div>
-                      <strong>{enquiry.companyName}</strong>
-                      <span>{enquiry.customerName || "-"}</span>
+                      <strong>{enquiry.companyName || "-"}</strong>
+                      <span>{enquiry.enquiryNumber || "-"}</span>
                     </div>
-                    <small>{formatDate(enquiry.enquiryDate)}</small>
+
+                    <small>{formatDate(enquiry.createdAt)}</small>
                   </div>
 
                   <div className="mobile-card-tags">
-                    <span>{enquiry.productCategory || "-"}</span>
+                    <span>{formatEnumLabel(enquiry.productCategory)}</span>
                     <span>{enquiry.grade || "-"}</span>
                     <span>{enquiry.quantityInKg || 0} Kg</span>
                   </div>
@@ -534,11 +594,15 @@ const formatDateTime = (date) => {
                     </p>
 
                     <p>
-                     <b>Shape / Size:</b> {enquiry.shape || "-"} /{" "}
-<span className="size-lines-inline">
-  {formatSizeText(enquiry.size)}
-</span>                      
-{sizePdfUrl && (
+                      <b>Email:</b> {enquiry.customerEmailId || "-"}
+                    </p>
+
+                    <p>
+                      <b>Shape / Size:</b> {formatEnumLabel(enquiry.shape)} /{" "}
+                      <span className="size-lines-inline">
+                        {formatSizeText(enquiry.size)}
+                      </span>
+                      {sizePdfUrl && (
                         <a
                           href={sizePdfUrl}
                           target="_blank"
@@ -551,12 +615,16 @@ const formatDateTime = (date) => {
                     </p>
 
                     <p>
-                      <b>Mode:</b> {enquiry.modeOfEnquiry || "-"}
+                      <b>Supply:</b> {formatSupplyCondition(enquiry)}
+                    </p>
+
+                    <p>
+                      <b>Mode:</b> {formatEnumLabel(enquiry.modeOfEnquiry)}
                     </p>
 
                     <p>
                       <b>Feasibility:</b>{" "}
-                      {enquiry.feasibility?.completed ? "Done" : "Pending"}
+                      {formatEnumLabel(enquiry.feasibility?.status)}
                     </p>
 
                     <p>
@@ -565,7 +633,7 @@ const formatDateTime = (date) => {
                     </p>
 
                     <p>
-                      <b>Closure:</b> {enquiry.closure?.status || "Pending"}
+                      <b>Closure:</b> {formatEnumLabel(enquiry.closure?.status)}
                     </p>
                   </div>
 

@@ -25,45 +25,98 @@ const getDateFilter = (fromDate, toDate, fieldName) => {
 };
 
 const formatLostReason = (reason = "") => {
-  const text = String(reason).toLowerCase();
+  const text = String(reason)
+    .toLowerCase()
+    .trim();
 
+  // PRICE
   if (
     text.includes("price") ||
     text.includes("rate") ||
-    text.includes("cost")
+    text.includes("cost") ||
+    text.includes("expensive") ||
+    text.includes("higher amount") ||
+    text.includes("lower price") ||
+    text.includes("budget")
   ) {
     return "Price Issue";
   }
 
+  // QUANTITY
   if (
     text.includes("qty") ||
-    text.includes("quantity")
+    text.includes("quantity") ||
+    text.includes("small qty") ||
+    text.includes("low qty")
   ) {
     return "Quantity Issue";
   }
 
+  // SIZE
   if (
     text.includes("size") ||
-    text.includes("dimension")
+    text.includes("dimension") ||
+    text.includes("dia") ||
+    text.includes("od") ||
+    text.includes("length")
   ) {
     return "Size Issue";
   }
 
+  // DELIVERY
   if (
     text.includes("delivery") ||
-    text.includes("late")
+    text.includes("late") ||
+    text.includes("urgent") ||
+    text.includes("timeline") ||
+    text.includes("delay")
   ) {
     return "Delivery Delay";
   }
 
+  // GRADE / MATERIAL
   if (
     text.includes("grade") ||
-    text.includes("material")
+    text.includes("material") ||
+    text.includes("steel") ||
+    text.includes("hardness") ||
+    text.includes("specification")
   ) {
     return "Grade Availability";
   }
 
-  return reason || "Unknown";
+  // PAYMENT
+  if (
+    text.includes("payment") ||
+    text.includes("credit") ||
+    text.includes("advance") ||
+    text.includes("terms")
+  ) {
+    return "Payment Terms";
+  }
+
+  // COMPETITOR
+  if (
+    text.includes("competitor") ||
+    text.includes("other supplier") ||
+    text.includes("existing vendor") ||
+    text.includes("local supplier")
+  ) {
+    return "Competitor Issue";
+  }
+
+  // CUSTOMER DROPPED
+  if (
+    text.includes("cancel") ||
+    text.includes("dropped") ||
+    text.includes("hold") ||
+    text.includes("closed")
+  ) {
+    return "Customer Dropped";
+  }
+
+  // fallback
+  return "Others";
 };
 
 const getDashboardSummary = async (query, user) => {
@@ -82,639 +135,360 @@ const getDashboardSummary = async (query, user) => {
     enquiryFilter.salesPersonId = user.id;
   }
 
-  /* ========================= */
-  /* TOTAL ORDERS */
-  /* ========================= */
+  const approvedSalesOrderFilter = {
+    ...salesOrderFilter,
+    approvalStatus: "approved",
+  };
 
-  const totalOrders = await SalesOrder.countDocuments(
-    salesOrderFilter
-  );
+  let pendingSalesOrderFilter = { ...salesOrderFilter };
 
-  /* ========================= */
-  /* TOTAL REVENUE */
-  /* ========================= */
+  if (user.role === "admin") {
+    pendingSalesOrderFilter.approvalStatus = "pending_admin_review";
+  } else if (user.role === "super_admin") {
+    pendingSalesOrderFilter.approvalStatus = "pending_manager_approval";
+  } else {
+    pendingSalesOrderFilter.approvalStatus = {
+      $in: ["pending_admin_review", "pending_manager_approval"],
+    };
+  }
+
+  const pendingOrders = await SalesOrder.countDocuments(pendingSalesOrderFilter);
+
+  const totalOrders = await SalesOrder.countDocuments(approvedSalesOrderFilter);
 
   const revenueData = await SalesOrder.aggregate([
-    {
-      $match: salesOrderFilter,
-    },
-
+    { $match: approvedSalesOrderFilter },
     {
       $group: {
         _id: null,
-
-        totalRevenue: {
-          $sum: "$valueInRupees",
-        },
+        totalRevenue: { $sum: "$orderValue" },
       },
     },
   ]);
 
-  const totalRevenue =
-    revenueData[0]?.totalRevenue || 0;
+  const totalRevenue = revenueData[0]?.totalRevenue || 0;
 
-  /* ========================= */
-  /* TOTAL ENQUIRIES */
-  /* ========================= */
+  const totalEnquiries = await Enquiry.countDocuments(enquiryFilter);
 
-  const totalEnquiries =
-    await Enquiry.countDocuments(
-      enquiryFilter
-    );
+  const feasibleEnquiries = await Enquiry.countDocuments({
+    ...enquiryFilter,
+    "feasibility.status": "feasible",
+  });
 
-  /* ========================= */
-  /* FEASIBLE */
-  /* ========================= */
+  const notFeasibleEnquiries = await Enquiry.countDocuments({
+    ...enquiryFilter,
+    "feasibility.status": "not_feasible",
+  });
 
-  const feasibleEnquiries =
-    await Enquiry.countDocuments({
-      ...enquiryFilter,
+  const wonEnquiries = await Enquiry.countDocuments({
+    ...enquiryFilter,
+    "closure.status": "won",
+  });
 
-      "feasibility.status":
-        "feasible",
-    });
-
-  /* ========================= */
-  /* NOT FEASIBLE */
-  /* ========================= */
-
-  const notFeasibleEnquiries =
-    await Enquiry.countDocuments({
-      ...enquiryFilter,
-
-      "feasibility.status":
-        "not_feasible",
-    });
-
-  /* ========================= */
-  /* WON */
-  /* ========================= */
-
-  const wonEnquiries =
-    await Enquiry.countDocuments({
-      ...enquiryFilter,
-
-      "closure.status": "won",
-    });
-
-  /* ========================= */
-  /* LOST */
-  /* ========================= */
-
-  const lostEnquiries =
-    await Enquiry.countDocuments({
-      ...enquiryFilter,
-
-      "closure.status": "lost",
-    });
-
-  /* ========================= */
-  /* DELAYED */
-  /* ========================= */
+  const lostEnquiries = await Enquiry.countDocuments({
+    ...enquiryFilter,
+    "closure.status": "lost",
+  });
 
   const today = new Date();
-
   today.setHours(0, 0, 0, 0);
 
-  const delayedEnquiries =
-    await Enquiry.countDocuments({
-      ...enquiryFilter,
-
-      "closure.status": {
-        $nin: ["won", "lost"],
+  const delayedEnquiries = await Enquiry.countDocuments({
+    ...enquiryFilter,
+    "closure.status": { $nin: ["won", "lost"] },
+    $or: [
+      {
+        "feasibility.planDate": { $lt: today },
+        "feasibility.completed": { $ne: true },
       },
-
-      $or: [
-        {
-          "feasibility.planDate": {
-            $lt: today,
-          },
-
-          "feasibility.completed": {
-            $ne: true,
-          },
-        },
-
-        {
-          "quotation.planDate": {
-            $lt: today,
-          },
-
-          "quotation.completed": {
-            $ne: true,
-          },
-        },
-
-        {
-          "closure.planDate": {
-            $lt: today,
-          },
-
-          "closure.completed": {
-            $ne: true,
-          },
-        },
-      ],
-    });
-
-  /* ========================= */
-  /* ACTIVE / ONGOING */
-  /* ========================= */
-
-  const activeEnquiries =
-    await Enquiry.countDocuments({
-      ...enquiryFilter,
-
-      "closure.status": {
-        $nin: ["won", "lost"],
+      {
+        "quotation.planDate": { $lt: today },
+        "quotation.completed": { $ne: true },
       },
+      {
+        "closure.planDate": { $lt: today },
+        "closure.completed": { $ne: true },
+      },
+    ],
+  });
 
-      $nor: [
-        {
-          $or: [
-            {
-              "feasibility.planDate":
-                {
-                  $lt: today,
-                },
+  const activeEnquiries = await Enquiry.countDocuments({
+    ...enquiryFilter,
+    "closure.status": { $nin: ["won", "lost"] },
+    $nor: [
+      {
+        $or: [
+          {
+            "feasibility.planDate": { $lt: today },
+            "feasibility.completed": { $ne: true },
+          },
+          {
+            "quotation.planDate": { $lt: today },
+            "quotation.completed": { $ne: true },
+          },
+          {
+            "closure.planDate": { $lt: today },
+            "closure.completed": { $ne: true },
+          },
+        ],
+      },
+    ],
+  });
 
-              "feasibility.completed":
-                {
-                  $ne: true,
-                },
-            },
+  const salesPersonRevenue = await SalesOrder.aggregate([
+    { $match: approvedSalesOrderFilter },
+    {
+      $group: {
+        _id: "$salesPersonId",
+        revenue: { $sum: "$orderValue" },
+        orders: { $sum: 1 },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "salesPerson",
+      },
+    },
+    { $unwind: "$salesPerson" },
+    {
+      $project: {
+        _id: 0,
+        salesPersonId: "$salesPerson._id",
+        name: "$salesPerson.name",
+        email: "$salesPerson.email",
+        revenue: 1,
+        orders: 1,
+      },
+    },
+    { $sort: { revenue: -1 } },
+  ]);
 
-            {
-              "quotation.planDate":
-                {
-                  $lt: today,
-                },
+  const salesPersonRevenueWithPercentage = salesPersonRevenue.map((person) => ({
+    ...person,
+    percentage:
+      totalRevenue > 0
+        ? Number(((person.revenue / totalRevenue) * 100).toFixed(2))
+        : 0,
+  }));
 
-              "quotation.completed":
-                {
-                  $ne: true,
-                },
-            },
-
-            {
-              "closure.planDate":
-                {
-                  $lt: today,
-                },
-
-              "closure.completed":
-                {
-                  $ne: true,
-                },
-            },
+  const gradeWiseQuantity = await SalesOrder.aggregate([
+    { $match: approvedSalesOrderFilter },
+    {
+      $project: {
+        orderValue: 1,
+        sizeGradeQuantityRate: 1,
+        extractedGrades: {
+          $regexFindAll: {
+            input: "$sizeGradeQuantityRate",
+            regex: /(?:grade|gr)\s*[:\-]?\s*([A-Za-z0-9.+\-\/]+)/gi,
+          },
+        },
+      },
+    },
+    { $unwind: { path: "$extractedGrades", preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        grade: {
+          $ifNull: [
+            { $arrayElemAt: ["$extractedGrades.captures", 0] },
+            "Not Specified",
           ],
         },
-      ],
-    });
-
-  /* ========================= */
-  /* SALES PERSON PERFORMANCE */
-  /* ========================= */
-
-  const salesPersonRevenue =
-    await SalesOrder.aggregate([
-      {
-        $match: salesOrderFilter,
+        orderValue: 1,
       },
-
-      {
-        $group: {
-          _id: "$salesPersonId",
-
-          revenue: {
-            $sum: "$valueInRupees",
-          },
-
-          orders: {
-            $sum: 1,
-          },
-        },
+    },
+    {
+      $group: {
+        _id: "$grade",
+        revenue: { $sum: "$orderValue" },
+        orders: { $sum: 1 },
       },
-
-      {
-        $lookup: {
-          from: "users",
-
-          localField: "_id",
-
-          foreignField: "_id",
-
-          as: "salesPerson",
-        },
+    },
+    {
+      $project: {
+        _id: 0,
+        grade: "$_id",
+        revenue: 1,
+        orders: 1,
       },
+    },
+    { $sort: { orders: -1, revenue: -1 } },
+    { $limit: 10 },
+  ]);
 
-      {
-        $unwind: "$salesPerson",
+  const delayedEmployeeData = await Enquiry.aggregate([
+    {
+      $match: {
+        ...enquiryFilter,
+        "closure.status": { $nin: ["won", "lost"] },
       },
-
-      {
-        $project: {
-          _id: 0,
-
-          salesPersonId:
-            "$salesPerson._id",
-
-          name:
-            "$salesPerson.name",
-
-          email:
-            "$salesPerson.email",
-
-          revenue: 1,
-
-          orders: 1,
-        },
+    },
+    {
+      $match: {
+        $or: [
+          { $expr: { $gt: ["$feasibility.actualDate", "$feasibility.planDate"] } },
+          { $expr: { $gt: ["$quotation.actualDate", "$quotation.planDate"] } },
+        ],
       },
-
-      {
-        $sort: {
-          revenue: -1,
-        },
+    },
+    {
+      $group: {
+        _id: "$salesPersonId",
+        delayedCount: { $sum: 1 },
       },
-    ]);
-
-  const salesPersonRevenueWithPercentage =
-    salesPersonRevenue.map(
-      (person) => ({
-        ...person,
-
-        percentage:
-          totalRevenue > 0
-            ? Number(
-                (
-                  (person.revenue /
-                    totalRevenue) *
-                  100
-                ).toFixed(2)
-              )
-            : 0,
-      })
-    );
-
-  /* ========================= */
-  /* TOP GRADES */
-  /* ========================= */
-
-  const gradeWiseQuantity =
-    await SalesOrder.aggregate([
-      {
-        $match: salesOrderFilter,
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "salesPerson",
       },
-
-      {
-        $group: {
-          _id: "$grade",
-
-          quantity: {
-            $sum: "$quantityInKg",
-          },
-
-          revenue: {
-            $sum: "$valueInRupees",
-          },
-
-          orders: {
-            $sum: 1,
-          },
-        },
+    },
+    { $unwind: "$salesPerson" },
+    {
+      $project: {
+        _id: 0,
+        name: "$salesPerson.name",
+        email: "$salesPerson.email",
+        delayedCount: 1,
       },
+    },
+    { $sort: { delayedCount: -1 } },
+    { $limit: 1 },
+  ]);
 
-      {
-        $project: {
-          _id: 0,
-
-          grade: "$_id",
-
-          quantity: 1,
-
-          revenue: 1,
-
-          orders: 1,
-        },
+  const lostEmployeeData = await Enquiry.aggregate([
+    {
+      $match: {
+        ...enquiryFilter,
+        "closure.status": "lost",
       },
-
-      {
-        $sort: {
-          quantity: -1,
-        },
+    },
+    {
+      $group: {
+        _id: "$salesPersonId",
+        lostCount: { $sum: 1 },
       },
-
-      {
-        $limit: 10,
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "salesPerson",
       },
-    ]);
-
-  /* ========================= */
-  /* TOP DELAYED EMPLOYEE */
-  /* ========================= */
-
-  const delayedEmployeeData =
-    await Enquiry.aggregate([
-      {
-        $match: {
-          ...enquiryFilter,
-
-          "closure.status": {
-            $nin: ["won", "lost"],
-          },
-        },
+    },
+    { $unwind: "$salesPerson" },
+    {
+      $project: {
+        _id: 0,
+        name: "$salesPerson.name",
+        email: "$salesPerson.email",
+        lostCount: 1,
       },
+    },
+    { $sort: { lostCount: -1 } },
+    { $limit: 1 },
+  ]);
 
-      {
-        $match: {
-          $or: [
-            {
-              $expr: {
-                $gt: [
-                  "$feasibility.actualDate",
-                  "$feasibility.planDate",
-                ],
-              },
-            },
-
-            {
-              $expr: {
-                $gt: [
-                  "$quotation.actualDate",
-                  "$quotation.planDate",
-                ],
-              },
-            },
-          ],
-        },
+  const wonEmployeeData = await Enquiry.aggregate([
+    {
+      $match: {
+        ...enquiryFilter,
+        "closure.status": "won",
       },
-
-      {
-        $group: {
-          _id: "$salesPersonId",
-
-          delayedCount: {
-            $sum: 1,
-          },
-        },
+    },
+    {
+      $group: {
+        _id: "$salesPersonId",
+        wonCount: { $sum: 1 },
       },
-
-      {
-        $lookup: {
-          from: "users",
-
-          localField: "_id",
-
-          foreignField: "_id",
-
-          as: "salesPerson",
-        },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "salesPerson",
       },
-
-      {
-        $unwind: "$salesPerson",
+    },
+    { $unwind: "$salesPerson" },
+    {
+      $project: {
+        _id: 0,
+        name: "$salesPerson.name",
+        email: "$salesPerson.email",
+        wonCount: 1,
       },
+    },
+    { $sort: { wonCount: -1 } },
+    { $limit: 1 },
+  ]);
 
-      {
-        $project: {
-          _id: 0,
-
-          name:
-            "$salesPerson.name",
-
-          email:
-            "$salesPerson.email",
-
-          delayedCount: 1,
-        },
+  const lostReasonData = await Enquiry.aggregate([
+    {
+      $match: {
+        ...enquiryFilter,
+        "closure.status": "lost",
       },
-
-      {
-        $sort: {
-          delayedCount: -1,
-        },
-      },
-
-      {
-        $limit: 1,
-      },
-    ]);
-
-  /* ========================= */
-  /* TOP LOST EMPLOYEE */
-  /* ========================= */
-
-  const lostEmployeeData =
-    await Enquiry.aggregate([
-      {
-        $match: {
-          ...enquiryFilter,
-
-          "closure.status":
-            "lost",
-        },
-      },
-
-      {
-        $group: {
-          _id: "$salesPersonId",
-
-          lostCount: {
-            $sum: 1,
-          },
-        },
-      },
-
-      {
-        $lookup: {
-          from: "users",
-
-          localField: "_id",
-
-          foreignField: "_id",
-
-          as: "salesPerson",
-        },
-      },
-
-      {
-        $unwind: "$salesPerson",
-      },
-
-      {
-        $project: {
-          _id: 0,
-
-          name:
-            "$salesPerson.name",
-
-          email:
-            "$salesPerson.email",
-
-          lostCount: 1,
-        },
-      },
-
-      {
-        $sort: {
-          lostCount: -1,
-        },
-      },
-
-      {
-        $limit: 1,
-      },
-    ]);
-
-  /* ========================= */
-  /* TOP WON EMPLOYEE */
-  /* ========================= */
-
-  const wonEmployeeData =
-    await Enquiry.aggregate([
-      {
-        $match: {
-          ...enquiryFilter,
-
-          "closure.status":
-            "won",
-        },
-      },
-
-      {
-        $group: {
-          _id: "$salesPersonId",
-
-          wonCount: {
-            $sum: 1,
-          },
-        },
-      },
-
-      {
-        $lookup: {
-          from: "users",
-
-          localField: "_id",
-
-          foreignField: "_id",
-
-          as: "salesPerson",
-        },
-      },
-
-      {
-        $unwind: "$salesPerson",
-      },
-
-      {
-        $project: {
-          _id: 0,
-
-          name:
-            "$salesPerson.name",
-
-          email:
-            "$salesPerson.email",
-
-          wonCount: 1,
-        },
-      },
-
-      {
-        $sort: {
-          wonCount: -1,
-        },
-      },
-
-      {
-        $limit: 1,
-      },
-    ]);
-
-  /* ========================= */
-  /* COMMON LOST REASON */
-  /* ========================= */
-
-  const lostReasonData =
-    await Enquiry.aggregate([
-      {
-        $match: {
-          ...enquiryFilter,
-
-          "closure.status":
-            "lost",
-
-          "closure.lostRemark": {
-            $exists: true,
-
-            $ne: "",
-          },
-        },
-      },
-
-      {
-        $group: {
-          _id:
+    },
+    {
+      $project: {
+        reason: {
+          $cond: [
+            { $eq: ["$closure.lostRemark", "others"] },
+            "$closure.lostRemarkOtherText",
             "$closure.lostRemark",
-
-          count: {
-            $sum: 1,
-          },
+          ],
         },
       },
-
-      {
-        $sort: {
-          count: -1,
-        },
+    },
+    {
+      $match: {
+        reason: { $exists: true, $nin: ["", null] },
       },
-
-      {
-        $limit: 1,
+    },
+    {
+      $group: {
+        _id: "$reason",
+        count: { $sum: 1 },
       },
-    ]);
+    },
+    { $sort: { count: -1 } },
+    { $limit: 1 },
+  ]);
 
-  const topLostReason =
-    lostReasonData[0] || null;
-
-  /* ========================= */
-  /* RETURN */
-  /* ========================= */
+  const topLostReason = lostReasonData[0]
+    ? {
+        reason: formatLostReason(lostReasonData[0]._id),
+        rawReason: lostReasonData[0]._id,
+        count: lostReasonData[0].count,
+      }
+    : null;
 
   return {
     totalRevenue,
-
     totalOrders,
+    pendingOrders,
 
     totalEnquiries,
-
     feasibleEnquiries,
-
     notFeasibleEnquiries,
-
     wonEnquiries,
-
     lostEnquiries,
-
     delayedEnquiries,
-
     activeEnquiries,
 
-    salesPersonRevenue:
-      salesPersonRevenueWithPercentage,
-
+    salesPersonRevenue: salesPersonRevenueWithPercentage,
     gradeWiseQuantity,
 
-    topDelayedEmployee:
-      delayedEmployeeData[0] || null,
-
-    topLostEmployee:
-      lostEmployeeData[0] || null,
-
-    topWonEmployee:
-      wonEmployeeData[0] || null,
-
+    topDelayedEmployee: delayedEmployeeData[0] || null,
+    topLostEmployee: lostEmployeeData[0] || null,
+    topWonEmployee: wonEmployeeData[0] || null,
     topLostReason,
   };
 };

@@ -14,6 +14,7 @@ const createEnquiry = async (body, user, file) => {
     size,
     quantityInKg,
     supplyCondition,
+    otherSupplyConditions,
     modeOfEnquiry,
   } = body;
 
@@ -39,14 +40,35 @@ const createEnquiry = async (body, user, file) => {
 
   const allowedSupplyConditions = [
     "as_per_standard",
-    "as_rolled_annealed",
-    "as_forged_annealed",
+
     "as_rolled",
     "as_forged",
+
+    "as_rolled_or_as_forged",
+
+    "as_rolled_annealed",
+    "as_forged_annealed",
+    "as_rolled_or_forged_annealed",
+
+    "as_rolled_normalised",
+    "as_rolled_or_as_forged_normalised",
+
+    "as_rolled_qt",
+    "as_forged_qt",
+    "as_rolled_or_as_forged_qt",
+
+    "other",
   ];
 
   if (!allowedSupplyConditions.includes(supplyCondition)) {
     throw new Error("Invalid supply condition selected");
+  }
+
+  if (
+    supplyCondition === "other" &&
+    !String(otherSupplyConditions || "").trim()
+  ) {
+    throw new Error("Other supply condition is required");
   }
 
   const allowedModes = [
@@ -92,8 +114,23 @@ const createEnquiry = async (body, user, file) => {
     };
   }
 
+  const firstNameRaw = String(user.name || "User")
+    .trim()
+    .split(" ")[0];
+
+  const firstName =
+    firstNameRaw.charAt(0).toUpperCase() +
+    firstNameRaw.slice(1).toLowerCase();
+
+  const enquiryCount = await Enquiry.countDocuments({
+    salesPersonId: user.id,
+  });
+
+  const enquiryNumber = `${firstName}-${enquiryCount + 1}`;
+
   const enquiry = await Enquiry.create({
     salesPersonId: user.id,
+    enquiryNumber,
 
     enquiryDate,
     companyName,
@@ -108,6 +145,8 @@ const createEnquiry = async (body, user, file) => {
     size,
     quantityInKg: Number(quantityInKg),
     supplyCondition,
+    otherSupplyConditions:
+      supplyCondition === "other" ? String(otherSupplyConditions || "").trim() : "",
     modeOfEnquiry,
 
     sizePdf,
@@ -133,7 +172,6 @@ const createEnquiry = async (body, user, file) => {
 
   return enquiry;
 };
-
 const updateWorkflow = async (id, body) => {
   const enquiry = await Enquiry.findById(id);
 

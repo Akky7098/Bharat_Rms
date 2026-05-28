@@ -63,8 +63,9 @@ function Dashboard() {
 
   const menuItems = [
     { key: "dashboard", label: "Dashboard", icon: "📊" },
-
-    { key: "documents", label: "Document Center", icon: "📁" },
+    
+    { key: "timesheet", label: "Timesheet/Attendance", icon: "⏱️" },
+    
 
     { key: "sheet", label: "Enquiry Sheet", icon: "📝" },
 
@@ -75,8 +76,9 @@ function Dashboard() {
     { key: "receivables", label: "Receivables", icon: "💰" },
 
     { key: "coldCall", label: "Cold Call / Visit", icon: "📞" },
-
-    { key: "timesheet", label: "Timesheet/Attendance", icon: "⏱️" },
+  
+    { key: "documents", label: "Document Center", icon: "📁" },
+  
   ];
 
   const activeItem = menuItems.find((item) => item.key === active);
@@ -232,7 +234,8 @@ function Dashboard() {
         <main className="main">
           {active === "dashboard" && <DashboardHome user={user} />}
 
-          {active === "documents" && <DocumentPage />}
+          {active === "timesheet" && <TimesheetPage />}
+
 
           {active === "sheet" && <EnquiryList />}
 
@@ -244,7 +247,8 @@ function Dashboard() {
 
           {active === "coldCall" && <ColdCallList />}
 
-          {active === "timesheet" && <TimesheetPage />}
+           {active === "documents" && <DocumentPage />}
+
         </main>
       </div>
     </div>
