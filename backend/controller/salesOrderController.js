@@ -162,9 +162,7 @@ const getSalesOrderById = async (req, res) => {
 // ===============================
 const updateSalesOrder = async (req, res) => {
   try {
-    const payload = {
-      ...req.body,
-    };
+    const payload = req.body.data ? JSON.parse(req.body.data) : { ...req.body };
 
     if (req.file) {
       payload.customerPOFile = {

@@ -375,7 +375,8 @@ const getSalesOrderById = async (salesOrderId) => {
 const updateSalesOrder = async (
   salesOrderId,
   payload,
-  loggedInUser
+  loggedInUser,
+  uploadedPOFile
 ) => {
   try {
     const salesOrder = await SalesOrder.findById(salesOrderId);
@@ -395,14 +396,23 @@ const updateSalesOrder = async (
       if (key === "finalSalesOrderPackage") return;
       if (key === "preShipmentInspectionPdf") return;
       if (key === "customerPOFile") return;
+      if (key === "approvalHistory") return;
+      if (key === "approvalStatus") return;
+      if (key === "isEditableBySalesPerson") return;
 
       if (payload[key] !== undefined && payload[key] !== null) {
         salesOrder[key] = payload[key];
       }
     });
 
-    if (payload.customerPOFile && payload.customerPOFile.filePath) {
-      salesOrder.customerPOFile = payload.customerPOFile;
+    if (uploadedPOFile) {
+      salesOrder.customerPOFile = {
+        originalName: uploadedPOFile.originalname,
+        fileName: uploadedPOFile.filename,
+        filePath: uploadedPOFile.path,
+        fileUrl: `/uploads/customer-po/${uploadedPOFile.filename}`,
+        uploadedAt: new Date(),
+      };
     } else {
       salesOrder.customerPOFile = preservedCustomerPOFile;
     }
@@ -424,7 +434,9 @@ const updateSalesOrder = async (
       actionBy: loggedInUser._id,
       role: "salesperson",
       action: "resubmitted",
-      comment: "Sales order updated and resubmitted after hold",
+      comment: uploadedPOFile
+        ? "Sales order updated with new customer PO file and resubmitted after hold"
+        : "Sales order updated and resubmitted after hold",
       actionAt: new Date(),
     });
 
@@ -461,6 +473,7 @@ const updateSalesOrder = async (
       role: "system",
       action: "pdf_generated",
       comment: "Fresh PDF generated after sales order resubmission",
+      actionAt: new Date(),
     });
 
     await updatedOrder.save();
