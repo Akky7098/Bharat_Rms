@@ -70,7 +70,7 @@ const enquirySchema = new mongoose.Schema(
 
     shape: {
       type: String,
-      enum: ["round", "flat", "square"],
+      enum: ["round", "flat", "square","rcs"],
       required: true,
     },
 

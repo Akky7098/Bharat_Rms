@@ -33,7 +33,7 @@ const createEnquiry = async (body, user, file) => {
     throw new Error("Invalid grade selected for this product category");
   }
 
-  const allowedShapes = ["round", "flat", "square"];
+  const allowedShapes = ["round", "flat", "square","rcs"];
   if (!allowedShapes.includes(shape)) {
     throw new Error("Invalid shape selected");
   }

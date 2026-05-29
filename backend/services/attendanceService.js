@@ -216,55 +216,31 @@ const getTodayAttendance = async (user) => {
   }).lean();
 };
 
-const getAttendanceList = async (query, user) => {
-  const {
-    page = 1,
-    limit = 20,
-    employeeId,
-    fromDate,
-    toDate,
-    attendanceStatus,
-    workMode,
-  } = query;
+  const getAttendanceList = async (params = {}) => {
+  let page = 1;
+  let allData = [];
+  let totalPages = 1;
 
-  const safePage = Math.max(Number(page) || 1, 1);
-  const safeLimit = Math.min(Number(limit) || 20, 100);
+  do {
+    const response = await axios.get(ATTENDANCE_API_URL, {
+      headers: authHeaders(),
+      params: {
+        ...params,
+        page,
+        limit: 100,
+      },
+    });
 
-  const filter = {};
+    const result = response.data;
 
-  if (!isAdmin(user) && !isSuperAdmin(user)) {
-    filter.employeeId = new mongoose.Types.ObjectId(getUserId(user));
-  } else if (employeeId) {
-    filter.employeeId = new mongoose.Types.ObjectId(employeeId);
-  }
-
-  if (attendanceStatus) filter.attendanceStatus = attendanceStatus;
-  if (workMode) filter.workMode = workMode;
-
-  if (fromDate || toDate) {
-    filter.attendanceDate = {};
-
-    if (fromDate) filter.attendanceDate.$gte = getStartOfDay(fromDate);
-    if (toDate) filter.attendanceDate.$lte = getEndOfDay(toDate);
-  }
-
-  const [totalRecords, data] = await Promise.all([
-    Attendance.countDocuments(filter),
-    Attendance.find(filter)
-      .sort({ attendanceDate: -1, createdAt: -1 })
-      .skip((safePage - 1) * safeLimit)
-      .limit(safeLimit)
-      .lean(),
-  ]);
+    allData = [...allData, ...(result.data || [])];
+    totalPages = result.pagination?.totalPages || 1;
+    page += 1;
+  } while (page <= totalPages);
 
   return {
-    data,
-    pagination: {
-      totalRecords,
-      currentPage: safePage,
-      totalPages: Math.ceil(totalRecords / safeLimit),
-      limit: safeLimit,
-    },
+    success: true,
+    data: allData,
   };
 };
 
