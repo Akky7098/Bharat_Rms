@@ -25,6 +25,7 @@ router.post(
   dispatchUpload.fields([
     { name: "billPdf", maxCount: 1 },
     { name: "lrCopyPdf", maxCount: 1 },
+    { name: "tcCertificatePdf", maxCount: 1 },
   ]),
   dispatchController.createDispatch
 );

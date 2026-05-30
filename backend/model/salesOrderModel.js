@@ -114,7 +114,18 @@ const salesOrderSchema = new mongoose.Schema(
       sparse: true,
       index: true,
     },
+   poDate: {
+  type: Date,
+  required: true,
+  default: Date.now,
+},
 
+supplyFinish: {
+  type: String,
+  enum: ["supply_size", "finish_size"],
+  required: true,
+  default: "supply_size",
+},
     companyName: {
       type: String,
       required: true,

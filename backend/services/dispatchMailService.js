@@ -71,6 +71,17 @@ const getDispatchAttachments = (dispatch) => {
       path: dispatch.lrCopyPdf.filePath,
     });
   }
+  if (
+  dispatch.tcCertificatePdf?.filePath &&
+  fs.existsSync(dispatch.tcCertificatePdf.filePath)
+) {
+  attachments.push({
+    filename:
+      dispatch.tcCertificatePdf.originalName ||
+      dispatch.tcCertificatePdf.fileName,
+    path: dispatch.tcCertificatePdf.filePath,
+  });
+}
 
   return attachments;
 };

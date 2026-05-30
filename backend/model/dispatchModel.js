@@ -218,7 +218,10 @@ const dispatchSchema = new mongoose.Schema(
     lrCopyPdf: {
       type: fileSchema,    
     },
-
+    
+     tcCertificatePdf: {
+     type: fileSchema,
+     },
     /* =========================
        PAYMENT TRACKING
     ========================= */

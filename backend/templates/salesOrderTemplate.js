@@ -22,6 +22,19 @@ const formatText = (value) => {
     )
     .join(" ");
 };
+
+const formatSupplyFinish = (value) => {
+  if (!value) return "Supply Size";
+
+  const clean = String(value).toLowerCase().trim();
+
+  if (clean === "finish size" || clean === "finish_size") {
+    return "Finish Size";
+  }
+
+  return "Supply Size";
+};
+
 const formatPaymentTerms = (salesOrder) => {
   if (salesOrder.paymentTerms === "other") {
     return salesOrder.otherPaymentTerms || "Other";
@@ -29,6 +42,7 @@ const formatPaymentTerms = (salesOrder) => {
 
   return formatText(salesOrder.paymentTerms);
 };
+
 const formatCuttingCost = (salesOrder) => {
   if (salesOrder.cuttingCost === "extra") {
     return salesOrder.cuttingExtraCharges
@@ -48,6 +62,7 @@ const formatFreight = (salesOrder) => {
 
   return formatText(salesOrder.freight);
 };
+
 const highlightRs = (value) => {
   if (!value) return "";
 
@@ -70,14 +85,13 @@ const highlightRs = (value) => {
 
   return text;
 };
+
 const formatIndianCurrency = (value) => {
   if (value === null || value === undefined || value === "") {
     return "0";
   }
 
-  const numericValue = Number(
-    String(value).replace(/,/g, "").trim()
-  );
+  const numericValue = Number(String(value).replace(/,/g, "").trim());
 
   if (isNaN(numericValue)) {
     return "0";
@@ -85,6 +99,7 @@ const formatIndianCurrency = (value) => {
 
   return numericValue.toLocaleString("en-IN");
 };
+
 const formatSizeGradeText = (value) => {
   if (!value) return "";
 
@@ -106,6 +121,7 @@ const formatPreviousPayment = (value) => {
       .join("<br/>")
   );
 };
+
 const formatPreviousPaymentForPdf = (salesOrder) => {
   if (salesOrder.previousPaymentStatus !== "yes") {
     return "NO";
@@ -117,14 +133,11 @@ const formatPreviousPaymentForPdf = (salesOrder) => {
 
   return formatPreviousPayment(salesOrder.previousPaymentRemark);
 };
+
 const formatAddressWithGstin = (address, gstin) => {
   return `
     ${address || ""}
-    ${
-      gstin
-        ? `<br/><span class="red">GSTIN: ${gstin}</span>`
-        : ""
-    }
+    ${gstin ? `<br/><span class="red">GSTIN: ${gstin}</span>` : ""}
   `;
 };
 
@@ -323,6 +336,7 @@ td {
 .footer-signature {
   height: 42px;
 }
+
 .special-note {
   margin-top: 8px;
   padding-top: 5px;
@@ -374,14 +388,16 @@ td {
   <td class="small-text bold">
     <table style="width:100%; border-collapse:collapse;">
       <tr>
-        <td style="border:none; width:60%;">
+        <td style="border:none; width:58%;">
           PO No - ${salesOrder.poNumber || ""}
           <br/>
           PO Checklist Number - ${salesOrder.checklistNumber || ""}
         </td>
 
-        <td style="border:none; width:40%; text-align:center;">
-          Dated - ${formatDate(salesOrder.orderDate)}
+        <td style="border:none; width:42%; text-align:center;">
+          Sales Order Date - ${formatDate(salesOrder.createdAt || salesOrder.orderDate)}
+          <br/>
+          PO Date - ${formatDate(salesOrder.poDate)}
         </td>
       </tr>
     </table>
@@ -488,21 +504,21 @@ td {
 
   <td class="supply-size-box">
     <div class="supply-title">
-      Supply Size
+      ${formatSupplyFinish(salesOrder.supplyFinish)}
     </div>
 
     <div class="size-rate-text">
-  ${formatSizeGradeText(salesOrder.sizeGradeQuantityRate)}
-</div>
+      ${formatSizeGradeText(salesOrder.sizeGradeQuantityRate)}
+    </div>
 
-${
-  salesOrder.specialNote
-    ? `<div class="special-note">
-        <b>Special Note:</b><br/>
-        ${String(salesOrder.specialNote).replace(/\n/g, "<br/>")}
-      </div>`
-    : ""
-}
+    ${
+      salesOrder.specialNote
+        ? `<div class="special-note">
+            <b>Special Note:</b><br/>
+            ${String(salesOrder.specialNote).replace(/\n/g, "<br/>")}
+          </div>`
+        : ""
+    }
   </td>
 </tr>
 

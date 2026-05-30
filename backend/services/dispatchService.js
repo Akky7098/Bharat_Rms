@@ -225,6 +225,7 @@ const createDispatch = async (body, files, user) => {
   const uploadedFiles = [
     ...(files?.billPdf || []),
     ...(files?.lrCopyPdf || []),
+    ...(files?.tcCertificatePdf || []),
   ];
 
   try {
@@ -261,8 +262,6 @@ const createDispatch = async (body, files, user) => {
       throw new Error("Bill PDF is required.");
     }
 
-    
-
     const salesOrder = await SalesOrder.findById(salesOrderId).session(session);
 
     if (!salesOrder) {
@@ -273,12 +272,13 @@ const createDispatch = async (body, files, user) => {
       throw new Error("Dispatch can be created only for approved sales orders.");
     }
 
-    // admin/super_admin can create any dispatch, user only own
     if (
       !isAdminOrSuperAdmin(user) &&
       String(salesOrder.salesPersonId) !== String(getUserId(user))
     ) {
-      throw new Error("You are not allowed to create dispatch for this sales order.");
+      throw new Error(
+        "You are not allowed to create dispatch for this sales order."
+      );
     }
 
     const existingInvoice = await Dispatch.findOne({
@@ -330,12 +330,19 @@ const createDispatch = async (body, files, user) => {
       `bill-${invoiceNumber}-${salesOrder.companyName}`
     );
 
-   const renamedLrFile = files?.lrCopyPdf?.[0]
-  ? renameUploadedFile(
-      files.lrCopyPdf[0],
-      `lr-${invoiceNumber}-${salesOrder.companyName}`
-    )
-  : null;
+    const renamedLrFile = files?.lrCopyPdf?.[0]
+      ? renameUploadedFile(
+          files.lrCopyPdf[0],
+          `lr-${invoiceNumber}-${salesOrder.companyName}`
+        )
+      : null;
+
+    const renamedTcCertificateFile = files?.tcCertificatePdf?.[0]
+      ? renameUploadedFile(
+          files.tcCertificatePdf[0],
+          `tc-certificate-${invoiceNumber}-${salesOrder.companyName}`
+        )
+      : null;
 
     const ccEmails = buildDispatchCcEmails(
       salesOrder,
@@ -378,7 +385,14 @@ const createDispatch = async (body, files, user) => {
             salesOrder.sizeGradeQuantityRate || "As per sales order",
 
           billPdf: buildFileObject(renamedBillFile),
-          lrCopyPdf: renamedLrFile ? buildFileObject(renamedLrFile) : undefined,
+
+          lrCopyPdf: renamedLrFile
+            ? buildFileObject(renamedLrFile)
+            : undefined,
+
+          tcCertificatePdf: renamedTcCertificateFile
+            ? buildFileObject(renamedTcCertificateFile)
+            : undefined,
 
           paymentTerms: salesOrder.paymentTerms || "",
           paymentDueDays: days,
