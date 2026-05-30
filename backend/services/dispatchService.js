@@ -261,9 +261,7 @@ const createDispatch = async (body, files, user) => {
       throw new Error("Bill PDF is required.");
     }
 
-    if (!files?.lrCopyPdf?.[0]) {
-      throw new Error("LR copy PDF is required.");
-    }
+    
 
     const salesOrder = await SalesOrder.findById(salesOrderId).session(session);
 
@@ -332,10 +330,12 @@ const createDispatch = async (body, files, user) => {
       `bill-${invoiceNumber}-${salesOrder.companyName}`
     );
 
-    const renamedLrFile = renameUploadedFile(
+   const renamedLrFile = files?.lrCopyPdf?.[0]
+  ? renameUploadedFile(
       files.lrCopyPdf[0],
       `lr-${invoiceNumber}-${salesOrder.companyName}`
-    );
+    )
+  : null;
 
     const ccEmails = buildDispatchCcEmails(
       salesOrder,
@@ -378,7 +378,7 @@ const createDispatch = async (body, files, user) => {
             salesOrder.sizeGradeQuantityRate || "As per sales order",
 
           billPdf: buildFileObject(renamedBillFile),
-          lrCopyPdf: buildFileObject(renamedLrFile),
+          lrCopyPdf: renamedLrFile ? buildFileObject(renamedLrFile) : undefined,
 
           paymentTerms: salesOrder.paymentTerms || "",
           paymentDueDays: days,

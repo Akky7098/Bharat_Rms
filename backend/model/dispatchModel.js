@@ -216,8 +216,7 @@ const dispatchSchema = new mongoose.Schema(
     },
 
     lrCopyPdf: {
-      type: fileSchema,
-      required: true,
+      type: fileSchema,    
     },
 
     /* =========================
