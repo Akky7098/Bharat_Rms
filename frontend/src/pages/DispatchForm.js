@@ -38,6 +38,7 @@ const DispatchForm = ({ onClose, refresh }) => {
     paymentRemark: "",
     billPdf: null,
     lrCopyPdf: null,
+    tcCertificatePdf: null,
   });
 
   const formatDate = (date) => {
@@ -225,31 +226,38 @@ const DispatchForm = ({ onClose, refresh }) => {
       return false;
     }
 
-    if (!form.lrCopyPdf) {
-      alert("LR copy PDF is required");
-      return false;
-    }
+    
 
     if (form.billPdf.type !== "application/pdf") {
       alert("Bill file must be PDF");
       return false;
     }
-
-    if (form.lrCopyPdf.type !== "application/pdf") {
-      alert("LR copy file must be PDF");
-      return false;
-    }
-
-    if (form.billPdf.size > 30 * 1024 * 1024) {
+     if (form.billPdf.size > 30 * 1024 * 1024) {
       alert("Bill PDF must be under 30MB");
       return false;
     }
+    if (form.lrCopyPdf) {
+  if (form.lrCopyPdf.type !== "application/pdf") {
+    alert("LR copy file must be PDF");
+    return false;
+  }
 
-    if (form.lrCopyPdf.size > 30 * 1024 * 1024) {
-      alert("LR copy PDF must be under 30MB");
-      return false;
-    }
+  if (form.lrCopyPdf.size > 30 * 1024 * 1024) {
+    alert("LR copy PDF must be under 30MB");
+    return false;
+  }
+}
+if (form.tcCertificatePdf) {
+  if (form.tcCertificatePdf.type !== "application/pdf") {
+    alert("TC Certificate file must be PDF");
+    return false;
+  }
 
+  if (form.tcCertificatePdf.size > 30 * 1024 * 1024) {
+    alert("TC Certificate PDF must be under 30MB");
+    return false;
+  }
+}
     return true;
   };
 
@@ -288,7 +296,9 @@ const DispatchForm = ({ onClose, refresh }) => {
       setSubmitting(true);
 
       const totalSize =
-        Number(form.billPdf.size || 0) + Number(form.lrCopyPdf.size || 0);
+  Number(form.billPdf?.size || 0) +
+  Number(form.lrCopyPdf?.size || 0) +
+  Number(form.tcCertificatePdf?.size || 0);
 
       setUploadProgress({
         show: true,
@@ -302,6 +312,7 @@ const DispatchForm = ({ onClose, refresh }) => {
         buildPayload(),
         form.billPdf,
         form.lrCopyPdf,
+        form.tcCertificatePdf,
         (progressEvent) => {
           const loaded = progressEvent.loaded || 0;
           const total = progressEvent.total || totalSize;
@@ -675,7 +686,10 @@ const DispatchForm = ({ onClose, refresh }) => {
 
           <div className="dispatch-section-title">
             <h3>PDF Documents</h3>
-            <p>Bill PDF and LR copy will be attached in customer email.</p>
+            <p>
+  Bill PDF is mandatory. LR Copy and TC Certificate are optional and
+  will be attached in customer email if uploaded.
+</p>
           </div>
 
           <div className="dispatch-grid">
@@ -699,8 +713,8 @@ const DispatchForm = ({ onClose, refresh }) => {
 
             <div className="dispatch-field dispatch-file-field">
               <label>
-                LR Copy PDF <span className="dispatch-required">*</span>
-              </label>
+  LR Copy PDF
+</label>
               <input
                 type="file"
                 name="lrCopyPdf"
@@ -714,7 +728,24 @@ const DispatchForm = ({ onClose, refresh }) => {
                 </small>
               )}
             </div>
+             <div className="dispatch-field dispatch-file-field">
+  <label>TC Certificate PDF</label>
 
+  <input
+    type="file"
+    name="tcCertificatePdf"
+    accept="application/pdf"
+    onChange={handleChange}
+    disabled={submitting}
+  />
+
+  {form.tcCertificatePdf && (
+    <small>
+      {form.tcCertificatePdf.name} ·{" "}
+      {formatFileSize(form.tcCertificatePdf.size)}
+    </small>
+  )}
+</div>
             <div className="dispatch-field dispatch-full">
               <label>Additional CC Emails</label>
               <input

@@ -29,7 +29,13 @@ export const searchDispatchSalesOrders = async (params = {}) => {
   return response.data;
 };
 
-export const createDispatch = async (data, billPdf, lrCopyPdf, onUploadProgress) => {
+export const createDispatch = async (
+  data,
+  billPdf,
+  lrCopyPdf,
+  tcCertificatePdf,
+  onUploadProgress
+) => {
   const formData = new FormData();
 
   formData.append("data", JSON.stringify(data));
@@ -42,6 +48,10 @@ export const createDispatch = async (data, billPdf, lrCopyPdf, onUploadProgress)
     formData.append("lrCopyPdf", lrCopyPdf);
   }
 
+  if (tcCertificatePdf) {
+    formData.append("tcCertificatePdf", tcCertificatePdf);
+  }
+
   const response = await axios.post(`${API_URL}/create`, formData, {
     headers: {
       ...authHeaders(),
@@ -52,7 +62,6 @@ export const createDispatch = async (data, billPdf, lrCopyPdf, onUploadProgress)
 
   return response.data;
 };
-
 export const getDispatches = async (params = {}) => {
   const response = await axios.get(API_URL, {
     headers: authHeaders(),

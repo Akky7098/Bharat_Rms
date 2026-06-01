@@ -256,8 +256,9 @@ const initialForm = {
   gstinNumber: "",
 
   poNumber: "",
+  poDate: getToday(),
   checklistNumber: "",
-
+  supplyFinish: "supply_size",
   customerType: "existing",
   customerPOFile: null,
 
@@ -446,8 +447,19 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       companyAddress: getFirstFromOrder(editOrder, ["companyAddress"]),
       gstinNumber: getFirstFromOrder(editOrder, ["gstinNumber", "gstNumber"]),
 
-      poNumber: getFirstFromOrder(editOrder, ["poNumber", "purchaseOrderNo"]),
-      checklistNumber: getFirstFromOrder(editOrder, ["checklistNumber"]),
+     poNumber: getFirstFromOrder(editOrder, ["poNumber", "purchaseOrderNo"]),
+
+poDate: editOrder?.poDate
+  ? new Date(editOrder.poDate).toISOString().split("T")[0]
+  : getToday(),
+
+checklistNumber: getFirstFromOrder(editOrder, ["checklistNumber"]),
+
+supplyFinish: getFirstFromOrder(
+  editOrder,
+  ["supplyFinish"],
+  "supply_size"
+),
 
       customerType: resolveOptionValue(
         getFirstFromOrder(editOrder, ["customerType"]),
@@ -660,6 +672,8 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       ["companyAddress", "Company address is required"],
       ["gstinNumber", "GSTIN is required"],
       ["poNumber", "PO number is required"],
+      ["poDate", "PO Date is required"],
+      ["supplyFinish", "Supply Finish is required"],
       ["customerType", "Customer type is required"],
       ["paymentTerms", "Payment terms are required"],
       ["orderValue", "Order value is required"],
@@ -850,8 +864,11 @@ if (
       companyAddress: form.companyAddress.trim(),
       gstinNumber: form.gstinNumber.trim(),
 
-      poNumber: form.poNumber.trim(),
-      checklistNumber: form.checklistNumber.trim(),
+     poNumber: form.poNumber.trim(),
+poDate: form.poDate,
+checklistNumber: form.checklistNumber.trim(),
+
+supplyFinish: form.supplyFinish,
 
       customerType: form.customerType,
 
@@ -1142,6 +1159,19 @@ if (isEditMode) {
 
           <div className={fieldClass("poNumber")} {...refProp("poNumber")}>
             <label>{mandatoryLabel("PO Number")}</label>
+            <div
+  className={fieldClass("poDate")}
+  {...refProp("poDate")}
+>
+  <label>{mandatoryLabel("PO Date")}</label>
+  <input
+    type="date"
+    name="poDate"
+    value={form.poDate}
+    onChange={handleChange}
+  />
+  {errorText("poDate")}
+</div>
             <input
               name="poNumber"
               value={form.poNumber}
@@ -1515,7 +1545,25 @@ if (isEditMode) {
             className={fieldClass("supplyCondition")}
             {...refProp("supplyCondition")}
           >
+           <div
+  className={fieldClass("supplyFinish")}
+  {...refProp("supplyFinish")}
+>
+  <label>{mandatoryLabel("Supply Finish")}</label>
+
+  <select
+    name="supplyFinish"
+    value={form.supplyFinish}
+    onChange={handleChange}
+  >
+    <option value="supply_size">Supply Size</option>
+    <option value="finish_size">Finish Size</option>
+  </select>
+
+  {errorText("supplyFinish")}
+</div>
             <label>{mandatoryLabel("Supply Condition")}</label>
+
             <select
               name="supplyCondition"
               value={form.supplyCondition}

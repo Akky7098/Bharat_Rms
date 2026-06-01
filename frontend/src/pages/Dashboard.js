@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import "./Dashboard.css";
 import { LogOut, Menu, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+
+import DashboardHome from "./DashboardHome";
+import AttendancePage from "./AttendancePage";
 import EnquiryList from "./EnquiryList";
 import SalesOrderList from "./SalesOrderList";
-import DashboardHome from "./DashboardHome";
-import ColdCallList from "./ColdCallList";
-import TimesheetPage from "./TimesheetPage";
 import DispatchPage from "./DispatchPage";
-import DocumentPage from "./DocumentPage";
+import TimesheetPage from "./TimesheetPage";
 import ReceivablePage from "./ReceivablePage";
+import ColdCallList from "./ColdCallList";
+import DocumentPage from "./DocumentPage";
 
 function Dashboard() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -16,13 +18,15 @@ function Dashboard() {
   const getInitialActive = () => {
     const hash = window.location.hash.replace("#", "");
 
-    if (hash === "documents") return "documents";
+    if (hash === "dashboard") return "dashboard";
+    if (hash === "attendance") return "attendance";
     if (hash === "enquiry") return "sheet";
     if (hash === "sales-order") return "salesOrder";
-    if (hash === "cold-call") return "coldCall";
-    if (hash === "timesheet") return "timesheet";
     if (hash === "dispatch") return "dispatch";
+    if (hash === "timesheet") return "timesheet";
     if (hash === "receivables") return "receivables";
+    if (hash === "cold-call") return "coldCall";
+    if (hash === "documents") return "documents";
 
     return "dashboard";
   };
@@ -36,13 +40,14 @@ function Dashboard() {
   useEffect(() => {
     const hashMap = {
       dashboard: "dashboard",
-      documents: "documents",
+      attendance: "attendance",
       sheet: "enquiry",
       salesOrder: "sales-order",
-      coldCall: "cold-call",
-      timesheet: "timesheet",
       dispatch: "dispatch",
+      timesheet: "timesheet",
       receivables: "receivables",
+      coldCall: "cold-call",
+      documents: "documents",
     };
 
     window.history.replaceState(null, "", `/dashboard#${hashMap[active]}`);
@@ -63,22 +68,14 @@ function Dashboard() {
 
   const menuItems = [
     { key: "dashboard", label: "Dashboard", icon: "📊" },
-    
-    { key: "timesheet", label: "Timesheet/Attendance", icon: "⏱️" },
-    
-
+    { key: "attendance", label: "Attendance", icon: "🟢" },
     { key: "sheet", label: "Enquiry Sheet", icon: "📝" },
-
     { key: "salesOrder", label: "Sales Order", icon: "💼" },
-
     { key: "dispatch", label: "Dispatch", icon: "🚚" },
-
+    { key: "timesheet", label: "Timesheet", icon: "⏱️" },
     { key: "receivables", label: "Receivables", icon: "💰" },
-
     { key: "coldCall", label: "Cold Call / Visit", icon: "📞" },
-  
     { key: "documents", label: "Document Center", icon: "📁" },
-  
   ];
 
   const activeItem = menuItems.find((item) => item.key === active);
@@ -95,6 +92,7 @@ function Dashboard() {
           <div className="mobile-logo">
             <img src="/logo.png" alt="BSSPL Logo" />
           </div>
+
           <div>
             <strong>{activeItem?.label || "Dashboard"}</strong>
             <span>Bharat Special Steels RMS</span>
@@ -123,6 +121,7 @@ function Dashboard() {
             <div className="user-avatar">
               {(user?.name || "U").charAt(0).toUpperCase()}
             </div>
+
             <div>
               <strong>{user?.name || "User"}</strong>
               <span>{user?.role || "Employee"}</span>
@@ -234,8 +233,7 @@ function Dashboard() {
         <main className="main">
           {active === "dashboard" && <DashboardHome user={user} />}
 
-          {active === "timesheet" && <TimesheetPage />}
-
+          {active === "attendance" && <AttendancePage />}
 
           {active === "sheet" && <EnquiryList />}
 
@@ -243,12 +241,13 @@ function Dashboard() {
 
           {active === "dispatch" && <DispatchPage />}
 
+          {active === "timesheet" && <TimesheetPage />}
+
           {active === "receivables" && <ReceivablePage />}
 
           {active === "coldCall" && <ColdCallList />}
 
-           {active === "documents" && <DocumentPage />}
-
+          {active === "documents" && <DocumentPage />}
         </main>
       </div>
     </div>

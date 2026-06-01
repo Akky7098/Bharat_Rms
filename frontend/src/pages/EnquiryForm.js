@@ -6,6 +6,7 @@ const shapeOptions = [
   { value: "round", label: "Round" },
   { value: "flat", label: "Flat" },
   { value: "square", label: "Square" },
+  { value: "rcs", label: "RCS" },
 ];
 
 const supplyConditionOptions = [
