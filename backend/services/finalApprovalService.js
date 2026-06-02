@@ -24,17 +24,88 @@ const safeCreateNotification = async (payload) => {
 const fixApprovalHistoryRoles = (salesOrder) => {
   salesOrder.approvalHistory = (salesOrder.approvalHistory || []).map((item) => {
     const plain = item?.toObject ? item.toObject() : item;
-
-    return {
-      ...plain,
-      role: plain.role || "system",
-    };
+    return { ...plain, role: plain.role || "system" };
   });
 };
 
 const safeSaveSalesOrder = async (salesOrder) => {
   fixApprovalHistoryRoles(salesOrder);
   return await salesOrder.save();
+};
+
+const attachExistingPdfOrGenerate = async (salesOrder, source) => {
+  try {
+    const existingPdf =
+      salesOrder.finalSalesOrderPackage?.generated &&
+      salesOrder.finalSalesOrderPackage?.filePath
+        ? salesOrder.finalSalesOrderPackage
+        : salesOrder.pdf?.generated && salesOrder.pdf?.filePath
+        ? salesOrder.pdf
+        : null;
+
+    if (existingPdf) {
+      salesOrder.pdf = {
+        generated: true,
+        fileName: existingPdf.fileName,
+        filePath: existingPdf.filePath,
+        fileUrl: existingPdf.fileUrl,
+        generatedAt: existingPdf.generatedAt || new Date(),
+      };
+
+      salesOrder.finalSalesOrderPackage = {
+        generated: true,
+        fileName: existingPdf.fileName,
+        filePath: existingPdf.filePath,
+        fileUrl: existingPdf.fileUrl,
+        generatedAt: existingPdf.generatedAt || new Date(),
+      };
+
+      salesOrder.approvalHistory.push({
+        role: "system",
+        action: "pdf_generated",
+        comment: `Existing sales order PDF reused for final approval from ${source}`,
+      });
+
+      await safeSaveSalesOrder(salesOrder);
+      return;
+    }
+
+    const pdfDetails = await pdfService.generateSalesOrderPdf(salesOrder);
+
+    salesOrder.pdf = {
+      generated: true,
+      fileName: pdfDetails.fileName,
+      filePath: pdfDetails.filePath,
+      fileUrl: pdfDetails.fileUrl,
+      generatedAt: new Date(),
+    };
+
+    salesOrder.finalSalesOrderPackage = {
+      generated: true,
+      fileName: pdfDetails.fileName,
+      filePath: pdfDetails.filePath,
+      fileUrl: pdfDetails.fileUrl,
+      generatedAt: new Date(),
+    };
+
+    salesOrder.approvalHistory.push({
+      role: "system",
+      action: "pdf_generated",
+      comment: `Final approved PDF generated because no existing PDF was found from ${source}`,
+    });
+
+    await safeSaveSalesOrder(salesOrder);
+  } catch (pdfError) {
+    console.log("PDF CHECK/GENERATION FAILED =>", pdfError.message);
+
+    salesOrder.approvalHistory.push({
+      role: "system",
+      action: "failed",
+      comment: `PDF check/generation failed: ${pdfError.message}`,
+    });
+
+    await safeSaveSalesOrder(salesOrder);
+  }
 };
 
 const finalApproveSalesOrder = async (
@@ -50,9 +121,7 @@ const finalApproveSalesOrder = async (
   console.log("FINAL APPROVAL SOURCE =>", source);
   console.log("SALES ORDER ID =>", salesOrder?._id);
 
-  if (!salesOrder) {
-    throw new Error("Sales order not found");
-  }
+  if (!salesOrder) throw new Error("Sales order not found");
 
   if (salesOrder.approvalStatus !== "pending_manager_approval") {
     throw new Error("Sales order is not pending MD Sir approval");
@@ -91,78 +160,7 @@ const finalApproveSalesOrder = async (
 
   await safeSaveSalesOrder(salesOrder);
 
-  try {
-    const existingPdf =
-      salesOrder.finalSalesOrderPackage?.generated &&
-      salesOrder.finalSalesOrderPackage?.filePath
-        ? salesOrder.finalSalesOrderPackage
-        : salesOrder.pdf?.generated && salesOrder.pdf?.filePath
-        ? salesOrder.pdf
-        : null;
-
-    if (existingPdf) {
-      salesOrder.pdf = {
-        generated: true,
-        fileName: existingPdf.fileName,
-        filePath: existingPdf.filePath,
-        fileUrl: existingPdf.fileUrl,
-        generatedAt: existingPdf.generatedAt || new Date(),
-      };
-
-      salesOrder.finalSalesOrderPackage = {
-        generated: true,
-        fileName: existingPdf.fileName,
-        filePath: existingPdf.filePath,
-        fileUrl: existingPdf.fileUrl,
-        generatedAt: existingPdf.generatedAt || new Date(),
-      };
-
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "pdf_reused",
-        comment: `Existing sales order PDF reused for final approval from ${source}`,
-      });
-
-      await safeSaveSalesOrder(salesOrder);
-    } else {
-      const pdfDetails = await pdfService.generateSalesOrderPdf(salesOrder);
-
-      salesOrder.pdf = {
-        generated: true,
-        fileName: pdfDetails.fileName,
-        filePath: pdfDetails.filePath,
-        fileUrl: pdfDetails.fileUrl,
-        generatedAt: new Date(),
-      };
-
-      salesOrder.finalSalesOrderPackage = {
-        generated: true,
-        fileName: pdfDetails.fileName,
-        filePath: pdfDetails.filePath,
-        fileUrl: pdfDetails.fileUrl,
-        generatedAt: new Date(),
-      };
-
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "pdf_generated",
-        comment: `Final approved PDF generated because no existing PDF was found from ${source}`,
-      });
-
-      await safeSaveSalesOrder(salesOrder);
-    }
-  } catch (pdfError) {
-    console.log("PDF CHECK/GENERATION FAILED =>", pdfError.message);
-
-    salesOrder.approvalHistory.push({
-      role: "system",
-      action: "failed",
-      comment: `PDF check/generation failed: ${pdfError.message}`,
-    });
-
-    await safeSaveSalesOrder(salesOrder);
-    throw pdfError;
-  }
+  await attachExistingPdfOrGenerate(salesOrder, source);
 
   try {
     const emailResult = await emailService.sendSalesOrderApprovedEmail(
@@ -271,9 +269,7 @@ const holdSalesOrderByMd = async (
   },
   source = "dashboard"
 ) => {
-  if (!salesOrder) {
-    throw new Error("Sales order not found");
-  }
+  if (!salesOrder) throw new Error("Sales order not found");
 
   if (salesOrder.approvalStatus !== "pending_manager_approval") {
     throw new Error("Sales order is not pending MD Sir approval");
