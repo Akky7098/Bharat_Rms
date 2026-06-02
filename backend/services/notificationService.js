@@ -196,11 +196,28 @@
 
 
 const Notification = require("../model/notificationModel");
-const User = require("../model/userModel");
 const { getIO } = require("../socket");
+
+let webPushService = null;
+
+try {
+  webPushService = require("./webPushService");
+} catch (error) {
+  console.log("Web push service not loaded =>", error.message);
+}
 
 const cleanObjectIds = (ids = []) =>
   [...new Set(ids.filter(Boolean).map((id) => String(id)))];
+
+const sendPushSafely = async (notification) => {
+  try {
+    if (!webPushService?.sendPushNotification) return;
+
+    await webPushService.sendPushNotification(notification);
+  } catch (error) {
+    console.log("PUSH NOTIFICATION ERROR =>", error.message);
+  }
+};
 
 const createNotification = async ({
   module,
@@ -253,6 +270,8 @@ const createNotification = async ({
       io.to(`role:${role}`).emit("notification:new", populated);
     });
   }
+
+  await sendPushSafely(populated);
 
   return populated;
 };
