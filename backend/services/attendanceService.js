@@ -10,6 +10,25 @@ const {
   sendRegularizationDecisionMailToUser,
 } = require("./attendanceMailService");
 
+let notificationService = null;
+let Notification = null;
+
+try {
+  notificationService = require("./notificationService");
+  Notification = require("../model/notificationModel");
+} catch (error) {
+  console.log("Notification service/model not loaded =>", error.message);
+}
+
+const safeCreateNotification = async (payload) => {
+  try {
+    if (!notificationService?.createNotification) return;
+    await notificationService.createNotification(payload);
+  } catch (error) {
+    console.log("ATTENDANCE NOTIFICATION ERROR =>", error.message);
+  }
+};
+
 const getUserId = (user) => user?._id || user?.id;
 
 const isAdmin = (user) => user?.role === "admin";
@@ -46,6 +65,54 @@ const getWorkMode = async (user) => {
     "office"
   );
 };
+
+const createDailyUniqueAttendanceNotification = async ({
+  attendance,
+  userId,
+  event,
+  title,
+  message,
+  priority = "high",
+  meta = {},
+}) => {
+  try {
+    if (!Notification) return;
+
+    const todayStart = getStartOfDay();
+    const todayEnd = getEndOfDay();
+
+    const alreadyExists = await Notification.exists({
+      module: "attendance",
+      event,
+      referenceId: attendance?._id || null,
+      targetUserIds: userId,
+      createdAt: {
+        $gte: todayStart,
+        $lte: todayEnd,
+      },
+    });
+
+    if (alreadyExists) return;
+
+    await safeCreateNotification({
+      module: "attendance",
+      event,
+      title,
+      message,
+      priority,
+      targetUserIds: [userId],
+      targetRoles: [],
+      createdBy: null,
+      referenceId: attendance?._id || null,
+      referenceModel: "Attendance",
+      actionUrl: "/dashboard#attendance",
+      meta,
+    });
+  } catch (error) {
+    console.log("ATTENDANCE DAILY UNIQUE NOTIFICATION ERROR =>", error.message);
+  }
+};
+
 const buildLocationObject = async (body, workMode) => {
   const latitude = Number(body.latitude);
   const longitude = Number(body.longitude);
@@ -66,19 +133,19 @@ const buildLocationObject = async (body, workMode) => {
   }
 
   if (workMode === "work_from_home") {
-   return {
-  latitude,
-  longitude,
-  accuracy,
-  distanceFromOfficeMeters: null,
-  isWithinOffice: false,
-  ipAddress,
-  userAgent,
-  deviceType,
-  locationAddress,
-  googleMapLink: `https://www.google.com/maps?q=${latitude},${longitude}`,
-  remark: body.remark || "",
-};
+    return {
+      latitude,
+      longitude,
+      accuracy,
+      distanceFromOfficeMeters: null,
+      isWithinOffice: false,
+      ipAddress,
+      userAgent,
+      deviceType,
+      locationAddress,
+      googleMapLink: `https://www.google.com/maps?q=${latitude},${longitude}`,
+      remark: body.remark || "",
+    };
   }
 
   const result = verifyOfficeLocation({ latitude, longitude });
@@ -92,10 +159,7 @@ const buildLocationObject = async (body, workMode) => {
     ipAddress,
     userAgent,
     deviceType,
-
-    // Keep office location hidden in frontend, but save blank to avoid extra API load.
     locationAddress: "",
-
     remark: body.remark || "",
   };
 };
@@ -119,7 +183,6 @@ const checkIn = async (body, user) => {
 
   const checkInData = await buildLocationObject(body, workMode);
 
-  // Existing office rule remains strict.
   if (workMode === "office" && !checkInData.isWithinOffice) {
     throw new Error(
       `You are outside office location. Distance: ${checkInData.distanceFromOfficeMeters} meters.`
@@ -154,7 +217,6 @@ const checkIn = async (body, user) => {
     }
   );
 
-
   return attendance;
 };
 
@@ -181,7 +243,6 @@ const checkOut = async (body, user) => {
 
   const checkOutData = await buildLocationObject(body, workMode);
 
-  // Existing office rule remains strict.
   if (workMode === "office" && !checkOutData.isWithinOffice) {
     throw new Error(
       `You are outside office location. Distance: ${checkOutData.distanceFromOfficeMeters} meters.`
@@ -202,7 +263,6 @@ const checkOut = async (body, user) => {
   attendance.attendanceStatus = "checked_out";
 
   await attendance.save();
-
 
   return attendance;
 };
@@ -344,6 +404,27 @@ const requestRegularization = async (body, user) => {
     }
   );
 
+  await safeCreateNotification({
+    module: "attendance",
+    event: "regularization_requested",
+    title: "Regularization Request",
+    message: `${user.name} submitted attendance regularization request`,
+    priority: "high",
+    targetUserIds: [],
+    targetRoles: ["admin"],
+    createdBy: getUserId(user),
+    referenceId: attendance._id,
+    referenceModel: "Attendance",
+    actionUrl: "/dashboard#attendance",
+    meta: {
+      employeeName: user.name,
+      employeeEmail: user.email,
+      attendanceDate,
+      regularizationType,
+      reason: String(body.reason).trim(),
+    },
+  });
+
   try {
     await sendRegularizationRequestMailToAdmin(attendance);
 
@@ -412,12 +493,32 @@ const approveRegularization = async (attendanceId, body, user) => {
 
   await attendance.save();
 
+  await safeCreateNotification({
+    module: "attendance",
+    event: "regularization_approved",
+    title: "Regularization Approved",
+    message: `Your attendance regularization was approved by ${user.name}`,
+    priority: "normal",
+    targetUserIds: [attendance.employeeId],
+    targetRoles: [],
+    createdBy: getUserId(user),
+    referenceId: attendance._id,
+    referenceModel: "Attendance",
+    actionUrl: "/dashboard#attendance",
+    meta: {
+      employeeName: attendance.employeeName,
+      attendanceDate: attendance.attendanceDate,
+      approvedBy: user.name,
+    },
+  });
+
   sendRegularizationDecisionMailToUser(attendance, "approved").catch(
     console.error
   );
 
   return attendance;
 };
+
 const rejectRegularization = async (attendanceId, body, user) => {
   if (!isAdmin(user) && !isSuperAdmin(user)) {
     throw new Error("Only admin or super admin can reject regularization.");
@@ -435,11 +536,148 @@ const rejectRegularization = async (attendanceId, body, user) => {
 
   await attendance.save();
 
+  await safeCreateNotification({
+    module: "attendance",
+    event: "regularization_rejected",
+    title: "Regularization Rejected",
+    message: `Your attendance regularization was rejected by ${user.name}`,
+    priority: "high",
+    targetUserIds: [attendance.employeeId],
+    targetRoles: [],
+    createdBy: getUserId(user),
+    referenceId: attendance._id,
+    referenceModel: "Attendance",
+    actionUrl: "/dashboard#attendance",
+    meta: {
+      employeeName: attendance.employeeName,
+      attendanceDate: attendance.attendanceDate,
+      rejectedBy: user.name,
+      rejectionReason: body.rejectionReason || "",
+    },
+  });
+
   sendRegularizationDecisionMailToUser(attendance, "rejected").catch(
     console.error
   );
 
   return attendance;
+};
+
+const createMissedCheckInNotifications = async () => {
+  const today = getStartOfDay();
+  const now = new Date();
+
+  const checkInDeadline = new Date(today);
+  checkInDeadline.setHours(10, 15, 0, 0);
+
+  if (now < checkInDeadline) {
+    return {
+      checked: 0,
+      notificationsCreated: 0,
+      message: "Missed check-in notification runs only after 10:15 AM.",
+    };
+  }
+
+  const users = await User.find({
+    role: { $in: ["admin", "user"] },
+  })
+    .select("_id name email role attendanceMode attendanceWorkMode")
+    .lean();
+
+  let notificationsCreated = 0;
+
+  for (const employee of users) {
+    const attendance = await Attendance.findOne({
+      employeeId: employee._id,
+      attendanceDate: today,
+    });
+
+    if (attendance?.checkIn?.time) continue;
+
+    const finalAttendance =
+      attendance ||
+      (await Attendance.create({
+        employeeId: employee._id,
+        employeeName: employee.name,
+        employeeEmail: employee.email,
+        attendanceDate: today,
+        workMode:
+          employee.attendanceWorkMode ||
+          employee.attendanceMode ||
+          "office",
+        attendanceStatus: "absent",
+        attendanceSource: "system",
+      }));
+
+    await createDailyUniqueAttendanceNotification({
+      attendance: finalAttendance,
+      userId: employee._id,
+      event: "missed_check_in",
+      title: "Check-in Missing",
+      message: "You have not checked in after 10:15 AM. Please check in or apply regularization.",
+      priority: "high",
+      meta: {
+        employeeName: employee.name,
+        employeeEmail: employee.email,
+        attendanceDate: today,
+      },
+    });
+
+    notificationsCreated++;
+  }
+
+  return {
+    checked: users.length,
+    notificationsCreated,
+  };
+};
+
+const createMissedCheckoutNotifications = async () => {
+  const today = getStartOfDay();
+  const now = new Date();
+
+  const checkoutReminderTime = new Date(today);
+  checkoutReminderTime.setHours(19, 0, 0, 0);
+
+  if (now < checkoutReminderTime) {
+    return {
+      checked: 0,
+      notificationsCreated: 0,
+      message: "Missed checkout notification runs only after 7:00 PM.",
+    };
+  }
+
+  const attendances = await Attendance.find({
+    attendanceDate: today,
+    "checkIn.time": { $exists: true },
+    "checkOut.time": { $exists: false },
+    "regularization.status": { $ne: "pending" },
+  });
+
+  let notificationsCreated = 0;
+
+  for (const attendance of attendances) {
+    await createDailyUniqueAttendanceNotification({
+      attendance,
+      userId: attendance.employeeId,
+      event: "missed_check_out",
+      title: "Checkout Missing",
+      message: "You have not checked out after 7:00 PM. Please checkout or apply regularization.",
+      priority: "high",
+      meta: {
+        employeeName: attendance.employeeName,
+        employeeEmail: attendance.employeeEmail,
+        attendanceDate: attendance.attendanceDate,
+      },
+    });
+
+    notificationsCreated++;
+  }
+
+  return {
+    checked: attendances.length,
+    notificationsCreated,
+  };
 };
 
 const createMissedCheckoutRegularizationReminders = async () => {
@@ -463,6 +701,27 @@ const createMissedCheckoutRegularizationReminders = async () => {
     attendance.regularization.reason = "";
     attendance.regularization.status = "none";
     attendance.reminder.lastReminderSentAt = new Date();
+
+    await safeCreateNotification({
+      module: "attendance",
+      event: "missed_checkout_regularization",
+      title: "Checkout Regularization Required",
+      message: `Your checkout is missing for ${new Date(
+        attendance.attendanceDate
+      ).toLocaleDateString("en-IN")}. Please submit regularization.`,
+      priority: "high",
+      targetUserIds: [attendance.employeeId],
+      targetRoles: [],
+      createdBy: null,
+      referenceId: attendance._id,
+      referenceModel: "Attendance",
+      actionUrl: "/dashboard#attendance",
+      meta: {
+        employeeName: attendance.employeeName,
+        employeeEmail: attendance.employeeEmail,
+        attendanceDate: attendance.attendanceDate,
+      },
+    });
 
     try {
       await sendMissedCheckoutMailToUser(attendance);
@@ -491,5 +750,7 @@ module.exports = {
   requestRegularization,
   approveRegularization,
   rejectRegularization,
+  createMissedCheckInNotifications,
+  createMissedCheckoutNotifications,
   createMissedCheckoutRegularizationReminders,
 };

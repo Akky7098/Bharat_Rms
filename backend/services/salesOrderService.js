@@ -1,19 +1,31 @@
-
-
 const SalesOrder = require("../model/salesOrderModel");
 const pdfService = require("./pdfService");
 const whatsappApprovalService = require("./whatsappApprovalService");
 const emailService = require("./emailService");
 const mongoose = require("mongoose");
 const finalApprovalService = require("./finalApprovalService");
+
+let notificationService = null;
+
+try {
+  notificationService = require("./notificationService");
+} catch (error) {
+  console.log("Notification service not loaded =>", error.message);
+}
+
+const safeCreateNotification = async (payload) => {
+  try {
+    if (!notificationService?.createNotification) return;
+    await notificationService.createNotification(payload);
+  } catch (error) {
+    console.log("NOTIFICATION ERROR =>", error.message);
+  }
+};
+
 // ========================================
 // CREATE SALES ORDER
 // ========================================
-const createSalesOrder = async (
-  payload,
-  loggedInUser,
-  uploadedPOFile
-) => {
+const createSalesOrder = async (payload, loggedInUser, uploadedPOFile) => {
   try {
     const salesOrder = new SalesOrder({
       ...payload,
@@ -47,6 +59,24 @@ const createSalesOrder = async (
 
     const savedOrder = await salesOrder.save();
 
+    await safeCreateNotification({
+      module: "sales_order",
+      event: "created",
+      title: "New Sales Order Created",
+      message: `${loggedInUser.name} created a sales order for ${savedOrder.companyName}`,
+      priority: "high",
+      targetRoles: ["admin"],
+      createdBy: loggedInUser._id,
+      referenceId: savedOrder._id,
+      referenceModel: "SalesOrder",
+      actionUrl: "/dashboard#sales-order",
+      meta: {
+        companyName: savedOrder.companyName,
+        poNumber: savedOrder.poNumber,
+        salesPersonName: loggedInUser.name,
+      },
+    });
+
     try {
       await emailService.sendSalesOrderCreatedToAdminEmail(savedOrder);
 
@@ -58,10 +88,7 @@ const createSalesOrder = async (
 
       await savedOrder.save();
     } catch (emailError) {
-      console.log(
-        "SALES ORDER CREATE ADMIN EMAIL ERROR =>",
-        emailError.message
-      );
+      console.log("SALES ORDER CREATE ADMIN EMAIL ERROR =>", emailError.message);
 
       savedOrder.approvalHistory.push({
         role: "system",
@@ -129,11 +156,10 @@ const generateSalesOrderPdfById = async (salesOrderId) => {
     throw error;
   }
 };
+
 // ========================================
 // GET ALL SALES ORDERS
 // ========================================
-
-
 const getAllSalesOrders = async (query, user) => {
   try {
     const {
@@ -150,7 +176,6 @@ const getAllSalesOrders = async (query, user) => {
 
     const filter = {};
 
-    // ROLE FILTER
     if (user.role === "admin" || user.role === "super_admin") {
       if (salesPersonId) {
         filter.salesPersonId = new mongoose.Types.ObjectId(salesPersonId);
@@ -159,39 +184,21 @@ const getAllSalesOrders = async (query, user) => {
       filter.salesPersonId = new mongoose.Types.ObjectId(user.id);
     }
 
-    // STATUS
-    if (approvalStatus) {
-      filter.approvalStatus = approvalStatus;
-    }
+    if (approvalStatus) filter.approvalStatus = approvalStatus;
+    if (customerType) filter.customerType = customerType;
 
-    // CUSTOMER TYPE
-    if (customerType) {
-      filter.customerType = customerType;
-    }
-
-    // COMPANY SEARCH
     if (companyName) {
-      filter.companyName = {
-        $regex: companyName,
-        $options: "i",
-      };
+      filter.companyName = { $regex: companyName, $options: "i" };
     }
 
-    // PO SEARCH
     if (poNumber) {
-      filter.poNumber = {
-        $regex: poNumber,
-        $options: "i",
-      };
+      filter.poNumber = { $regex: poNumber, $options: "i" };
     }
 
-    // DATE FILTER
     if (fromDate || toDate) {
       filter.orderDate = {};
 
-      if (fromDate) {
-        filter.orderDate.$gte = new Date(fromDate);
-      }
+      if (fromDate) filter.orderDate.$gte = new Date(fromDate);
 
       if (toDate) {
         const endDate = new Date(toDate);
@@ -201,14 +208,10 @@ const getAllSalesOrders = async (query, user) => {
     }
 
     const skip = (Number(page) - 1) * Number(limit);
-
     const totalRecords = await SalesOrder.countDocuments(filter);
 
     const salesOrders = await SalesOrder.aggregate([
-      {
-        $match: filter,
-      },
-
+      { $match: filter },
       {
         $lookup: {
           from: "users",
@@ -217,14 +220,12 @@ const getAllSalesOrders = async (query, user) => {
           as: "salesPersonId",
         },
       },
-
       {
         $unwind: {
           path: "$salesPersonId",
           preserveNullAndEmptyArrays: true,
         },
       },
-
       {
         $lookup: {
           from: "users",
@@ -233,43 +234,26 @@ const getAllSalesOrders = async (query, user) => {
           as: "checkedByAdminId",
         },
       },
-
       {
         $unwind: {
           path: "$checkedByAdminId",
           preserveNullAndEmptyArrays: true,
         },
       },
-
-      {
-        $sort: {
-          createdAt: -1,
-        },
-      },
-
-      {
-        $skip: skip,
-      },
-
-      {
-        $limit: Number(limit),
-      },
-
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: Number(limit) },
       {
         $project: {
           orderDate: 1,
           createdAt: 1,
           updatedAt: 1,
-
           companyName: 1,
           companyAddress: 1,
           gstinNumber: 1,
-
           poNumber: 1,
           checklistNumber: 1,
           customerType: 1,
-
-          // Commercial
           paymentTerms: 1,
           otherPaymentTerms: 1,
           orderValue: 1,
@@ -279,14 +263,10 @@ const getAllSalesOrders = async (query, user) => {
           previousPaymentRemark: 1,
           specialNote: 1,
           poAsPerQuotation: 1,
-
-          // Billing / Shipping / Enquiry
           billingAddress: 1,
           shippingAddress: 1,
           enquiryFormFilled: 1,
           enquiryNumber: 1,
-
-          // Material
           sizeGradeQuantityRate: 1,
           supplyCondition: 1,
           otherSupplyConditions: 1,
@@ -299,35 +279,25 @@ const getAllSalesOrders = async (query, user) => {
           deliveryTime: 1,
           endUseOfCustomer: 1,
           testCertificateRequired: 1,
-
-          // Status
           approvalStatus: 1,
           isEditableBySalesPerson: 1,
           revisionCount: 1,
           lastSubmittedAt: 1,
-
-          // Contact
           contactPersonName: 1,
           contactPersonNumber: 1,
           contactPersonEmail: 1,
           contactPersonEmailId: 1,
-
-          // Files
           pdf: 1,
           finalSalesOrderPackage: 1,
           preShipmentInspectionPdf: 1,
           customerPOFile: 1,
-
-          // Approval comments/history
           managerApproval: 1,
           adminApproval: 1,
           approvalHistory: 1,
-
           "salesPersonId._id": 1,
           "salesPersonId.name": 1,
           "salesPersonId.email": 1,
           "salesPersonId.mobileNumber": 1,
-
           "checkedByAdminId._id": 1,
           "checkedByAdminId.name": 1,
           "checkedByAdminId.email": 1,
@@ -348,7 +318,6 @@ const getAllSalesOrders = async (query, user) => {
     throw error;
   }
 };
-
 
 // ========================================
 // GET SINGLE SALES ORDER
@@ -422,7 +391,6 @@ const updateSalesOrder = async (
 
     salesOrder.adminApproval = {};
     salesOrder.managerApproval = {};
-
     salesOrder.checkedByAdminId = null;
     salesOrder.checkedByAdminName = null;
     salesOrder.checkedAt = null;
@@ -441,6 +409,24 @@ const updateSalesOrder = async (
     });
 
     const updatedOrder = await salesOrder.save();
+
+    await safeCreateNotification({
+      module: "sales_order",
+      event: "resubmitted",
+      title: "Sales Order Resubmitted",
+      message: `${loggedInUser.name} resubmitted sales order for ${updatedOrder.companyName}`,
+      priority: "high",
+      targetRoles: ["admin"],
+      createdBy: loggedInUser._id,
+      referenceId: updatedOrder._id,
+      referenceModel: "SalesOrder",
+      actionUrl: "/dashboard#sales-order",
+      meta: {
+        companyName: updatedOrder.companyName,
+        poNumber: updatedOrder.poNumber,
+        salesPersonName: loggedInUser.name,
+      },
+    });
 
     const pdfDetails = await pdfService.generateSalesOrderPdf(updatedOrder);
 
@@ -489,11 +475,7 @@ const updateSalesOrder = async (
 // ========================================
 const crypto = require("crypto");
 
-
-const approveSalesOrderByAdmin = async (
-  salesOrderId,
-  loggedInAdmin
-) => {
+const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
   try {
     const salesOrder = await SalesOrder.findById(salesOrderId);
 
@@ -526,11 +508,29 @@ const approveSalesOrderByAdmin = async (
       actionBy: loggedInAdmin._id,
       role: "admin",
       action: "admin_approved",
-      comment:
-        "Sales order approved by Manager and sent for MD Sir approval",
+      comment: "Sales order approved by Manager and sent for MD Sir approval",
     });
 
     await salesOrder.save();
+
+    await safeCreateNotification({
+      module: "sales_order",
+      event: "admin_approved",
+      title: "Sales Order Ready for MD Approval",
+      message: `${loggedInAdmin.name} approved ${salesOrder.companyName}. MD Sir approval required.`,
+      priority: "urgent",
+      targetRoles: ["super_admin"],
+      createdBy: loggedInAdmin._id,
+      referenceId: salesOrder._id,
+      referenceModel: "SalesOrder",
+      actionUrl: "/dashboard#sales-order",
+      meta: {
+        companyName: salesOrder.companyName,
+        poNumber: salesOrder.poNumber,
+        adminName: loggedInAdmin.name,
+        salesPersonName: salesOrder.salesPersonName,
+      },
+    });
 
     try {
       await emailService.sendSalesOrderApprovedEmail(
@@ -600,6 +600,7 @@ const approveSalesOrderByAdmin = async (
     throw error;
   }
 };
+
 // ========================================
 // ADMIN REJECT
 // ========================================
@@ -635,11 +636,27 @@ const rejectSalesOrderByAdmin = async (
 
     await salesOrder.save();
 
+    await safeCreateNotification({
+      module: "sales_order",
+      event: "admin_rejected",
+      title: "Sales Order Rejected by Admin",
+      message: `${salesOrder.companyName} sales order was rejected by ${loggedInAdmin.name}`,
+      priority: "high",
+      targetUserIds: [salesOrder.salesPersonId],
+      createdBy: loggedInAdmin._id,
+      referenceId: salesOrder._id,
+      referenceModel: "SalesOrder",
+      actionUrl: "/dashboard#sales-order",
+      meta: {
+        companyName: salesOrder.companyName,
+        poNumber: salesOrder.poNumber,
+        rejectionComment,
+        rejectedBy: loggedInAdmin.name,
+      },
+    });
+
     try {
-      await emailService.sendSalesOrderRejectedEmail(
-        salesOrder,
-        rejectionComment
-      );
+      await emailService.sendSalesOrderRejectedEmail(salesOrder, rejectionComment);
 
       salesOrder.approvalHistory.push({
         role: "system",
@@ -669,18 +686,14 @@ const rejectSalesOrderByAdmin = async (
 // ========================================
 // MANAGER APPROVE
 // ========================================
-
-const approveSalesOrderByManager = async (
-  salesOrderId,
-  loggedInManager
-) => {
+const approveSalesOrderByManager = async (salesOrderId, loggedInManager) => {
   const salesOrder = await SalesOrder.findById(salesOrderId);
 
   if (!salesOrder) {
     throw new Error("Sales order not found");
   }
 
-  return await finalApprovalService.finalApproveSalesOrder(
+  const approvedOrder = await finalApprovalService.finalApproveSalesOrder(
     salesOrder,
     {
       managerId: loggedInManager._id,
@@ -689,7 +702,30 @@ const approveSalesOrderByManager = async (
     },
     "dashboard"
   );
+
+  // await safeCreateNotification({
+  //   module: "sales_order",
+  //   event: "manager_approved",
+  //   title: "Sales Order Approved by MD Sir",
+  //   message: `${approvedOrder.companyName} sales order has been finally approved by MD Sir`,
+  //   priority: "high",
+  //   targetUserIds: [approvedOrder.salesPersonId || salesOrder.salesPersonId],
+  //   targetRoles: ["admin"],
+  //   createdBy: loggedInManager._id,
+  //   referenceId: approvedOrder._id,
+  //   referenceModel: "SalesOrder",
+  //   actionUrl: "/dashboard#sales-order",
+  //   meta: {
+  //     companyName: approvedOrder.companyName,
+  //     poNumber: approvedOrder.poNumber,
+  //     salesPersonName: approvedOrder.salesPersonName,
+  //     managerName: "MD Sir",
+  //   },
+  // });
+
+  return approvedOrder;
 };
+
 // ========================================
 // MANAGER REJECT
 // ========================================
@@ -727,12 +763,31 @@ const rejectSalesOrderByManager = async (
 
     await salesOrder.save();
 
+    // await safeCreateNotification({
+    //   module: "sales_order",
+    //   event: "manager_rejected",
+    //   title: "Sales Order Put on Hold by MD Sir",
+    //   message: `${salesOrder.companyName} sales order was put on hold by MD Sir`,
+    //   priority: "urgent",
+    //   targetUserIds: [salesOrder.salesPersonId],
+    //   targetRoles: ["admin"],
+    //   createdBy: managerData.managerId || null,
+    //   referenceId: salesOrder._id,
+    //   referenceModel: "SalesOrder",
+    //   actionUrl: "/dashboard#sales-order",
+    //   meta: {
+    //     companyName: salesOrder.companyName,
+    //     poNumber: salesOrder.poNumber,
+    //     rejectionComment,
+    //     managerName: managerData.managerName || "MD Sir",
+    //   },
+    // });
+
     try {
-      const emailResult =
-        await emailService.sendSalesOrderRejectedEmail(
-          salesOrder,
-          rejectionComment
-        );
+      const emailResult = await emailService.sendSalesOrderRejectedEmail(
+        salesOrder,
+        rejectionComment
+      );
 
       salesOrder.emailStatus = {
         sent: true,
@@ -770,14 +825,10 @@ const rejectSalesOrderByManager = async (
     throw error;
   }
 };
-const updatePdfDetails = async (
-  salesOrderId,
-  pdfData
-) => {
+
+const updatePdfDetails = async (salesOrderId, pdfData) => {
   try {
-    const salesOrder = await SalesOrder.findById(
-      salesOrderId
-    );
+    const salesOrder = await SalesOrder.findById(salesOrderId);
 
     if (!salesOrder) {
       throw new Error("Sales order not found");
@@ -808,14 +859,9 @@ const updatePdfDetails = async (
 // ========================================
 // UPDATE WHATSAPP STATUS
 // ========================================
-const updateWhatsappGroupStatus = async (
-  salesOrderId,
-  whatsappData
-) => {
+const updateWhatsappGroupStatus = async (salesOrderId, whatsappData) => {
   try {
-    const salesOrder = await SalesOrder.findById(
-      salesOrderId
-    );
+    const salesOrder = await SalesOrder.findById(salesOrderId);
 
     if (!salesOrder) {
       throw new Error("Sales order not found");
@@ -847,9 +893,7 @@ const updateWhatsappGroupStatus = async (
 // ========================================
 const deleteSalesOrder = async (salesOrderId) => {
   try {
-    const deletedOrder = await SalesOrder.findByIdAndDelete(
-      salesOrderId
-    );
+    const deletedOrder = await SalesOrder.findByIdAndDelete(salesOrderId);
 
     if (!deletedOrder) {
       throw new Error("Sales order not found");
@@ -860,7 +904,6 @@ const deleteSalesOrder = async (salesOrderId) => {
     throw error;
   }
 };
-
 
 const approveSalesOrderFromEmail = async (salesOrderId, token) => {
   const salesOrder = await SalesOrder.findById(salesOrderId);
@@ -877,7 +920,7 @@ const approveSalesOrderFromEmail = async (salesOrderId, token) => {
     throw new Error("Invalid approval link");
   }
 
-  return await finalApprovalService.finalApproveSalesOrder(
+  const approvedOrder = await finalApprovalService.finalApproveSalesOrder(
     salesOrder,
     {
       managerName: "MD Sir",
@@ -886,8 +929,30 @@ const approveSalesOrderFromEmail = async (salesOrderId, token) => {
     },
     "email"
   );
-};
 
+  await safeCreateNotification({
+    module: "sales_order",
+    event: "manager_approved",
+    title: "Sales Order Approved by MD Sir",
+    message: `${approvedOrder.companyName} sales order has been finally approved by MD Sir`,
+    priority: "high",
+    targetUserIds: [approvedOrder.salesPersonId || salesOrder.salesPersonId],
+    targetRoles: ["admin"],
+    createdBy: null,
+    referenceId: approvedOrder._id,
+    referenceModel: "SalesOrder",
+    actionUrl: "/dashboard#sales-order",
+    meta: {
+      companyName: approvedOrder.companyName,
+      poNumber: approvedOrder.poNumber,
+      salesPersonName: approvedOrder.salesPersonName,
+      managerName: "MD Sir",
+      source: "email",
+    },
+  });
+
+  return approvedOrder;
+};
 
 const rejectSalesOrderFromEmail = async (
   salesOrderId,
@@ -908,7 +973,7 @@ const rejectSalesOrderFromEmail = async (
     throw new Error("Invalid rejection link");
   }
 
-  return await finalApprovalService.holdSalesOrderByMd(
+  const rejectedOrder = await finalApprovalService.holdSalesOrderByMd(
     salesOrder,
     rejectionComment,
     {
@@ -918,7 +983,31 @@ const rejectSalesOrderFromEmail = async (
     },
     "email"
   );
+
+  await safeCreateNotification({
+    module: "sales_order",
+    event: "manager_rejected",
+    title: "Sales Order Put on Hold by MD Sir",
+    message: `${rejectedOrder.companyName} sales order was put on hold by MD Sir`,
+    priority: "urgent",
+    targetUserIds: [rejectedOrder.salesPersonId || salesOrder.salesPersonId],
+    targetRoles: ["admin"],
+    createdBy: null,
+    referenceId: rejectedOrder._id,
+    referenceModel: "SalesOrder",
+    actionUrl: "/dashboard#sales-order",
+    meta: {
+      companyName: rejectedOrder.companyName,
+      poNumber: rejectedOrder.poNumber,
+      rejectionComment,
+      managerName: "MD Sir",
+      source: "email",
+    },
+  });
+
+  return rejectedOrder;
 };
+
 module.exports = {
   createSalesOrder,
   generateSalesOrderPdfById,
@@ -932,6 +1021,6 @@ module.exports = {
   updatePdfDetails,
   updateWhatsappGroupStatus,
   deleteSalesOrder,
-   approveSalesOrderFromEmail,
-   rejectSalesOrderFromEmail,
+  approveSalesOrderFromEmail,
+  rejectSalesOrderFromEmail,
 };

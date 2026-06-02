@@ -21,7 +21,7 @@ const loginUser = async (email, password) => {
     },
     "abc123",
     {
-      expiresIn: "7d",
+      expiresIn: "30d",
     }
   );
 

@@ -10,6 +10,23 @@ const {
   sendPaymentUpdateEmail,
 } = require("./dispatchMailService");
 
+let notificationService = null;
+
+try {
+  notificationService = require("./notificationService");
+} catch (error) {
+  console.log("Notification service not loaded =>", error.message);
+}
+
+const safeCreateNotification = async (payload) => {
+  try {
+    if (!notificationService?.createNotification) return;
+    await notificationService.createNotification(payload);
+  } catch (error) {
+    console.log("DISPATCH NOTIFICATION ERROR =>", error.message);
+  }
+};
+
 const getUserId = (user) => user?._id || user?.id;
 
 const isAdminOrSuperAdmin = (user) => {
@@ -147,12 +164,10 @@ const searchPendingDispatchSalesOrders = async (query, user) => {
     approvalStatus: "approved",
   };
 
-  // normal user can create/search dispatch only for own sales orders
   if (!canViewAllDispatches(user)) {
     filter.salesPersonId = getUserId(user);
   }
 
-  // search only by company name as per requirement
   if (keyword) {
     filter.companyName = {
       $regex: "^" + escapeRegex(keyword),
@@ -191,28 +206,29 @@ const searchPendingDispatchSalesOrders = async (query, user) => {
       `
     )
     .lean();
-const salesOrderIds = salesOrders.map((item) => item._id);
 
-const dispatchedSalesOrders = await Dispatch.find({
-  salesOrderId: { $in: salesOrderIds },
-  isActive: true,
-})
-  .select("salesOrderId")
-  .lean();
+  const salesOrderIds = salesOrders.map((item) => item._id);
 
-const dispatchedIdSet = new Set(
-  dispatchedSalesOrders.map((item) => String(item.salesOrderId))
-);
+  const dispatchedSalesOrders = await Dispatch.find({
+    salesOrderId: { $in: salesOrderIds },
+    isActive: true,
+  })
+    .select("salesOrderId")
+    .lean();
 
-const availableSalesOrders = salesOrders.filter((salesOrder) => {
-  return !dispatchedIdSet.has(String(salesOrder._id));
-});
+  const dispatchedIdSet = new Set(
+    dispatchedSalesOrders.map((item) => String(item.salesOrderId))
+  );
 
-return availableSalesOrders.map((salesOrder) => ({
-  ...salesOrder,
-  dispatchCount: 0,
-  alreadyDispatched: false,
-}));
+  const availableSalesOrders = salesOrders.filter((salesOrder) => {
+    return !dispatchedIdSet.has(String(salesOrder._id));
+  });
+
+  return availableSalesOrders.map((salesOrder) => ({
+    ...salesOrder,
+    dispatchCount: 0,
+    alreadyDispatched: false,
+  }));
 };
 
 /* =========================
@@ -426,6 +442,34 @@ const createDispatch = async (body, files, user) => {
 
     const createdDispatch = dispatch[0];
 
+    const dispatchCreatedByAdmin = isAdminOrSuperAdmin(user);
+
+    await safeCreateNotification({
+      module: "dispatch",
+      event: "created",
+      title: "Dispatch Created",
+      message: `Dispatch created for ${createdDispatch.companyName} | Invoice ${createdDispatch.invoiceNumber}`,
+      priority: "high",
+      targetUserIds: dispatchCreatedByAdmin
+        ? [createdDispatch.salesPersonId]
+        : [],
+      targetRoles: dispatchCreatedByAdmin
+        ? ["super_admin"]
+        : ["admin", "super_admin"],
+      createdBy: getUserId(user),
+      referenceId: createdDispatch._id,
+      referenceModel: "Dispatch",
+      actionUrl: "/dashboard#dispatch",
+      meta: {
+        companyName: createdDispatch.companyName,
+        invoiceNumber: createdDispatch.invoiceNumber,
+        invoiceValue: createdDispatch.invoiceValue,
+        salesPersonName: createdDispatch.salesPersonName,
+        createdByName: user.name,
+        createdByRole: user.role,
+      },
+    });
+
     try {
       const mailInfo = await sendDispatchCreatedEmail(createdDispatch);
 
@@ -515,7 +559,6 @@ const getAllDispatches = async (query, user) => {
     }
   }
 
-  // admin/super_admin see all, user sees only own dispatches
   if (!canViewAllDispatches(user)) {
     match.salesPersonId = new mongoose.Types.ObjectId(getUserId(user));
   }
@@ -640,6 +683,39 @@ const updateDispatchPayment = async (dispatchId, body, file, user) => {
 
     await dispatch.save();
 
+    await safeCreateNotification({
+      module: "dispatch",
+      event: "payment_updated",
+      title:
+        dispatch.paymentStatus === "paid"
+          ? "Payment Completed"
+          : "Payment Updated",
+      message: `₹${Number(receivedAmount).toLocaleString(
+        "en-IN"
+      )} received for ${dispatch.companyName} | Invoice ${
+        dispatch.invoiceNumber
+      }`,
+      priority: dispatch.paymentStatus === "paid" ? "high" : "normal",
+      targetUserIds:
+        String(dispatch.salesPersonId) === String(getUserId(user))
+          ? []
+          : [dispatch.salesPersonId],
+      targetRoles: isAdminOrSuperAdmin(user) ? [] : ["admin", "super_admin"],
+      createdBy: getUserId(user),
+      referenceId: dispatch._id,
+      referenceModel: "Dispatch",
+      actionUrl: "/dashboard#dispatch",
+      meta: {
+        companyName: dispatch.companyName,
+        invoiceNumber: dispatch.invoiceNumber,
+        receivedAmount,
+        paidAmount: dispatch.paidAmount,
+        pendingAmount: dispatch.pendingAmount,
+        paymentStatus: dispatch.paymentStatus,
+        updatedByName: user.name,
+      },
+    });
+
     const lastPaymentIndex = dispatch.paymentHistory.length - 1;
 
     try {
@@ -709,6 +785,29 @@ const updateDispatchStatus = async (dispatchId, body, user) => {
   }
 
   await dispatch.save();
+
+  await safeCreateNotification({
+    module: "dispatch",
+    event: "status_updated",
+    title: "Dispatch Status Updated",
+    message: `${dispatch.companyName} dispatch marked as ${dispatch.dispatchStatus}`,
+    priority: dispatch.dispatchStatus === "cancelled" ? "high" : "normal",
+    targetUserIds:
+      String(dispatch.salesPersonId) === String(getUserId(user))
+        ? []
+        : [dispatch.salesPersonId],
+    targetRoles: isAdminOrSuperAdmin(user) ? [] : ["admin", "super_admin"],
+    createdBy: getUserId(user),
+    referenceId: dispatch._id,
+    referenceModel: "Dispatch",
+    actionUrl: "/dashboard#dispatch",
+    meta: {
+      companyName: dispatch.companyName,
+      invoiceNumber: dispatch.invoiceNumber,
+      dispatchStatus: dispatch.dispatchStatus,
+      updatedByName: user.name,
+    },
+  });
 
   return dispatch;
 };

@@ -4,6 +4,23 @@ const whatsappApprovalService = require("./whatsappApprovalService");
 
 const { initWhatsappClient } = require("../util/whatsappClient");
 
+let notificationService = null;
+
+try {
+  notificationService = require("./notificationService");
+} catch (error) {
+  console.log("Notification service not loaded =>", error.message);
+}
+
+const safeCreateNotification = async (payload) => {
+  try {
+    if (!notificationService?.createNotification) return;
+    await notificationService.createNotification(payload);
+  } catch (error) {
+    console.log("FINAL APPROVAL NOTIFICATION ERROR =>", error.message);
+  }
+};
+
 const fixApprovalHistoryRoles = (salesOrder) => {
   salesOrder.approvalHistory = (salesOrder.approvalHistory || []).map((item) => {
     const plain = item?.toObject ? item.toObject() : item;
@@ -75,30 +92,72 @@ const finalApproveSalesOrder = async (
   await safeSaveSalesOrder(salesOrder);
 
   try {
-    const pdfDetails = await pdfService.generateSalesOrderPdf(salesOrder);
+    const existingPdf =
+      salesOrder.finalSalesOrderPackage?.generated &&
+      salesOrder.finalSalesOrderPackage?.filePath
+        ? salesOrder.finalSalesOrderPackage
+        : salesOrder.pdf?.generated && salesOrder.pdf?.filePath
+        ? salesOrder.pdf
+        : null;
 
-    salesOrder.pdf = {
-      generated: true,
-      fileName: pdfDetails.fileName,
-      filePath: pdfDetails.filePath,
-      fileUrl: pdfDetails.fileUrl,
-      generatedAt: new Date(),
-    };
+    if (existingPdf) {
+      salesOrder.pdf = {
+        generated: true,
+        fileName: existingPdf.fileName,
+        filePath: existingPdf.filePath,
+        fileUrl: existingPdf.fileUrl,
+        generatedAt: existingPdf.generatedAt || new Date(),
+      };
 
-    salesOrder.approvalHistory.push({
-      role: "system",
-      action: "pdf_generated",
-      comment: "Final approved PDF generated",
-    });
+      salesOrder.finalSalesOrderPackage = {
+        generated: true,
+        fileName: existingPdf.fileName,
+        filePath: existingPdf.filePath,
+        fileUrl: existingPdf.fileUrl,
+        generatedAt: existingPdf.generatedAt || new Date(),
+      };
 
-    await safeSaveSalesOrder(salesOrder);
+      salesOrder.approvalHistory.push({
+        role: "system",
+        action: "pdf_reused",
+        comment: `Existing sales order PDF reused for final approval from ${source}`,
+      });
+
+      await safeSaveSalesOrder(salesOrder);
+    } else {
+      const pdfDetails = await pdfService.generateSalesOrderPdf(salesOrder);
+
+      salesOrder.pdf = {
+        generated: true,
+        fileName: pdfDetails.fileName,
+        filePath: pdfDetails.filePath,
+        fileUrl: pdfDetails.fileUrl,
+        generatedAt: new Date(),
+      };
+
+      salesOrder.finalSalesOrderPackage = {
+        generated: true,
+        fileName: pdfDetails.fileName,
+        filePath: pdfDetails.filePath,
+        fileUrl: pdfDetails.fileUrl,
+        generatedAt: new Date(),
+      };
+
+      salesOrder.approvalHistory.push({
+        role: "system",
+        action: "pdf_generated",
+        comment: `Final approved PDF generated because no existing PDF was found from ${source}`,
+      });
+
+      await safeSaveSalesOrder(salesOrder);
+    }
   } catch (pdfError) {
-    console.log("PDF GENERATION FAILED =>", pdfError.message);
+    console.log("PDF CHECK/GENERATION FAILED =>", pdfError.message);
 
     salesOrder.approvalHistory.push({
       role: "system",
       action: "failed",
-      comment: `PDF generation failed: ${pdfError.message}`,
+      comment: `PDF check/generation failed: ${pdfError.message}`,
     });
 
     await safeSaveSalesOrder(salesOrder);
@@ -178,6 +237,26 @@ const finalApproveSalesOrder = async (
 
     await safeSaveSalesOrder(salesOrder);
   }
+
+  await safeCreateNotification({
+    module: "sales_order",
+    event: "manager_approved",
+    title: "Sales Order Approved by MD Sir",
+    message: `${salesOrder.companyName} sales order has been finally approved by MD Sir from ${source}`,
+    priority: "high",
+    targetUserIds: [salesOrder.salesPersonId],
+    targetRoles: ["admin"],
+    createdBy: managerData.managerId || null,
+    referenceId: salesOrder._id,
+    referenceModel: "SalesOrder",
+    actionUrl: "/dashboard#sales-order",
+    meta: {
+      companyName: salesOrder.companyName,
+      poNumber: salesOrder.poNumber,
+      salesPersonName: salesOrder.salesPersonName,
+      source,
+    },
+  });
 
   return salesOrder;
 };
@@ -272,6 +351,27 @@ const holdSalesOrderByMd = async (
 
     await safeSaveSalesOrder(salesOrder);
   }
+
+  await safeCreateNotification({
+    module: "sales_order",
+    event: "manager_rejected",
+    title: "Sales Order Put on Hold by MD Sir",
+    message: `${salesOrder.companyName} sales order was put on hold by MD Sir from ${source}`,
+    priority: "urgent",
+    targetUserIds: [salesOrder.salesPersonId],
+    targetRoles: ["admin"],
+    createdBy: managerData.managerId || null,
+    referenceId: salesOrder._id,
+    referenceModel: "SalesOrder",
+    actionUrl: "/dashboard#sales-order",
+    meta: {
+      companyName: salesOrder.companyName,
+      poNumber: salesOrder.poNumber,
+      salesPersonName: salesOrder.salesPersonName,
+      rejectionComment: rejectionComment.trim(),
+      source,
+    },
+  });
 
   return salesOrder;
 };

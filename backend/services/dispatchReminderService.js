@@ -1,7 +1,25 @@
 const Dispatch = require("../model/dispatchModel");
+
 const {
   sendPaymentReminderEmail,
 } = require("./dispatchReminderMailService");
+
+let notificationService = null;
+
+try {
+  notificationService = require("./notificationService");
+} catch (error) {
+  console.log("Notification service not loaded =>", error.message);
+}
+
+const safeCreateNotification = async (payload) => {
+  try {
+    if (!notificationService?.createNotification) return;
+    await notificationService.createNotification(payload);
+  } catch (error) {
+    console.log("PAYMENT REMINDER NOTIFICATION ERROR =>", error.message);
+  }
+};
 
 const startOfDay = (date = new Date()) => {
   const d = new Date(date);
@@ -28,11 +46,7 @@ const updatePaymentStatusIfNeeded = async (dispatch) => {
 };
 
 const sendReminderAndUpdate = async (dispatch, type, overdueDays = 0) => {
-  const mailInfo = await sendPaymentReminderEmail(
-    dispatch,
-    type,
-    overdueDays
-  );
+  const mailInfo = await sendPaymentReminderEmail(dispatch, type, overdueDays);
 
   if (type === "before_due_date") {
     dispatch.paymentReminder.beforeDueDateSent = true;
@@ -51,6 +65,40 @@ const sendReminderAndUpdate = async (dispatch, type, overdueDays = 0) => {
   dispatch.paymentReminder.lastReminderType = type;
 
   await dispatch.save();
+
+  await safeCreateNotification({
+    module: "dispatch",
+    event: type,
+    title:
+      type === "before_due_date"
+        ? "Payment Due Soon"
+        : type === "due_date"
+        ? "Payment Due Today"
+        : "Payment Overdue",
+    message:
+      type === "overdue"
+        ? `${dispatch.companyName} payment is overdue by ${overdueDays} day(s). Pending ₹${Number(
+            dispatch.pendingAmount || 0
+          ).toLocaleString("en-IN")}`
+        : `${dispatch.companyName} payment pending ₹${Number(
+            dispatch.pendingAmount || 0
+          ).toLocaleString("en-IN")} | Invoice ${dispatch.invoiceNumber}`,
+    priority: type === "overdue" ? "urgent" : "high",
+    targetUserIds: [dispatch.salesPersonId],
+    targetRoles: ["admin", "super_admin"],
+    createdBy: null,
+    referenceId: dispatch._id,
+    referenceModel: "Dispatch",
+    actionUrl: "/dashboard#dispatch",
+    meta: {
+      companyName: dispatch.companyName,
+      invoiceNumber: dispatch.invoiceNumber,
+      pendingAmount: dispatch.pendingAmount,
+      paymentDueDate: dispatch.paymentDueDate,
+      overdueDays,
+      reminderType: type,
+    },
+  });
 
   return mailInfo;
 };
@@ -76,31 +124,19 @@ const processPaymentReminders = async () => {
     const daysOverdue = diffDays(dispatch.paymentDueDate, today);
 
     try {
-      // 2 days before due date
-      if (
-        daysToDue === 2 &&
-        !dispatch.paymentReminder.beforeDueDateSent
-      ) {
+      if (daysToDue === 2 && !dispatch.paymentReminder.beforeDueDateSent) {
         await sendReminderAndUpdate(dispatch, "before_due_date");
         sentCount++;
         continue;
       }
 
-      // due date
-      if (
-        daysToDue === 0 &&
-        !dispatch.paymentReminder.dueDateSent
-      ) {
+      if (daysToDue === 0 && !dispatch.paymentReminder.dueDateSent) {
         await sendReminderAndUpdate(dispatch, "due_date");
         sentCount++;
         continue;
       }
 
-      // after due date every 5 days: 5, 10, 15, 20...
-      if (
-        daysOverdue > 0 &&
-        daysOverdue % 5 === 0
-      ) {
+      if (daysOverdue > 0 && daysOverdue % 5 === 0) {
         const lastSent = dispatch.paymentReminder.lastReminderSentAt
           ? startOfDay(dispatch.paymentReminder.lastReminderSentAt)
           : null;
