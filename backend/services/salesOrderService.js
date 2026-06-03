@@ -162,17 +162,18 @@ const generateSalesOrderPdfById = async (salesOrderId) => {
 // ========================================
 const getAllSalesOrders = async (query, user) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      salesPersonId,
-      fromDate,
-      toDate,
-      approvalStatus,
-      customerType,
-      companyName,
-      poNumber,
-    } = query;
+   const {
+  page = 1,
+  limit = 10,
+  salesPersonId,
+  fromDate,
+  toDate,
+  approvalStatus,
+  approvalTab,
+  customerType,
+  companyName,
+  poNumber,
+} = query;
 
     const filter = {};
 
@@ -184,8 +185,15 @@ const getAllSalesOrders = async (query, user) => {
       filter.salesPersonId = new mongoose.Types.ObjectId(user.id);
     }
 
-    if (approvalStatus) filter.approvalStatus = approvalStatus;
-    if (customerType) filter.customerType = customerType;
+   if (approvalTab === "approved") {
+  filter.approvalStatus = "approved";
+} else if (approvalTab === "pending_rejected") {
+  filter.approvalStatus = { $ne: "approved" };
+} else if (approvalStatus) {
+  filter.approvalStatus = approvalStatus;
+}
+
+if (customerType) filter.customerType = customerType;
 
     if (companyName) {
       filter.companyName = { $regex: companyName, $options: "i" };
@@ -742,7 +750,7 @@ const rejectSalesOrderByManager = async (
     }
 
     if (salesOrder.approvalStatus !== "pending_manager_approval") {
-      throw new Error("Sales order is not pending manager approval");
+      throw new Error("Sales order is not pending md sir approval");
     }
 
     salesOrder.approvalStatus = "rejected_by_manager";
@@ -804,7 +812,7 @@ const rejectSalesOrderByManager = async (
         role: "system",
         action: "email_sent",
         comment:
-          "Manager rejection email sent to salesperson with sales and manager in CC",
+          "Md sir rejection email sent to salesperson with sales and md sir in CC",
       });
 
       await salesOrder.save();
@@ -913,7 +921,7 @@ const approveSalesOrderFromEmail = async (salesOrderId, token) => {
   }
 
   if (salesOrder.approvalStatus !== "pending_manager_approval") {
-    throw new Error("Sales order is not pending manager approval");
+    throw new Error("Sales order is not pending md sir approval");
   }
 
   if (salesOrder.managerEmailApproval?.token !== token) {
@@ -966,7 +974,7 @@ const rejectSalesOrderFromEmail = async (
   }
 
   if (salesOrder.approvalStatus !== "pending_manager_approval") {
-    throw new Error("Sales order is not pending manager approval");
+    throw new Error("Sales order is not pending md sir approval");
   }
 
   if (salesOrder.managerEmailApproval?.token !== token) {

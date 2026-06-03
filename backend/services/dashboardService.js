@@ -1308,64 +1308,75 @@ const getMisScoring = async (query, user) => {
   };
 
   const getMonthDateRange = () => {
-    if (fromDate && toDate) {
-      return {
-        startDate: startOfDay(fromDate),
-        endDate: endOfDay(toDate),
-      };
-    }
-
-    const now = new Date();
+  if (fromDate && toDate) {
+    const start = new Date(`${fromDate}T06:00:00+05:30`);
+    const end = new Date(`${toDate}T23:59:59.999+05:30`);
 
     return {
-      startDate: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
-      endDate: new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
-        999
-      ),
+      startDate: start,
+      endDate: end,
     };
+  }
+
+  const now = new Date();
+  const istNow = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
+
+  const year = istNow.getFullYear();
+  const month = istNow.getMonth() + 1;
+
+  const start = new Date(
+    `${year}-${String(month).padStart(2, "0")}-01T06:00:00+05:30`
+  );
+
+  const lastDay = new Date(year, month, 0).getDate();
+
+  const end = new Date(
+    `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(
+      2,
+      "0"
+    )}T23:59:59.999+05:30`
+  );
+
+  return {
+    startDate: start,
+    endDate: end,
   };
+};
 
-  const getCalendarWeeks = (startDate, endDate) => {
-    const weeks = [];
-    let current = new Date(startDate);
-    let weekNo = 1;
+ const getCalendarWeeks = (startDate, endDate) => {
+  const weeks = [];
+  let current = new Date(startDate);
+  let weekNo = 1;
 
-    while (current <= endDate) {
-      const weekStart = new Date(current);
-      const weekEnd = new Date(current);
+  while (current <= endDate) {
+    const weekStart = new Date(current);
+    const weekEnd = new Date(current);
 
-      const day = weekEnd.getDay();
-      const daysToSunday = day === 0 ? 0 : 7 - day;
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
 
-      weekEnd.setDate(weekEnd.getDate() + daysToSunday);
-      weekEnd.setHours(23, 59, 59, 999);
-
-      if (weekEnd > endDate) {
-        weekEnd.setTime(endDate.getTime());
-      }
-
-      weeks.push({
-        weekNo,
-        label: `Week ${weekNo}`,
-        startDate: new Date(weekStart),
-        endDate: new Date(weekEnd),
-      });
-
-      current = new Date(weekEnd);
-      current.setDate(current.getDate() + 1);
-      current.setHours(0, 0, 0, 0);
-
-      weekNo += 1;
+    if (weekEnd > endDate) {
+      weekEnd.setTime(endDate.getTime());
     }
 
-    return weeks;
-  };
+    weeks.push({
+      weekNo,
+      label: `Week ${weekNo}`,
+      startDate: new Date(weekStart),
+      endDate: new Date(weekEnd),
+    });
+
+    current = new Date(weekEnd);
+    current.setDate(current.getDate() + 1);
+    current.setHours(6, 0, 0, 0);
+
+    weekNo += 1;
+  }
+
+  return weeks;
+};
 
   const findWeekIndex = (weeks, date) => {
     if (!date) return -1;

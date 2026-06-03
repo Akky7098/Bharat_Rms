@@ -213,7 +213,7 @@ const approveSalesOrderByAdmin = async (req, res) => {
     return res.status(200).json({
       success: true,
       message:
-        "Sales order approved by admin and sent for manager approval",
+        "Sales order approved by sonia and sent for md sir approval",
       data: salesOrder,
     });
   } catch (error) {
@@ -275,13 +275,13 @@ const approveSalesOrderByManager = async (req, res) => {
       await salesOrderService.approveSalesOrderByManager(
         req.params.id,
         {
-          managerName: req.body.managerName || "Manager",
+          managerName: req.body.managerName || "Mdsir",
         }
       );
 
     return res.status(200).json({
       success: true,
-      message: "Sales order approved by manager",
+      message: "Sales order approved by md sir",
       data: salesOrder,
     });
   } catch (error) {
@@ -312,13 +312,13 @@ const rejectSalesOrderByManager = async (req, res) => {
         req.params.id,
         rejectionComment,
         {
-          managerName: req.body.managerName || "Manager",
+          managerName: req.body.managerName || "Md sir",
         }
       );
 
     return res.status(200).json({
       success: true,
-      message: "Sales order rejected by manager",
+      message: "Sales order rejected by md sir",
       data: salesOrder,
     });
   } catch (error) {
