@@ -1386,15 +1386,6 @@ const getMisScoring = async (query, user) => {
     return Math.min(100, Number(((actual / target) * 100).toFixed(1)));
   };
 
-  const getRawPercent = (actual, target) => {
-    actual = Number(actual || 0);
-    target = Number(target || 0);
-
-    if (!target) return 0;
-
-    return Number(((actual / target) * 100).toFixed(1));
-  };
-
   const getShortBy = (actual, target) =>
     Math.max(Number(target || 0) - Number(actual || 0), 0);
 
@@ -1409,7 +1400,11 @@ const getMisScoring = async (query, user) => {
     return id;
   };
 
-  const calculateWeightedScore = ({ enquiryPercent, salesPercent, visitPercent }) => {
+  const calculateWeightedScore = ({
+    enquiryPercent,
+    salesPercent,
+    visitPercent,
+  }) => {
     return Math.min(
       100,
       Number(
@@ -1430,8 +1425,10 @@ const getMisScoring = async (query, user) => {
   };
 
   const salesOrderFilter = {
-    approvalStatus: "approved",
-    orderDate: { $gte: startDate, $lte: endDate },
+    "managerApproval.approvedAt": {
+      $gte: startDate,
+      $lte: endDate,
+    },
   };
 
   const visitFilter = {
@@ -1442,7 +1439,12 @@ const getMisScoring = async (query, user) => {
     const userId = makeObjectId(user.id || user._id);
 
     enquiryFilter.salesPersonId = userId;
-    salesOrderFilter.salesPersonId = userId;
+
+    salesOrderFilter.$or = [
+      { salesPersonId: userId },
+      { salesPersonId: String(user.id || user._id) },
+    ];
+
     visitFilter.salesPersonId = userId;
   }
 
@@ -1451,7 +1453,9 @@ const getMisScoring = async (query, user) => {
     .lean();
 
   const approvedSalesOrders = await SalesOrder.find(salesOrderFilter)
-    .select("salesPersonId salesPersonName salesPersonEmail orderValue orderDate")
+    .select(
+      "salesPersonId salesPersonName salesPersonEmail orderValue orderDate managerApproval.approvedAt approvalStatus"
+    )
     .lean();
 
   const visits = await ColdCall.find({
@@ -1606,7 +1610,8 @@ const getMisScoring = async (query, user) => {
     person.approvedSalesValue += value;
     person.approvedOrders += 1;
 
-    const weekIndex = findWeekIndex(weeks, order.orderDate);
+    const approvalDate = order.managerApproval?.approvedAt;
+    const weekIndex = findWeekIndex(weeks, approvalDate);
 
     if (weekIndex >= 0) {
       person.weeklyReport[weekIndex].approvedSalesValue += value;
@@ -1660,7 +1665,7 @@ const getMisScoring = async (query, user) => {
         visits: 0,
       };
 
-      const weeklyReport = person.weeklyReport.map((week, index) => {
+      const weeklyReport = person.weeklyReport.map((week) => {
         cumulativeTarget.enquiries += weeklyBaseTarget.enquiries;
         cumulativeTarget.salesValue += weeklyBaseTarget.salesValue;
         cumulativeTarget.visits += weeklyBaseTarget.visits;
@@ -1683,8 +1688,14 @@ const getMisScoring = async (query, user) => {
         };
 
         const carryForward = {
-          enquiries: getShortBy(previousActual.enquiries, previousTarget.enquiries),
-          salesValue: getShortBy(previousActual.salesValue, previousTarget.salesValue),
+          enquiries: getShortBy(
+            previousActual.enquiries,
+            previousTarget.enquiries
+          ),
+          salesValue: getShortBy(
+            previousActual.salesValue,
+            previousTarget.salesValue
+          ),
           visits: getShortBy(previousActual.visits, previousTarget.visits),
         };
 
@@ -1703,12 +1714,21 @@ const getMisScoring = async (query, user) => {
             Number(week.approvedSalesValue || 0),
             targetWithCarryForward.salesValue
           ),
-          visits: getShortBy(Number(week.visits || 0), targetWithCarryForward.visits),
+          visits: getShortBy(
+            Number(week.visits || 0),
+            targetWithCarryForward.visits
+          ),
         };
 
         const cumulativeShortBy = {
-          enquiries: getShortBy(cumulativeActual.enquiries, cumulativeTarget.enquiries),
-          salesValue: getShortBy(cumulativeActual.salesValue, cumulativeTarget.salesValue),
+          enquiries: getShortBy(
+            cumulativeActual.enquiries,
+            cumulativeTarget.enquiries
+          ),
+          salesValue: getShortBy(
+            cumulativeActual.salesValue,
+            cumulativeTarget.salesValue
+          ),
           visits: getShortBy(cumulativeActual.visits, cumulativeTarget.visits),
         };
 
@@ -1721,7 +1741,10 @@ const getMisScoring = async (query, user) => {
             cumulativeActual.salesValue,
             cumulativeTarget.salesValue
           ),
-          visitPercent: getPercent(cumulativeActual.visits, cumulativeTarget.visits),
+          visitPercent: getPercent(
+            cumulativeActual.visits,
+            cumulativeTarget.visits
+          ),
         };
 
         const weekAchievement = {
@@ -1848,7 +1871,9 @@ const getMisScoring = async (query, user) => {
         weekly:
           currentWeek?.weekScore >= 80
             ? `Good performance in ${currentWeek.label}. Your weekly score is ${currentWeek.weekScore}/100.`
-            : `Your ${currentWeek.label} score is ${currentWeek?.weekScore || 0}/100. Focus on pending sales, enquiries and visits.`,
+            : `Your ${currentWeek.label} score is ${
+                currentWeek?.weekScore || 0
+              }/100. Focus on pending sales, enquiries and visits.`,
 
         sales:
           currentWeek?.shortBy?.salesValue > 0
