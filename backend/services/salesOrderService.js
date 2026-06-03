@@ -164,7 +164,7 @@ const getAllSalesOrders = async (query, user) => {
   try {
    const {
   page = 1,
-  limit = 10,
+  limit = 20,
   salesPersonId,
   fromDate,
   toDate,

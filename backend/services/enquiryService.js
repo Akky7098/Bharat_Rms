@@ -344,7 +344,7 @@ const updateWorkflow = async (id, body) => {
 const getAllEnquiries = async (query, user) => {
   const {
     page = 1,
-    limit = 10,
+    limit = 30,
     salesPersonId,
     fromDate,
     toDate,

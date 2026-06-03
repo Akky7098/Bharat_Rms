@@ -502,7 +502,7 @@ const createDispatch = async (body, files, user) => {
 const getAllDispatches = async (query, user) => {
   const {
     page = 1,
-    limit = 10,
+    limit = 20,
     salesOrderId,
     paymentStatus,
     dispatchStatus,
