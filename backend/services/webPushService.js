@@ -12,7 +12,11 @@ const getPublicVapidKey = () => {
 };
 
 const saveSubscription = async ({ user, subscription, platform, userAgent }) => {
-  if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+  if (
+    !subscription?.endpoint ||
+    !subscription?.keys?.p256dh ||
+    !subscription?.keys?.auth
+  ) {
     throw new Error("Invalid push subscription");
   }
 
@@ -40,6 +44,10 @@ const saveSubscription = async ({ user, subscription, platform, userAgent }) => 
     }
   );
 
+  console.log(
+    `PUSH SUBSCRIPTION SAVED => user=${saved.userId}, role=${saved.role}, platform=${saved.platform}`
+  );
+
   return saved;
 };
 
@@ -54,6 +62,8 @@ const removeSubscription = async (endpoint) => {
       },
     }
   );
+
+  console.log("PUSH SUBSCRIPTION DISABLED =>", endpoint.slice(0, 40));
 
   return true;
 };
@@ -71,9 +81,19 @@ const sendPushToSubscription = async (subscriptionDoc, payload) => {
     subscriptionDoc.lastUsedAt = new Date();
     await subscriptionDoc.save();
 
+    console.log(
+      `WEB PUSH SENT SUCCESS => user=${subscriptionDoc.userId}, role=${subscriptionDoc.role}, platform=${subscriptionDoc.platform}`
+    );
+
     return true;
   } catch (error) {
-    console.log("WEB PUSH SEND ERROR =>", error.statusCode, error.message);
+    console.log(
+      "WEB PUSH SEND ERROR =>",
+      error.statusCode,
+      error.message,
+      "endpoint=",
+      String(subscriptionDoc.endpoint || "").slice(0, 60)
+    );
 
     if ([404, 410].includes(error.statusCode)) {
       subscriptionDoc.isActive = false;
@@ -92,7 +112,10 @@ const sendPushNotification = async (notification) => {
 
     const targetRoles = notification.targetRoles || [];
 
-    if (!targetUserIds.length && !targetRoles.length) return;
+    if (!targetUserIds.length && !targetRoles.length) {
+      console.log("WEB PUSH SKIPPED => no target users/roles");
+      return;
+    }
 
     const subscriptions = await PushSubscription.find({
       isActive: true,
@@ -104,16 +127,29 @@ const sendPushNotification = async (notification) => {
       ],
     });
 
+    console.log(
+      `WEB PUSH TARGETS => notification=${notification._id}, users=${targetUserIds.length}, roles=${targetRoles.join(
+        ","
+      )}, subscriptions=${subscriptions.length}`
+    );
+
+    if (!subscriptions.length) return;
+
+    const hash =
+      notification.actionUrl?.includes("#")
+        ? notification.actionUrl.split("#")[1]
+        : "";
+
     const payload = {
-      title: notification.title,
-      body: notification.message,
-      icon: "/logo.png",
-      badge: "/logo.png",
-      url: notification.actionUrl || "/dashboard",
-      notificationId: notification._id,
-      module: notification.module,
-      referenceId: notification.referenceId,
-      priority: notification.priority,
+      title: notification.title || "Bharat RMS",
+      body: notification.message || "You have a new update.",
+      icon: "/bharat-rms-icon.png",
+      badge: "/bharat-rms-icon.png",
+      url: hash ? `/dashboard#${hash}` : notification.actionUrl || "/dashboard",
+      notificationId: String(notification._id || ""),
+      module: notification.module || "",
+      referenceId: String(notification.referenceId || ""),
+      priority: notification.priority || "normal",
     };
 
     await Promise.all(

@@ -202,6 +202,7 @@ let webPushService = null;
 
 try {
   webPushService = require("./webPushService");
+  console.log("WEB PUSH SERVICE LOADED SUCCESSFULLY");
 } catch (error) {
   console.log("Web push service not loaded =>", error.message);
 }
@@ -211,7 +212,18 @@ const cleanObjectIds = (ids = []) =>
 
 const sendPushSafely = async (notification) => {
   try {
-    if (!webPushService?.sendPushNotification) return;
+    if (!webPushService?.sendPushNotification) {
+      console.log("WEB PUSH SKIPPED => webPushService not loaded");
+      return;
+    }
+
+    console.log(
+      "WEB PUSH CALLING =>",
+      notification._id,
+      notification.title,
+      notification.targetUserIds,
+      notification.targetRoles
+    );
 
     await webPushService.sendPushNotification(notification);
   } catch (error) {
