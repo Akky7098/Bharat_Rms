@@ -69,6 +69,13 @@ app.use(
       path.join(__dirname, "uploads", "customer-po")
   )
 );
+app.use(
+  "/uploads/feasibility-report",
+  express.static(
+    process.env.FEASIBILITY_REPORT_STORAGE_PATH ||
+      path.join(__dirname, "uploads", "feasibility-report")
+  )
+);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use("/api/auth", authRoutes);

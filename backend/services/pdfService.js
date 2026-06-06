@@ -203,26 +203,32 @@ const addSalesOrderHtmlPages = async (mergedPdf, salesOrder) => {
   copiedPages.forEach((page) => mergedPdf.addPage(page));
 };
 
-const mergeExistingPdf = async (mergedPdf, pdfPath) => {
+const mergeExistingPdf = async (mergedPdf, pdfPath, label = "ATTACHMENT") => {
   if (!pdfPath) return;
 
   if (!fs.existsSync(pdfPath)) {
-    console.log("CUSTOMER PO PDF NOT FOUND =>", pdfPath);
+    console.log(`${label} PDF NOT FOUND =>`, pdfPath);
     return;
   }
 
-  const pdfBytes = fs.readFileSync(pdfPath);
+  try {
+    const pdfBytes = fs.readFileSync(pdfPath);
 
-  const pdf = await PDFDocument.load(pdfBytes, {
-    ignoreEncryption: true,
-  });
+    const pdf = await PDFDocument.load(pdfBytes, {
+      ignoreEncryption: true,
+    });
 
-  const copiedPages = await mergedPdf.copyPages(
-    pdf,
-    pdf.getPageIndices()
-  );
+    const copiedPages = await mergedPdf.copyPages(
+      pdf,
+      pdf.getPageIndices()
+    );
 
-  copiedPages.forEach((page) => mergedPdf.addPage(page));
+    copiedPages.forEach((page) => mergedPdf.addPage(page));
+
+    console.log(`${label} PDF MERGED SUCCESS`);
+  } catch (error) {
+    console.log(`${label} PDF MERGE FAILED =>`, error.message);
+  }
 };
 const extractUniqueGrades = (sizeGradeQuantityRate = "") => {
   const lines = String(sizeGradeQuantityRate)
@@ -547,12 +553,22 @@ const generateSalesOrderPdf = async (salesOrder) => {
 
     await addSalesOrderHtmlPages(mergedPdf, salesOrder);
 
-    await mergeExistingPdf(
-      mergedPdf,
-      salesOrder.customerPOFile?.filePath
-    );
+// 1. Customer PO after sales order
+await mergeExistingPdf(
+  mergedPdf,
+  salesOrder.customerPOFile?.filePath,
+  "CUSTOMER PO"
+);
 
-    await generatePreShipmentPage(mergedPdf, salesOrder);
+// 2. Feasibility report after PO, only if uploaded
+await mergeExistingPdf(
+  mergedPdf,
+  salesOrder.feasibilityReportFile?.filePath,
+  "FEASIBILITY REPORT"
+);
+
+// 3. Pre-shipment page last
+await generatePreShipmentPage(mergedPdf, salesOrder);
 
     const finalPdfBytes = await mergedPdf.save();
 

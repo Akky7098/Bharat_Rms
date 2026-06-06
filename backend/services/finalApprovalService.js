@@ -2,8 +2,6 @@ const emailService = require("./emailService");
 const pdfService = require("./pdfService");
 const whatsappApprovalService = require("./whatsappApprovalService");
 
-const { initWhatsappClient } = require("../util/whatsappClient");
-
 let notificationService = null;
 
 try {
@@ -67,7 +65,7 @@ const attachExistingPdfOrGenerate = async (salesOrder, source) => {
       });
 
       await safeSaveSalesOrder(salesOrder);
-      return;
+      return true;
     }
 
     const pdfDetails = await pdfService.generateSalesOrderPdf(salesOrder);
@@ -95,6 +93,7 @@ const attachExistingPdfOrGenerate = async (salesOrder, source) => {
     });
 
     await safeSaveSalesOrder(salesOrder);
+    return true;
   } catch (pdfError) {
     console.log("PDF CHECK/GENERATION FAILED =>", pdfError.message);
 
@@ -105,7 +104,105 @@ const attachExistingPdfOrGenerate = async (salesOrder, source) => {
     });
 
     await safeSaveSalesOrder(salesOrder);
+    return false;
   }
+};
+
+const runFinalApprovalBackgroundTasks = (SalesOrderModel, salesOrderId, source) => {
+  setImmediate(async () => {
+    let salesOrder = null;
+
+    try {
+      salesOrder = await SalesOrderModel.findById(salesOrderId);
+
+      if (!salesOrder) {
+        console.log("FINAL APPROVAL BACKGROUND: Sales order not found");
+        return;
+      }
+
+      await attachExistingPdfOrGenerate(salesOrder, source);
+
+      try {
+        const emailResult = await emailService.sendSalesOrderApprovedEmail(
+          salesOrder,
+          "MD Sir"
+        );
+
+        salesOrder.emailStatus = {
+          sent: true,
+          sentAt: new Date(),
+          sentTo: [salesOrder.salesPersonEmail].filter(Boolean),
+          ccTo: [
+            salesOrder.adminApproval?.adminEmail,
+            salesOrder.managerApproval?.managerEmail,
+          ].filter(Boolean),
+          messageId: emailResult?.messageId,
+          errorMessage: "",
+        };
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "email_sent",
+          comment: "Final approval email sent to salesperson",
+        });
+
+        await safeSaveSalesOrder(salesOrder);
+      } catch (emailError) {
+        console.log("FINAL APPROVAL EMAIL ERROR =>", emailError.message);
+
+        salesOrder.emailStatus = {
+          ...salesOrder.emailStatus,
+          sent: false,
+          errorMessage: emailError.message,
+        };
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "failed",
+          comment: `Final approval email failed: ${emailError.message}`,
+        });
+
+        await safeSaveSalesOrder(salesOrder);
+      }
+
+      try {
+        await whatsappApprovalService.sendFinalPdfToSalesGroup(salesOrder);
+
+        salesOrder.whatsappGroupStatus = {
+          ...salesOrder.whatsappGroupStatus,
+          sent: true,
+          sentAt: new Date(),
+          errorMessage: "",
+        };
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "whatsapp_group_sent",
+          comment: "Final approved PDF sent to WhatsApp sales group",
+        });
+
+        await safeSaveSalesOrder(salesOrder);
+      } catch (waError) {
+        console.log("GROUP WHATSAPP ERROR =>", waError.message);
+
+        salesOrder.whatsappGroupStatus = {
+          ...salesOrder.whatsappGroupStatus,
+          sent: false,
+          errorMessage: waError.message,
+        };
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "failed",
+          comment: `WhatsApp group PDF sending failed: ${waError.message}`,
+        });
+
+        await safeSaveSalesOrder(salesOrder);
+      }
+    } catch (error) {
+      console.log("FINAL APPROVAL BACKGROUND TASK ERROR =>", error.message);
+    }
+  });
 };
 
 const finalApproveSalesOrder = async (
@@ -126,6 +223,8 @@ const finalApproveSalesOrder = async (
   if (salesOrder.approvalStatus !== "pending_manager_approval") {
     throw new Error("Sales order is not pending MD Sir approval");
   }
+
+  salesOrder.managerEmailApproval = salesOrder.managerEmailApproval || {};
 
   salesOrder.approvalStatus = "approved";
   salesOrder.isEditableBySalesPerson = false;
@@ -160,81 +259,11 @@ const finalApproveSalesOrder = async (
 
   await safeSaveSalesOrder(salesOrder);
 
-  await attachExistingPdfOrGenerate(salesOrder, source);
-
-  try {
-    const emailResult = await emailService.sendSalesOrderApprovedEmail(
-      salesOrder,
-      "MD Sir"
-    );
-
-    salesOrder.emailStatus = {
-      sent: true,
-      sentAt: new Date(),
-      sentTo: [salesOrder.salesPersonEmail],
-      ccTo: [
-        salesOrder.adminApproval?.adminEmail,
-        salesOrder.managerApproval?.managerEmail,
-      ].filter(Boolean),
-      messageId: emailResult?.messageId,
-    };
-
-    salesOrder.approvalHistory.push({
-      role: "system",
-      action: "email_sent",
-      comment: "Final approval email sent to salesperson",
-    });
-
-    await safeSaveSalesOrder(salesOrder);
-  } catch (emailError) {
-    console.log("FINAL APPROVAL EMAIL ERROR =>", emailError.message);
-
-    salesOrder.approvalHistory.push({
-      role: "system",
-      action: "failed",
-      comment: `Final approval email failed: ${emailError.message}`,
-    });
-
-    await safeSaveSalesOrder(salesOrder);
-  }
-
-  try {
-    console.log("RESUMING WHATSAPP AFTER PDF GENERATION...");
-    initWhatsappClient();
-
-    await new Promise((resolve) => setTimeout(resolve, 15000));
-
-    await whatsappApprovalService.sendFinalPdfToSalesGroup(salesOrder);
-
-    salesOrder.whatsappGroupStatus = {
-      ...salesOrder.whatsappGroupStatus,
-      sent: true,
-      sentAt: new Date(),
-    };
-
-    salesOrder.approvalHistory.push({
-      role: "system",
-      action: "whatsapp_group_sent",
-      comment: "Final approved PDF sent to WhatsApp sales group",
-    });
-
-    await safeSaveSalesOrder(salesOrder);
-  } catch (waError) {
-    console.log("GROUP WHATSAPP ERROR =>", waError.message);
-
-    salesOrder.whatsappGroupStatus = {
-      ...salesOrder.whatsappGroupStatus,
-      errorMessage: waError.message,
-    };
-
-    salesOrder.approvalHistory.push({
-      role: "system",
-      action: "failed",
-      comment: `WhatsApp group PDF sending failed: ${waError.message}`,
-    });
-
-    await safeSaveSalesOrder(salesOrder);
-  }
+  runFinalApprovalBackgroundTasks(
+    salesOrder.constructor,
+    salesOrder._id,
+    source
+  );
 
   await safeCreateNotification({
     module: "sales_order",
@@ -279,6 +308,8 @@ const holdSalesOrderByMd = async (
     throw new Error("Hold comment is required");
   }
 
+  salesOrder.managerEmailApproval = salesOrder.managerEmailApproval || {};
+
   salesOrder.approvalStatus = "rejected_by_manager";
   salesOrder.isEditableBySalesPerson = true;
   salesOrder.revisionCount = (salesOrder.revisionCount || 0) + 1;
@@ -321,12 +352,13 @@ const holdSalesOrderByMd = async (
     salesOrder.emailStatus = {
       sent: true,
       sentAt: new Date(),
-      sentTo: [salesOrder.salesPersonEmail],
+      sentTo: [salesOrder.salesPersonEmail].filter(Boolean),
       ccTo: [
         salesOrder.adminApproval?.adminEmail,
         salesOrder.managerApproval?.managerEmail,
       ].filter(Boolean),
       messageId: emailResult?.messageId,
+      errorMessage: "",
     };
 
     salesOrder.approvalHistory.push({
@@ -338,6 +370,12 @@ const holdSalesOrderByMd = async (
     await safeSaveSalesOrder(salesOrder);
   } catch (emailError) {
     console.log("HOLD EMAIL ERROR =>", emailError.message);
+
+    salesOrder.emailStatus = {
+      ...salesOrder.emailStatus,
+      sent: false,
+      errorMessage: emailError.message,
+    };
 
     salesOrder.approvalHistory.push({
       role: "system",

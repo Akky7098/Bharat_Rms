@@ -126,6 +126,12 @@ supplyFinish: {
   required: true,
   default: "supply_size",
 },
+ orderType: {
+  type: String,
+  enum: ["domestic", "international", "special_economic_zone"],
+  required: true,
+  default: "domestic",
+},
     companyName: {
       type: String,
       required: true,
@@ -597,6 +603,13 @@ specialNote: {
     },
 
     customerPOFile: {
+  originalName: String,
+  fileName: String,
+  filePath: String,
+  fileUrl: String,
+  uploadedAt: Date,
+},
+feasibilityReportFile: {
   originalName: String,
   fileName: String,
   filePath: String,

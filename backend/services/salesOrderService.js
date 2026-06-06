@@ -25,10 +25,17 @@ const safeCreateNotification = async (payload) => {
 // ========================================
 // CREATE SALES ORDER
 // ========================================
-const createSalesOrder = async (payload, loggedInUser, uploadedPOFile) => {
+const createSalesOrder = async (
+  payload,
+  loggedInUser,
+  uploadedPOFile,
+  uploadedFeasibilityReportFile
+) => {
   try {
     const salesOrder = new SalesOrder({
       ...payload,
+
+      orderType: payload.orderType || "domestic",
 
       salesPersonId: loggedInUser._id,
       salesPersonName: loggedInUser.name,
@@ -45,14 +52,29 @@ const createSalesOrder = async (payload, loggedInUser, uploadedPOFile) => {
           }
         : undefined,
 
+      feasibilityReportFile: uploadedFeasibilityReportFile
+        ? {
+            originalName: uploadedFeasibilityReportFile.originalname,
+            fileName: uploadedFeasibilityReportFile.filename,
+            filePath: uploadedFeasibilityReportFile.path,
+            fileUrl: `/uploads/feasibility-report/${uploadedFeasibilityReportFile.filename}`,
+            uploadedAt: new Date(),
+          }
+        : undefined,
+
       approvalHistory: [
         {
           actionBy: loggedInUser._id,
           role: "salesperson",
           action: "created",
-          comment: uploadedPOFile
-            ? "Sales order created with customer PO file"
-            : "Sales order created without customer PO file",
+          comment:
+            uploadedPOFile && uploadedFeasibilityReportFile
+              ? "Sales order created with customer PO file and feasibility report"
+              : uploadedPOFile
+              ? "Sales order created with customer PO file"
+              : uploadedFeasibilityReportFile
+              ? "Sales order created with feasibility report"
+              : "Sales order created without customer PO file and feasibility report",
         },
       ],
     });
@@ -74,30 +96,45 @@ const createSalesOrder = async (payload, loggedInUser, uploadedPOFile) => {
         companyName: savedOrder.companyName,
         poNumber: savedOrder.poNumber,
         salesPersonName: loggedInUser.name,
+        orderType: savedOrder.orderType,
       },
     });
 
+    setImmediate(async () => {
+  try {
+    const freshOrder = await SalesOrder.findById(savedOrder._id);
+
+    if (!freshOrder) return;
+
+    await emailService.sendSalesOrderCreatedToAdminEmail(freshOrder);
+
+    freshOrder.approvalHistory.push({
+      role: "system",
+      action: "email_sent",
+      comment: "Sales order creation email sent to sonia",
+    });
+
+    await freshOrder.save();
+  } catch (emailError) {
+    console.log("SALES ORDER CREATE ADMIN EMAIL ERROR =>", emailError.message);
+
     try {
-      await emailService.sendSalesOrderCreatedToAdminEmail(savedOrder);
+      const freshOrder = await SalesOrder.findById(savedOrder._id);
 
-      savedOrder.approvalHistory.push({
-        role: "system",
-        action: "email_sent",
-        comment: "Sales order creation email sent to admin",
-      });
+      if (!freshOrder) return;
 
-      await savedOrder.save();
-    } catch (emailError) {
-      console.log("SALES ORDER CREATE ADMIN EMAIL ERROR =>", emailError.message);
-
-      savedOrder.approvalHistory.push({
+      freshOrder.approvalHistory.push({
         role: "system",
         action: "failed",
         comment: `Sales order creation admin email failed: ${emailError.message}`,
       });
 
-      await savedOrder.save();
+      await freshOrder.save();
+    } catch (saveError) {
+      console.log("CREATE EMAIL ERROR SAVE FAILED =>", saveError.message);
     }
+  }
+});
 
     return savedOrder;
   } catch (error) {
@@ -353,7 +390,8 @@ const updateSalesOrder = async (
   salesOrderId,
   payload,
   loggedInUser,
-  uploadedPOFile
+  uploadedPOFile,
+  uploadedFeasibilityReportFile
 ) => {
   try {
     const salesOrder = await SalesOrder.findById(salesOrderId);
@@ -367,12 +405,14 @@ const updateSalesOrder = async (
     }
 
     const preservedCustomerPOFile = salesOrder.customerPOFile;
+    const preservedFeasibilityReportFile = salesOrder.feasibilityReportFile;
 
     Object.keys(payload).forEach((key) => {
       if (key === "pdf") return;
       if (key === "finalSalesOrderPackage") return;
       if (key === "preShipmentInspectionPdf") return;
       if (key === "customerPOFile") return;
+      if (key === "feasibilityReportFile") return;
       if (key === "approvalHistory") return;
       if (key === "approvalStatus") return;
       if (key === "isEditableBySalesPerson") return;
@@ -381,6 +421,10 @@ const updateSalesOrder = async (
         salesOrder[key] = payload[key];
       }
     });
+
+    if (!salesOrder.orderType) {
+      salesOrder.orderType = "domestic";
+    }
 
     if (uploadedPOFile) {
       salesOrder.customerPOFile = {
@@ -392,6 +436,18 @@ const updateSalesOrder = async (
       };
     } else {
       salesOrder.customerPOFile = preservedCustomerPOFile;
+    }
+
+    if (uploadedFeasibilityReportFile) {
+      salesOrder.feasibilityReportFile = {
+        originalName: uploadedFeasibilityReportFile.originalname,
+        fileName: uploadedFeasibilityReportFile.filename,
+        filePath: uploadedFeasibilityReportFile.path,
+        fileUrl: `/uploads/feasibility-report/${uploadedFeasibilityReportFile.filename}`,
+        uploadedAt: new Date(),
+      };
+    } else {
+      salesOrder.feasibilityReportFile = preservedFeasibilityReportFile;
     }
 
     salesOrder.approvalStatus = "pending_admin_review";
@@ -410,10 +466,14 @@ const updateSalesOrder = async (
       actionBy: loggedInUser._id,
       role: "salesperson",
       action: "resubmitted",
-      comment: uploadedPOFile
-        ? "Sales order updated with new customer PO file and resubmitted after hold"
-        : "Sales order updated and resubmitted after hold",
-      actionAt: new Date(),
+      comment:
+        uploadedPOFile && uploadedFeasibilityReportFile
+          ? "Sales order updated with new customer PO file and feasibility report and resubmitted after hold"
+          : uploadedPOFile
+          ? "Sales order updated with new customer PO file and resubmitted after hold"
+          : uploadedFeasibilityReportFile
+          ? "Sales order updated with new feasibility report and resubmitted after hold"
+          : "Sales order updated and resubmitted after hold",
     });
 
     const updatedOrder = await salesOrder.save();
@@ -433,6 +493,7 @@ const updateSalesOrder = async (
         companyName: updatedOrder.companyName,
         poNumber: updatedOrder.poNumber,
         salesPersonName: loggedInUser.name,
+        orderType: updatedOrder.orderType,
       },
     });
 
@@ -467,7 +528,6 @@ const updateSalesOrder = async (
       role: "system",
       action: "pdf_generated",
       comment: "Fresh PDF generated after sales order resubmission",
-      actionAt: new Date(),
     });
 
     await updatedOrder.save();
@@ -482,6 +542,138 @@ const updateSalesOrder = async (
 // ADMIN APPROVE
 // ========================================
 const crypto = require("crypto");
+
+const runAdminApprovalBackgroundTasks = (SalesOrderModel, salesOrderId) => {
+  setImmediate(async () => {
+    let salesOrder = null;
+
+    try {
+      salesOrder = await SalesOrderModel.findById(salesOrderId);
+
+      if (!salesOrder) {
+        console.log("ADMIN APPROVAL BACKGROUND: Sales order not found");
+        return;
+      }
+
+      try {
+        await emailService.sendSalesOrderApprovedEmail(
+          salesOrder,
+          "Manager. It is now sent for MD Sir approval"
+        );
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "email_sent",
+          comment: "Manager approval notification sent to salesperson",
+        });
+
+        await salesOrder.save();
+      } catch (emailError) {
+        console.log("SALESPERSON EMAIL ERROR =>", emailError.message);
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "failed",
+          comment: `Salesperson email failed: ${emailError.message}`,
+        });
+
+        await salesOrder.save();
+      }
+
+      try {
+        await emailService.sendManagerApprovalRequestEmail(salesOrder);
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "email_sent",
+          comment: "MD Sir approval request email sent",
+        });
+
+        await salesOrder.save();
+      } catch (emailError) {
+        console.log("MD EMAIL APPROVAL REQUEST ERROR =>", emailError.message);
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "failed",
+          comment: `MD email approval request failed: ${emailError.message}`,
+        });
+
+        await salesOrder.save();
+      }
+
+      try {
+        await whatsappApprovalService.sendMdApprovalWhatsapp(salesOrder);
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "whatsapp_group_sent",
+          comment: "WhatsApp approval request sent to MD Sir",
+        });
+
+        await salesOrder.save();
+      } catch (waError) {
+        console.log("MD WHATSAPP REQUEST ERROR =>", waError.message);
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "failed",
+          comment: `MD WhatsApp request failed: ${waError.message}`,
+        });
+
+        await salesOrder.save();
+      }
+    } catch (error) {
+      console.log("ADMIN APPROVAL BACKGROUND TASK ERROR =>", error.message);
+    }
+  });
+};
+
+const runAdminRejectBackgroundTasks = (
+  SalesOrderModel,
+  salesOrderId,
+  rejectionComment
+) => {
+  setImmediate(async () => {
+    let salesOrder = null;
+
+    try {
+      salesOrder = await SalesOrderModel.findById(salesOrderId);
+
+      if (!salesOrder) {
+        console.log("ADMIN REJECT BACKGROUND: Sales order not found");
+        return;
+      }
+
+      try {
+        await emailService.sendSalesOrderRejectedEmail(
+          salesOrder,
+          rejectionComment
+        );
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "email_sent",
+          comment: "Admin rejection email sent to salesperson",
+        });
+
+        await salesOrder.save();
+      } catch (emailError) {
+        console.log("ADMIN REJECTION EMAIL ERROR =>", emailError.message);
+
+        salesOrder.approvalHistory.push({
+          role: "system",
+          action: "failed",
+          comment: `Admin rejection email failed: ${emailError.message}`,
+        });
+
+        await salesOrder.save();
+      }
+    } catch (error) {
+      console.log("ADMIN REJECT BACKGROUND TASK ERROR =>", error.message);
+    }
+  });
+};
 
 const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
   try {
@@ -499,9 +691,7 @@ const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
     salesOrder.checkedAt = new Date();
 
     salesOrder.adminApproval = {
-      adminId: loggedInAdmin._id,
-      adminName: loggedInAdmin.name,
-      adminEmail: loggedInAdmin.email,
+      approvedBy: loggedInAdmin._id,
       approvedAt: new Date(),
     };
 
@@ -540,68 +730,7 @@ const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
       },
     });
 
-    try {
-      await emailService.sendSalesOrderApprovedEmail(
-        salesOrder,
-        "Manager. It is now sent for MD Sir approval"
-      );
-
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "email_sent",
-        comment: "Manager approval notification sent to salesperson",
-      });
-
-      await salesOrder.save();
-    } catch (emailError) {
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "failed",
-        comment: `Salesperson email failed: ${emailError.message}`,
-      });
-
-      await salesOrder.save();
-    }
-
-    try {
-      await emailService.sendManagerApprovalRequestEmail(salesOrder);
-
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "email_sent",
-        comment: "MD Sir approval request email sent",
-      });
-
-      await salesOrder.save();
-    } catch (emailError) {
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "failed",
-        comment: `MD email approval request failed: ${emailError.message}`,
-      });
-
-      await salesOrder.save();
-    }
-
-    try {
-      await whatsappApprovalService.sendMdApprovalWhatsapp(salesOrder);
-
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "whatsapp_group_sent",
-        comment: "WhatsApp approval request sent to MD Sir",
-      });
-
-      await salesOrder.save();
-    } catch (waError) {
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "failed",
-        comment: `MD WhatsApp request failed: ${waError.message}`,
-      });
-
-      await salesOrder.save();
-    }
+    runAdminApprovalBackgroundTasks(salesOrder.constructor, salesOrder._id);
 
     return salesOrder;
   } catch (error) {
@@ -609,9 +738,6 @@ const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
   }
 };
 
-// ========================================
-// ADMIN REJECT
-// ========================================
 const rejectSalesOrderByAdmin = async (
   salesOrderId,
   rejectionComment,
@@ -628,9 +754,7 @@ const rejectSalesOrderByAdmin = async (
     salesOrder.isEditableBySalesPerson = true;
 
     salesOrder.adminApproval = {
-      adminId: loggedInAdmin._id,
-      adminName: loggedInAdmin.name,
-      adminEmail: loggedInAdmin.email,
+      rejectedBy: loggedInAdmin._id,
       rejectedAt: new Date(),
       rejectionComment,
     };
@@ -663,27 +787,11 @@ const rejectSalesOrderByAdmin = async (
       },
     });
 
-    try {
-      await emailService.sendSalesOrderRejectedEmail(salesOrder, rejectionComment);
-
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "email_sent",
-        comment: "Admin rejection email sent to salesperson",
-      });
-
-      await salesOrder.save();
-    } catch (emailError) {
-      console.log("ADMIN REJECTION EMAIL ERROR =>", emailError.message);
-
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "failed",
-        comment: `Admin rejection email failed: ${emailError.message}`,
-      });
-
-      await salesOrder.save();
-    }
+    runAdminRejectBackgroundTasks(
+      salesOrder.constructor,
+      salesOrder._id,
+      rejectionComment
+    );
 
     return salesOrder;
   } catch (error) {

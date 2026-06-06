@@ -9,7 +9,10 @@ const uploadSalesOrderFiles = require("../util/uploadSalesOrderFiles");
 router.post(
   "/create",
   authMiddleware,
-  uploadSalesOrderFiles.single("customerPOFile"),
+  uploadSalesOrderFiles.fields([
+  { name: "customerPOFile", maxCount: 1 },
+  { name: "feasibilityReportFile", maxCount: 1 },
+   ]),
   salesOrderController.createSalesOrder
 );
 router.get(
@@ -54,9 +57,12 @@ router.get(
 
 // UPDATE / RESUBMIT
 router.put(
-  "/:id",
+  "/update/:id",
   authMiddleware,
-  uploadSalesOrderFiles.single("customerPOFile"),
+  uploadSalesOrderFiles.fields([
+    { name: "customerPOFile", maxCount: 1 },
+    { name: "feasibilityReportFile", maxCount: 1 },
+  ]),
   salesOrderController.updateSalesOrder
 );
 

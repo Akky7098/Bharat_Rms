@@ -71,10 +71,17 @@ const salesOrderService = require("../services/salesOrderService");
 // ===============================
 const createSalesOrder = async (req, res) => {
   try {
+    const payload = req.body.data ? JSON.parse(req.body.data) : { ...req.body };
+
+    const uploadedPOFile = req.files?.customerPOFile?.[0] || null;
+    const uploadedFeasibilityReportFile =
+      req.files?.feasibilityReportFile?.[0] || null;
+
     const salesOrder = await salesOrderService.createSalesOrder(
-     JSON.parse(req.body.data),
+      payload,
       req.user,
-      req.file,
+      uploadedPOFile,
+      uploadedFeasibilityReportFile
     );
 
     return res.status(201).json({
@@ -164,20 +171,16 @@ const updateSalesOrder = async (req, res) => {
   try {
     const payload = req.body.data ? JSON.parse(req.body.data) : { ...req.body };
 
-    if (req.file) {
-      payload.customerPOFile = {
-        originalName: req.file.originalname,
-        fileName: req.file.filename,
-        filePath: req.file.path,
-        fileUrl: `/uploads/customer-po/${req.file.filename}`,
-        uploadedAt: new Date(),
-      };
-    }
+    const uploadedPOFile = req.files?.customerPOFile?.[0] || null;
+    const uploadedFeasibilityReportFile =
+      req.files?.feasibilityReportFile?.[0] || null;
 
     const salesOrder = await salesOrderService.updateSalesOrder(
       req.params.id,
       payload,
-      req.user
+      req.user,
+      uploadedPOFile,
+      uploadedFeasibilityReportFile
     );
 
     return res.status(200).json({
