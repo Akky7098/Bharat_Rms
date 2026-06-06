@@ -186,8 +186,21 @@ const sendFinalPdfToSalesGroup = async (salesOrder) => {
     return true;
   });
 };
+const sendPlainWhatsappMessage = async (chatId, message) => {
+  const ready = await isWhatsappReady();
 
+  if (!ready) {
+    throw new Error("WhatsApp client is not ready.");
+  }
+
+  const client = getWhatsappClient();
+
+  await client.sendMessage(chatId, message);
+
+  return true;
+};
 module.exports = {
   sendMdApprovalWhatsapp,
   sendFinalPdfToSalesGroup,
+  sendPlainWhatsappMessage,
 };

@@ -10,6 +10,8 @@ const startEnquiryDelayNotificationCron = require("./cron/enquiryDelayNotificati
 const startSalesDailyInsightCron = require("./cron/salesDailyInsightCron");
 const startWhatsappHealthCron = require("./cron/whatsappHealthCron");
 const { initWhatsappClient } = require("./util/whatsappClient");
+const startSalesOrderApprovalReminderCron = require("./cron/salesOrderApprovalReminderCron");
+
 
 const app = require("./app");
 const connectDB = require("./db");
@@ -48,6 +50,7 @@ const startApp = async () => {
       // startPaymentReminderCron();
 
       startAttendanceCron();
+      startSalesOrderApprovalReminderCron();
       startAttendanceSummaryCron();
       startAttendanceNotificationCron();
       startEnquiryDelayNotificationCron();
