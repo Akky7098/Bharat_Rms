@@ -31,7 +31,136 @@ const endOfDay = (date = new Date()) => {
   d.setHours(23, 59, 59, 999);
   return d;
 };
+const whatsappApprovalService = require("./whatsappApprovalService");
 
+const enquiryWhatsappQueue = [];
+let enquiryWhatsappQueueRunning = false;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const runEnquiryWhatsappQueue = async () => {
+  if (enquiryWhatsappQueueRunning) return;
+
+  enquiryWhatsappQueueRunning = true;
+
+  while (enquiryWhatsappQueue.length > 0) {
+    const job = enquiryWhatsappQueue.shift();
+
+    try {
+      await job();
+    } catch (error) {
+      console.log("ENQUIRY WHATSAPP QUEUE ERROR =>", error.message);
+    }
+
+    await sleep(1500);
+  }
+
+  enquiryWhatsappQueueRunning = false;
+};
+
+const enqueueEnquiryWhatsapp = (job) => {
+  enquiryWhatsappQueue.push(job);
+  runEnquiryWhatsappQueue();
+};
+
+const cleanWhatsappNumber = (number = "") => {
+  const cleaned = String(number || "").replace(/\D/g, "");
+
+  if (!cleaned) return "";
+
+  if (cleaned.length === 10) return `91${cleaned}`;
+
+  return cleaned;
+};
+
+const getWhatsappChatId = (number = "") => {
+  const cleaned = cleanWhatsappNumber(number);
+
+  if (!cleaned) return "";
+
+  return `${cleaned}@c.us`;
+};
+
+const sendSafeEnquiryWhatsapp = async (number, message) => {
+  const chatId = getWhatsappChatId(number);
+
+  if (!chatId) {
+    throw new Error("Customer WhatsApp number missing");
+  }
+
+  return whatsappApprovalService.sendPlainWhatsappMessage(chatId, message);
+};
+
+const formatShape = (shape = "") => {
+  return String(shape || "-").toUpperCase();
+};
+
+const buildEnquiryMaterialBlock = (enquiry) => {
+  return `📦 *Material:* ${enquiry.grade || "-"} ${formatShape(enquiry.shape)}
+📏 *Size:* ${enquiry.size || "-"}
+⚖️ *Quantity:* ${enquiry.quantityInKg || "-"} Kg`;
+};
+
+const sendEnquiryCreatedWhatsapp = async (enquiry, user) => {
+  const message = `🙏 Hello *${enquiry.customerName || "Sir/Madam"}*,
+
+Thank you for your enquiry with *Bharat Special Steels Pvt. Ltd.*
+
+Your enquiry has been received and is now under process.
+
+🧾 *Enquiry No:* ${enquiry.enquiryNumber || "-"}
+🏢 *Company:* ${enquiry.companyName || "-"}
+${buildEnquiryMaterialBlock(enquiry)}
+
+👤 *Sales Person:* ${user?.name || "Our Sales Team"}
+
+Our sales team will review your requirement and share the quotation shortly, usually within *24 hours*.
+
+Thank you,
+*Bharat Special Steels Pvt. Ltd.*`;
+
+  return sendSafeEnquiryWhatsapp(enquiry.customerContactNo, message);
+};
+
+const sendQuotationDoneWhatsapp = async (enquiry) => {
+  const quotationLink = enquiry.quotation?.quotationLink || "";
+
+  const message = `📄 Hello *${enquiry.customerName || "Sir/Madam"}*,
+
+Your quotation from *Bharat Special Steels Pvt. Ltd.* is ready.
+
+🧾 *Enquiry No:* ${enquiry.enquiryNumber || "-"}
+🏢 *Company:* ${enquiry.companyName || "-"}
+${buildEnquiryMaterialBlock(enquiry)}
+
+${quotationLink ? `🔗 *Quotation Link:*\n${quotationLink}` : ""}
+
+Please review the quotation. For any clarification, our sales team will assist you.
+
+Thank you,
+*Bharat Special Steels Pvt. Ltd.*`;
+
+  return sendSafeEnquiryWhatsapp(enquiry.customerContactNo, message);
+};
+
+const sendOrderWonWhatsapp = async (enquiry) => {
+  const message = `✅ Hello *${enquiry.customerName || "Sir/Madam"}*,
+
+Thank you for confirming your order with *Bharat Special Steels Pvt. Ltd.*
+
+Your requirement has been taken into process.
+
+🧾 *Enquiry No:* ${enquiry.enquiryNumber || "-"}
+🏢 *Company:* ${enquiry.companyName || "-"}
+${buildEnquiryMaterialBlock(enquiry)}
+
+Our team will process the order and keep you informed once it is ready for dispatch.
+
+Thank you for choosing us,
+*Bharat Special Steels Pvt. Ltd.*`;
+
+  return sendSafeEnquiryWhatsapp(enquiry.customerContactNo, message);
+};
 const createEnquiry = async (body, user, file) => {
   const {
     enquiryDate,
@@ -212,16 +341,31 @@ const createEnquiry = async (body, user, file) => {
       lostRemark: "",
     },
   });
-
+  setImmediate(() => {
+  enqueueEnquiryWhatsapp(async () => {
+    try {
+      await sendEnquiryCreatedWhatsapp(enquiry, user);
+      console.log("ENQUIRY CREATED WHATSAPP SENT =>", enquiry.enquiryNumber);
+    } catch (waError) {
+      console.log("ENQUIRY CREATED WHATSAPP ERROR =>", waError.message);
+    }
+  });
+});
   return enquiry;
 };
 
 const updateWorkflow = async (id, body) => {
-  const enquiry = await Enquiry.findById(id);
+  const enquiry = await Enquiry.findById(id).populate(
+    "salesPersonId",
+    "name email mobileNumber whatsappNumber"
+  );
 
   if (!enquiry) {
     throw new Error("Enquiry not found");
   }
+
+  const wasQuotationCompleted = enquiry.quotation.completed === true;
+  const previousClosureStatus = enquiry.closure.status;
 
   const { feasibility, quotation, closure } = body;
 
@@ -338,9 +482,44 @@ const updateWorkflow = async (id, body) => {
 
   await enquiry.save();
 
+  const isQuotationCompletedNow =
+    wasQuotationCompleted === false &&
+    enquiry.quotation.completed === true &&
+    enquiry.quotation.quotationLink;
+
+  const isWonNow =
+    previousClosureStatus !== "won" &&
+    enquiry.closure.status === "won" &&
+    enquiry.closure.completed === true;
+
+  if (isQuotationCompletedNow) {
+    setImmediate(() => {
+      enqueueEnquiryWhatsapp(async () => {
+        try {
+          await sendQuotationDoneWhatsapp(enquiry);
+          console.log("QUOTATION WHATSAPP SENT =>", enquiry.enquiryNumber);
+        } catch (waError) {
+          console.log("QUOTATION WHATSAPP ERROR =>", waError.message);
+        }
+      });
+    });
+  }
+
+  if (isWonNow) {
+    setImmediate(() => {
+      enqueueEnquiryWhatsapp(async () => {
+        try {
+          await sendOrderWonWhatsapp(enquiry);
+          console.log("ORDER WON WHATSAPP SENT =>", enquiry.enquiryNumber);
+        } catch (waError) {
+          console.log("ORDER WON WHATSAPP ERROR =>", waError.message);
+        }
+      });
+    });
+  }
+
   return enquiry;
 };
-
 const getAllEnquiries = async (query, user) => {
   const {
     page = 1,

@@ -137,9 +137,7 @@ const buildSalesOrderWhatsappBlock = (salesOrder) => {
 🧾 *Checklist:* ${salesOrder.checklistNumber || "-"}
 💰 *Order Value:* ₹${formatCurrency(salesOrder.orderValue)}
 📌 *Status:* ${formatStatus(salesOrder.approvalStatus)}
-
-📦 *Size / Grade / Qty / Rate:*
-${salesOrder.sizeGradeQuantityRate || "-"}`;
+`;
 };
 
 const addHistoryAndSave = async (salesOrder, action, comment) => {
@@ -163,18 +161,18 @@ const sendSalesOrderCreatedToAdminWhatsapp = async (salesOrder) => {
 
   const message = `🚨 *New Sales Order Created*
 
-Sonia ji, a new Sales Order is pending for your checking.
+ Sonia ji, a new Sales Order is pending for your checking.
 
-${buildSalesOrderWhatsappBlock(salesOrder)}
+ ${buildSalesOrderWhatsappBlock(salesOrder)}
 
-✅ Please approve or put on hold from Bharat RMS dashboard.
+ ✅ Please approve or put on hold from Bharat RMS dashboard.
 
-🔗 ${getDashboardLink()}`;
+ 🔗 ${getDashboardLink()}`;
 
   return sendSafeWhatsappMessage(process.env.ADMIN_WHATSAPP_NUMBER, message);
 };
 
-const sendAdminApprovedToSalesPersonWhatsapp = async (salesOrder) => {
+ const sendAdminApprovedToSalesPersonWhatsapp = async (salesOrder) => {
   const number = getSalesPersonWhatsappNumber(salesOrder);
 
   const message = `✅ *Sales Order Checked by Sonia ji*
@@ -506,6 +504,75 @@ const getAllSalesOrders = async (query, user) => {
     const skip = (Number(page) - 1) * Number(limit);
     const totalRecords = await SalesOrder.countDocuments(filter);
 
+    const buildApprovedSummary = async (dateFilter = null) => {
+      const summaryFilter = {
+        ...filter,
+        approvalStatus: "approved",
+      };
+
+      delete summaryFilter.orderDate;
+
+      if (dateFilter) {
+        summaryFilter["managerApproval.approvedAt"] = dateFilter;
+      } else if (fromDate || toDate) {
+        summaryFilter["managerApproval.approvedAt"] = {};
+
+        if (fromDate) {
+          summaryFilter["managerApproval.approvedAt"].$gte = new Date(fromDate);
+        }
+
+        if (toDate) {
+          const endDate = new Date(toDate);
+          endDate.setHours(23, 59, 59, 999);
+          summaryFilter["managerApproval.approvedAt"].$lte = endDate;
+        }
+      }
+
+      const result = await SalesOrder.aggregate([
+        { $match: summaryFilter },
+        {
+          $group: {
+            _id: null,
+            totalApprovedOrders: { $sum: 1 },
+            totalApprovedValue: {
+              $sum: {
+                $convert: {
+                  input: "$orderValue",
+                  to: "double",
+                  onError: 0,
+                  onNull: 0,
+                },
+              },
+            },
+          },
+        },
+      ]);
+
+      return {
+        totalApprovedOrders: result[0]?.totalApprovedOrders || 0,
+        totalApprovedValue: result[0]?.totalApprovedValue || 0,
+      };
+    };
+
+    const now = new Date();
+
+    const istNow = new Date(
+      now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    );
+
+    const todayStart = new Date(istNow);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const todayEnd = new Date(istNow);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const todayApprovedSummary = await buildApprovedSummary({
+      $gte: todayStart,
+      $lte: todayEnd,
+    });
+
+    const filteredApprovedSummary = await buildApprovedSummary();
+
     const salesOrders = await SalesOrder.aggregate([
       { $match: filter },
       {
@@ -604,6 +671,10 @@ const getAllSalesOrders = async (query, user) => {
 
     return {
       salesOrders,
+      summary: {
+        todayApproved: todayApprovedSummary,
+        filteredApproved: filteredApprovedSummary,
+      },
       pagination: {
         totalRecords,
         currentPage: Number(page),
