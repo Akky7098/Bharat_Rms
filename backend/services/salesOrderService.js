@@ -603,13 +603,40 @@ const getAllSalesOrders = async (query, user) => {
           preserveNullAndEmptyArrays: true,
         },
       },
-      {
+     {
+  $addFields: {
+    latestActivityDate: {
+      $switch: {
+        branches: [
+          {
+            case: { $eq: ["$approvalStatus", "approved"] },
+            then: { $ifNull: ["$managerApproval.approvedAt", "$updatedAt"] },
+          },
+          {
+            case: { $eq: ["$approvalStatus", "pending_manager_approval"] },
+            then: { $ifNull: ["$checkedAt", "$updatedAt"] },
+          },
+          {
+            case: { $eq: ["$approvalStatus", "pending_admin_review"] },
+            then: { $ifNull: ["$lastSubmittedAt", "$createdAt"] },
+          },
+          {
+            case: { $eq: ["$approvalStatus", "rejected_by_admin"] },
+            then: { $ifNull: ["$adminApproval.rejectedAt", "$updatedAt"] },
+          },
+          {
+            case: { $eq: ["$approvalStatus", "rejected_by_manager"] },
+            then: { $ifNull: ["$managerApproval.rejectedAt", "$updatedAt"] },
+          },
+        ],
+        default: { $ifNull: ["$updatedAt", "$createdAt"] },
+      },
+    },
+  },
+},
+{
   $sort: {
-    "managerApproval.approvedAt": -1,
-    "managerApproval.rejectedAt": -1,
-    "adminApproval.rejectedAt": -1,
-    checkedAt: -1,
-    lastSubmittedAt: -1,
+    latestActivityDate: -1,
     updatedAt: -1,
     createdAt: -1,
   },
