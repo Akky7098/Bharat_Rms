@@ -1,4 +1,4 @@
-const emailService = require("./emailService");
+//const emailService = require("./emailService");
 const pdfService = require("./pdfService");
 const whatsappApprovalService = require("./whatsappApprovalService");
 
@@ -122,48 +122,48 @@ const runFinalApprovalBackgroundTasks = (SalesOrderModel, salesOrderId, source) 
 
       await attachExistingPdfOrGenerate(salesOrder, source);
 
-      try {
-        const emailResult = await emailService.sendSalesOrderApprovedEmail(
-          salesOrder,
-          "MD Sir"
-        );
+      // try {
+      //   const emailResult = await emailService.sendSalesOrderApprovedEmail(
+      //     salesOrder,
+      //     "MD Sir"
+      //   );
 
-        salesOrder.emailStatus = {
-          sent: true,
-          sentAt: new Date(),
-          sentTo: [salesOrder.salesPersonEmail].filter(Boolean),
-          ccTo: [
-            salesOrder.adminApproval?.adminEmail,
-            salesOrder.managerApproval?.managerEmail,
-          ].filter(Boolean),
-          messageId: emailResult?.messageId,
-          errorMessage: "",
-        };
+      //   salesOrder.emailStatus = {
+      //     sent: true,
+      //     sentAt: new Date(),
+      //     sentTo: [salesOrder.salesPersonEmail].filter(Boolean),
+      //     ccTo: [
+      //       salesOrder.adminApproval?.adminEmail,
+      //       salesOrder.managerApproval?.managerEmail,
+      //     ].filter(Boolean),
+      //     messageId: emailResult?.messageId,
+      //     errorMessage: "",
+      //   };
 
-        salesOrder.approvalHistory.push({
-          role: "system",
-          action: "email_sent",
-          comment: "Final approval email sent to salesperson",
-        });
+      //   salesOrder.approvalHistory.push({
+      //     role: "system",
+      //     action: "email_sent",
+      //     comment: "Final approval email sent to salesperson",
+      //   });
 
-        await safeSaveSalesOrder(salesOrder);
-      } catch (emailError) {
-        console.log("FINAL APPROVAL EMAIL ERROR =>", emailError.message);
+      //   await safeSaveSalesOrder(salesOrder);
+      // } catch (emailError) {
+      //   console.log("FINAL APPROVAL EMAIL ERROR =>", emailError.message);
 
-        salesOrder.emailStatus = {
-          ...salesOrder.emailStatus,
-          sent: false,
-          errorMessage: emailError.message,
-        };
+      //   salesOrder.emailStatus = {
+      //     ...salesOrder.emailStatus,
+      //     sent: false,
+      //     errorMessage: emailError.message,
+      //   };
 
-        salesOrder.approvalHistory.push({
-          role: "system",
-          action: "failed",
-          comment: `Final approval email failed: ${emailError.message}`,
-        });
+      //   salesOrder.approvalHistory.push({
+      //     role: "system",
+      //     action: "failed",
+      //     comment: `Final approval email failed: ${emailError.message}`,
+      //   });
 
-        await safeSaveSalesOrder(salesOrder);
-      }
+      //   await safeSaveSalesOrder(salesOrder);
+      // }
 
       try {
         await whatsappApprovalService.sendFinalPdfToSalesGroup(salesOrder);
@@ -242,9 +242,9 @@ const finalApproveSalesOrder = async (
 
   salesOrder.checkedByAdminName = managerData.managerName || "MD Sir";
 
-  if (source === "email") {
-    salesOrder.managerEmailApproval.approvedByEmailLinkAt = new Date();
-  }
+  // if (source === "email") {
+  //   salesOrder.managerEmailApproval.approvedByEmailLinkAt = new Date();
+  // }
 
   if (source === "whatsapp") {
     salesOrder.managerEmailApproval.approvedByWhatsappLinkAt = new Date();
@@ -326,9 +326,9 @@ const holdSalesOrderByMd = async (
     rejectionComment: rejectionComment.trim(),
   };
 
-  if (source === "email") {
-    salesOrder.managerEmailApproval.rejectedByEmailLinkAt = new Date();
-  }
+  // if (source === "email") {
+  //   salesOrder.managerEmailApproval.rejectedByEmailLinkAt = new Date();
+  // }
 
   if (source === "whatsapp") {
     salesOrder.managerEmailApproval.rejectedByWhatsappLinkAt = new Date();
@@ -343,48 +343,48 @@ const holdSalesOrderByMd = async (
 
   await safeSaveSalesOrder(salesOrder);
 
-  try {
-    const emailResult = await emailService.sendSalesOrderRejectedEmail(
-      salesOrder,
-      rejectionComment.trim()
-    );
+  // try {
+  //   const emailResult = await emailService.sendSalesOrderRejectedEmail(
+  //     salesOrder,
+  //     rejectionComment.trim()
+  //   );
 
-    salesOrder.emailStatus = {
-      sent: true,
-      sentAt: new Date(),
-      sentTo: [salesOrder.salesPersonEmail].filter(Boolean),
-      ccTo: [
-        salesOrder.adminApproval?.adminEmail,
-        salesOrder.managerApproval?.managerEmail,
-      ].filter(Boolean),
-      messageId: emailResult?.messageId,
-      errorMessage: "",
-    };
+  //   salesOrder.emailStatus = {
+  //     sent: true,
+  //     sentAt: new Date(),
+  //     sentTo: [salesOrder.salesPersonEmail].filter(Boolean),
+  //     ccTo: [
+  //       salesOrder.adminApproval?.adminEmail,
+  //       salesOrder.managerApproval?.managerEmail,
+  //     ].filter(Boolean),
+  //     messageId: emailResult?.messageId,
+  //     errorMessage: "",
+  //   };
 
-    salesOrder.approvalHistory.push({
-      role: "system",
-      action: "email_sent",
-      comment: "Hold email sent to salesperson",
-    });
+  //   salesOrder.approvalHistory.push({
+  //     role: "system",
+  //     action: "email_sent",
+  //     comment: "Hold email sent to salesperson",
+  //   });
 
-    await safeSaveSalesOrder(salesOrder);
-  } catch (emailError) {
-    console.log("HOLD EMAIL ERROR =>", emailError.message);
+  //   await safeSaveSalesOrder(salesOrder);
+  // } catch (emailError) {
+  //   console.log("HOLD EMAIL ERROR =>", emailError.message);
 
-    salesOrder.emailStatus = {
-      ...salesOrder.emailStatus,
-      sent: false,
-      errorMessage: emailError.message,
-    };
+  //   salesOrder.emailStatus = {
+  //     ...salesOrder.emailStatus,
+  //     sent: false,
+  //     errorMessage: emailError.message,
+  //   };
 
-    salesOrder.approvalHistory.push({
-      role: "system",
-      action: "failed",
-      comment: `Hold email failed: ${emailError.message}`,
-    });
+  //   salesOrder.approvalHistory.push({
+  //     role: "system",
+  //     action: "failed",
+  //     comment: `Hold email failed: ${emailError.message}`,
+  //   });
 
-    await safeSaveSalesOrder(salesOrder);
-  }
+  //   await safeSaveSalesOrder(salesOrder);
+  // }
 
   await safeCreateNotification({
     module: "sales_order",

@@ -32,6 +32,10 @@ const userSchema = new mongoose.Schema(
   enum: ["office", "work_from_home"],
   default: "office",
 },
+whatsappNumber: {
+  type: String,
+  trim: true,
+},
 
 homeLocation: {
   latitude: Number,

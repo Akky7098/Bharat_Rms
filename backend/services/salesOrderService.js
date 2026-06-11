@@ -1,9 +1,9 @@
 const SalesOrder = require("../model/salesOrderModel");
 const pdfService = require("./pdfService");
 const whatsappApprovalService = require("./whatsappApprovalService");
-const emailService = require("./emailService");
 const mongoose = require("mongoose");
 const finalApprovalService = require("./finalApprovalService");
+const crypto = require("crypto");
 
 let notificationService = null;
 
@@ -19,6 +19,264 @@ const safeCreateNotification = async (payload) => {
     await notificationService.createNotification(payload);
   } catch (error) {
     console.log("NOTIFICATION ERROR =>", error.message);
+  }
+};
+
+// ========================================
+// SAFE WHATSAPP QUEUE
+// Prevents 2-3 WhatsApp messages firing at exact same time
+// ========================================
+const whatsappQueue = [];
+let whatsappQueueRunning = false;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const runWhatsappQueue = async () => {
+  if (whatsappQueueRunning) return;
+
+  whatsappQueueRunning = true;
+
+  while (whatsappQueue.length > 0) {
+    const job = whatsappQueue.shift();
+
+    try {
+      await job();
+    } catch (error) {
+      console.log("WHATSAPP QUEUE JOB ERROR =>", error.message);
+    }
+
+    await sleep(1500);
+  }
+
+  whatsappQueueRunning = false;
+};
+
+const enqueueWhatsapp = (job) => {
+  whatsappQueue.push(job);
+  runWhatsappQueue();
+};
+
+const cleanWhatsappNumber = (number = "") => {
+  const cleaned = String(number || "").replace(/\D/g, "");
+
+  if (!cleaned) return "";
+
+  if (cleaned.length === 10) return `91${cleaned}`;
+
+  return cleaned;
+};
+
+const getWhatsappChatId = (number = "") => {
+  const cleaned = cleanWhatsappNumber(number);
+
+  if (!cleaned) return "";
+
+  return `${cleaned}@c.us`;
+};
+
+const sendSafeWhatsappMessage = async (number, message) => {
+  const chatId = getWhatsappChatId(number);
+
+  if (!chatId) {
+    throw new Error("WhatsApp number missing");
+  }
+
+  return whatsappApprovalService.sendPlainWhatsappMessage(chatId, message);
+};
+
+const getBaseUrl = () => {
+  return "https://dashboard.bharatspecialsteels.com";
+};
+
+const getBackendUrl = () => {
+  return (
+    process.env.BACKEND_URL ||
+    "https://bharatspecialsteels.bharatspecialsteels.com"
+  ).replace(/\/$/, "");
+};
+
+const getDashboardLink = () => {
+  return `${getBaseUrl()}/dashboard#sales-order`;
+};
+
+const getPdfLink = (salesOrder) => {
+  const fileUrl =
+    salesOrder?.pdf?.fileUrl ||
+    salesOrder?.finalSalesOrderPackage?.fileUrl ||
+    "";
+
+  if (!fileUrl) return "";
+
+  const cleanFileUrl = fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`;
+
+  return `${getBackendUrl()}${cleanFileUrl}`;
+};
+
+const formatCurrency = (value = 0) => {
+  return Number(value || 0).toLocaleString("en-IN");
+};
+
+const formatStatus = (status = "") => {
+  return String(status || "-").replaceAll("_", " ").toUpperCase();
+};
+
+const getSalesPersonWhatsappNumber = (salesOrder) => {
+  return (
+    salesOrder?.salesPersonWhatsappNumber ||
+    salesOrder?.salesPersonMobile ||
+    salesOrder?.salesPersonId?.whatsappNumber ||
+    salesOrder?.salesPersonId?.mobileNumber ||
+    ""
+  );
+};
+
+const buildSalesOrderWhatsappBlock = (salesOrder) => {
+  return `🏢 *Company:* ${salesOrder.companyName || "-"}
+👤 *Sales Person:* ${salesOrder.salesPersonName || "-"}
+📄 *PO No:* ${salesOrder.poNumber || "-"}
+🧾 *Checklist:* ${salesOrder.checklistNumber || "-"}
+💰 *Order Value:* ₹${formatCurrency(salesOrder.orderValue)}
+📌 *Status:* ${formatStatus(salesOrder.approvalStatus)}
+
+📦 *Size / Grade / Qty / Rate:*
+${salesOrder.sizeGradeQuantityRate || "-"}`;
+};
+
+const addHistoryAndSave = async (salesOrder, action, comment) => {
+  try {
+    salesOrder.approvalHistory.push({
+      role: "system",
+      action,
+      comment,
+    });
+
+    await salesOrder.save();
+  } catch (error) {
+    console.log("APPROVAL HISTORY SAVE ERROR =>", error.message);
+  }
+};
+
+const sendSalesOrderCreatedToAdminWhatsapp = async (salesOrder) => {
+  if (!process.env.ADMIN_WHATSAPP_NUMBER) {
+    throw new Error("ADMIN_WHATSAPP_NUMBER missing in env");
+  }
+
+  const message = `🚨 *New Sales Order Created*
+
+Sonia ji, a new Sales Order is pending for your checking.
+
+${buildSalesOrderWhatsappBlock(salesOrder)}
+
+✅ Please approve or put on hold from Bharat RMS dashboard.
+
+🔗 ${getDashboardLink()}`;
+
+  return sendSafeWhatsappMessage(process.env.ADMIN_WHATSAPP_NUMBER, message);
+};
+
+const sendAdminApprovedToSalesPersonWhatsapp = async (salesOrder) => {
+  const number = getSalesPersonWhatsappNumber(salesOrder);
+
+  const message = `✅ *Sales Order Checked by Sonia ji*
+
+Hello *${salesOrder.salesPersonName || "Sales Team"}*,
+
+Your Sales Order has been checked by Sonia ji and sent to *MD Sir* for final approval.
+
+${buildSalesOrderWhatsappBlock(salesOrder)}
+
+⏳ Current Status: *Pending MD Sir Approval*`;
+
+  return sendSafeWhatsappMessage(number, message);
+};
+
+const sendAdminHoldToSalesPersonWhatsapp = async (
+  salesOrder,
+  rejectionComment
+) => {
+  const number = getSalesPersonWhatsappNumber(salesOrder);
+
+  const message = `⛔ *Sales Order Put On Hold by Sonia ji*
+
+Hello *${salesOrder.salesPersonName || "Sales Team"}*,
+
+Your Sales Order has been put on hold by Sonia ji.
+
+${buildSalesOrderWhatsappBlock(salesOrder)}
+
+📝 *Reason:*
+${rejectionComment || "-"}
+
+Please revise and resubmit from Bharat RMS.`;
+
+  return sendSafeWhatsappMessage(number, message);
+};
+
+const sendMdApprovedToSalesPersonAndAdminWhatsapp = async (salesOrder) => {
+  const pdfLink = getPdfLink(salesOrder);
+  const salesPersonNumber = getSalesPersonWhatsappNumber(salesOrder);
+
+  const salesPersonMessage = `🎉 *Sales Order Finally Approved by MD Sir*
+
+Hello *${salesOrder.salesPersonName || "Sales Team"}*,
+
+Your Sales Order is now fully approved by MD Sir.
+
+${buildSalesOrderWhatsappBlock(salesOrder)}
+
+${pdfLink ? `📎 *PDF:* ${pdfLink}` : ""}
+
+You can proceed with the next process.`;
+
+  await sendSafeWhatsappMessage(salesPersonNumber, salesPersonMessage);
+
+  if (process.env.ADMIN_WHATSAPP_NUMBER) {
+    const adminMessage = `✅ *MD Sir Approved Sales Order*
+
+Sonia ji, MD Sir has finally approved this Sales Order.
+
+${buildSalesOrderWhatsappBlock(salesOrder)}
+
+${pdfLink ? `📎 *PDF:* ${pdfLink}` : ""}`;
+
+    await sendSafeWhatsappMessage(process.env.ADMIN_WHATSAPP_NUMBER, adminMessage);
+  }
+};
+
+const sendMdHoldToSalesPersonAndAdminWhatsapp = async (
+  salesOrder,
+  rejectionComment
+) => {
+  const salesPersonNumber = getSalesPersonWhatsappNumber(salesOrder);
+
+  const salesPersonMessage = `⛔ *Sales Order Put On Hold by MD Sir*
+
+Hello *${salesOrder.salesPersonName || "Sales Team"}*,
+
+MD Sir has put your Sales Order on hold.
+
+${buildSalesOrderWhatsappBlock(salesOrder)}
+
+📝 *MD Sir Reason:*
+${rejectionComment || "-"}
+
+Please revise and resubmit from Bharat RMS.`;
+
+  await sendSafeWhatsappMessage(salesPersonNumber, salesPersonMessage);
+
+  if (process.env.ADMIN_WHATSAPP_NUMBER) {
+    const adminMessage = `⚠️ *MD Sir Put Sales Order On Hold*
+
+Sonia ji, MD Sir has put this Sales Order on hold.
+
+${buildSalesOrderWhatsappBlock(salesOrder)}
+
+📝 *Reason:*
+${rejectionComment || "-"}
+
+Please coordinate with the salesperson.`;
+
+    await sendSafeWhatsappMessage(process.env.ADMIN_WHATSAPP_NUMBER, adminMessage);
   }
 };
 
@@ -100,41 +358,34 @@ const createSalesOrder = async (
       },
     });
 
-    setImmediate(async () => {
-  try {
-    const freshOrder = await SalesOrder.findById(savedOrder._id);
+    setImmediate(() => {
+      enqueueWhatsapp(async () => {
+        const freshOrder = await SalesOrder.findById(savedOrder._id);
 
-    if (!freshOrder) return;
+        if (!freshOrder) return;
 
-    await emailService.sendSalesOrderCreatedToAdminEmail(freshOrder);
+        try {
+          await sendSalesOrderCreatedToAdminWhatsapp(freshOrder);
 
-    freshOrder.approvalHistory.push({
-      role: "system",
-      action: "email_sent",
-      comment: "Sales order creation email sent to sonia",
-    });
+          await addHistoryAndSave(
+            freshOrder,
+            "whatsapp_sent",
+            "Sales order creation WhatsApp sent to Sonia"
+          );
+        } catch (waError) {
+          console.log(
+            "SALES ORDER CREATE ADMIN WHATSAPP ERROR =>",
+            waError.message
+          );
 
-    await freshOrder.save();
-  } catch (emailError) {
-    console.log("SALES ORDER CREATE ADMIN EMAIL ERROR =>", emailError.message);
-
-    try {
-      const freshOrder = await SalesOrder.findById(savedOrder._id);
-
-      if (!freshOrder) return;
-
-      freshOrder.approvalHistory.push({
-        role: "system",
-        action: "failed",
-        comment: `Sales order creation admin email failed: ${emailError.message}`,
+          await addHistoryAndSave(
+            freshOrder,
+            "failed",
+            `Sales order creation admin WhatsApp failed: ${waError.message}`
+          );
+        }
       });
-
-      await freshOrder.save();
-    } catch (saveError) {
-      console.log("CREATE EMAIL ERROR SAVE FAILED =>", saveError.message);
-    }
-  }
-});
+    });
 
     return savedOrder;
   } catch (error) {
@@ -199,18 +450,18 @@ const generateSalesOrderPdfById = async (salesOrderId) => {
 // ========================================
 const getAllSalesOrders = async (query, user) => {
   try {
-   const {
-  page = 1,
-  limit = 20,
-  salesPersonId,
-  fromDate,
-  toDate,
-  approvalStatus,
-  approvalTab,
-  customerType,
-  companyName,
-  poNumber,
-} = query;
+    const {
+      page = 1,
+      limit = 20,
+      salesPersonId,
+      fromDate,
+      toDate,
+      approvalStatus,
+      approvalTab,
+      customerType,
+      companyName,
+      poNumber,
+    } = query;
 
     const filter = {};
 
@@ -222,15 +473,15 @@ const getAllSalesOrders = async (query, user) => {
       filter.salesPersonId = new mongoose.Types.ObjectId(user.id);
     }
 
-   if (approvalTab === "approved") {
-  filter.approvalStatus = "approved";
-} else if (approvalTab === "pending_rejected") {
-  filter.approvalStatus = { $ne: "approved" };
-} else if (approvalStatus) {
-  filter.approvalStatus = approvalStatus;
-}
+    if (approvalTab === "approved") {
+      filter.approvalStatus = "approved";
+    } else if (approvalTab === "pending_rejected") {
+      filter.approvalStatus = { $ne: "approved" };
+    } else if (approvalStatus) {
+      filter.approvalStatus = approvalStatus;
+    }
 
-if (customerType) filter.customerType = customerType;
+    if (customerType) filter.customerType = customerType;
 
     if (companyName) {
       filter.companyName = { $regex: companyName, $options: "i" };
@@ -343,6 +594,7 @@ if (customerType) filter.customerType = customerType;
           "salesPersonId.name": 1,
           "salesPersonId.email": 1,
           "salesPersonId.mobileNumber": 1,
+          "salesPersonId.whatsappNumber": 1,
           "checkedByAdminId._id": 1,
           "checkedByAdminId.name": 1,
           "checkedByAdminId.email": 1,
@@ -370,7 +622,7 @@ if (customerType) filter.customerType = customerType;
 const getSalesOrderById = async (salesOrderId) => {
   try {
     const salesOrder = await SalesOrder.findById(salesOrderId)
-      .populate("salesPersonId", "name email mobileNumber")
+      .populate("salesPersonId", "name email mobileNumber whatsappNumber")
       .populate("checkedByAdminId", "name email");
 
     if (!salesOrder) {
@@ -532,6 +784,35 @@ const updateSalesOrder = async (
 
     await updatedOrder.save();
 
+    setImmediate(() => {
+      enqueueWhatsapp(async () => {
+        const freshOrder = await SalesOrder.findById(updatedOrder._id);
+
+        if (!freshOrder) return;
+
+        try {
+          await sendSalesOrderCreatedToAdminWhatsapp(freshOrder);
+
+          await addHistoryAndSave(
+            freshOrder,
+            "whatsapp_sent",
+            "Sales order resubmission WhatsApp sent to Sonia"
+          );
+        } catch (waError) {
+          console.log(
+            "SALES ORDER RESUBMIT ADMIN WHATSAPP ERROR =>",
+            waError.message
+          );
+
+          await addHistoryAndSave(
+            freshOrder,
+            "failed",
+            `Sales order resubmission admin WhatsApp failed: ${waError.message}`
+          );
+        }
+      });
+    });
+
     return updatedOrder;
   } catch (error) {
     throw error;
@@ -539,16 +820,15 @@ const updateSalesOrder = async (
 };
 
 // ========================================
-// ADMIN APPROVE
+// ADMIN APPROVE BACKGROUND TASK
 // ========================================
-const crypto = require("crypto");
-
 const runAdminApprovalBackgroundTasks = (SalesOrderModel, salesOrderId) => {
-  setImmediate(async () => {
-    let salesOrder = null;
-
-    try {
-      salesOrder = await SalesOrderModel.findById(salesOrderId);
+  setImmediate(() => {
+    enqueueWhatsapp(async () => {
+      const salesOrder = await SalesOrderModel.findById(salesOrderId).populate(
+        "salesPersonId",
+        "name email mobileNumber whatsappNumber"
+      );
 
       if (!salesOrder) {
         console.log("ADMIN APPROVAL BACKGROUND: Sales order not found");
@@ -556,89 +836,58 @@ const runAdminApprovalBackgroundTasks = (SalesOrderModel, salesOrderId) => {
       }
 
       try {
-        await emailService.sendSalesOrderApprovedEmail(
+        await sendAdminApprovedToSalesPersonWhatsapp(salesOrder);
+
+        await addHistoryAndSave(
           salesOrder,
-          "Manager. It is now sent for MD Sir approval"
+          "whatsapp_sent",
+          "Sonia approval WhatsApp sent to salesperson"
         );
-
-        salesOrder.approvalHistory.push({
-          role: "system",
-          action: "email_sent",
-          comment: "Manager approval notification sent to salesperson",
-        });
-
-        await salesOrder.save();
-      } catch (emailError) {
-        console.log("SALESPERSON EMAIL ERROR =>", emailError.message);
-
-        salesOrder.approvalHistory.push({
-          role: "system",
-          action: "failed",
-          comment: `Salesperson email failed: ${emailError.message}`,
-        });
-
-        await salesOrder.save();
-      }
-
-      try {
-        await emailService.sendManagerApprovalRequestEmail(salesOrder);
-
-        salesOrder.approvalHistory.push({
-          role: "system",
-          action: "email_sent",
-          comment: "MD Sir approval request email sent",
-        });
-
-        await salesOrder.save();
-      } catch (emailError) {
-        console.log("MD EMAIL APPROVAL REQUEST ERROR =>", emailError.message);
-
-        salesOrder.approvalHistory.push({
-          role: "system",
-          action: "failed",
-          comment: `MD email approval request failed: ${emailError.message}`,
-        });
-
-        await salesOrder.save();
-      }
-
-      try {
-        await whatsappApprovalService.sendMdApprovalWhatsapp(salesOrder);
-
-        salesOrder.approvalHistory.push({
-          role: "system",
-          action: "whatsapp_group_sent",
-          comment: "WhatsApp approval request sent to MD Sir",
-        });
-
-        await salesOrder.save();
       } catch (waError) {
-        console.log("MD WHATSAPP REQUEST ERROR =>", waError.message);
+        console.log("SALESPERSON WHATSAPP ERROR =>", waError.message);
 
-        salesOrder.approvalHistory.push({
-          role: "system",
-          action: "failed",
-          comment: `MD WhatsApp request failed: ${waError.message}`,
-        });
-
-        await salesOrder.save();
+        await addHistoryAndSave(
+          salesOrder,
+          "failed",
+          `Salesperson WhatsApp failed after Sonia approval: ${waError.message}`
+        );
       }
-    } catch (error) {
-      console.log("ADMIN APPROVAL BACKGROUND TASK ERROR =>", error.message);
-    }
+
+      // try {
+      //   await whatsappApprovalService.sendMdApprovalWhatsapp(salesOrder);
+
+      //   await addHistoryAndSave(
+      //     salesOrder,
+      //     "whatsapp_group_sent",
+      //     "WhatsApp approval request sent to MD Sir"
+      //   );
+      // } catch (waError) {
+      //   console.log("MD WHATSAPP REQUEST ERROR =>", waError.message);
+
+      //   await addHistoryAndSave(
+      //     salesOrder,
+      //     "failed",
+      //     `MD WhatsApp request failed: ${waError.message}`
+      //   );
+      // }
+    });
   });
 };
 
+// ========================================
+// ADMIN HOLD BACKGROUND TASK
+// ========================================
 const runAdminRejectBackgroundTasks = (
   SalesOrderModel,
   salesOrderId,
   rejectionComment
 ) => {
-  setImmediate(async () => {
-    let salesOrder = null;
-
-    try {
-      salesOrder = await SalesOrderModel.findById(salesOrderId);
+  setImmediate(() => {
+    enqueueWhatsapp(async () => {
+      const salesOrder = await SalesOrderModel.findById(salesOrderId).populate(
+        "salesPersonId",
+        "name email mobileNumber whatsappNumber"
+      );
 
       if (!salesOrder) {
         console.log("ADMIN REJECT BACKGROUND: Sales order not found");
@@ -646,35 +895,32 @@ const runAdminRejectBackgroundTasks = (
       }
 
       try {
-        await emailService.sendSalesOrderRejectedEmail(
+        await sendAdminHoldToSalesPersonWhatsapp(
           salesOrder,
           rejectionComment
         );
 
-        salesOrder.approvalHistory.push({
-          role: "system",
-          action: "email_sent",
-          comment: "Admin rejection email sent to salesperson",
-        });
+        await addHistoryAndSave(
+          salesOrder,
+          "whatsapp_sent",
+          "Sonia hold WhatsApp sent to salesperson"
+        );
+      } catch (waError) {
+        console.log("ADMIN HOLD WHATSAPP ERROR =>", waError.message);
 
-        await salesOrder.save();
-      } catch (emailError) {
-        console.log("ADMIN REJECTION EMAIL ERROR =>", emailError.message);
-
-        salesOrder.approvalHistory.push({
-          role: "system",
-          action: "failed",
-          comment: `Admin rejection email failed: ${emailError.message}`,
-        });
-
-        await salesOrder.save();
+        await addHistoryAndSave(
+          salesOrder,
+          "failed",
+          `Sonia hold WhatsApp failed: ${waError.message}`
+        );
       }
-    } catch (error) {
-      console.log("ADMIN REJECT BACKGROUND TASK ERROR =>", error.message);
-    }
+    });
   });
 };
 
+// ========================================
+// ADMIN APPROVE
+// ========================================
 const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
   try {
     const salesOrder = await SalesOrder.findById(salesOrderId);
@@ -706,7 +952,7 @@ const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
       actionBy: loggedInAdmin._id,
       role: "admin",
       action: "admin_approved",
-      comment: "Sales order approved by Manager and sent for MD Sir approval",
+      comment: "Sales order approved by Sonia and sent for MD Sir approval",
     });
 
     await salesOrder.save();
@@ -738,6 +984,9 @@ const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
   }
 };
 
+// ========================================
+// ADMIN HOLD
+// ========================================
 const rejectSalesOrderByAdmin = async (
   salesOrderId,
   rejectionComment,
@@ -771,8 +1020,8 @@ const rejectSalesOrderByAdmin = async (
     await safeCreateNotification({
       module: "sales_order",
       event: "admin_rejected",
-      title: "Sales Order Rejected by Admin",
-      message: `${salesOrder.companyName} sales order was rejected by ${loggedInAdmin.name}`,
+      title: "Sales Order Put On Hold by Admin",
+      message: `${salesOrder.companyName} sales order was put on hold by ${loggedInAdmin.name}`,
       priority: "high",
       targetUserIds: [salesOrder.salesPersonId],
       createdBy: loggedInAdmin._id,
@@ -803,7 +1052,10 @@ const rejectSalesOrderByAdmin = async (
 // MANAGER APPROVE
 // ========================================
 const approveSalesOrderByManager = async (salesOrderId, loggedInManager) => {
-  const salesOrder = await SalesOrder.findById(salesOrderId);
+  const salesOrder = await SalesOrder.findById(salesOrderId).populate(
+    "salesPersonId",
+    "name email mobileNumber whatsappNumber"
+  );
 
   if (!salesOrder) {
     throw new Error("Sales order not found");
@@ -819,31 +1071,60 @@ const approveSalesOrderByManager = async (salesOrderId, loggedInManager) => {
     "dashboard"
   );
 
-  // await safeCreateNotification({
-  //   module: "sales_order",
-  //   event: "manager_approved",
-  //   title: "Sales Order Approved by MD Sir",
-  //   message: `${approvedOrder.companyName} sales order has been finally approved by MD Sir`,
-  //   priority: "high",
-  //   targetUserIds: [approvedOrder.salesPersonId || salesOrder.salesPersonId],
-  //   targetRoles: ["admin"],
-  //   createdBy: loggedInManager._id,
-  //   referenceId: approvedOrder._id,
-  //   referenceModel: "SalesOrder",
-  //   actionUrl: "/dashboard#sales-order",
-  //   meta: {
-  //     companyName: approvedOrder.companyName,
-  //     poNumber: approvedOrder.poNumber,
-  //     salesPersonName: approvedOrder.salesPersonName,
-  //     managerName: "MD Sir",
-  //   },
-  // });
+  await safeCreateNotification({
+    module: "sales_order",
+    event: "manager_approved",
+    title: "Sales Order Approved by MD Sir",
+    message: `${approvedOrder.companyName} sales order has been finally approved by MD Sir`,
+    priority: "high",
+    targetUserIds: [approvedOrder.salesPersonId || salesOrder.salesPersonId],
+    targetRoles: ["admin"],
+    createdBy: loggedInManager._id,
+    referenceId: approvedOrder._id,
+    referenceModel: "SalesOrder",
+    actionUrl: "/dashboard#sales-order",
+    meta: {
+      companyName: approvedOrder.companyName,
+      poNumber: approvedOrder.poNumber,
+      salesPersonName: approvedOrder.salesPersonName,
+      managerName: "MD Sir",
+    },
+  });
+
+  setImmediate(() => {
+    enqueueWhatsapp(async () => {
+      const freshOrder = await SalesOrder.findById(approvedOrder._id).populate(
+        "salesPersonId",
+        "name email mobileNumber whatsappNumber"
+      );
+
+      if (!freshOrder) return;
+
+      try {
+        await sendMdApprovedToSalesPersonAndAdminWhatsapp(freshOrder);
+
+        await addHistoryAndSave(
+          freshOrder,
+          "whatsapp_sent",
+          "MD Sir approval WhatsApp sent to salesperson and Sonia"
+        );
+      } catch (waError) {
+        console.log("MD APPROVAL WHATSAPP ERROR =>", waError.message);
+
+        await addHistoryAndSave(
+          freshOrder,
+          "failed",
+          `MD Sir approval WhatsApp failed: ${waError.message}`
+        );
+      }
+    });
+  });
 
   return approvedOrder;
 };
 
 // ========================================
-// MANAGER REJECT
+// MANAGER HOLD
 // ========================================
 const rejectSalesOrderByManager = async (
   salesOrderId,
@@ -851,7 +1132,10 @@ const rejectSalesOrderByManager = async (
   managerData
 ) => {
   try {
-    const salesOrder = await SalesOrder.findById(salesOrderId);
+    const salesOrder = await SalesOrder.findById(salesOrderId).populate(
+      "salesPersonId",
+      "name email mobileNumber whatsappNumber"
+    );
 
     if (!salesOrder) {
       throw new Error("Sales order not found");
@@ -864,11 +1148,14 @@ const rejectSalesOrderByManager = async (
     salesOrder.approvalStatus = "rejected_by_manager";
     salesOrder.isEditableBySalesPerson = true;
 
-    salesOrder.managerApproval.rejectedAt = new Date();
-    salesOrder.managerApproval.managerId = managerData.managerId;
-    salesOrder.managerApproval.managerName = managerData.managerName;
-    salesOrder.managerApproval.managerEmail = managerData.managerEmail;
-    salesOrder.managerApproval.rejectionComment = rejectionComment;
+    salesOrder.managerApproval = {
+      ...salesOrder.managerApproval,
+      rejectedAt: new Date(),
+      managerId: managerData.managerId,
+      managerName: managerData.managerName || "MD Sir",
+      managerEmail: managerData.managerEmail,
+      rejectionComment,
+    };
 
     salesOrder.approvalHistory.push({
       actionBy: managerData.managerId,
@@ -879,62 +1166,57 @@ const rejectSalesOrderByManager = async (
 
     await salesOrder.save();
 
-    // await safeCreateNotification({
-    //   module: "sales_order",
-    //   event: "manager_rejected",
-    //   title: "Sales Order Put on Hold by MD Sir",
-    //   message: `${salesOrder.companyName} sales order was put on hold by MD Sir`,
-    //   priority: "urgent",
-    //   targetUserIds: [salesOrder.salesPersonId],
-    //   targetRoles: ["admin"],
-    //   createdBy: managerData.managerId || null,
-    //   referenceId: salesOrder._id,
-    //   referenceModel: "SalesOrder",
-    //   actionUrl: "/dashboard#sales-order",
-    //   meta: {
-    //     companyName: salesOrder.companyName,
-    //     poNumber: salesOrder.poNumber,
-    //     rejectionComment,
-    //     managerName: managerData.managerName || "MD Sir",
-    //   },
-    // });
+    await safeCreateNotification({
+      module: "sales_order",
+      event: "manager_rejected",
+      title: "Sales Order Put on Hold by MD Sir",
+      message: `${salesOrder.companyName} sales order was put on hold by MD Sir`,
+      priority: "urgent",
+      targetUserIds: [salesOrder.salesPersonId],
+      targetRoles: ["admin"],
+      createdBy: managerData.managerId || null,
+      referenceId: salesOrder._id,
+      referenceModel: "SalesOrder",
+      actionUrl: "/dashboard#sales-order",
+      meta: {
+        companyName: salesOrder.companyName,
+        poNumber: salesOrder.poNumber,
+        rejectionComment,
+        managerName: managerData.managerName || "MD Sir",
+      },
+    });
 
-    try {
-      const emailResult = await emailService.sendSalesOrderRejectedEmail(
-        salesOrder,
-        rejectionComment
-      );
+    setImmediate(() => {
+      enqueueWhatsapp(async () => {
+        const freshOrder = await SalesOrder.findById(salesOrder._id).populate(
+          "salesPersonId",
+          "name email mobileNumber whatsappNumber"
+        );
 
-      salesOrder.emailStatus = {
-        sent: true,
-        sentAt: new Date(),
-        sentTo: [salesOrder.salesPersonEmail],
-        ccTo: [
-          "sales@bharatspecialsteels.com",
-          salesOrder.managerApproval?.managerEmail,
-        ].filter(Boolean),
-        messageId: emailResult?.messageId,
-      };
+        if (!freshOrder) return;
 
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "email_sent",
-        comment:
-          "Md sir rejection email sent to salesperson with sales and md sir in CC",
+        try {
+          await sendMdHoldToSalesPersonAndAdminWhatsapp(
+            freshOrder,
+            rejectionComment
+          );
+
+          await addHistoryAndSave(
+            freshOrder,
+            "whatsapp_sent",
+            "MD Sir hold WhatsApp sent to salesperson and Sonia"
+          );
+        } catch (waError) {
+          console.log("MD HOLD WHATSAPP ERROR =>", waError.message);
+
+          await addHistoryAndSave(
+            freshOrder,
+            "failed",
+            `MD Sir hold WhatsApp failed: ${waError.message}`
+          );
+        }
       });
-
-      await salesOrder.save();
-    } catch (emailError) {
-      console.log("MANAGER REJECTION EMAIL ERROR =>", emailError.message);
-
-      salesOrder.approvalHistory.push({
-        role: "system",
-        action: "failed",
-        comment: `Manager rejection email failed: ${emailError.message}`,
-      });
-
-      await salesOrder.save();
-    }
+    });
 
     return salesOrder;
   } catch (error) {
@@ -1021,108 +1303,180 @@ const deleteSalesOrder = async (salesOrderId) => {
   }
 };
 
-const approveSalesOrderFromEmail = async (salesOrderId, token) => {
-  const salesOrder = await SalesOrder.findById(salesOrderId);
+// ========================================
+// OLD EMAIL-LINK APPROVAL ROUTES
+// Kept for route compatibility.
+// No email is sent from this service now.
+// ========================================
+// const approveSalesOrderFromEmail = async (salesOrderId, token) => {
+//   const salesOrder = await SalesOrder.findById(salesOrderId).populate(
+//     "salesPersonId",
+//     "name email mobileNumber whatsappNumber"
+//   );
 
-  if (!salesOrder) {
-    throw new Error("Sales order not found");
-  }
+//   if (!salesOrder) {
+//     throw new Error("Sales order not found");
+//   }
 
-  if (salesOrder.approvalStatus !== "pending_manager_approval") {
-    throw new Error("Sales order is not pending md sir approval");
-  }
+//   if (salesOrder.approvalStatus !== "pending_manager_approval") {
+//     throw new Error("Sales order is not pending md sir approval");
+//   }
 
-  if (salesOrder.managerEmailApproval?.token !== token) {
-    throw new Error("Invalid approval link");
-  }
+//   if (salesOrder.managerEmailApproval?.token !== token) {
+//     throw new Error("Invalid approval link");
+//   }
 
-  const approvedOrder = await finalApprovalService.finalApproveSalesOrder(
-    salesOrder,
-    {
-      managerName: "MD Sir",
-      managerEmail: process.env.MANAGER_EMAIL,
-      managerId: null,
-    },
-    "email"
-  );
+//   const approvedOrder = await finalApprovalService.finalApproveSalesOrder(
+//     salesOrder,
+//     {
+//       managerName: "MD Sir",
+//       managerEmail: process.env.MANAGER_EMAIL,
+//       managerId: null,
+//     },
+//     "email"
+//   );
 
-  await safeCreateNotification({
-    module: "sales_order",
-    event: "manager_approved",
-    title: "Sales Order Approved by MD Sir",
-    message: `${approvedOrder.companyName} sales order has been finally approved by MD Sir`,
-    priority: "high",
-    targetUserIds: [approvedOrder.salesPersonId || salesOrder.salesPersonId],
-    targetRoles: ["admin"],
-    createdBy: null,
-    referenceId: approvedOrder._id,
-    referenceModel: "SalesOrder",
-    actionUrl: "/dashboard#sales-order",
-    meta: {
-      companyName: approvedOrder.companyName,
-      poNumber: approvedOrder.poNumber,
-      salesPersonName: approvedOrder.salesPersonName,
-      managerName: "MD Sir",
-      source: "email",
-    },
-  });
+//   await safeCreateNotification({
+//     module: "sales_order",
+//     event: "manager_approved",
+//     title: "Sales Order Approved by MD Sir",
+//     message: `${approvedOrder.companyName} sales order has been finally approved by MD Sir`,
+//     priority: "high",
+//     targetUserIds: [approvedOrder.salesPersonId || salesOrder.salesPersonId],
+//     targetRoles: ["admin"],
+//     createdBy: null,
+//     referenceId: approvedOrder._id,
+//     referenceModel: "SalesOrder",
+//     actionUrl: "/dashboard#sales-order",
+//     meta: {
+//       companyName: approvedOrder.companyName,
+//       poNumber: approvedOrder.poNumber,
+//       salesPersonName: approvedOrder.salesPersonName,
+//       managerName: "MD Sir",
+//       source: "email_link",
+//     },
+//   });
 
-  return approvedOrder;
-};
+//   setImmediate(() => {
+//     enqueueWhatsapp(async () => {
+//       const freshOrder = await SalesOrder.findById(approvedOrder._id).populate(
+//         "salesPersonId",
+//         "name email mobileNumber whatsappNumber"
+//       );
 
-const rejectSalesOrderFromEmail = async (
-  salesOrderId,
-  token,
-  rejectionComment
-) => {
-  const salesOrder = await SalesOrder.findById(salesOrderId);
+//       if (!freshOrder) return;
 
-  if (!salesOrder) {
-    throw new Error("Sales order not found");
-  }
+//       try {
+//         await sendMdApprovedToSalesPersonAndAdminWhatsapp(freshOrder);
 
-  if (salesOrder.approvalStatus !== "pending_manager_approval") {
-    throw new Error("Sales order is not pending md sir approval");
-  }
+//         await addHistoryAndSave(
+//           freshOrder,
+//           "whatsapp_sent",
+//           "MD Sir approval WhatsApp sent to salesperson and Sonia from old email link"
+//         );
+//       } catch (waError) {
+//         console.log("EMAIL LINK MD APPROVAL WHATSAPP ERROR =>", waError.message);
 
-  if (salesOrder.managerEmailApproval?.token !== token) {
-    throw new Error("Invalid rejection link");
-  }
+//         await addHistoryAndSave(
+//           freshOrder,
+//           "failed",
+//           `Email link MD approval WhatsApp failed: ${waError.message}`
+//         );
+//       }
+//     });
+//   });
 
-  const rejectedOrder = await finalApprovalService.holdSalesOrderByMd(
-    salesOrder,
-    rejectionComment,
-    {
-      managerName: "MD Sir",
-      managerEmail: process.env.MANAGER_EMAIL,
-      managerId: null,
-    },
-    "email"
-  );
+//   return approvedOrder;
+// };
 
-  await safeCreateNotification({
-    module: "sales_order",
-    event: "manager_rejected",
-    title: "Sales Order Put on Hold by MD Sir",
-    message: `${rejectedOrder.companyName} sales order was put on hold by MD Sir`,
-    priority: "urgent",
-    targetUserIds: [rejectedOrder.salesPersonId || salesOrder.salesPersonId],
-    targetRoles: ["admin"],
-    createdBy: null,
-    referenceId: rejectedOrder._id,
-    referenceModel: "SalesOrder",
-    actionUrl: "/dashboard#sales-order",
-    meta: {
-      companyName: rejectedOrder.companyName,
-      poNumber: rejectedOrder.poNumber,
-      rejectionComment,
-      managerName: "MD Sir",
-      source: "email",
-    },
-  });
+// const rejectSalesOrderFromEmail = async (
+//   salesOrderId,
+//   token,
+//   rejectionComment
+// ) => {
+//   const salesOrder = await SalesOrder.findById(salesOrderId).populate(
+//     "salesPersonId",
+//     "name email mobileNumber whatsappNumber"
+//   );
 
-  return rejectedOrder;
-};
+//   if (!salesOrder) {
+//     throw new Error("Sales order not found");
+//   }
+
+//   if (salesOrder.approvalStatus !== "pending_manager_approval") {
+//     throw new Error("Sales order is not pending md sir approval");
+//   }
+
+//   if (salesOrder.managerEmailApproval?.token !== token) {
+//     throw new Error("Invalid rejection link");
+//   }
+
+//   const rejectedOrder = await finalApprovalService.holdSalesOrderByMd(
+//     salesOrder,
+//     rejectionComment,
+//     {
+//       managerName: "MD Sir",
+//       managerEmail: process.env.MANAGER_EMAIL,
+//       managerId: null,
+//     },
+//     "email"
+//   );
+
+//   await safeCreateNotification({
+//     module: "sales_order",
+//     event: "manager_rejected",
+//     title: "Sales Order Put on Hold by MD Sir",
+//     message: `${rejectedOrder.companyName} sales order was put on hold by MD Sir`,
+//     priority: "urgent",
+//     targetUserIds: [rejectedOrder.salesPersonId || salesOrder.salesPersonId],
+//     targetRoles: ["admin"],
+//     createdBy: null,
+//     referenceId: rejectedOrder._id,
+//     referenceModel: "SalesOrder",
+//     actionUrl: "/dashboard#sales-order",
+//     meta: {
+//       companyName: rejectedOrder.companyName,
+//       poNumber: rejectedOrder.poNumber,
+//       rejectionComment,
+//       managerName: "MD Sir",
+//       source: "email_link",
+//     },
+//   });
+
+//   setImmediate(() => {
+//     enqueueWhatsapp(async () => {
+//       const freshOrder = await SalesOrder.findById(rejectedOrder._id).populate(
+//         "salesPersonId",
+//         "name email mobileNumber whatsappNumber"
+//       );
+
+//       if (!freshOrder) return;
+
+//       try {
+//         await sendMdHoldToSalesPersonAndAdminWhatsapp(
+//           freshOrder,
+//           rejectionComment
+//         );
+
+//         await addHistoryAndSave(
+//           freshOrder,
+//           "whatsapp_sent",
+//           "MD Sir hold WhatsApp sent to salesperson and Sonia from old email link"
+//         );
+//       } catch (waError) {
+//         console.log("EMAIL LINK MD HOLD WHATSAPP ERROR =>", waError.message);
+
+//         await addHistoryAndSave(
+//           freshOrder,
+//           "failed",
+//           `Email link MD hold WhatsApp failed: ${waError.message}`
+//         );
+//       }
+//     });
+//   });
+
+//   return rejectedOrder;
+// };
 
 module.exports = {
   createSalesOrder,
@@ -1137,6 +1491,6 @@ module.exports = {
   updatePdfDetails,
   updateWhatsappGroupStatus,
   deleteSalesOrder,
-  approveSalesOrderFromEmail,
-  rejectSalesOrderFromEmail,
+  // approveSalesOrderFromEmail,
+  // rejectSalesOrderFromEmail,
 };

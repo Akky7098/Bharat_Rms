@@ -485,64 +485,64 @@ const handleWhatsappWebhook = async (req, res) => {
     return res.sendStatus(200);
   }
 };
-const approveSalesOrderFromEmail = async (req, res) => {
-  try {
-    await salesOrderService.approveSalesOrderFromEmail(
-      req.params.id,
-      req.params.token
-    );
+// const approveSalesOrderFromEmail = async (req, res) => {
+//   try {
+//     await salesOrderService.approveSalesOrderFromEmail(
+//       req.params.id,
+//       req.params.token
+//     );
 
-    return res.send(`
-      <h2 style="font-family:Arial;color:green;">
-        Sales Order Approved Successfully
-      </h2>
-    `);
-  } catch (error) {
-    return res.send(`
-      <h2 style="font-family:Arial;color:red;">
-        ${error.message}
-      </h2>
-    `);
-  }
-};
+//     return res.send(`
+//       <h2 style="font-family:Arial;color:green;">
+//         Sales Order Approved Successfully
+//       </h2>
+//     `);
+//   } catch (error) {
+//     return res.send(`
+//       <h2 style="font-family:Arial;color:red;">
+//         ${error.message}
+//       </h2>
+//     `);
+//   }
+// };
 
-const showRejectForm = async (req, res) => {
-  return res.send(`
-    <form method="POST" action="/api/sales-order/email-reject/${req.params.id}/${req.params.token}" style="font-family:Arial;max-width:500px;margin:40px auto;">
-      <h2>Reject Sales Order</h2>
+// const showRejectForm = async (req, res) => {
+//   return res.send(`
+//     <form method="POST" action="/api/sales-order/email-reject/${req.params.id}/${req.params.token}" style="font-family:Arial;max-width:500px;margin:40px auto;">
+//       <h2>Reject Sales Order</h2>
 
-      <textarea name="rejectionComment" required placeholder="Enter rejection reason" style="width:100%;height:120px;padding:10px;"></textarea>
+//       <textarea name="rejectionComment" required placeholder="Enter rejection reason" style="width:100%;height:120px;padding:10px;"></textarea>
 
-      <br/><br/>
+//       <br/><br/>
 
-      <button type="submit" style="background:#dc2626;color:white;padding:10px 18px;border:none;border-radius:6px;">
-        Submit Rejection
-      </button>
-    </form>
-  `);
-};
+//       <button type="submit" style="background:#dc2626;color:white;padding:10px 18px;border:none;border-radius:6px;">
+//         Submit Rejection
+//       </button>
+//     </form>
+//   `);
+// };
 
-const rejectSalesOrderFromEmail = async (req, res) => {
-  try {
-    await salesOrderService.rejectSalesOrderFromEmail(
-      req.params.id,
-      req.params.token,
-      req.body.rejectionComment
-    );
+// const rejectSalesOrderFromEmail = async (req, res) => {
+//   try {
+//     await salesOrderService.rejectSalesOrderFromEmail(
+//       req.params.id,
+//       req.params.token,
+//       req.body.rejectionComment
+//     );
 
-    return res.send(`
-      <h2 style="font-family:Arial;color:#dc2626;">
-        Sales Order Rejected Successfully
-      </h2>
-    `);
-  } catch (error) {
-    return res.send(`
-      <h2 style="font-family:Arial;color:red;">
-        ${error.message}
-      </h2>
-    `);
-  }
-};
+//     return res.send(`
+//       <h2 style="font-family:Arial;color:#dc2626;">
+//         Sales Order Rejected Successfully
+//       </h2>
+//     `);
+//   } catch (error) {
+//     return res.send(`
+//       <h2 style="font-family:Arial;color:red;">
+//         ${error.message}
+//       </h2>
+//     `);
+//   }
+// };
 module.exports = {
   createSalesOrder,
   generateSalesOrderPdf,
@@ -559,7 +559,7 @@ module.exports = {
   deleteSalesOrder,
   handleWhatsappWebhook,
   verifyWhatsappWebhook,
-  approveSalesOrderFromEmail,
-showRejectForm,
-rejectSalesOrderFromEmail,
+//   approveSalesOrderFromEmail,
+// showRejectForm,
+// rejectSalesOrderFromEmail,
 };

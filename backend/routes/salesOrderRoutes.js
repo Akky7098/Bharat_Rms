@@ -15,20 +15,20 @@ router.post(
    ]),
   salesOrderController.createSalesOrder
 );
-router.get(
-  "/email-approve/:id/:token",
-  salesOrderController.approveSalesOrderFromEmail
-);
+// router.get(
+//   "/email-approve/:id/:token",
+//   salesOrderController.approveSalesOrderFromEmail
+// );
 
-router.get(
-  "/email-reject-form/:id/:token",
-  salesOrderController.showRejectForm
-);
+// router.get(
+//   "/email-reject-form/:id/:token",
+//   salesOrderController.showRejectForm
+// );
 
-router.post(
-  "/email-reject/:id/:token",
-  salesOrderController.rejectSalesOrderFromEmail
-);
+// router.post(
+//   "/email-reject/:id/:token",
+//   salesOrderController.rejectSalesOrderFromEmail
+// );
 router.post(
   "/:id/generate-pdf",
   authMiddleware,
@@ -47,7 +47,8 @@ router.get(
   authMiddleware,
   salesOrderController.searchPendingDispatchSalesOrders
 );
-
+router.get("/whatsapp/webhook", salesOrderController.verifyWhatsappWebhook);
+router.post("/whatsapp/webhook", salesOrderController.handleWhatsappWebhook);
 // GET SINGLE
 router.get(
   "/:id",
@@ -114,7 +115,6 @@ router.delete(
   authMiddleware,
   salesOrderController.deleteSalesOrder
 );
-router.get("/whatsapp/webhook", salesOrderController.verifyWhatsappWebhook);
-router.post("/whatsapp/webhook", salesOrderController.handleWhatsappWebhook);
+
 
 module.exports = router;
