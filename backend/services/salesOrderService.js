@@ -603,7 +603,17 @@ const getAllSalesOrders = async (query, user) => {
           preserveNullAndEmptyArrays: true,
         },
       },
-      { $sort: { createdAt: -1 } },
+      {
+  $sort: {
+    "managerApproval.approvedAt": -1,
+    "managerApproval.rejectedAt": -1,
+    "adminApproval.rejectedAt": -1,
+    checkedAt: -1,
+    lastSubmittedAt: -1,
+    updatedAt: -1,
+    createdAt: -1,
+  },
+},
       { $skip: skip },
       { $limit: Number(limit) },
       {

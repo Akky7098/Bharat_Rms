@@ -341,16 +341,16 @@ const createEnquiry = async (body, user, file) => {
       lostRemark: "",
     },
   });
-  setImmediate(() => {
-  enqueueEnquiryWhatsapp(async () => {
-    try {
-      await sendEnquiryCreatedWhatsapp(enquiry, user);
-      console.log("ENQUIRY CREATED WHATSAPP SENT =>", enquiry.enquiryNumber);
-    } catch (waError) {
-      console.log("ENQUIRY CREATED WHATSAPP ERROR =>", waError.message);
-    }
-  });
-});
+//   setImmediate(() => {
+//   enqueueEnquiryWhatsapp(async () => {
+//     try {
+//       await sendEnquiryCreatedWhatsapp(enquiry, user);
+//       console.log("ENQUIRY CREATED WHATSAPP SENT =>", enquiry.enquiryNumber);
+//     } catch (waError) {
+//       console.log("ENQUIRY CREATED WHATSAPP ERROR =>", waError.message);
+//     }
+//   });
+// });
   return enquiry;
 };
 
@@ -482,41 +482,41 @@ const updateWorkflow = async (id, body) => {
 
   await enquiry.save();
 
-  const isQuotationCompletedNow =
-    wasQuotationCompleted === false &&
-    enquiry.quotation.completed === true &&
-    enquiry.quotation.quotationLink;
+  // const isQuotationCompletedNow =
+  //   wasQuotationCompleted === false &&
+  //   enquiry.quotation.completed === true &&
+  //   enquiry.quotation.quotationLink;
 
-  const isWonNow =
-    previousClosureStatus !== "won" &&
-    enquiry.closure.status === "won" &&
-    enquiry.closure.completed === true;
+  // const isWonNow =
+  //   previousClosureStatus !== "won" &&
+  //   enquiry.closure.status === "won" &&
+  //   enquiry.closure.completed === true;
 
-  if (isQuotationCompletedNow) {
-    setImmediate(() => {
-      enqueueEnquiryWhatsapp(async () => {
-        try {
-          await sendQuotationDoneWhatsapp(enquiry);
-          console.log("QUOTATION WHATSAPP SENT =>", enquiry.enquiryNumber);
-        } catch (waError) {
-          console.log("QUOTATION WHATSAPP ERROR =>", waError.message);
-        }
-      });
-    });
-  }
+  // if (isQuotationCompletedNow) {
+  //   setImmediate(() => {
+  //     enqueueEnquiryWhatsapp(async () => {
+  //       try {
+  //         await sendQuotationDoneWhatsapp(enquiry);
+  //         console.log("QUOTATION WHATSAPP SENT =>", enquiry.enquiryNumber);
+  //       } catch (waError) {
+  //         console.log("QUOTATION WHATSAPP ERROR =>", waError.message);
+  //       }
+  //     });
+  //   });
+  // }
 
-  if (isWonNow) {
-    setImmediate(() => {
-      enqueueEnquiryWhatsapp(async () => {
-        try {
-          await sendOrderWonWhatsapp(enquiry);
-          console.log("ORDER WON WHATSAPP SENT =>", enquiry.enquiryNumber);
-        } catch (waError) {
-          console.log("ORDER WON WHATSAPP ERROR =>", waError.message);
-        }
-      });
-    });
-  }
+  // if (isWonNow) {
+  //   setImmediate(() => {
+  //     enqueueEnquiryWhatsapp(async () => {
+  //       try {
+  //         await sendOrderWonWhatsapp(enquiry);
+  //         console.log("ORDER WON WHATSAPP SENT =>", enquiry.enquiryNumber);
+  //       } catch (waError) {
+  //         console.log("ORDER WON WHATSAPP ERROR =>", waError.message);
+  //       }
+  //     });
+  //   });
+  // }
 
   return enquiry;
 };
