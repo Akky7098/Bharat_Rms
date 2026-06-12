@@ -206,7 +206,14 @@ try {
 } catch (error) {
   console.log("Web push service not loaded =>", error.message);
 }
+let appPushService = null;
 
+try {
+  appPushService = require("./appPushService");
+  console.log("APP PUSH SERVICE LOADED SUCCESSFULLY");
+} catch (error) {
+  console.log("App push service not loaded =>", error.message);
+}
 const cleanObjectIds = (ids = []) =>
   [...new Set(ids.filter(Boolean).map((id) => String(id)))];
 
@@ -230,7 +237,14 @@ const sendPushSafely = async (notification) => {
     console.log("PUSH NOTIFICATION ERROR =>", error.message);
   }
 };
-
+const sendAppPushSafely = async (notification) => {
+  try {
+    if (!appPushService?.sendAppPushNotification) return;
+    await appPushService.sendAppPushNotification(notification);
+  } catch (error) {
+    console.log("APP PUSH ERROR =>", error.message);
+  }
+};
 const createNotification = async ({
   module,
   event,
@@ -284,6 +298,7 @@ const createNotification = async ({
   }
 
   await sendPushSafely(populated);
+  await sendAppPushSafely(populated);
 
   return populated;
 };
@@ -294,8 +309,9 @@ const getUserNotifications = async (user, query = {}) => {
   const skip = (page - 1) * limit;
 
   const filter = {
-    $or: [{ targetUserIds: user._id }, { targetRoles: user.role }],
-  };
+  $or: [{ targetUserIds: user._id }, { targetRoles: user.role }],
+  "clearedBy.userId": { $ne: user._id },
+};
 
   if (query.module) filter.module = query.module;
   if (query.priority) filter.priority = query.priority;
@@ -321,7 +337,7 @@ const getUserNotifications = async (user, query = {}) => {
     ...filter,
     "readBy.userId": { $ne: user._id },
   });
-
+ 
   return {
     total,
     page,
@@ -354,6 +370,7 @@ const markAllAsRead = async (user) => {
   await Notification.updateMany(
     {
       $or: [{ targetUserIds: user._id }, { targetRoles: user.role }],
+      "clearedBy.userId": { $ne: user._id },
       "readBy.userId": { $ne: user._id },
     },
     {
@@ -368,7 +385,33 @@ const markAllAsRead = async (user) => {
 
   return true;
 };
+const clearNotification = async (notificationId, user) => {
+  const notification = await Notification.findOne({
+    _id: notificationId,
+    $or: [{ targetUserIds: user._id }, { targetRoles: user.role }],
+  });
 
+  if (!notification) {
+    return false;
+  }
+
+  notification.clearedBy = notification.clearedBy || [];
+
+  const alreadyCleared = notification.clearedBy.some(
+    (item) => String(item.userId) === String(user._id)
+  );
+
+  if (!alreadyCleared) {
+    notification.clearedBy.push({
+      userId: user._id,
+      clearedAt: new Date(),
+    });
+
+    await notification.save();
+  }
+
+  return true;
+};
 const notifyAdmins = async (payload) => {
   return createNotification({
     ...payload,
@@ -402,6 +445,7 @@ module.exports = {
   getUserNotifications,
   markAsRead,
   markAllAsRead,
+  clearNotification,
   notifyAdmins,
   notifySuperAdmins,
   notifyUser,

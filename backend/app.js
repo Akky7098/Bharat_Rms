@@ -17,6 +17,7 @@ const documentRoutes = require("./routes/documentRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const receivableRoutes = require("./routes/receivableRoutes");
 const pushSubscriptionRoutes = require("./routes/pushSubscriptionRoutes");
+const appPushRoutes = require("./routes/appPushRoutes");
 const app = express();
 
 // OPEN CORS - temporary for testing
@@ -95,4 +96,5 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/receivables", receivableRoutes);
 app.use("/api/push-subscriptions", pushSubscriptionRoutes);
+app.use("/api/app-push", appPushRoutes);
 module.exports = app;

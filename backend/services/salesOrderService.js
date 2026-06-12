@@ -571,7 +571,33 @@ const getAllSalesOrders = async (query, user) => {
       $lte: todayEnd,
     });
 
-    const filteredApprovedSummary = await buildApprovedSummary();
+    const monthStart = new Date(
+  istNow.getFullYear(),
+  istNow.getMonth(),
+  1,
+  0,
+  0,
+  0,
+  0
+);
+
+const monthEnd = new Date(
+  istNow.getFullYear(),
+  istNow.getMonth() + 1,
+  0,
+  23,
+  59,
+  59,
+  999
+);
+
+const filteredApprovedSummary =
+  fromDate || toDate
+    ? await buildApprovedSummary()
+    : await buildApprovedSummary({
+        $gte: monthStart,
+        $lte: monthEnd,
+      });
 
     const salesOrders = await SalesOrder.aggregate([
       { $match: filter },

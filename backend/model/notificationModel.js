@@ -88,7 +88,18 @@ const notificationSchema = new mongoose.Schema(
         },
       },
     ],
-
+    clearedBy: [
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    clearedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+],
     meta: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
@@ -100,5 +111,6 @@ const notificationSchema = new mongoose.Schema(
 notificationSchema.index({ targetUserIds: 1, createdAt: -1 });
 notificationSchema.index({ targetRoles: 1, createdAt: -1 });
 notificationSchema.index({ module: 1, event: 1 });
+notificationSchema.index({ "clearedBy.userId": 1 });
 
 module.exports = mongoose.model("Notification", notificationSchema);

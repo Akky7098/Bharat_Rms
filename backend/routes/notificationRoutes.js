@@ -24,5 +24,10 @@ router.patch(
   authMiddleware,
   notificationController.markAsRead
 );
+router.patch(
+  "/:id/clear",
+  authMiddleware,
+  notificationController.clearNotification
+);
 
 module.exports = router;
