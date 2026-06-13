@@ -131,6 +131,7 @@ const getAllSalesOrders = async (req, res) => {
     res.status(200).json({
       success: true,
       data: result.salesOrders,
+      summary: result.summary,
       pagination: result.pagination,
     });
   } catch (error) {

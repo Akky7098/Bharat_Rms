@@ -143,8 +143,8 @@ const sendPushNotification = async (notification) => {
     const payload = {
       title: notification.title || "Bharat RMS",
       body: notification.message || "You have a new update.",
-      icon: "/bharat-rms-icon.png",
-      badge: "/bharat-rms-icon.png",
+      icon: "/bharat-rms-icon-12-06-2026.png",
+      badge: "/bharat-rms-icon-12-06-2026.png",
       url: hash ? `/dashboard#${hash}` : notification.actionUrl || "/dashboard",
       notificationId: String(notification._id || ""),
       module: notification.module || "",
