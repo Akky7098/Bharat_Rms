@@ -597,58 +597,197 @@ const approveRegularization = async (attendanceId, body, user) => {
   return attendance;
 };
 
-const rejectRegularization = async (attendanceId, body, user) => {
-  if (!isAdmin(user) && !isSuperAdmin(user)) {
-    throw new Error("Only admin or super admin can reject regularization.");
+const isSundayIST = (date) => {
+  if (!date) return false;
+
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    weekday: "long",
+  }).format(new Date(date));
+
+  return weekday === "Sunday";
+};
+
+const requestRegularization = async (body, user) => {
+  if (isSuperAdmin(user)) {
+    throw new Error("Super admin cannot request regularization.");
   }
 
- const attendance = await Attendance.findById(attendanceId);
+  if (!body.reason || !String(body.reason).trim()) {
+    throw new Error("Regularization reason is required.");
+  }
 
-if (!attendance) {
-  throw new Error("Attendance not found.");
-}
+  const attendanceDate = getStartOfDay(body.attendanceDate || new Date());
+  const today = getStartOfDay();
 
-await validateRegularizationApprovalHierarchy(attendance, user);
+  // 10 days including today = today + previous 9 days
+  const startAllowedDate = getStartOfDay();
+  startAllowedDate.setDate(startAllowedDate.getDate() - 9);
 
-if (!attendance.regularization || attendance.regularization.status !== "pending") {
-  throw new Error("No pending regularization found.");
-}
+  if (attendanceDate > today) {
+    throw new Error("Future date regularization is not allowed.");
+  }
 
-attendance.regularization.status = "rejected";
-  attendance.regularization.rejectionReason = body.rejectionReason || "";
-  if (attendance.checkOut?.time) {
-  attendance.attendanceStatus = "checked_out";
-} else if (attendance.checkIn?.time) {
-  attendance.attendanceStatus = "checked_in";
-} else {
-  attendance.attendanceStatus = "absent";
-}
+  if (attendanceDate < startAllowedDate) {
+    throw new Error("Regularization is allowed only for the last 10 days.");
+  }
 
-  await attendance.save();
+  // Sunday blocked using India calendar
+  if (isSundayIST(attendanceDate)) {
+    throw new Error("Sunday regularization is not allowed.");
+  }
+
+  const workMode = await getWorkMode(user);
+  const regularizationType = body.type || "other";
+
+  const allowedTypes = [
+    "missed_check_in",
+    "missed_check_out",
+    "wrong_time",
+    "other",
+  ];
+
+  if (!allowedTypes.includes(regularizationType)) {
+    throw new Error("Invalid regularization type.");
+  }
+
+  const existingAttendance = await Attendance.findOne({
+    employeeId: getUserId(user),
+    attendanceDate,
+  });
+
+  if (existingAttendance?.regularization?.status === "pending") {
+    throw new Error("Regularization request is already pending for this date.");
+  }
+
+  if (isAttendanceComplete(existingAttendance)) {
+    throw new Error(
+      "Attendance is already complete for 9 hours. Regularization is not allowed."
+    );
+  }
+
+  const hasCheckIn = Boolean(existingAttendance?.checkIn?.time);
+  const hasCheckOut = Boolean(existingAttendance?.checkOut?.time);
+
+  const requestedCheckIn = body.requestedCheckIn || undefined;
+  const requestedCheckOut = body.requestedCheckOut || undefined;
+
+  // Full day missing
+  if (!hasCheckIn && !hasCheckOut) {
+    if (!requestedCheckIn || !requestedCheckOut) {
+      throw new Error(
+        "Requested check-in and check-out time are required for missing full-day attendance."
+      );
+    }
+  }
+
+  // Check-in missing only
+  if (!hasCheckIn && hasCheckOut) {
+    if (!requestedCheckIn) {
+      throw new Error("Requested check-in time is required.");
+    }
+  }
+
+  // Check-out missing only
+  if (hasCheckIn && !hasCheckOut) {
+    if (!requestedCheckOut) {
+      throw new Error("Requested check-out time is required.");
+    }
+  }
+
+  if (regularizationType === "missed_check_in") {
+    if (hasCheckIn) {
+      throw new Error("Check-in already exists. Missed check-in regularization is not allowed.");
+    }
+
+    if (!requestedCheckIn) {
+      throw new Error("Requested check-in time is required.");
+    }
+  }
+
+  if (regularizationType === "missed_check_out") {
+    if (hasCheckOut) {
+      throw new Error("Check-out already exists. Missed check-out regularization is not allowed.");
+    }
+
+    if (!requestedCheckOut) {
+      throw new Error("Requested check-out time is required.");
+    }
+  }
+
+  if (regularizationType === "wrong_time") {
+    if (!requestedCheckIn || !requestedCheckOut) {
+      throw new Error("Requested check-in and check-out time are required.");
+    }
+  }
+
+  const attendance = await Attendance.findOneAndUpdate(
+    {
+      employeeId: getUserId(user),
+      attendanceDate,
+    },
+    {
+      $setOnInsert: {
+        employeeId: getUserId(user),
+        employeeName: user.name,
+        employeeEmail: user.email,
+        attendanceDate,
+        workMode,
+      },
+      $set: {
+        attendanceStatus: "regularization_pending",
+        attendanceSource: "regularization",
+        regularization: {
+          requested: true,
+          requestedAt: new Date(),
+          type: regularizationType,
+          reason: String(body.reason).trim(),
+          requestedCheckIn,
+          requestedCheckOut,
+          status: "pending",
+          adminNotified: false,
+          adminNotifiedAt: undefined,
+        },
+      },
+    },
+    {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true,
+    }
+  );
 
   await safeCreateNotification({
     module: "attendance",
-    event: "regularization_rejected",
-    title: "Regularization Rejected",
-    message: `Your attendance regularization was rejected by ${user.name}`,
+    event: "regularization_requested",
+    title: "Regularization Request",
+    message: `${user.name} submitted attendance regularization request`,
     priority: "high",
-    targetUserIds: [attendance.employeeId],
-    targetRoles: [],
+    targetUserIds: [],
+    targetRoles: [isAdmin(user) ? "super_admin" : "admin"],
     createdBy: getUserId(user),
     referenceId: attendance._id,
     referenceModel: "Attendance",
     actionUrl: "/dashboard#attendance",
     meta: {
-      employeeName: attendance.employeeName,
-      attendanceDate: attendance.attendanceDate,
-      rejectedBy: user.name,
-      rejectionReason: body.rejectionReason || "",
+      employeeName: user.name,
+      employeeEmail: user.email,
+      attendanceDate,
+      regularizationType,
+      reason: String(body.reason).trim(),
     },
   });
 
-  sendRegularizationDecisionMailToUser(attendance, "rejected").catch(
-    console.error
-  );
+  if (!isAdmin(user)) {
+    try {
+      await sendRegularizationRequestMailToAdmin(attendance);
+      attendance.regularization.adminNotified = true;
+      attendance.regularization.adminNotifiedAt = new Date();
+      await attendance.save();
+    } catch (mailError) {
+      console.error("Regularization admin mail failed:", mailError.message);
+    }
+  }
 
   return attendance;
 };

@@ -31,17 +31,12 @@ const formatTime = (date) => {
 const formatRegularizedTime = (date) => {
   if (!date) return "-";
 
-  const d = new Date(date);
-  const hours = d.getUTCHours();
-  const minutes = d.getUTCMinutes();
-
-  const suffix = hours >= 12 ? "PM" : "AM";
-  const displayHour = hours % 12 || 12;
-
-  return `${String(displayHour).padStart(2, "0")}:${String(minutes).padStart(
-    2,
-    "0"
-  )} ${suffix}`;
+  return new Date(date).toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  });
 };
 
 const baseTemplate = ({ title, subtitle, body }) => {
@@ -209,8 +204,14 @@ const sendRegularizationDecisionMailToUser = async (attendance, status) => {
 
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
           ${infoRow("Date", formatDate(attendance.attendanceDate))}
-          ${infoRow("Check-in", formatTime(attendance.checkIn?.time))}
-          ${infoRow("Check-out", formatTime(attendance.checkOut?.time))}
+          ${infoRow(
+  "Check-in",
+  formatTime(attendance.checkIn?.time || attendance.checkIn?.createdAt)
+)}
+${infoRow(
+  "Check-out",
+  formatTime(attendance.checkOut?.time || attendance.checkOut?.createdAt)
+)}
           ${infoRow("Status", attendance.attendanceStatus)}
           ${
             !approved
