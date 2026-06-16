@@ -123,26 +123,40 @@ const sendPendingApprovalReminders = async () => {
       }
     }
 
-    if (mdPendingOrders.length > 0) {
-      if (!process.env.MD_WHATSAPP_NUMBER) {
-        console.log("MD_WHATSAPP_NUMBER missing in env");
-      } else {
-        const mdChatId = `${process.env.MD_WHATSAPP_NUMBER}@c.us`;
+    /*
+      PRODUCTION NOTE:
+      MD Sir WhatsApp reminder has been disabled intentionally.
 
-        await whatsappApprovalService.sendPlainWhatsappMessage(
-          mdChatId,
-          buildMdReminderMessage(mdPendingOrders)
-        );
+      Reason:
+      We only want Sonia/Admin pending approval reminders to continue.
+      No reminder WhatsApp should go to MD Sir from this cron/service.
 
-        console.log("MD PENDING APPROVAL REMINDER SENT");
-      }
-    }
+      Do not delete this block permanently because we may need to enable it later.
+    */
+
+    // if (mdPendingOrders.length > 0) {
+    //   if (!process.env.MD_WHATSAPP_NUMBER) {
+    //     console.log("MD_WHATSAPP_NUMBER missing in env");
+    //   } else {
+    //     const mdChatId = `${process.env.MD_WHATSAPP_NUMBER}@c.us`;
+    //
+    //     await whatsappApprovalService.sendPlainWhatsappMessage(
+    //       mdChatId,
+    //       buildMdReminderMessage(mdPendingOrders)
+    //     );
+    //
+    //     console.log("MD PENDING APPROVAL REMINDER SENT");
+    //   }
+    // }
+
+    console.log("MD PENDING APPROVAL REMINDER DISABLED");
 
     console.log("===== SALES ORDER APPROVAL REMINDER END =====");
 
     return {
       adminPending: adminPendingOrders.length,
       mdPending: mdPendingOrders.length,
+      mdReminder: "disabled",
     };
   } catch (error) {
     console.log("SALES ORDER APPROVAL REMINDER ERROR =>", error.message);
@@ -150,12 +164,14 @@ const sendPendingApprovalReminders = async () => {
     return {
       adminPending: 0,
       mdPending: 0,
+      mdReminder: "disabled",
       error: error.message,
     };
   } finally {
     reminderRunning = false;
   }
 };
+
 module.exports = {
   sendPendingApprovalReminders,
 };
