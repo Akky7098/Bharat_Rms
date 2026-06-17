@@ -835,3 +835,523 @@ button:disabled {
     gap: 6px;
   }
 }
+/* ==========================================
+   IOS PWA TIMESHEET
+   SAFE - DOES NOT TOUCH DESKTOP
+========================================== */
+
+.timesheet-pwa-ui {
+  display: none;
+}
+
+@media (max-width: 900px) {
+
+  .timesheet-desktop-ui {
+    display: none !important;
+  }
+
+  .timesheet-page-root {
+    height: 100dvh !important;
+    overflow: hidden !important;
+    background: #f4f7f5 !important;
+  }
+
+  .timesheet-pwa-ui {
+    display: block !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+    background: #f4f7f5 !important;
+  }
+
+  .ts-pwa-header {
+    padding:
+      calc(50px + env(safe-area-inset-top))
+      18px
+      20px;
+
+    background:
+      radial-gradient(circle at top right,
+      rgba(20,184,166,.22),
+      transparent 35%),
+      linear-gradient(
+        135deg,
+        #07111f,
+        #0f2f2a,
+        #0f766e
+      );
+
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+
+    color: #fff;
+  }
+
+  .ts-pwa-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ts-pwa-back,
+  .ts-pwa-refresh {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 16px;
+    background: rgba(255,255,255,.14);
+    color: white;
+    font-size: 28px;
+    font-weight: 900;
+  }
+
+  .ts-pwa-refresh {
+    margin-left: auto;
+    font-size: 20px;
+  }
+
+  .ts-pwa-refresh.spinning {
+    animation: tsSpin .8s linear infinite;
+  }
+
+  @keyframes tsSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .ts-pwa-header h2 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 900;
+  }
+
+  .ts-pwa-header p {
+    margin: 4px 0 0;
+    color: #ccfbf1;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .ts-pwa-fill-btn {
+    width: 100%;
+    margin-top: 16px;
+    border: none;
+    border-radius: 18px;
+    min-height: 52px;
+
+    background: #facc15;
+    color: #111827;
+
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .ts-pwa-fill-btn.disabled {
+    background: #d1d5db;
+    color: #64748b;
+  }
+
+  .ts-pwa-content {
+    height: calc(100dvh - 170px);
+    overflow-y: auto;
+    padding: 14px;
+    padding-bottom:
+      calc(30px + env(safe-area-inset-bottom));
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ts-pwa-filter-card,
+  .ts-pwa-calendar-card,
+  .ts-pwa-reports-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 16px;
+    margin-bottom: 14px;
+
+    border: 1px solid #e5e7eb;
+
+    box-shadow:
+      0 8px 22px rgba(15,23,42,.06);
+  }
+
+  .ts-pwa-filter-card h3,
+  .ts-pwa-card-head h3 {
+    margin: 0 0 12px;
+    color: #111827;
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  .ts-pwa-filter-card label {
+    display: block;
+    margin-bottom: 8px;
+    margin-top: 12px;
+
+    color: #475569;
+
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .ts-pwa-chip-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .ts-pwa-chip-row button,
+  .ts-pwa-year-row button {
+    flex: 0 0 auto;
+
+    border: none;
+    border-radius: 999px;
+
+    background: #f1f5f9;
+    color: #334155;
+
+    padding: 10px 14px;
+
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .ts-pwa-chip-row button.active,
+  .ts-pwa-year-row button.active {
+    background: #0f766e;
+    color: #fff;
+  }
+
+  .ts-pwa-year-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .ts-pwa-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ts-pwa-card-head p {
+    margin: 3px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .ts-pwa-legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    margin-bottom: 16px;
+  }
+
+  .ts-pwa-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    color: #334155;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .ts-pwa-legend b {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+  }
+
+  .ts-pwa-legend b.green {
+    background: #16a34a;
+  }
+
+  .ts-pwa-legend b.red {
+    background: #dc2626;
+  }
+
+  .ts-pwa-legend b.gray {
+    background: #94a3b8;
+  }
+
+  .ts-pwa-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7,1fr);
+    gap: 8px;
+  }
+
+  .ts-pwa-week-name {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: #64748b;
+  }
+
+  .ts-pwa-day {
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 14px;
+
+    font-weight: 900;
+    font-size: 14px;
+  }
+
+  .ts-pwa-day.submitted {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .ts-pwa-day.missing {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .ts-pwa-day.off {
+    background: #e2e8f0;
+    color: #475569;
+  }
+
+  .ts-pwa-day.future {
+    background: #f8fafc;
+    color: #94a3b8;
+  }
+
+  .ts-pwa-week-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 14px;
+  }
+
+  .ts-pwa-week-controls button {
+    border: none;
+    border-radius: 999px;
+
+    background: #0f766e;
+    color: white;
+
+    padding: 10px 14px;
+
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .ts-pwa-week-controls button:disabled {
+    background: #cbd5e1;
+  }
+
+  .ts-pwa-week-controls span {
+    text-align: center;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .ts-pwa-report-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 14px;
+    margin-bottom: 12px;
+
+    background: #fff;
+  }
+
+  .ts-pwa-report-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+
+    margin-bottom: 10px;
+  }
+
+  .ts-pwa-report-top strong {
+    color: #111827;
+  }
+
+  .ts-pwa-report-top span {
+    color: #0f766e;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .ts-pwa-report-line {
+    margin-top: 10px;
+  }
+
+  .ts-pwa-report-line span {
+    display: block;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .ts-pwa-report-line p {
+    margin: 0;
+    color: #111827;
+    line-height: 1.5;
+    font-size: 13px;
+  }
+
+  .ts-pwa-empty-state {
+    text-align: center;
+    color: #64748b;
+    padding: 24px;
+    font-weight: 800;
+  }
+
+  /* FORM */
+
+  .premium-timesheet-form-card {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .timesheet-form-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+
+    padding:
+      calc(50px + env(safe-area-inset-top))
+      18px
+      18px;
+
+    background:
+      linear-gradient(
+        135deg,
+        #07111f,
+        #0f2f2a,
+        #0f766e
+      );
+  }
+
+  .timesheet-form-badge {
+    display: inline-flex;
+
+    background: rgba(255,255,255,.16);
+
+    padding: 7px 12px;
+
+    border-radius: 999px;
+
+    color: white;
+
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .timesheet-form-header h2 {
+    color: white;
+    margin-top: 10px;
+  }
+
+  .timesheet-form-header p {
+    color: #ccfbf1;
+  }
+
+  .timesheet-form {
+    padding:
+      16px
+      16px
+      calc(40px + env(safe-area-inset-bottom));
+  }
+
+  .today-box {
+    background: #ecfdf5;
+    border-radius: 18px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .today-box span {
+    display: block;
+    color: #166534;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .today-box strong {
+    display: block;
+    margin-top: 4px;
+    color: #14532d;
+    font-size: 16px;
+    font-weight: 900;
+  }
+
+  .timesheet-form-group {
+    margin-bottom: 14px;
+  }
+
+  .timesheet-form-group label {
+    display: block;
+    margin-bottom: 8px;
+
+    color: #334155;
+
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .timesheet-form-group textarea {
+    width: 100%;
+    min-height: 110px;
+
+    border-radius: 18px;
+    border: 1px solid #e2e8f0;
+
+    padding: 14px;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    resize: vertical;
+  }
+
+  .timesheet-form-note {
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 12px;
+
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .timesheet-form-actions {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .ts-cancel-btn,
+  .ts-submit-btn {
+    width: 100%;
+    min-height: 52px;
+
+    border: none;
+    border-radius: 18px;
+
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .ts-cancel-btn {
+    background: #e5e7eb;
+  }
+
+  .ts-submit-btn {
+    background: #facc15;
+    color: #111827;
+  }
+}

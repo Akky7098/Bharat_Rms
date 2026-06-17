@@ -11,6 +11,8 @@ import TimesheetPage from "./TimesheetPage";
 import ReceivablePage from "./ReceivablePage";
 import ColdCallList from "./ColdCallList";
 import DocumentPage from "./DocumentPage";
+import NotificationBell from "../components/NotificationBell";
+import { disablePushNotifications } from "../services/pushNotificationService";
 
 function Dashboard() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -19,6 +21,7 @@ function Dashboard() {
     const hash = window.location.hash.replace("#", "");
 
     if (hash === "dashboard") return "dashboard";
+    if (hash === "dashboard-home") return "dashboardHome";
     if (hash === "attendance") return "attendance";
     if (hash === "enquiry") return "sheet";
     if (hash === "sales-order") return "salesOrder";
@@ -37,56 +40,155 @@ function Dashboard() {
     localStorage.getItem("sidebarCollapsed") === "true"
   );
 
-  useEffect(() => {
-    const hashMap = {
-      dashboard: "dashboard",
-      attendance: "attendance",
-      sheet: "enquiry",
-      salesOrder: "sales-order",
-      dispatch: "dispatch",
-      timesheet: "timesheet",
-      receivables: "receivables",
-      coldCall: "cold-call",
-      documents: "documents",
-    };
+  const menuItems = [
+    {
+      key: "dashboard",
+      label: "Dashboard",
+      icon: "📊",
+      desc: "Business overview",
+    },
+    {
+      key: "attendance",
+      label: "Attendance",
+      icon: "🟢",
+      desc: "Check-in & records",
+    },
+    {
+      key: "sheet",
+      label: "Enquiry",
+      icon: "📝",
+      desc: "Customer enquiries",
+    },
+    {
+      key: "salesOrder",
+      label: "Sales Order",
+      icon: "💼",
+      desc: "Orders & approvals",
+    },
+    {
+      key: "dispatch",
+      label: "Dispatch",
+      icon: "🚚",
+      desc: "Invoices & LR copies",
+    },
+    {
+      key: "timesheet",
+      label: "Timesheet",
+      icon: "⏱️",
+      desc: "Daily work reports",
+    },
+    {
+      key: "receivables",
+      label: "Receivables",
+      icon: "💰",
+      desc: "Payment tracking",
+    },
+    {
+      key: "coldCall",
+      label: "Cold Call / Visit",
+      icon: "📞",
+      desc: "Sales activities",
+    },
+    {
+      key: "documents",
+      label: "Documents",
+      icon: "📁",
+      desc: "Company files",
+    },
+  ];
 
-    window.history.replaceState(null, "", `/dashboard#${hashMap[active]}`);
-    localStorage.setItem("activeModule", active);
-  }, [active]);
+ 
 
+  const activeItem =
+    active === "dashboardHome"
+      ? { label: "Dashboard", icon: "📊" }
+      : menuItems.find((item) => item.key === active);
+
+  
+useEffect(() => {
+  const hashMap = {
+    dashboard: "dashboard",
+    dashboardHome: "dashboard-home",
+    attendance: "attendance",
+    sheet: "enquiry",
+    salesOrder: "sales-order",
+    dispatch: "dispatch",
+    timesheet: "timesheet",
+    receivables: "receivables",
+    coldCall: "cold-call",
+    documents: "documents",
+  };
+
+  window.history.replaceState(
+    null,
+    "",
+    `/dashboard#${hashMap[active] || "dashboard"}`
+  );
+
+  localStorage.setItem("activeModule", active);
+}, [active]);
   useEffect(() => {
     localStorage.setItem("sidebarCollapsed", sidebarCollapsed);
   }, [sidebarCollapsed]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("activeModule");
-    localStorage.removeItem("sidebarCollapsed");
-    window.location.href = "/";
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActive(getInitialActive());
+      setMobileMenuOpen(false);
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+    };
+  }, []);
+
+  const goDashboardModules = () => {
+    setActive("dashboard");
+    setMobileMenuOpen(false);
   };
 
-  const menuItems = [
-    { key: "dashboard", label: "Dashboard", icon: "📊" },
-    { key: "attendance", label: "Attendance", icon: "🟢" },
-    { key: "sheet", label: "Enquiry Sheet", icon: "📝" },
-    { key: "salesOrder", label: "Sales Order", icon: "💼" },
-    { key: "dispatch", label: "Dispatch", icon: "🚚" },
-    { key: "timesheet", label: "Timesheet", icon: "⏱️" },
-    { key: "receivables", label: "Receivables", icon: "💰" },
-    { key: "coldCall", label: "Cold Call / Visit", icon: "📞" },
-    { key: "documents", label: "Document Center", icon: "📁" },
-  ];
+ const handleLogout = async () => {
+  try {
+    await disablePushNotifications();
+  } catch (error) {
+    console.log("Push disable on logout failed:", error.message);
+  }
 
-  const activeItem = menuItems.find((item) => item.key === active);
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("activeModule");
+  localStorage.removeItem("sidebarCollapsed");
+  localStorage.removeItem("notificationFocus");
+  window.location.href = "/";
+};
 
   const handleMenuClick = (key) => {
     setActive(key);
     setMobileMenuOpen(false);
   };
 
+  const handleIosModuleClick = (key) => {
+    if (key === "dashboard") {
+      setActive("dashboardHome");
+      setMobileMenuOpen(false);
+      return;
+    }
+
+    setActive(key);
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <div className="dashboard">
+    <div
+      className={
+        active === "dashboard"
+          ? "dashboard ios-dashboard-screen"
+          : `dashboard pwa-module-${active}`
+      }
+    >
+      <NotificationBell />
       <div className="mobile-topbar">
         <div className="mobile-brand">
           <div className="mobile-logo">
@@ -141,7 +243,12 @@ function Dashboard() {
           {menuItems.map((item) => (
             <button
               key={item.key}
-              className={active === item.key ? "active" : ""}
+              className={
+                active === item.key ||
+                (active === "dashboardHome" && item.key === "dashboard")
+                  ? "active"
+                  : ""
+              }
               onClick={() => handleMenuClick(item.key)}
               type="button"
             >
@@ -151,7 +258,7 @@ function Dashboard() {
           ))}
         </nav>
 
-        <button className="mobile-logout-btn" onClick={handleLogout}>
+        <button className="mobile-logout-btn" onClick={handleLogout} type="button">
           <LogOut size={18} />
           Logout
         </button>
@@ -206,7 +313,12 @@ function Dashboard() {
             {menuItems.map((item) => (
               <button
                 key={item.key}
-                className={active === item.key ? "active" : ""}
+                className={
+                  active === item.key ||
+                  (active === "dashboardHome" && item.key === "dashboard")
+                    ? "active"
+                    : ""
+                }
                 onClick={() => setActive(item.key)}
                 title={sidebarCollapsed ? item.label : ""}
                 type="button"
@@ -231,9 +343,91 @@ function Dashboard() {
         </aside>
 
         <main className="main">
-          {active === "dashboard" && <DashboardHome user={user} />}
+          {active === "dashboard" && (
+            <>
+              <div className="ios-dashboard-home">
+                <div className="ios-dashboard-header">
+                  <div className="ios-dashboard-top-row">
+                    <div className="ios-dashboard-logo-box">
+                      <img src="/logo.png" alt="BSSPL Logo" />
+                    </div>
 
-          {active === "attendance" && <AttendancePage />}
+                    <button
+                      className="ios-dashboard-logout"
+                      onClick={handleLogout}
+                      type="button"
+                    >
+                      Logout
+                    </button>
+                  </div>
+
+                  <p className="ios-welcome">Welcome back,</p>
+                  <h1>{user?.name || "User"}</h1>
+                  <p className="ios-role">
+                    {user?.role || "Employee"} · Bharat RMS
+                  </p>
+
+                  <div className="ios-summary-card">
+                    <div>
+                      <span>Today’s Workspace</span>
+                      <strong>Manage your steel business faster</strong>
+                    </div>
+                    <b>⚡</b>
+                  </div>
+                </div>
+
+                <div className="ios-dashboard-content">
+                  <h2>Modules</h2>
+
+                  <div className="ios-module-grid">
+                    {menuItems.map((item) => (
+                      <button
+                        key={item.key}
+                        className="ios-module-card"
+                        onClick={() => handleIosModuleClick(item.key)}
+                        type="button"
+                      >
+                        <span className="ios-module-icon">{item.icon}</span>
+                        <strong>{item.label}</strong>
+                        <small>{item.desc}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="desktop-dashboard-home">
+                <DashboardHome user={user} />
+              </div>
+            </>
+          )}
+
+          {active === "dashboardHome" && (
+  <div className="ios-dashboardhome-shell">
+    <div className="ios-dashboardhome-fixed-header">
+      <button
+        type="button"
+        className="ios-dashboardhome-back"
+        onClick={goDashboardModules}
+      >
+        ‹
+      </button>
+
+      <div>
+        <h2>Dashboard</h2>
+        <p>Business performance overview</p>
+      </div>
+    </div>
+
+    <div className="ios-dashboardhome-scroll">
+      <DashboardHome user={user} />
+    </div>
+  </div>
+)}
+
+          {active === "attendance" && (
+            <AttendancePage goDashboardHome={goDashboardModules} />
+          )}
 
           {active === "sheet" && <EnquiryList />}
 
@@ -245,7 +439,9 @@ function Dashboard() {
 
           {active === "receivables" && <ReceivablePage />}
 
-          {active === "coldCall" && <ColdCallList />}
+          {active === "coldCall" && (
+            <ColdCallList goDashboardHome={goDashboardModules} />
+          )}
 
           {active === "documents" && <DocumentPage />}
         </main>

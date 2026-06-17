@@ -245,12 +245,12 @@ const todayKey = useMemo(() => getDateKey(today), [today]);
   const todayCheckedIn = Boolean(effectiveTodayAttendance?.checkIn?.time);
   const todayCheckedOut = Boolean(effectiveTodayAttendance?.checkOut?.time);
 
-  const regularizationStartKey = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() - 6);
-    return getDateKey(d);
-  }, []);
+ const regularizationStartKey = useMemo(() => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - 9);
+  return getDateKey(d);
+}, []);
 
   const fetchAttendance = useCallback(async () => {
     try {
@@ -601,7 +601,36 @@ const fetchTodayReportStatus = useCallback(async () => {
       );
     });
   };
+    const pwaTodayHealth = getHealth(effectiveTodayAttendance);
 
+  const pwaRefreshAll = async () => {
+    await refreshAll();
+  };
+
+  const pwaSetMonth = (monthIndex) => {
+    setFilters((prev) => ({
+      ...prev,
+      month: monthIndex,
+    }));
+  };
+
+  const pwaSetYear = (year) => {
+    setFilters((prev) => ({
+      ...prev,
+      year,
+    }));
+  };
+
+  const pwaSetEmployee = (employeeId) => {
+    setFilters((prev) => ({
+      ...prev,
+      employeeId,
+    }));
+  };
+
+  // const pwaSelectedDayRecords = selectedDayEmployeeRows.filter(
+  //   (row) => row.attendance
+  // );
   const handleCheckIn = async () => {
     if (attendanceLoading || todayCheckedIn) return;
 
@@ -659,9 +688,9 @@ const fetchTodayReportStatus = useCallback(async () => {
     }
 
     if (date < regularizationStartKey || date > todayKey) {
-      alert("Regularization is allowed only for the last 7 days.");
-      return;
-    }
+  alert("Regularization is allowed only for the last 10 days.");
+  return;
+}
 
     setRegularizeModal({
       open: true,
@@ -969,8 +998,618 @@ const fetchTodayReportStatus = useCallback(async () => {
     }, 300);
   };
 
-  return (
-    <div className="timesheet-container">
+   return (
+    <>
+      <div className="attendance-pwa-ui">
+        <div className="att-pwa-header">
+          <div className="att-pwa-header-row">
+            <button
+              type="button"
+              className="att-pwa-back"
+              onClick={() => {
+                if (window.__goDashboardHome) {
+                  window.__goDashboardHome();
+                } else {
+                  window.location.href = "/dashboard#dashboard";
+                }
+              }}
+            >
+              ‹
+            </button>
+
+            <div>
+              <h2>Attendance</h2>
+              <p>Monthly attendance, check-in and regularization</p>
+            </div>
+
+            <button
+              type="button"
+              className="att-pwa-refresh"
+              onClick={pwaRefreshAll}
+            >
+              ↻
+            </button>
+          </div>
+        </div>
+
+        <div className="att-pwa-scroll">
+          <div className="att-pwa-filter-card">
+            <h3>Month Filter</h3>
+
+            <div className="att-pwa-month-scroll">
+              {months.map((month, index) => (
+                <button
+                  type="button"
+                  key={month}
+                  className={selectedMonth === index ? "active" : ""}
+                  onClick={() => pwaSetMonth(index)}
+                >
+                  {month.slice(0, 3)}
+                </button>
+              ))}
+            </div>
+
+            <div className="att-pwa-year-row">
+              {[2026, 2025, 2024].map((year) => (
+                <button
+                  type="button"
+                  key={year}
+                  className={selectedYear === year ? "active" : ""}
+                  onClick={() => pwaSetYear(year)}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+
+            {canManageUsers && (
+              <div className="att-pwa-employee-row">
+                <button
+                  type="button"
+                  className={!filters.employeeId ? "active" : ""}
+                  onClick={() => pwaSetEmployee("")}
+                >
+                  All
+                </button>
+
+                {allEmployeesForView.map((emp) => (
+                  <button
+                    type="button"
+                    key={emp._id || emp.id}
+                    className={
+                      String(filters.employeeId) === String(emp._id || emp.id)
+                        ? "active"
+                        : ""
+                    }
+                    onClick={() => pwaSetEmployee(emp._id || emp.id)}
+                  >
+                    {emp.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {canMarkAttendance && (
+            <div className="att-pwa-today-card">
+              <span>Today’s Attendance</span>
+
+              <h3>
+                {todayCheckedIn
+                  ? `Checked in at ${formatTime(
+                      effectiveTodayAttendance?.checkIn?.time
+                    )}`
+                  : "Ready to check in"}
+              </h3>
+
+              <p>
+                {todayCheckedOut
+                  ? `Checked out at ${formatTime(
+                      effectiveTodayAttendance?.checkOut?.time
+                    )}`
+                  : "Location will be captured securely from mobile."}
+              </p>
+
+              {isWorkFromHomeAttendance(effectiveTodayAttendance) && (
+                <div className="att-pwa-location-box">
+                  <b>WFH Location</b>
+                  <p>{getWorkLocationText(effectiveTodayAttendance)}</p>
+
+                  {getWorkLocationMapLink(effectiveTodayAttendance) && (
+                    <a
+                      href={getWorkLocationMapLink(effectiveTodayAttendance)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      View Exact Map
+                    </a>
+                  )}
+                </div>
+              )}
+
+              <div className="att-pwa-action-grid">
+                <button
+                  type="button"
+                  className="checkin"
+                  disabled={attendanceLoading || todayCheckedIn}
+                  onClick={handleCheckIn}
+                >
+                  {todayCheckedIn ? "Checked In" : "Check In"}
+                </button>
+
+                <button
+                  type="button"
+                  className="checkout"
+                  disabled={
+                    attendanceLoading || !todayCheckedIn || todayCheckedOut
+                  }
+                  onClick={handleCheckOut}
+                >
+                  {todayCheckedOut ? "Checked Out" : "Check Out"}
+                </button>
+              </div>
+
+              {todayCheckedIn &&
+                !todayCheckedOut &&
+                effectiveTodayAttendance?.regularization?.status !==
+                  "pending" && (
+                  <button
+                    type="button"
+                    className="att-pwa-regularize-btn"
+                    onClick={() =>
+                      openRegularizeModal(todayKey, "missed_check_out")
+                    }
+                  >
+                    Request Regularization
+                  </button>
+                )}
+
+              <div className={`att-pwa-health ${pwaTodayHealth.className}`}>
+                {pwaTodayHealth.label}
+              </div>
+            </div>
+          )}
+
+          {canManageUsers && pendingRegularizations.length > 0 && (
+            <div className="att-pwa-section">
+              <div className="att-pwa-section-head">
+                <h3>Pending Regularization</h3>
+                <span>{pendingRegularizations.length} pending</span>
+              </div>
+
+              {pendingRegularizations.map((item) => (
+                <div key={item._id} className="att-pwa-request-card">
+                  <div>
+                    <h4>{item.employeeName || "-"}</h4>
+                    <p>{formatDate(item.attendanceDate)}</p>
+                  </div>
+
+                  <div className="att-pwa-detail-grid">
+                    <div>
+                      <span>Requested In</span>
+                      <b>
+                        {formatRegularizedTime(
+                          item.regularization?.requestedCheckIn
+                        )}
+                      </b>
+                    </div>
+
+                    <div>
+                      <span>Requested Out</span>
+                      <b>
+                        {formatRegularizedTime(
+                          item.regularization?.requestedCheckOut
+                        )}
+                      </b>
+                    </div>
+                  </div>
+
+                  <p className="att-pwa-reason">
+                    {item.regularization?.reason || "-"}
+                  </p>
+
+                  {canApproveRegularization && (
+                    <div className="att-pwa-request-actions">
+                      <button
+                        type="button"
+                        onClick={() => handleApproveRegularization(item)}
+                      >
+                        Approve
+                      </button>
+
+                      <button
+                        type="button"
+                        className="reject"
+                        onClick={() => handleRejectRegularization(item)}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {canManageUsers && (
+            <div className="att-pwa-section">
+              <div className="att-pwa-section-head">
+                <h3>Today’s Team Attendance</h3>
+                <span>{adminTodayOverview.length} records</span>
+              </div>
+
+              {adminTodayOverview.length === 0 ? (
+                <div className="att-pwa-empty">No attendance records for today</div>
+              ) : (
+                adminTodayOverview.map((item) => {
+                  const health = getHealth(item);
+
+                  return (
+                    <div key={item._id} className="att-pwa-attendance-card">
+                      <div className="att-pwa-card-top">
+                        <div>
+                          <h4>{item.employeeName || "Employee"}</h4>
+                          <p>{formatDate(item.attendanceDate)}</p>
+                        </div>
+
+                        <span className={`att-pwa-pill ${health.className}`}>
+                          {health.label}
+                        </span>
+                      </div>
+
+                      {isWorkFromHomeAttendance(item) && (
+                        <div className="att-pwa-location-box small">
+                          <b>WFH Location</b>
+                          <p>{getWorkLocationText(item)}</p>
+
+                          {getWorkLocationMapLink(item) && (
+                            <a
+                              href={getWorkLocationMapLink(item)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Map
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="att-pwa-detail-grid">
+                        <div>
+                          <span>Check In</span>
+                          <b>{getDisplayCheckIn(item)}</b>
+                        </div>
+
+                        <div>
+                          <span>Check Out</span>
+                          <b>{getDisplayCheckOut(item)}</b>
+                        </div>
+
+                        <div>
+                          <span>Total</span>
+                          <b>{formatMinutes(item.totalWorkingMinutes)}</b>
+                        </div>
+
+                        <div>
+                          <span>Status</span>
+                          <b>{formatStatus(item.attendanceStatus)}</b>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          <div className="att-pwa-calendar-card">
+            <h3>
+              {months[selectedMonth]} {selectedYear}
+            </h3>
+
+            <div className="att-pwa-legend-row">
+              <span><b className="complete"></b>Complete</span>
+              <span><b className="short"></b>Short</span>
+              <span><b className="pending"></b>Pending</span>
+              <span><b className="missing"></b>Missing</span>
+              <span><b className="off"></b>Sunday</span>
+            </div>
+
+            <div className="att-pwa-calendar-grid">
+              {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+                <div key={`${day}-${index}`} className="att-pwa-week-name">
+                  {day}
+                </div>
+              ))}
+
+              {Array.from({
+                length: new Date(selectedYear, selectedMonth, 1).getDay(),
+              }).map((_, i) => (
+                <div key={`empty-${i}`} className="att-pwa-empty-day"></div>
+              ))}
+
+              {Array.from({ length: daysInSelectedMonth }, (_, i) => {
+                const day = i + 1;
+                const status = getDayStatus(day);
+
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    className={`att-pwa-day ${status}`}
+                    onClick={() => setSelectedDay(day)}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+             {selectedDay && (
+        <div className="att-pwa-modal-overlay">
+          <div className="att-pwa-modal-card">
+            <div className="att-pwa-modal-header">
+              <div>
+                <h3>
+                  {selectedDay} {months[selectedMonth]} {selectedYear}
+                </h3>
+                <p>
+                  {canManageUsers
+                    ? `${selectedDayEmployeeRows.length} employee record(s)`
+                    : selectedAttendance?.attendanceStatus || "No attendance"}
+                </p>
+              </div>
+
+              <button type="button" onClick={() => setSelectedDay(null)}>
+                ×
+              </button>
+            </div>
+
+            <div className="att-pwa-modal-body">
+              {isSelectedSunday && (
+                <div className="att-pwa-warning-box">
+                  Sunday is weekly off. Regularization is disabled.
+                </div>
+              )}
+
+              {selectedDayEmployeeRows.map(({ employee, attendance }) => {
+                const minutes = Number(attendance?.totalWorkingMinutes || 0);
+
+                const isOwnRow =
+                  String(employee?._id || employee?.id || "") ===
+                    String(user._id || user.id || "") ||
+                  String(employee?.email || "").toLowerCase() ===
+                    String(user.email || "").toLowerCase();
+
+                const rowShortHours =
+                  attendance?.attendanceStatus === "checked_out" &&
+                  minutes > 0 &&
+                  minutes < REQUIRED_WORK_MINUTES;
+
+                const rowCanRegularize =
+                  isOwnRow &&
+                  canMarkAttendance &&
+                  selectedDay &&
+                  !isSelectedSunday &&
+                  selectedDateKey >= regularizationStartKey &&
+                  selectedDateKey <= todayKey &&
+                  (!attendance ||
+                    attendance.attendanceStatus === "not_checked_in" ||
+                    attendance.attendanceStatus === "checked_in" ||
+                    attendance.attendanceStatus === "absent" ||
+                    rowShortHours) &&
+                  !["pending", "approved"].includes(
+                    attendance?.regularization?.status
+                  );
+
+                const health = getHealth(attendance);
+
+                return (
+                  <div
+                    key={`pwa-${employee?._id || employee?.id || employee?.name}-${selectedDateKey}`}
+                    className="att-pwa-modal-record"
+                  >
+                    <div className="att-pwa-modal-record-top">
+                      <div>
+                        <h4>{employee?.name || attendance?.employeeName || "-"}</h4>
+                        <p>{formatDate(selectedDateObj)}</p>
+                      </div>
+
+                      <span className={`att-pwa-pill ${health.className}`}>
+                        {health.label}
+                      </span>
+                    </div>
+
+                    {isWorkFromHomeAttendance(attendance) && (
+                      <div className="att-pwa-location-box small">
+                        <b>WFH Location</b>
+                        <p>{getWorkLocationText(attendance)}</p>
+
+                        {getWorkLocationMapLink(attendance) && (
+                          <a
+                            href={getWorkLocationMapLink(attendance)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Map
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="att-pwa-detail-grid">
+                      <div>
+                        <span>Status</span>
+                        <b>
+                          {attendance?.attendanceStatus
+                            ? formatStatus(attendance.attendanceStatus)
+                            : "No Attendance"}
+                        </b>
+                      </div>
+
+                      <div>
+                        <span>Check In</span>
+                        <b>{getDisplayCheckIn(attendance)}</b>
+                      </div>
+
+                      <div>
+                        <span>Check Out</span>
+                        <b>{getDisplayCheckOut(attendance)}</b>
+                      </div>
+
+                      <div>
+                        <span>Total Time</span>
+                        <b>{formatMinutes(attendance?.totalWorkingMinutes)}</b>
+                      </div>
+                    </div>
+
+                    {rowShortHours && (
+                      <div className="att-pwa-warning-box danger">
+                        Working time is less than 9 hours.
+                      </div>
+                    )}
+
+                    {attendance?.regularization?.status && (
+                      <div className="att-pwa-regularization-box">
+                        <p>
+                          <b>Regularization:</b>{" "}
+                          {formatStatus(attendance.regularization.status)}
+                        </p>
+                        <p>
+                          <b>Type:</b>{" "}
+                          {formatStatus(attendance.regularization.type)}
+                        </p>
+                        <p>
+                          <b>Requested In:</b>{" "}
+                          {formatRegularizedTime(
+                            attendance.regularization.requestedCheckIn
+                          )}
+                        </p>
+                        <p>
+                          <b>Requested Out:</b>{" "}
+                          {formatRegularizedTime(
+                            attendance.regularization.requestedCheckOut
+                          )}
+                        </p>
+                        <p>
+                          <b>Reason:</b> {attendance.regularization.reason || "-"}
+                        </p>
+                      </div>
+                    )}
+
+                    {canApproveRegularization &&
+                      attendance?.regularization?.status === "pending" && (
+                        <div className="att-pwa-request-actions">
+                          <button
+                            type="button"
+                            disabled={adminActionLoading === attendance._id}
+                            onClick={() => handleApproveRegularization(attendance)}
+                          >
+                            {adminActionLoading === attendance._id
+                              ? "Approving..."
+                              : "Approve"}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="reject"
+                            disabled={adminActionLoading === attendance._id}
+                            onClick={() => handleRejectRegularization(attendance)}
+                          >
+                            {adminActionLoading === attendance._id
+                              ? "Rejecting..."
+                              : "Reject"}
+                          </button>
+                        </div>
+                      )}
+
+                    {!isSuperAdmin &&
+                      attendance?.regularization?.status === "pending" &&
+                      isOwnRow && (
+                        <div className="att-pwa-empty">
+                          Regularization request already submitted.
+                        </div>
+                      )}
+
+                    {!isSuperAdmin && rowCanRegularize && (
+                      <div className="att-pwa-regularize-panel">
+                        <p>
+                          Attendance is missing, incomplete, or short for this
+                          date. Submit regularization request for approval.
+                        </p>
+
+                        <div className="att-pwa-regularize-actions">
+                          {!attendance?.checkIn?.time && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openRegularizeModal(
+                                  selectedDateKey,
+                                  "missed_check_in"
+                                )
+                              }
+                            >
+                              Regularize Missing Check-in
+                            </button>
+                          )}
+
+                          {attendance?.checkIn?.time &&
+                            !attendance?.checkOut?.time && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openRegularizeModal(
+                                    selectedDateKey,
+                                    "missed_check_out"
+                                  )
+                                }
+                              >
+                                Regularize Missing Checkout
+                              </button>
+                            )}
+
+                          {!attendance && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openRegularizeModal(
+                                  selectedDateKey,
+                                  "wrong_time"
+                                )
+                              }
+                            >
+                              Regularize Full Attendance
+                            </button>
+                          )}
+
+                          {rowShortHours && (
+                            <button
+                              type="button"
+                              className="danger"
+                              onClick={() =>
+                                openRegularizeModal(
+                                  selectedDateKey,
+                                  "wrong_time"
+                                )
+                              }
+                            >
+                              Regularize Short Working Hours
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="attendance-desktop-ui">
+        <div className="timesheet-container">
       <div className="timesheet-header">
         <div>
           <h2>Attendance</h2>
@@ -1702,8 +2341,10 @@ const fetchTodayReportStatus = useCallback(async () => {
             </form>
           </div>
         </div>
-      )}
-    </div>
+                      )}
+        </div>
+      </div>
+    </>
   );
 };
 

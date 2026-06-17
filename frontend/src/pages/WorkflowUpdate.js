@@ -44,10 +44,7 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
     const { name, value } = e.target;
 
     setForm((prev) => {
-      const updated = {
-        ...prev,
-        [name]: value,
-      };
+      const updated = { ...prev, [name]: value };
 
       if (name === "closureStatus" && value !== "lost") {
         updated.lostRemark = "";
@@ -62,12 +59,15 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
     });
   };
 
+  const updateField = (name, value) => {
+    handleChange({ target: { name, value } });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const payload = {};
 
-    // FEASIBILITY
     if (!isFeasibilityLocked) {
       if (
         form.feasibilityStatus &&
@@ -80,7 +80,6 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
       }
     }
 
-    // QUOTATION
     if (!isQuotationLocked) {
       if (
         form.quotationLink.trim() &&
@@ -93,12 +92,8 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
       }
     }
 
-    // CLOSURE
     if (!isClosureLocked) {
-      if (
-        form.closureStatus &&
-        form.closureStatus !== enquiry.closure?.status
-      ) {
+      if (form.closureStatus && form.closureStatus !== enquiry.closure?.status) {
         if (form.closureStatus === "lost" && !form.lostRemark) {
           alert("Please select lost remark");
           return;
@@ -115,13 +110,9 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
 
         payload.closure = {
           status: form.closureStatus,
-          lostRemark:
-            form.closureStatus === "lost"
-              ? form.lostRemark
-              : undefined,
+          lostRemark: form.closureStatus === "lost" ? form.lostRemark : undefined,
           lostRemarkOtherText:
-            form.closureStatus === "lost" &&
-            form.lostRemark === "others"
+            form.closureStatus === "lost" && form.lostRemark === "others"
               ? form.lostRemarkOtherText.trim()
               : undefined,
           completed: true,
@@ -146,47 +137,20 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
 
   return (
     <div className="workflow-overlay">
-      <div className="workflow-card">
-        <div className="workflow-header">
-          <div>
-            <h2>Update Enquiry Workflow</h2>
-            <p>
-              {enquiry.companyName} - {enquiry.customerName}
-            </p>
-          </div>
-
-          <button className="workflow-close" onClick={onClose}>
-            ×
-          </button>
-        </div>
+      {/* DESKTOP WEBSITE OLD UI */}
+      <div className="workflow-card workflow-desktop-card">
+        <WorkflowHeader enquiry={enquiry} onClose={onClose} />
 
         <form onSubmit={handleSubmit}>
           <div className="workflow-grid">
-
-            {/* STEP 1 */}
-            <div
-              className={`workflow-section ${
-                isFeasibilityLocked ? "workflow-locked" : ""
-              }`}
+            <DesktopWorkflowSection
+              stepTitle="Step 1 – Feasible Review"
+              title="Feasible"
+              locked={isFeasibilityLocked}
+              completedDate={enquiry.feasibility?.actualDate}
+              planDate={enquiry.feasibility?.planDate}
+              formatDisplayDateTime={formatDisplayDateTime}
             >
-              <div className="workflow-step-title">
-                Step 1 – Feasible Review
-              </div>
-
-              <h3>Feasible</h3>
-
-              {isFeasibilityLocked && (
-                <div className="locked-note">
-                  Completed on {formatDisplayDateTime(enquiry.feasibility?.actualDate)}
-                </div>
-              )}
-
-              <label>Plan Date</label>
-              <input
-                value={formatDisplayDateTime(enquiry.feasibility?.planDate)}
-                disabled
-              />
-
               <label>Status</label>
               <select
                 name="feasibilityStatus"
@@ -198,32 +162,16 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                 <option value="feasible">Feasible</option>
                 <option value="not_feasible">Not Feasible</option>
               </select>
-            </div>
+            </DesktopWorkflowSection>
 
-            {/* STEP 2 */}
-            <div
-              className={`workflow-section ${
-                isQuotationLocked ? "workflow-locked" : ""
-              }`}
+            <DesktopWorkflowSection
+              stepTitle="Step 2 – Quotation Follow-up"
+              title="Quotation"
+              locked={isQuotationLocked}
+              completedDate={enquiry.quotation?.actualDate}
+              planDate={enquiry.quotation?.planDate}
+              formatDisplayDateTime={formatDisplayDateTime}
             >
-              <div className="workflow-step-title">
-                Step 2 – Quotation Follow-up
-              </div>
-
-              <h3>Quotation</h3>
-
-              {isQuotationLocked && (
-                <div className="locked-note">
-                  Completed on {formatDisplayDateTime(enquiry.quotation?.actualDate)}
-                </div>
-              )}
-
-              <label>Plan Date</label>
-              <input
-                value={formatDisplayDateTime(enquiry.quotation?.planDate)}
-                disabled
-              />
-
               <label>Quotation Link</label>
               <input
                 name="quotationLink"
@@ -232,32 +180,16 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                 placeholder="Paste quotation link"
                 disabled={isQuotationLocked}
               />
-            </div>
+            </DesktopWorkflowSection>
 
-            {/* STEP 3 */}
-            <div
-              className={`workflow-section ${
-                isClosureLocked ? "workflow-locked" : ""
-              }`}
+            <DesktopWorkflowSection
+              stepTitle="Step 3 – Closure Decision"
+              title="Closure"
+              locked={isClosureLocked}
+              completedDate={enquiry.closure?.actualDate}
+              planDate={enquiry.closure?.planDate}
+              formatDisplayDateTime={formatDisplayDateTime}
             >
-              <div className="workflow-step-title">
-                Step 3 – Closure Decision
-              </div>
-
-              <h3>Closure</h3>
-
-              {isClosureLocked && (
-                <div className="locked-note">
-                  Completed on {formatDisplayDateTime(enquiry.closure?.actualDate)}
-                </div>
-              )}
-
-              <label>Plan Date</label>
-              <input
-                value={formatDisplayDateTime(enquiry.closure?.planDate)}
-                disabled
-              />
-
               <label>Status</label>
               <select
                 name="closureStatus"
@@ -297,7 +229,7 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
                   )}
                 </>
               )}
-            </div>
+            </DesktopWorkflowSection>
           </div>
 
           <div className="workflow-actions">
@@ -311,8 +243,219 @@ const WorkflowUpdate = ({ enquiry, onClose, refresh }) => {
           </div>
         </form>
       </div>
+
+      {/* iOS PWA UI ONLY */}
+      <div className="ios-workflow-card">
+        <div className="ios-workflow-header">
+          <div>
+            <h2>Update Workflow</h2>
+            <p>{enquiry.companyName} · {enquiry.customerName}</p>
+          </div>
+
+          <button type="button" onClick={onClose}>×</button>
+        </div>
+
+        <form className="ios-workflow-body" onSubmit={handleSubmit}>
+          <IosStepSection
+            number="1"
+            title="Feasible Review"
+            locked={isFeasibilityLocked}
+            completedDate={enquiry.feasibility?.actualDate}
+            planDate={enquiry.feasibility?.planDate}
+            formatDisplayDateTime={formatDisplayDateTime}
+          >
+            <IosOptionGroup
+              label="Status"
+              value={form.feasibilityStatus}
+              disabled={isFeasibilityLocked}
+              options={[
+                { value: "feasible", label: "Feasible" },
+                { value: "not_feasible", label: "Not Feasible" },
+              ]}
+              onSelect={(v) => updateField("feasibilityStatus", v)}
+            />
+          </IosStepSection>
+
+          <IosStepSection
+            number="2"
+            title="Quotation Follow-up"
+            locked={isQuotationLocked}
+            completedDate={enquiry.quotation?.actualDate}
+            planDate={enquiry.quotation?.planDate}
+            formatDisplayDateTime={formatDisplayDateTime}
+          >
+            <div className="ios-workflow-field">
+              <label>Quotation Link</label>
+              <input
+                value={form.quotationLink}
+                onChange={(e) => updateField("quotationLink", e.target.value)}
+                placeholder="Paste quotation link"
+                disabled={isQuotationLocked}
+              />
+            </div>
+          </IosStepSection>
+
+          <IosStepSection
+            number="3"
+            title="Closure Decision"
+            locked={isClosureLocked}
+            completedDate={enquiry.closure?.actualDate}
+            planDate={enquiry.closure?.planDate}
+            formatDisplayDateTime={formatDisplayDateTime}
+          >
+            <IosOptionGroup
+              label="Status"
+              value={form.closureStatus}
+              disabled={isClosureLocked}
+              options={[
+                { value: "won", label: "Won" },
+                { value: "lost", label: "Lost" },
+              ]}
+              onSelect={(v) => updateField("closureStatus", v)}
+            />
+
+            {form.closureStatus === "lost" && (
+              <>
+                <IosOptionGroup
+                  label="Lost Remark"
+                  value={form.lostRemark}
+                  disabled={isClosureLocked}
+                  options={lostRemarkOptions.filter((item) => item.value)}
+                  onSelect={(v) => updateField("lostRemark", v)}
+                />
+
+                {form.lostRemark === "others" && (
+                  <div className="ios-workflow-field">
+                    <label>Other Reason</label>
+                    <textarea
+                      value={form.lostRemarkOtherText}
+                      onChange={(e) =>
+                        updateField("lostRemarkOtherText", e.target.value)
+                      }
+                      placeholder="Enter other reason"
+                      disabled={isClosureLocked}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </IosStepSection>
+
+          <div className="ios-workflow-actions">
+            <button type="button" onClick={onClose}>
+              Cancel
+            </button>
+
+            <button type="submit">
+              Save Update
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
+
+function WorkflowHeader({ enquiry, onClose }) {
+  return (
+    <div className="workflow-header">
+      <div>
+        <h2>Update Enquiry Workflow</h2>
+        <p>
+          {enquiry.companyName} - {enquiry.customerName}
+        </p>
+      </div>
+
+      <button className="workflow-close" onClick={onClose} type="button">
+        ×
+      </button>
+    </div>
+  );
+}
+
+function DesktopWorkflowSection({
+  stepTitle,
+  title,
+  locked,
+  completedDate,
+  planDate,
+  formatDisplayDateTime,
+  children,
+}) {
+  return (
+    <div className={`workflow-section ${locked ? "workflow-locked" : ""}`}>
+      <div className="workflow-step-title">{stepTitle}</div>
+
+      <h3>{title}</h3>
+
+      {locked && (
+        <div className="locked-note">
+          Completed on {formatDisplayDateTime(completedDate)}
+        </div>
+      )}
+
+      <label>Plan Date</label>
+      <input value={formatDisplayDateTime(planDate)} disabled />
+
+      {children}
+    </div>
+  );
+}
+
+function IosStepSection({
+  number,
+  title,
+  locked,
+  completedDate,
+  planDate,
+  formatDisplayDateTime,
+  children,
+}) {
+  return (
+    <div className={`ios-workflow-section ${locked ? "locked" : ""}`}>
+      <div className="ios-workflow-step-top">
+        <span>{number}</span>
+        <div>
+          <strong>{title}</strong>
+          <p>Plan: {formatDisplayDateTime(planDate)}</p>
+        </div>
+      </div>
+
+      {locked && (
+        <div className="ios-workflow-locked-note">
+          Completed on {formatDisplayDateTime(completedDate)}
+        </div>
+      )}
+
+      {children}
+    </div>
+  );
+}
+
+function IosOptionGroup({ label, options, value, onSelect, disabled }) {
+  return (
+    <div className="ios-workflow-field">
+      <label>{label}</label>
+
+      <div className="ios-workflow-chip-wrap">
+        {options.map((item) => {
+          const active = value === item.value;
+
+          return (
+            <button
+              key={item.value}
+              type="button"
+              disabled={disabled}
+              className={`ios-workflow-chip ${active ? "active" : ""}`}
+              onClick={() => onSelect(item.value)}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default WorkflowUpdate;

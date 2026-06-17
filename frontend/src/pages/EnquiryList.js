@@ -9,55 +9,69 @@ const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
   "https://bharatspecialsteels.bharatspecialsteels.com";
 
+
 const EnquiryList = () => {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   const [enquiries, setEnquiries] = useState([]);
   const [salesPersons, setSalesPersons] = useState([]);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
   const [showForm, setShowForm] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
+  const [iosRefreshing, setIosRefreshing] = useState(false);
+  const [showIosFilters, setShowIosFilters] = useState(false);
+ const [summary, setSummary] = useState({
+  totalEnquiries: 0,
+  feasibleEnquiries: 0,
+  notFeasibleEnquiries: 0,
+  quotationDoneEnquiries: 0,
+  wonEnquiries: 0,
+  lostEnquiries: 0,
+  pendingEnquiries: 0,
+});
 
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     totalRecords: 0,
-    limit: 10,
+    limit: 30,
   });
 
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 10,
-    salesPersonId: "",
-    fromDate: "",
-    toDate: "",
-  });
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+const [filters, setFilters] = useState({
+  page: 1,
+  limit: 30,
+  salesPersonId: "",
+  fromDate: "",
+  toDate: "",
+  companyName: "",
+  enquiryNumber: "",
+  status: "all",
+});
 
   const fetchEnquiries = useCallback(async () => {
     try {
       const cleanFilters = {};
-
       Object.keys(filters).forEach((key) => {
         if (filters[key]) cleanFilters[key] = filters[key];
       });
 
       const response = await getAllEnquiries(cleanFilters);
       setEnquiries(response.data || []);
-      setPagination(response.pagination || pagination);
+setSummary(response.summary || {});
+      setPagination(
+        response.pagination || {
+          currentPage: 1,
+          totalPages: 1,
+          totalRecords: 0,
+          limit: 30,
+        }
+      );
     } catch (error) {
       console.log(error);
       alert(error.response?.data?.message || "Failed to load enquiries");
     }
-  }, [filters, pagination]);
+  }, [filters]);
 
   const fetchSalesPersons = useCallback(async () => {
     try {
@@ -75,6 +89,15 @@ const EnquiryList = () => {
   useEffect(() => {
     if (isAdmin) fetchSalesPersons();
   }, [isAdmin, fetchSalesPersons]);
+
+  const iosRefreshAll = async () => {
+    try {
+      setIosRefreshing(true);
+      await fetchEnquiries();
+    } finally {
+      setIosRefreshing(false);
+    }
+  };
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -107,14 +130,17 @@ const EnquiryList = () => {
   };
 
   const clearFilters = () => {
-    setFilters({
-      page: 1,
-      limit: 10,
-      salesPersonId: "",
-      fromDate: "",
-      toDate: "",
-    });
-  };
+  setFilters({
+    page: 1,
+    limit: 30,
+    salesPersonId: "",
+    fromDate: "",
+    toDate: "",
+    companyName: "",
+    enquiryNumber: "",
+    status: "all",
+  });
+};
 
   const nextPage = () => {
     if (pagination.currentPage < pagination.totalPages) {
@@ -150,6 +176,7 @@ const EnquiryList = () => {
             key={i}
             className={i === current ? "active" : ""}
             onClick={() => setFilters((prev) => ({ ...prev, page: i }))}
+            type="button"
           >
             {i}
           </button>
@@ -165,6 +192,18 @@ const EnquiryList = () => {
   const openWorkflowModal = (enquiry) => {
     setSelectedEnquiry(enquiry);
     setShowWorkflow(true);
+  };
+
+  const openNewEnquiry = () => {
+    setShowForm(true);
+  };
+
+  const goDashboardModules = () => {
+    if (window.__goDashboardHome) {
+      window.__goDashboardHome();
+    } else {
+      window.location.href = "/dashboard#dashboard";
+    }
   };
 
   const formatDate = (date) => {
@@ -236,7 +275,6 @@ const EnquiryList = () => {
 
   const getSizePdfUrl = (enquiry) => {
     const fileUrl = enquiry?.sizePdf?.fileUrl;
-
     if (!fileUrl) return "";
 
     if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
@@ -247,6 +285,20 @@ const EnquiryList = () => {
   };
 
   const getRowClass = (enquiry) => {
+    const meta = getStatusMeta(enquiry);
+
+    if (meta.key === "lost") return "row-lost";
+    if (meta.key === "won") return "row-won";
+    if (meta.key === "not_feasible") return "row-not-feasible";
+    if (meta.key === "delayed") return "row-overdue";
+    if (meta.key === "quotation") return "row-quotation";
+    if (meta.key === "feasible") return "row-feasible";
+    if (meta.key === "closure") return "row-closure";
+
+    return "";
+  };
+
+  const getStatusMeta = (enquiry) => {
     const closureStatus = enquiry.closure?.status;
     const feasibilityStatus = enquiry.feasibility?.status;
 
@@ -269,58 +321,210 @@ const EnquiryList = () => {
       closureCompleted
     );
 
-    if (closureStatus === "lost") return "row-lost";
-    if (closureStatus === "won") return "row-won";
-    if (feasibilityStatus === "not_feasible") return "row-not-feasible";
-
-    if (feasibilityOverdue || quotationOverdue || closureOverdue) {
-      return "row-overdue";
+    if (closureStatus === "lost") {
+      return { label: "Lost", color: "#dc2626", bg: "#fee2e2", key: "lost" };
     }
 
-    if (quotationCompleted) return "row-quotation";
-    if (feasibilityCompleted) return "row-feasible";
-    if (closureCompleted) return "row-closure";
+    if (closureStatus === "won") {
+      return { label: "Won", color: "#15803d", bg: "#dcfce7", key: "won" };
+    }
 
-    return "";
+    if (feasibilityStatus === "not_feasible") {
+      return {
+        label: "Not Feasible",
+        color: "#b91c1c",
+        bg: "#fee2e2",
+        key: "not_feasible",
+      };
+    }
+
+    if (feasibilityOverdue || quotationOverdue || closureOverdue) {
+      return {
+        label: "Delayed",
+        color: "#ea580c",
+        bg: "#ffedd5",
+        key: "delayed",
+      };
+    }
+
+    if (quotationCompleted) {
+      return {
+        label: "Quotation Done",
+        color: "#166534",
+        bg: "#dcfce7",
+        key: "quotation",
+      };
+    }
+
+    if (feasibilityCompleted) {
+      return {
+        label: "Feasible",
+        color: "#2563eb",
+        bg: "#dbeafe",
+        key: "feasible",
+      };
+    }
+
+    if (closureCompleted) {
+      return {
+        label: "Closure Done",
+        color: "#7c3aed",
+        bg: "#ede9fe",
+        key: "closure",
+      };
+    }
+
+    return {
+      label: "Active",
+      color: "#0f766e",
+      bg: "#ccfbf1",
+      key: "active",
+    };
   };
+
 
   const stickyColSpan = isAdmin ? 4 : 3;
   const totalColSpan = isAdmin ? 25 : 24;
+  const enquirySummaryCards = [
+  {
+    label: "Total Enquiries",
+    value: summary.totalEnquiries || 0,
+    status: "all",
+    className: "total",
+  },
+  {
+    label: "Feasible Enquiries",
+    value: summary.feasibleEnquiries || 0,
+    status: "feasible",
+    className: "feasible",
+  },
+  {
+    label: "Quotation Done",
+    value: summary.quotationDoneEnquiries || 0,
+    status: "quotation_done",
+    className: "quotation",
+  },
+  {
+    label: "Won Enquiries",
+    value: summary.wonEnquiries || 0,
+    status: "won",
+    className: "won",
+  },
+  {
+    label: "Lost Enquiries",
+    value: summary.lostEnquiries || 0,
+    status: "lost",
+    className: "lost",
+  },
+  {
+    label: "Pending",
+    value: summary.pendingEnquiries || 0,
+    status: "pending",
+    className: "pending",
+  },
+];
 
+const handleStatusCardClick = (status) => {
+  setFilters((prev) => ({
+    ...prev,
+    page: 1,
+    status: prev.status === status && status !== "all" ? "all" : status,
+  }));
+};
   return (
-    <div className={`enquiry-container ${isAdmin ? "admin-view" : "user-view"}`}>
-      <div className="enquiry-header">
-        <div>
-          <h2>Enquiry Sheet</h2>
-          <p>Latest enquiries appear first</p>
+    <div className={`enquiry-page-root ${isAdmin ? "admin-view" : "user-view"}`}>
+      <div className="enquiry-pwa-shell">
+        <div className="ios-enquiry-page">
+          <div className="ios-enquiry-header">
+            <div className="ios-enquiry-header-row">
+              <button
+                type="button"
+                className="ios-enquiry-back"
+                onClick={goDashboardModules}
+              >
+                ‹
+              </button>
+
+              <div className="ios-enquiry-title-box">
+                <h2>Enquiry Sheet</h2>
+                <p>{pagination.totalRecords || 0} enquiry record(s)</p>
+              </div>
+
+              <button
+                type="button"
+                className={`ios-enquiry-refresh ${
+                  iosRefreshing ? "spinning" : ""
+                }`}
+                onClick={iosRefreshAll}
+              >
+                ↻
+              </button>
+            </div>
+
+            <div className="ios-enquiry-action-row">
+              <button
+                type="button"
+                className="ios-enquiry-filter-btn"
+                onClick={() => setShowIosFilters((prev) => !prev)}
+              >
+                Filter
+              </button>
+
+              <button
+                type="button"
+                className="ios-enquiry-new-btn"
+                onClick={openNewEnquiry}
+              >
+                + New
+              </button>
+            </div>
+
+            <div className="ios-enquiry-legend-row">
+              <IosLegend label="Delayed" color="#ea580c" />
+              <IosLegend label="Feasible" color="#2563eb" />
+              <IosLegend label="Won" color="#15803d" />
+              <IosLegend label="Lost" color="#dc2626" />
+            </div>
+          </div>
+
+          <div className="ios-enquiry-content">
+  {showIosFilters && (
+    <div className="ios-enquiry-filter-overlay">
+      <div className="ios-enquiry-filter-card">
+        <div className="ios-enquiry-filter-head">
+          <div>
+            <h3>Filters</h3>
+            <p>Filter enquiry records</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowIosFilters(false)}
+          >
+            ×
+          </button>
         </div>
 
-        <button className="new-btn" onClick={() => setShowForm(true)}>
-          + New Enquiry
-        </button>
-      </div>
+        {isAdmin && (
+          <div className="ios-enquiry-field">
+            <label>Sales Person</label>
+            <select
+              name="salesPersonId"
+              value={filters.salesPersonId}
+              onChange={handleFilterChange}
+            >
+              <option value="">All Sales Persons</option>
+              {salesPersons.map((person) => (
+                <option key={person._id} value={person._id}>
+                  {person.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-      <div className="enquiry-filter-card">
-        <div className="enquiry-filter-grid">
-          {isAdmin && (
-            <div className="filter-field">
-              <label>Sales Person</label>
-              <select
-                name="salesPersonId"
-                value={filters.salesPersonId}
-                onChange={handleFilterChange}
-              >
-                <option value="">All Sales Persons</option>
-                {salesPersons.map((person) => (
-                  <option key={person._id} value={person._id}>
-                    {person.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="filter-field">
+        <div className="ios-enquiry-date-grid">
+          <div className="ios-enquiry-field">
             <label>Start Date</label>
             <input
               type="date"
@@ -330,7 +534,7 @@ const EnquiryList = () => {
             />
           </div>
 
-          <div className="filter-field">
+          <div className="ios-enquiry-field">
             <label>End Date</label>
             <input
               type="date"
@@ -341,28 +545,304 @@ const EnquiryList = () => {
               onChange={handleFilterChange}
             />
           </div>
+        </div>
 
-          <div className="enquiry-color-remarks">
-            <div><span className="remark-dot delayed"></span> Delayed</div>
-            <div><span className="remark-dot feasible"></span> Feasible</div>
-            <div><span className="remark-dot not-feasible"></span> Not Feasible</div>
-            <div><span className="remark-dot won"></span> Won</div>
-            <div><span className="remark-dot lost"></span> Lost</div>
+        <div className="ios-enquiry-filter-actions">
+          <button
+            type="button"
+            onClick={() => {
+              applyFilters();
+              setShowIosFilters(false);
+            }}
+          >
+            Apply
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              clearFilters();
+              setShowIosFilters(false);
+            }}
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {enquiries.length === 0 ? (
+    <div className="ios-enquiry-empty">
+      <strong>No enquiries found</strong>
+      <p>Use filters or refresh to check latest records.</p>
+    </div>
+  ) : (
+    enquiries.map((enquiry) => {
+      const meta = getStatusMeta(enquiry);
+      const sizePdfUrl = getSizePdfUrl(enquiry);
+
+      return (
+        <div key={enquiry._id} className="ios-enquiry-card">
+          <div className="ios-enquiry-card-top">
+            <div>
+              <h4>{enquiry.companyName || "-"}</h4>
+              <p>
+                {enquiry.enquiryNumber || "-"} ·{" "}
+                {formatDate(enquiry.createdAt)}
+              </p>
+            </div>
+
+            <span
+              className="ios-enquiry-status-pill"
+              style={{
+                background: meta.bg,
+                color: meta.color,
+              }}
+            >
+              {meta.label}
+            </span>
           </div>
 
-          <div className="filter-buttons">
-            <button className="filter-btn" onClick={applyFilters}>
-              Apply
-            </button>
+          <div className="ios-enquiry-tags">
+            <span>{formatEnumLabel(enquiry.productCategory)}</span>
+            <span>{enquiry.grade || "-"}</span>
+            <span>{enquiry.quantityInKg || 0} Kg</span>
+          </div>
 
-            <button className="clear-btn" onClick={clearFilters}>
-              Clear
+          <div className="ios-enquiry-detail-box">
+            {isAdmin && (
+              <IosInfo
+                label="Sales Person"
+                value={enquiry.salesPersonId?.name || "-"}
+              />
+            )}
+
+            <IosInfo label="Customer" value={enquiry.customerName || "-"} />
+            <IosInfo label="Contact" value={enquiry.customerContactNo || "-"} />
+            <IosInfo label="Email" value={enquiry.customerEmailId || "-"} />
+            <IosInfo
+              label="Shape / Size"
+              value={`${formatEnumLabel(enquiry.shape)} / ${
+                enquiry.size || "-"
+              }`}
+            />
+            <IosInfo label="Supply" value={formatSupplyCondition(enquiry)} />
+            <IosInfo label="Mode" value={formatEnumLabel(enquiry.modeOfEnquiry)} />
+          </div>
+
+          <div className="ios-enquiry-workflow-box">
+            <IosStep
+              title="Feasibility"
+              plan={formatDateTime(enquiry.feasibility?.planDate)}
+              actual={formatDateTime(enquiry.feasibility?.actualDate)}
+              status={formatEnumLabel(enquiry.feasibility?.status)}
+            />
+
+            <IosStep
+              title="Quotation"
+              plan={formatDateTime(enquiry.quotation?.planDate)}
+              actual={formatDateTime(enquiry.quotation?.actualDate)}
+              status={enquiry.quotation?.completed ? "Done" : "Pending"}
+            />
+
+            <IosStep
+              title="Closure"
+              plan={formatDateTime(enquiry.closure?.planDate)}
+              actual={formatDateTime(enquiry.closure?.actualDate)}
+              status={formatEnumLabel(enquiry.closure?.status)}
+            />
+          </div>
+
+          {enquiry.closure?.status === "lost" &&
+            enquiry.closure?.lostRemark && (
+              <div className="ios-enquiry-lost-box">
+                Lost Reason:{" "}
+                {enquiry.closure.lostRemark === "others"
+                  ? enquiry.closure.lostRemarkOtherText || "-"
+                  : formatEnumLabel(enquiry.closure.lostRemark)}
+              </div>
+            )}
+
+          <div className="ios-enquiry-action-bottom">
+            {sizePdfUrl && (
+              <a
+                href={sizePdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="ios-enquiry-secondary-btn"
+              >
+                Size PDF
+              </a>
+            )}
+
+            {enquiry.quotation?.quotationLink && (
+              <a
+                href={enquiry.quotation.quotationLink}
+                target="_blank"
+                rel="noreferrer"
+                className="ios-enquiry-secondary-btn"
+              >
+                View Quote
+              </a>
+            )}
+
+            <button
+              type="button"
+              className="ios-enquiry-primary-btn"
+              onClick={() => openWorkflowModal(enquiry)}
+            >
+              Update
             </button>
           </div>
         </div>
+      );
+    })
+  )}
+
+  <div className="ios-enquiry-pagination">
+    <button
+      type="button"
+      onClick={prevPage}
+      disabled={pagination.currentPage <= 1}
+    >
+      Prev
+    </button>
+
+    <span>
+      Page {pagination.currentPage || 1} / {pagination.totalPages || 1}
+    </span>
+
+    <button
+      type="button"
+      onClick={nextPage}
+      disabled={pagination.currentPage >= pagination.totalPages}
+    >
+      Next
+    </button>
+  </div>
+</div>
+        </div>
       </div>
 
-      {!isMobile ? (
+      <div
+        className={`enquiry-container desktop-enquiry-page ${
+          isAdmin ? "admin-view" : "user-view"
+        }`}
+      >
+   <div className="enquiry-header">
+  <div>
+    <h2>Enquiry Sheet</h2>
+    <p>Latest enquiries appear first · {pagination.totalRecords || 0} total records</p>
+  </div>
+
+  <button className="new-btn" onClick={openNewEnquiry} type="button">
+    + New Enquiry
+  </button>
+</div>
+<div className="enquiry-summary-grid">
+  {enquirySummaryCards.map((card) => (
+    <button
+      key={card.status}
+      type="button"
+      className={`enquiry-summary-card ${card.className} ${
+        filters.status === card.status ? "active" : ""
+      }`}
+      onClick={() => handleStatusCardClick(card.status)}
+    >
+      <span>{card.label}</span>
+      <strong>{card.value}</strong>
+    </button>
+  ))}
+</div>
+<div className="enquiry-filter-card">
+  <div className="enquiry-filter-grid">
+    <div className="filter-field">
+      <label>Company</label>
+      <input
+        type="text"
+        name="companyName"
+        value={filters.companyName}
+        onChange={handleFilterChange}
+        placeholder="Search company..."
+      />
+    </div>
+            {isAdmin && (
+              
+              <div className="filter-field">
+                <label>Sales Person</label>
+                <select
+                  name="salesPersonId"
+                  value={filters.salesPersonId}
+                  onChange={handleFilterChange}
+                >
+                  <option value="">All Sales Persons</option>
+                  {salesPersons.map((person) => (
+                    <option key={person._id} value={person._id}>
+                      {person.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+             <div className="filter-field">
+  <label>Status</label>
+  <select
+    name="status"
+    value={filters.status}
+    onChange={handleFilterChange}
+  >
+    <option value="all">All Enquiries</option>
+    <option value="pending">Pending</option>
+    <option value="feasible">Feasible</option>
+    <option value="not_feasible">Not Feasible</option>
+    <option value="quotation_done">Quotation Done</option>
+    <option value="won">Won</option>
+    <option value="lost">Lost</option>
+  </select>
+</div>
+            <div className="filter-field">
+              <label>Start Date</label>
+              <input
+                type="date"
+                name="fromDate"
+                value={filters.fromDate}
+                onChange={handleFilterChange}
+              />
+            </div>
+
+            <div className="filter-field">
+              <label>End Date</label>
+              <input
+                type="date"
+                name="toDate"
+                value={filters.toDate}
+                min={filters.fromDate || ""}
+                disabled={!filters.fromDate}
+                onChange={handleFilterChange}
+              />
+            </div>
+
+            <div className="enquiry-color-remarks">
+              <div><span className="remark-dot delayed"></span> Delayed</div>
+              <div><span className="remark-dot feasible"></span> Feasible</div>
+              <div><span className="remark-dot not-feasible"></span> Not Feasible</div>
+              <div><span className="remark-dot won"></span> Won</div>
+              <div><span className="remark-dot lost"></span> Lost</div>
+            </div>
+
+            <div className="filter-buttons">
+              <button className="filter-btn" onClick={applyFilters} type="button">
+                Apply
+              </button>
+
+              <button className="clear-btn" onClick={clearFilters} type="button">
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div className="enquiry-table-wrapper">
           <table className="enquiry-table">
             <thead>
@@ -375,7 +855,7 @@ const EnquiryList = () => {
                 <th colSpan={11} className="workflow-empty-head"></th>
 
                 <th colSpan={3} className="workflow-step-head">
-                  Step 1 - Feasibility
+                  Step 1 - Feasibile
                 </th>
 
                 <th colSpan={3} className="workflow-step-head">
@@ -543,6 +1023,7 @@ const EnquiryList = () => {
                         <button
                           className="edit-btn"
                           onClick={() => openWorkflowModal(enquiry)}
+                          type="button"
                         >
                           Edit
                         </button>
@@ -554,130 +1035,28 @@ const EnquiryList = () => {
             </tbody>
           </table>
         </div>
-      ) : (
-        <div className="enquiry-mobile-list">
-          {enquiries.length === 0 ? (
-            <div className="no-data">No enquiries found</div>
-          ) : (
-            enquiries.map((enquiry) => {
-              const sizePdfUrl = getSizePdfUrl(enquiry);
 
-              return (
-                <div
-                  key={enquiry._id}
-                  className={`mobile-card ${getRowClass(enquiry)}`}
-                >
-                  <div className="mobile-card-top">
-                    <div>
-                      <strong>{enquiry.companyName || "-"}</strong>
-                      <span>{enquiry.enquiryNumber || "-"}</span>
-                    </div>
+        <div className="enquiry-pagination">
+          <button
+            onClick={prevPage}
+            disabled={pagination.currentPage <= 1}
+            type="button"
+          >
+            Prev
+          </button>
 
-                    <small>{formatDate(enquiry.createdAt)}</small>
-                  </div>
+          {renderPages()}
 
-                  <div className="mobile-card-tags">
-                    <span>{formatEnumLabel(enquiry.productCategory)}</span>
-                    <span>{enquiry.grade || "-"}</span>
-                    <span>{enquiry.quantityInKg || 0} Kg</span>
-                  </div>
+          <button
+            onClick={nextPage}
+            disabled={pagination.currentPage >= pagination.totalPages}
+            type="button"
+          >
+            Next
+          </button>
 
-                  <div className="mobile-card-body">
-                    {isAdmin && (
-                      <p>
-                        <b>Sales:</b> {enquiry.salesPersonId?.name || "-"}
-                      </p>
-                    )}
-
-                    <p>
-                      <b>Contact:</b> {enquiry.customerContactNo || "-"}
-                    </p>
-
-                    <p>
-                      <b>Email:</b> {enquiry.customerEmailId || "-"}
-                    </p>
-
-                    <p>
-                      <b>Shape / Size:</b> {formatEnumLabel(enquiry.shape)} /{" "}
-                      <span className="size-lines-inline">
-                        {formatSizeText(enquiry.size)}
-                      </span>
-                      {sizePdfUrl && (
-                        <a
-                          href={sizePdfUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mobile-size-pdf-link"
-                        >
-                          Size PDF
-                        </a>
-                      )}
-                    </p>
-
-                    <p>
-                      <b>Supply:</b> {formatSupplyCondition(enquiry)}
-                    </p>
-
-                    <p>
-                      <b>Mode:</b> {formatEnumLabel(enquiry.modeOfEnquiry)}
-                    </p>
-
-                    <p>
-                      <b>Feasibility:</b>{" "}
-                      {formatEnumLabel(enquiry.feasibility?.status)}
-                    </p>
-
-                    <p>
-                      <b>Quotation:</b>{" "}
-                      {enquiry.quotation?.completed ? "Done" : "Pending"}
-                    </p>
-
-                    <p>
-                      <b>Closure:</b> {formatEnumLabel(enquiry.closure?.status)}
-                    </p>
-                  </div>
-
-                  <div className="mobile-card-actions">
-                    {enquiry.quotation?.quotationLink && (
-                      <a
-                        href={enquiry.quotation.quotationLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mobile-view-link"
-                      >
-                        View Quote
-                      </a>
-                    )}
-
-                    <button
-                      className="edit-btn"
-                      onClick={() => openWorkflowModal(enquiry)}
-                    >
-                      Update
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
+          <span>Total: {pagination.totalRecords}</span>
         </div>
-      )}
-
-      <div className="enquiry-pagination">
-        <button onClick={prevPage} disabled={pagination.currentPage <= 1}>
-          Prev
-        </button>
-
-        {renderPages()}
-
-        <button
-          onClick={nextPage}
-          disabled={pagination.currentPage >= pagination.totalPages}
-        >
-          Next
-        </button>
-
-        <span>Total: {pagination.totalRecords}</span>
       </div>
 
       {showForm && (
@@ -700,5 +1079,34 @@ const EnquiryList = () => {
     </div>
   );
 };
+
+function IosLegend({ label, color }) {
+  return (
+    <span className="ios-enquiry-legend-item">
+      <b style={{ backgroundColor: color }}></b>
+      {label}
+    </span>
+  );
+}
+
+function IosInfo({ label, value }) {
+  return (
+    <div className="ios-enquiry-info-row">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function IosStep({ title, plan, actual, status }) {
+  return (
+    <div className="ios-enquiry-step-card">
+      <strong>{title}</strong>
+      <p>Plan: {plan}</p>
+      <p>Actual: {actual}</p>
+      <span>{status}</span>
+    </div>
+  );
+}
 
 export default EnquiryList;

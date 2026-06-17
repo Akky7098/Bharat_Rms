@@ -571,3 +571,475 @@
     margin-left: 0;
   }
 }
+
+/* ================================
+   iOS PWA COLD CALL CRM
+   Desktop safe: mobile only
+================================ */
+
+.cold-pwa-shell > .ios-cold-page {
+  display: none !important;
+}
+
+.cold-pwa-shell > .desktop-cold-page {
+  display: flex !important;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .cold-pwa-shell {
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: #f4f7f5 !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .cold-pwa-shell > .desktop-cold-page {
+    display: none !important;
+  }
+
+  .cold-pwa-shell > .ios-cold-page {
+    display: block !important;
+    min-height: 100dvh;
+    background: #f4f7f5;
+    position: relative;
+    animation: iosColdFade 0.22s ease both;
+  }
+
+  .ios-cold-header {
+    padding:
+      calc(50px + env(safe-area-inset-top))
+      18px
+      20px;
+    background:
+      radial-gradient(circle at top right, rgba(20, 184, 166, 0.22), transparent 35%),
+      linear-gradient(135deg, #07111f, #0f2f2a, #0f766e);
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    color: #ffffff;
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.24);
+  }
+
+  .ios-cold-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ios-cold-back,
+  .ios-cold-refresh {
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    cursor: pointer;
+    flex-shrink: 0;
+    backdrop-filter: blur(14px);
+  }
+
+  .ios-cold-back {
+    font-size: 34px;
+    line-height: 36px;
+    font-weight: 600;
+  }
+
+  .ios-cold-refresh {
+    margin-left: auto;
+    font-size: 22px;
+    font-weight: 900;
+  }
+
+  .ios-cold-refresh.spinning {
+    animation: iosColdSpin 0.8s linear infinite;
+  }
+
+  .ios-cold-header h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 900;
+  }
+
+  .ios-cold-header p {
+    margin: 3px 0 0;
+    color: #ccfbf1;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .ios-cold-stats-card {
+    margin-top: 22px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 24px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    backdrop-filter: blur(14px);
+  }
+
+  .ios-cold-stats-card span {
+    display: block;
+    color: #ccfbf1;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .ios-cold-stats-card strong {
+    display: block;
+    color: #ffffff;
+    font-size: 34px;
+    font-weight: 900;
+    margin-top: 4px;
+  }
+
+  .ios-cold-mini-grid {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .ios-cold-mini-stat {
+    background: rgba(255, 255, 255, 0.13);
+    border-radius: 16px;
+    padding: 9px 10px;
+    min-width: 58px;
+    text-align: center;
+  }
+
+  .ios-cold-mini-stat strong {
+    color: #ffffff;
+    font-size: 16px;
+    margin: 0;
+  }
+
+  .ios-cold-mini-stat span {
+    color: #ccfbf1;
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+  .ios-cold-content {
+    padding: 14px 14px calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .ios-cold-filter-card,
+  .ios-activity-card,
+  .ios-cold-empty,
+  .ios-cold-pagination {
+    background: #ffffff;
+    border-radius: 26px;
+    padding: 16px;
+    margin-bottom: 14px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 9px 22px rgba(15, 23, 42, 0.07);
+  }
+
+  .ios-cold-filter-card h3 {
+    margin: 0 0 12px;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 900;
+  }
+
+  .ios-cold-subtitle {
+    margin-top: 16px !important;
+  }
+
+  .ios-cold-chip-row,
+  .ios-cold-sales-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .ios-cold-chip-row::-webkit-scrollbar,
+  .ios-cold-sales-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ios-cold-chip-row button,
+  .ios-cold-sales-row button {
+    border: none;
+    border-radius: 999px;
+    padding: 10px 14px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .ios-cold-chip-row button.active {
+    background: #0f766e;
+    color: #ffffff;
+  }
+
+  .ios-cold-sales-row button {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ios-cold-sales-row button.active {
+    background: #14532d;
+    border-color: #14532d;
+    color: #ffffff;
+  }
+
+  .ios-cold-clear-btn {
+    width: 100%;
+    margin-top: 14px;
+    border: none;
+    min-height: 44px;
+    border-radius: 16px;
+    background: #e5e7eb;
+    color: #111827;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .ios-activity-card {
+    border-left: 5px solid #0f766e;
+    border-radius: 24px;
+  }
+
+  .ios-activity-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .ios-activity-top h4 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 900;
+    line-height: 22px;
+  }
+
+  .ios-activity-top p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .ios-activity-badge {
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .ios-info-box {
+    margin-top: 14px;
+    background: #f8fafc;
+    border-radius: 18px;
+    padding: 12px;
+    display: grid;
+    gap: 9px;
+  }
+
+  .ios-info-row span {
+    display: block;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .ios-info-row strong {
+    display: block;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 900;
+    margin-top: 2px;
+  }
+
+  .ios-cold-empty {
+    text-align: center;
+    padding: 24px;
+  }
+
+  .ios-cold-empty strong {
+    display: block;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 900;
+  }
+
+  .ios-cold-empty p {
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ios-cold-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 22px;
+    padding: 12px;
+  }
+
+  .ios-cold-pagination button {
+    border: none;
+    border-radius: 999px;
+    background: #0f766e;
+    color: #ffffff;
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .ios-cold-pagination button:disabled {
+    background: #cbd5e1;
+  }
+
+  .ios-cold-pagination span {
+    color: #334155;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  /* FINAL FIX - FAB inside iOS app frame */
+@media (max-width: 900px) {
+  .cold-pwa-shell > .ios-cold-page.ios-cold-scroll-frame {
+    position: relative !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    background: #f4f7f5 !important;
+  }
+
+  .ios-cold-content {
+    padding-bottom: 120px !important;
+  }
+
+  .ios-cold-fab {
+    position: sticky !important;
+    left: calc(100% - 84px) !important;
+    bottom: calc(24px + env(safe-area-inset-bottom)) !important;
+    width: 62px !important;
+    height: 62px !important;
+    min-width: 62px !important;
+    border-radius: 50% !important;
+    z-index: 9999 !important;
+    background: #facc15 !important;
+    color: #111827 !important;
+    font-size: 34px !important;
+    font-weight: 900 !important;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.28) !important;
+    margin-top: -96px !important;
+    margin-bottom: calc(24px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+  @keyframes iosColdSpin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes iosColdFade {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (max-width: 380px) {
+  .ios-cold-header h2 {
+    font-size: 21px;
+  }
+
+  .ios-cold-stats-card {
+    flex-direction: column;
+  }
+
+  .ios-cold-mini-grid {
+    justify-content: space-between;
+  }
+
+  .ios-activity-top {
+    flex-direction: column;
+  }
+
+  .ios-activity-badge {
+    width: fit-content;
+  }
+}
+@media (max-width: 900px) {
+  .ios-activity-card {
+    border-radius: 24px !important;
+    padding: 16px !important;
+    border-left-width: 5px !important;
+    background: #ffffff !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .ios-info-box {
+    background: #f8fafc !important;
+    border-radius: 18px !important;
+    padding: 12px !important;
+  }
+
+  .ios-activity-top h4 {
+    font-size: 17px !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+  }
+
+  .ios-activity-badge {
+    border-radius: 999px !important;
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+  }
+}
+@media (max-width: 900px) {
+  .cold-pwa-shell {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+  }
+
+  .cold-pwa-shell .ios-cold-page {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cold-pwa-shell .ios-cold-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 9999 !important;
+  }
+}

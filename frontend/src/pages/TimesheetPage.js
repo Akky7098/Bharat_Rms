@@ -5,26 +5,15 @@ import TimesheetForm from "./TimesheetForm";
 import "./Timesheet.css";
 
 const months = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 const getDateKey = (date) => {
   const d = new Date(date);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
 };
 
 const getEmployeeId = (value) => {
@@ -35,7 +24,11 @@ const getEmployeeId = (value) => {
 
 const formatDate = (date) => {
   if (!date) return "-";
-  return new Date(date).toLocaleDateString("en-IN");
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const TimesheetPage = () => {
@@ -53,11 +46,11 @@ const TimesheetPage = () => {
 
   const [timesheets, setTimesheets] = useState([]);
   const [employees, setEmployees] = useState([]);
-
   const [selectedDay, setSelectedDay] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [reportDateForForm, setReportDateForForm] = useState("");
   const [weekPage, setWeekPage] = useState(0);
+  const [pwaRefreshing, setPwaRefreshing] = useState(false);
 
   const [filters, setFilters] = useState({
     month: today.getMonth(),
@@ -150,6 +143,16 @@ const TimesheetPage = () => {
     if (canManageUsers) fetchEmployees();
   }, [canManageUsers, fetchEmployees]);
 
+  const refreshAll = async () => {
+    try {
+      setPwaRefreshing(true);
+      await fetchTimesheets();
+      if (canManageUsers) await fetchEmployees();
+    } finally {
+      setPwaRefreshing(false);
+    }
+  };
+
   const weeks = useMemo(() => {
     const result = [];
     let currentWeek = [];
@@ -220,7 +223,6 @@ const TimesheetPage = () => {
 
   const getDayStatus = (day) => {
     const date = new Date(selectedYear, selectedMonth, day);
-
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
 
@@ -228,15 +230,6 @@ const TimesheetPage = () => {
     if (date > currentDate) return "future";
 
     const reports = getReportsByDay(day);
-
-    if (canManageUsers) {
-      if (filters.employeeId) {
-        return reports.length > 0 ? "submitted" : "missing";
-      }
-
-      return reports.length > 0 ? "submitted" : "missing";
-    }
-
     return reports.length > 0 ? "submitted" : "missing";
   };
 
@@ -324,176 +317,131 @@ const TimesheetPage = () => {
     setShowForm(true);
   };
 
-  return (
-    <div className="timesheet-container">
-      <div className="timesheet-header">
-        <div>
-          <h2>Work Reports</h2>
-          <p>Daily work summary, challenges and next-day planning</p>
-        </div>
+  const goDashboardModules = () => {
+    if (window.__goDashboardHome) {
+      window.__goDashboardHome();
+    } else {
+      window.location.href = "/dashboard#dashboard";
+    }
+  };
 
-        <div className="timesheet-header-actions">
+  return (
+    <div className="timesheet-page-root">
+      {/* ================= PWA MOBILE UI ONLY ================= */}
+      <div className="timesheet-pwa-ui">
+        <div className="ts-pwa-header">
+          <div className="ts-pwa-header-row">
+            <button type="button" className="ts-pwa-back" onClick={goDashboardModules}>
+              ‹
+            </button>
+
+            <div>
+              <h2>Work Reports</h2>
+              <p>Daily summary, challenges and next-day planning</p>
+            </div>
+
+            <button
+              type="button"
+              className={`ts-pwa-refresh ${pwaRefreshing ? "spinning" : ""}`}
+              onClick={refreshAll}
+            >
+              ↻
+            </button>
+          </div>
+
           {canFillOwnReport && (
             <button
-              className={`fill-btn ${todaySubmitted ? "disabled" : ""}`}
+              type="button"
+              className={`ts-pwa-fill-btn ${todaySubmitted ? "disabled" : ""}`}
               disabled={todaySubmitted}
               onClick={() => openWorkReportForm(todayKey)}
-              type="button"
             >
-              {todaySubmitted
-                ? "Today's Report Submitted"
-                : "+ Fill Today's Report"}
+              {todaySubmitted ? "Today's Report Submitted" : "+ Fill Today's Report"}
             </button>
           )}
         </div>
-      </div>
 
-      <div className="timesheet-filter-card">
-        <div className="filter-title">
-          <h3>Filters</h3>
-          <p>View work reports by month, week and employee</p>
-        </div>
+        <div className="ts-pwa-content">
+          <div className="ts-pwa-filter-card">
+            <h3>Filters</h3>
 
-        <div className="timesheet-filter-grid">
-          {canManageUsers && (
-            <div className="filter-field">
-              <label>Employee</label>
-              <select
-                name="employeeId"
-                value={filters.employeeId}
-                onChange={handleFilterChange}
-              >
-                <option value="">All Employees</option>
-                {allEmployeesForView.map((emp) => (
-                  <option key={emp._id || emp.id} value={emp._id || emp.id}>
-                    {emp.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+            {canManageUsers && (
+              <>
+                <label>Employee</label>
+                <div className="ts-pwa-chip-row">
+                  <button
+                    type="button"
+                    className={!filters.employeeId ? "active" : ""}
+                    onClick={() => setFilters((p) => ({ ...p, employeeId: "" }))}
+                  >
+                    All
+                  </button>
 
-          <div className="filter-field">
-            <label>Month</label>
-            <select
-              name="month"
-              value={filters.month}
-              onChange={handleFilterChange}
-            >
-              {months.map((month, index) => (
-                <option key={month} value={index}>
-                  {month}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-field">
-            <label>Year</label>
-            <select
-              name="year"
-              value={filters.year}
-              onChange={handleFilterChange}
-            >
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="timesheet-main-grid">
-        <div className="timesheet-left">
-          <div className="reports-card">
-            <div className="section-heading">
-              <h3>Week {weekPage + 1} Reports</h3>
-              <span>{currentWeekReports.length} submitted</span>
-            </div>
-
-            <div className="week-pagination">
-              <button
-                type="button"
-                disabled={weekPage <= 0}
-                onClick={() => setWeekPage((prev) => prev - 1)}
-              >
-                Previous Week
-              </button>
-
-              <strong>
-                {currentWeekDays.length > 0
-                  ? `${months[selectedMonth]} ${currentWeekDays[0]} - ${
-                      currentWeekDays[currentWeekDays.length - 1]
-                    }, ${selectedYear}`
-                  : "-"}
-              </strong>
-
-              <button
-                type="button"
-                disabled={weekPage >= weeks.length - 1}
-                onClick={() => setWeekPage((prev) => prev + 1)}
-              >
-                Next Week
-              </button>
-            </div>
-
-            <div className="report-list">
-              {currentWeekReports.length === 0 ? (
-                <div className="empty-state">
-                  No work report submitted in this week
+                  {allEmployeesForView.map((emp) => {
+                    const id = emp._id || emp.id;
+                    return (
+                      <button
+                        type="button"
+                        key={id}
+                        className={filters.employeeId === id ? "active" : ""}
+                        onClick={() => setFilters((p) => ({ ...p, employeeId: id }))}
+                      >
+                        {emp.name}
+                      </button>
+                    );
+                  })}
                 </div>
-              ) : (
-                currentWeekReports.map((item) => (
-                  <div key={item._id} className="report-item">
-                    <div className="report-top">
-                      <strong>{formatDate(item.reportDate)}</strong>
-                      {canManageUsers && (
-                        <span>
-                          {item.employeeId?.name || item.employeeName || "-"}
-                        </span>
-                      )}
-                    </div>
+              </>
+            )}
 
-                    <p>
-                      <b>Work:</b> {item.workSummary}
-                    </p>
-                    <p>
-                      <b>Challenges:</b> {item.challenges || "-"}
-                    </p>
-                    <p>
-                      <b>Next Plan:</b> {item.nextDayPlan || "-"}
-                    </p>
-                  </div>
-                ))
-              )}
+            <label>Month</label>
+            <div className="ts-pwa-chip-row">
+              {months.map((month, index) => (
+                <button
+                  key={month}
+                  type="button"
+                  className={selectedMonth === index ? "active" : ""}
+                  onClick={() => setFilters((p) => ({ ...p, month: index }))}
+                >
+                  {month.slice(0, 3)}
+                </button>
+              ))}
+            </div>
+
+            <label>Year</label>
+            <div className="ts-pwa-year-row">
+              {[2026, 2025, 2024].map((year) => (
+                <button
+                  key={year}
+                  type="button"
+                  className={selectedYear === year ? "active" : ""}
+                  onClick={() => setFilters((p) => ({ ...p, year }))}
+                >
+                  {year}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
 
-        <div className="timesheet-right">
-          <div className="calendar-card">
-            <div className="section-heading">
-              <h3>Work Report Calendar</h3>
-              <span>
-                {months[selectedMonth]} {selectedYear}
-              </span>
+          <div className="ts-pwa-calendar-card">
+            <div className="ts-pwa-card-head">
+              <div>
+                <h3>
+                  {months[selectedMonth]} {selectedYear}
+                </h3>
+                <p>Tap date to view report</p>
+              </div>
             </div>
 
-            <div className="calendar-legend">
-              <span>
-                <b className="dot green"></b>Submitted
-              </span>
-              <span>
-                <b className="dot red"></b>Missing
-              </span>
-              <span>
-                <b className="dot gray"></b>Sunday
-              </span>
+            <div className="ts-pwa-legend">
+              <span><b className="green"></b>Submitted</span>
+              <span><b className="red"></b>Missing</span>
+              <span><b className="gray"></b>Sunday</span>
             </div>
 
-            <div className="calendar-grid">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                <div key={day} className="week-name">
+            <div className="ts-pwa-calendar-grid">
+              {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+                <div key={`${day}-${index}`} className="ts-pwa-week-name">
                   {day}
                 </div>
               ))}
@@ -501,7 +449,7 @@ const TimesheetPage = () => {
               {Array.from({
                 length: new Date(selectedYear, selectedMonth, 1).getDay(),
               }).map((_, i) => (
-                <div key={`empty-${i}`} className="empty-day"></div>
+                <div key={`empty-${i}`} className="ts-pwa-empty-day"></div>
               ))}
 
               {Array.from({ length: daysInSelectedMonth }, (_, i) => {
@@ -511,14 +459,257 @@ const TimesheetPage = () => {
                 return (
                   <button
                     key={day}
-                    className={`calendar-day ${status}`}
-                    onClick={() => setSelectedDay(day)}
                     type="button"
+                    className={`ts-pwa-day ${status}`}
+                    onClick={() => setSelectedDay(day)}
                   >
-                    <strong>{day}</strong>
+                    {day}
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          <div className="ts-pwa-reports-card">
+            <div className="ts-pwa-card-head">
+              <div>
+                <h3>Week {weekPage + 1} Reports</h3>
+                <p>{currentWeekReports.length} submitted</p>
+              </div>
+            </div>
+
+            <div className="ts-pwa-week-controls">
+              <button
+                type="button"
+                disabled={weekPage <= 0}
+                onClick={() => setWeekPage((prev) => prev - 1)}
+              >
+                Prev
+              </button>
+
+              <span>
+                {currentWeekDays.length > 0
+                  ? `${months[selectedMonth]} ${currentWeekDays[0]} - ${
+                      currentWeekDays[currentWeekDays.length - 1]
+                    }`
+                  : "-"}
+              </span>
+
+              <button
+                type="button"
+                disabled={weekPage >= weeks.length - 1}
+                onClick={() => setWeekPage((prev) => prev + 1)}
+              >
+                Next
+              </button>
+            </div>
+
+            {currentWeekReports.length === 0 ? (
+              <div className="ts-pwa-empty-state">
+                No work report submitted in this week
+              </div>
+            ) : (
+              currentWeekReports.map((item) => (
+                <div key={item._id} className="ts-pwa-report-card">
+                  <div className="ts-pwa-report-top">
+                    <strong>{formatDate(item.reportDate)}</strong>
+                    {canManageUsers && (
+                      <span>{item.employeeId?.name || item.employeeName || "-"}</span>
+                    )}
+                  </div>
+
+                  <ReportLine label="Work Summary" value={item.workSummary} />
+                  <ReportLine label="Challenges" value={item.challenges || "-"} />
+                  <ReportLine label="Next Day Plan" value={item.nextDayPlan || "-"} />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ================= DESKTOP WEBSITE ORIGINAL UI ================= */}
+      <div className="timesheet-desktop-ui">
+        <div className="timesheet-container">
+          <div className="timesheet-header">
+            <div>
+              <h2>Work Reports</h2>
+              <p>Daily work summary, challenges and next-day planning</p>
+            </div>
+
+            <div className="timesheet-header-actions">
+              {canFillOwnReport && (
+                <button
+                  className={`fill-btn ${todaySubmitted ? "disabled" : ""}`}
+                  disabled={todaySubmitted}
+                  onClick={() => openWorkReportForm(todayKey)}
+                  type="button"
+                >
+                  {todaySubmitted
+                    ? "Today's Report Submitted"
+                    : "+ Fill Today's Report"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="timesheet-filter-card">
+            <div className="filter-title">
+              <h3>Filters</h3>
+              <p>View work reports by month, week and employee</p>
+            </div>
+
+            <div className="timesheet-filter-grid">
+              {canManageUsers && (
+                <div className="filter-field">
+                  <label>Employee</label>
+                  <select
+                    name="employeeId"
+                    value={filters.employeeId}
+                    onChange={handleFilterChange}
+                  >
+                    <option value="">All Employees</option>
+                    {allEmployeesForView.map((emp) => (
+                      <option key={emp._id || emp.id} value={emp._id || emp.id}>
+                        {emp.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="filter-field">
+                <label>Month</label>
+                <select
+                  name="month"
+                  value={filters.month}
+                  onChange={handleFilterChange}
+                >
+                  {months.map((month, index) => (
+                    <option key={month} value={index}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-field">
+                <label>Year</label>
+                <select
+                  name="year"
+                  value={filters.year}
+                  onChange={handleFilterChange}
+                >
+                  <option value="2026">2026</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="timesheet-main-grid">
+            <div className="timesheet-left">
+              <div className="reports-card">
+                <div className="section-heading">
+                  <h3>Week {weekPage + 1} Reports</h3>
+                  <span>{currentWeekReports.length} submitted</span>
+                </div>
+
+                <div className="week-pagination">
+                  <button
+                    type="button"
+                    disabled={weekPage <= 0}
+                    onClick={() => setWeekPage((prev) => prev - 1)}
+                  >
+                    Previous Week
+                  </button>
+
+                  <strong>
+                    {currentWeekDays.length > 0
+                      ? `${months[selectedMonth]} ${currentWeekDays[0]} - ${
+                          currentWeekDays[currentWeekDays.length - 1]
+                        }, ${selectedYear}`
+                      : "-"}
+                  </strong>
+
+                  <button
+                    type="button"
+                    disabled={weekPage >= weeks.length - 1}
+                    onClick={() => setWeekPage((prev) => prev + 1)}
+                  >
+                    Next Week
+                  </button>
+                </div>
+
+                <div className="report-list">
+                  {currentWeekReports.length === 0 ? (
+                    <div className="empty-state">
+                      No work report submitted in this week
+                    </div>
+                  ) : (
+                    currentWeekReports.map((item) => (
+                      <div key={item._id} className="report-item">
+                        <div className="report-top">
+                          <strong>{formatDate(item.reportDate)}</strong>
+                          {canManageUsers && (
+                            <span>
+                              {item.employeeId?.name || item.employeeName || "-"}
+                            </span>
+                          )}
+                        </div>
+
+                        <p><b>Work:</b> {item.workSummary}</p>
+                        <p><b>Challenges:</b> {item.challenges || "-"}</p>
+                        <p><b>Next Plan:</b> {item.nextDayPlan || "-"}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="timesheet-right">
+              <div className="calendar-card">
+                <div className="section-heading">
+                  <h3>Work Report Calendar</h3>
+                  <span>{months[selectedMonth]} {selectedYear}</span>
+                </div>
+
+                <div className="calendar-legend">
+                  <span><b className="dot green"></b>Submitted</span>
+                  <span><b className="dot red"></b>Missing</span>
+                  <span><b className="dot gray"></b>Sunday</span>
+                </div>
+
+                <div className="calendar-grid">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                    <div key={day} className="week-name">{day}</div>
+                  ))}
+
+                  {Array.from({
+                    length: new Date(selectedYear, selectedMonth, 1).getDay(),
+                  }).map((_, i) => (
+                    <div key={`empty-${i}`} className="empty-day"></div>
+                  ))}
+
+                  {Array.from({ length: daysInSelectedMonth }, (_, i) => {
+                    const day = i + 1;
+                    const status = getDayStatus(day);
+
+                    return (
+                      <button
+                        key={day}
+                        className={`calendar-day ${status}`}
+                        onClick={() => setSelectedDay(day)}
+                        type="button"
+                      >
+                        <strong>{day}</strong>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -530,8 +721,7 @@ const TimesheetPage = () => {
             <div className="modal-header">
               <div>
                 <h3>
-                  Work Reports - {selectedDay} {months[selectedMonth]}{" "}
-                  {selectedYear}
+                  Work Reports - {selectedDay} {months[selectedMonth]} {selectedYear}
                 </h3>
                 <p>
                   {canManageUsers
@@ -540,9 +730,7 @@ const TimesheetPage = () => {
                 </p>
               </div>
 
-              <button onClick={() => setSelectedDay(null)} type="button">
-                ×
-              </button>
+              <button onClick={() => setSelectedDay(null)} type="button">×</button>
             </div>
 
             <div className="modal-body">
@@ -577,11 +765,7 @@ const TimesheetPage = () => {
                         <p>{formatDate(selectedDateObj)}</p>
                       </div>
 
-                      <span
-                        className={`attendance-health-pill ${
-                          report ? "complete" : "missing"
-                        }`}
-                      >
+                      <span className={`attendance-health-pill ${report ? "complete" : "missing"}`}>
                         {report ? "Submitted" : "Missing"}
                       </span>
                     </div>
@@ -609,15 +793,9 @@ const TimesheetPage = () => {
                           <strong>{formatDate(report.reportDate)}</strong>
                         </div>
 
-                        <p>
-                          <b>Work Summary:</b> {report.workSummary}
-                        </p>
-                        <p>
-                          <b>Challenges:</b> {report.challenges || "-"}
-                        </p>
-                        <p>
-                          <b>Next Day Plan:</b> {report.nextDayPlan || "-"}
-                        </p>
+                        <p><b>Work Summary:</b> {report.workSummary}</p>
+                        <p><b>Challenges:</b> {report.challenges || "-"}</p>
+                        <p><b>Next Day Plan:</b> {report.nextDayPlan || "-"}</p>
                       </div>
                     )}
                   </div>
@@ -641,5 +819,14 @@ const TimesheetPage = () => {
     </div>
   );
 };
+
+function ReportLine({ label, value }) {
+  return (
+    <div className="ts-pwa-report-line">
+      <span>{label}</span>
+      <p>{value}</p>
+    </div>
+  );
+}
 
 export default TimesheetPage;

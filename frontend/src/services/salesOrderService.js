@@ -49,15 +49,20 @@ export const getSalesOrderById = async (salesOrderId) => {
 
 // UPDATE / RESUBMIT
 // UPDATE / RESUBMIT
+// UPDATE / RESUBMIT
 export const updateSalesOrder = async (salesOrderId, data) => {
   const isFormData = data instanceof FormData;
 
-  const response = await axios.put(`${API_URL}/${salesOrderId}`, data, {
-    headers: {
-      ...authHeaders(),
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
-    },
-  });
+  const response = await axios.put(
+    `${API_URL}/update/${salesOrderId}`,
+    data,
+    {
+      headers: {
+        ...authHeaders(),
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      },
+    }
+  );
 
   return response.data;
 };

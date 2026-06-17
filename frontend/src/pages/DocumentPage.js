@@ -42,9 +42,7 @@ function DocumentPage() {
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
-  const [folderForm, setFolderForm] = useState({
-    name: "",
-  });
+  const [folderForm, setFolderForm] = useState({ name: "" });
 
   const [uploadForm, setUploadForm] = useState({
     title: "",
@@ -98,23 +96,21 @@ function DocumentPage() {
 
   const filteredFolders = useMemo(() => {
     return folders.filter((folder) =>
-      folder.name.toLowerCase().includes(search.toLowerCase())
+      String(folder.name || "").toLowerCase().includes(search.toLowerCase())
     );
   }, [folders, search]);
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) =>
-      `${doc.title} ${doc.description} ${doc.originalFileName}`
+      `${doc.title || ""} ${doc.description || ""} ${
+        doc.originalFileName || ""
+      }`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
   }, [documents, search]);
 
-  const resetFolderForm = () => {
-    setFolderForm({
-      name: "",
-    });
-  };
+  const resetFolderForm = () => setFolderForm({ name: "" });
 
   const resetUploadForm = () => {
     setUploadForm({
@@ -136,6 +132,22 @@ function DocumentPage() {
     });
   };
 
+  const goDashboardModules = () => {
+    if (activeFolder) {
+      setActiveFolder(null);
+      setDocuments([]);
+      setSearch("");
+      fetchFolders();
+      return;
+    }
+
+    if (window.__goDashboardHome) {
+      window.__goDashboardHome();
+    } else {
+      window.location.href = "/dashboard#dashboard";
+    }
+  };
+
   const handleCreateFolder = async (e) => {
     e.preventDefault();
 
@@ -147,7 +159,7 @@ function DocumentPage() {
     }
 
     const alreadyExists = folders.some(
-      (folder) => folder.name.toLowerCase() === folderName.toLowerCase()
+      (folder) => String(folder.name || "").toLowerCase() === folderName.toLowerCase()
     );
 
     if (alreadyExists) {
@@ -158,9 +170,7 @@ function DocumentPage() {
     try {
       setCreatingFolder(true);
 
-      await createDocumentFolder({
-        name: folderName,
-      });
+      await createDocumentFolder({ name: folderName });
 
       resetFolderForm();
       setShowFolderModal(false);
@@ -312,190 +322,369 @@ function DocumentPage() {
     );
   };
 
-  return (
-    <div className="document-page">
-      <div className="doc-header">
-        <div>
-          <h1>Document Center</h1>
-          <p>
-            Manage brochures, quotation formats, certificates and internal
-            documents.
-          </p>
-        </div>
+  const getPwaAccessClass = (accessLevel) => {
+    if (accessLevel === "private") return "private";
+    if (accessLevel === "admin_only") return "admin";
+    return "users";
+  };
 
-        <div className="doc-actions">
-          {activeFolder && (
-            <button
-              className="doc-btn secondary"
-              onClick={() => {
-                setActiveFolder(null);
-                setDocuments([]);
-                setSearch("");
-                fetchFolders();
-              }}
-              type="button"
-            >
-              <ArrowLeft size={17} />
-              Back
+  const getPwaAccessLabel = (accessLevel) => {
+    if (accessLevel === "private") return "🔒 Private";
+    if (accessLevel === "admin_only") return "🛡️ Admin Only";
+    return "👥 All Users";
+  };
+
+  return (
+    <div className="document-page-root">
+      {/* ================= PWA MOBILE UI ONLY ================= */}
+      <div className="document-pwa-ui">
+        <div className="doc-pwa-header">
+          <div className="doc-pwa-header-row">
+            <button type="button" className="doc-pwa-back" onClick={goDashboardModules}>
+              ‹
             </button>
-          )}
+
+            <div>
+              <h2>Document Center</h2>
+              <p>
+                {activeFolder
+                  ? activeFolder.name
+                  : "Brochures, formats, certificates and files"}
+              </p>
+            </div>
+          </div>
 
           {!activeFolder && isAdmin && (
             <button
-              className="doc-btn primary"
-              onClick={() => setShowFolderModal(true)}
               type="button"
+              className="doc-pwa-action"
+              onClick={() => setShowFolderModal(true)}
             >
-              <FolderPlus size={17} />
-              Create Folder
+              + Create Folder
             </button>
           )}
 
           {activeFolder && (
             <button
-              className="doc-btn primary"
-              onClick={() => setShowUploadModal(true)}
               type="button"
+              className="doc-pwa-action"
+              onClick={() => setShowUploadModal(true)}
             >
-              <Upload size={17} />
-              Upload File
+              + Upload File
             </button>
           )}
         </div>
-      </div>
 
-      <div className="doc-toolbar">
-        <div className="doc-search">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder={
-              activeFolder ? "Search documents..." : "Search folders..."
-            }
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        {activeFolder && (
-          <div className="doc-current-folder">
-            <Folder size={18} />
-            <span>{activeFolder.name}</span>
+        <div className="doc-pwa-content">
+          <div className="doc-pwa-search">
+            <span>🔍</span>
+            <input
+              type="text"
+              placeholder={activeFolder ? "Search documents..." : "Search folders..."}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-        )}
+
+          {!activeFolder && (
+            <>
+              {folderLoading ? (
+                <DocPwaEmpty title="Loading folders..." />
+              ) : filteredFolders.length === 0 ? (
+                <DocPwaEmpty
+                  title="No folders found"
+                  subtitle="Create folders like Brochure, Quotation Format or Certificates."
+                />
+              ) : (
+                filteredFolders.map((folder) => (
+                  <div
+                    key={folder._id}
+                    className="doc-pwa-folder"
+                    onClick={() => {
+                      setActiveFolder(folder);
+                      setSearch("");
+                    }}
+                  >
+                    <div className="doc-pwa-folder-icon">📁</div>
+
+                    <div className="doc-pwa-folder-info">
+                      <h3>{folder.name}</h3>
+                      <p>
+                        {folder.documentCount || 0}{" "}
+                        {(folder.documentCount || 0) === 1 ? "file" : "files"}
+                      </p>
+                    </div>
+
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="doc-pwa-delete-mini"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFolder(folder._id);
+                        }}
+                      >
+                        🗑
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </>
+          )}
+
+          {activeFolder && (
+            <>
+              {loading ? (
+                <DocPwaEmpty title="Loading documents..." />
+              ) : filteredDocuments.length === 0 ? (
+                <DocPwaEmpty
+                  title="No documents found"
+                  subtitle="Upload your first file inside this folder."
+                />
+              ) : (
+                filteredDocuments.map((doc) => {
+                  const canDelete =
+                    isAdmin || String(doc.uploadedBy?.userId) === String(user?._id);
+
+                  return (
+                    <div className="doc-pwa-document" key={doc._id}>
+                      <div className="doc-pwa-document-top">
+                        <div className="doc-pwa-file-icon">📄</div>
+
+                        <div>
+                          <h3>{doc.title}</h3>
+                          <p>{doc.description || "No description added"}</p>
+                        </div>
+                      </div>
+
+                      <span className={`doc-pwa-badge ${getPwaAccessClass(doc.accessLevel)}`}>
+                        {getPwaAccessLabel(doc.accessLevel)}
+                      </span>
+
+                      <div className="doc-pwa-meta">
+                        <DocPwaMeta label="File" value={doc.originalFileName || "-"} />
+                        <DocPwaMeta label="Size" value={formatFileSize(doc.fileSize)} />
+                        <DocPwaMeta
+                          label="Uploaded By"
+                          value={doc.uploadedBy?.name || "User"}
+                        />
+                      </div>
+
+                      <div className="doc-pwa-actions">
+                        <a
+                          href={getFullFileUrl(doc.fileUrl)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="doc-pwa-download"
+                        >
+                          Download / View
+                        </a>
+
+                        {canDelete && (
+                          <button
+                            type="button"
+                            className="doc-pwa-delete"
+                            onClick={() => handleDeleteDocument(doc._id)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {!activeFolder && (
-        <div className="folder-grid">
-          {folderLoading ? (
-            <div className="doc-empty">Loading folders...</div>
-          ) : filteredFolders.length === 0 ? (
-            <div className="doc-empty">
-              <Folder size={42} />
-              <h3>No folders found</h3>
-              <p>Create folders like Brochure, Quotation Format or Certificates.</p>
+      {/* ================= DESKTOP WEBSITE ORIGINAL UI ================= */}
+      <div className="document-desktop-ui">
+        <div className="document-page">
+          <div className="doc-header">
+            <div>
+              <h1>Document Center</h1>
+              <p>
+                Manage brochures, quotation formats, certificates and internal
+                documents.
+              </p>
             </div>
-          ) : (
-            filteredFolders.map((folder) => (
-              <div
-                className="folder-card"
-                key={folder._id}
-                onClick={() => {
-                  setActiveFolder(folder);
-                  setSearch("");
-                }}
-              >
-                <div className="folder-icon-box">
-                  <Folder size={34} />
-                </div>
 
-                <div className="folder-info">
-                  <h3>{folder.name}</h3>
-                  <p>
-                    {folder.documentCount || 0}{" "}
-                    {(folder.documentCount || 0) === 1 ? "file" : "files"}
-                  </p>
-                </div>
+            <div className="doc-actions">
+              {activeFolder && (
+                <button
+                  className="doc-btn secondary"
+                  onClick={() => {
+                    setActiveFolder(null);
+                    setDocuments([]);
+                    setSearch("");
+                    fetchFolders();
+                  }}
+                  type="button"
+                >
+                  <ArrowLeft size={17} />
+                  Back
+                </button>
+              )}
 
-                {isAdmin && (
-                  <button
-                    className="folder-delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteFolder(folder._id);
+              {!activeFolder && isAdmin && (
+                <button
+                  className="doc-btn primary"
+                  onClick={() => setShowFolderModal(true)}
+                  type="button"
+                >
+                  <FolderPlus size={17} />
+                  Create Folder
+                </button>
+              )}
+
+              {activeFolder && (
+                <button
+                  className="doc-btn primary"
+                  onClick={() => setShowUploadModal(true)}
+                  type="button"
+                >
+                  <Upload size={17} />
+                  Upload File
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="doc-toolbar">
+            <div className="doc-search">
+              <Search size={18} />
+              <input
+                type="text"
+                placeholder={activeFolder ? "Search documents..." : "Search folders..."}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            {activeFolder && (
+              <div className="doc-current-folder">
+                <Folder size={18} />
+                <span>{activeFolder.name}</span>
+              </div>
+            )}
+          </div>
+
+          {!activeFolder && (
+            <div className="folder-grid">
+              {folderLoading ? (
+                <div className="doc-empty">Loading folders...</div>
+              ) : filteredFolders.length === 0 ? (
+                <div className="doc-empty">
+                  <Folder size={42} />
+                  <h3>No folders found</h3>
+                  <p>Create folders like Brochure, Quotation Format or Certificates.</p>
+                </div>
+              ) : (
+                filteredFolders.map((folder) => (
+                  <div
+                    className="folder-card"
+                    key={folder._id}
+                    onClick={() => {
+                      setActiveFolder(folder);
+                      setSearch("");
                     }}
-                    type="button"
-                    title="Delete folder"
                   >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
+                    <div className="folder-icon-box">
+                      <Folder size={34} />
+                    </div>
 
-      {activeFolder && (
-        <div className="document-list">
-          {loading ? (
-            <div className="doc-empty">Loading documents...</div>
-          ) : filteredDocuments.length === 0 ? (
-            <div className="doc-empty">
-              <FileText size={42} />
-              <h3>No documents found</h3>
-              <p>Upload your first file inside this folder.</p>
+                    <div className="folder-info">
+                      <h3>{folder.name}</h3>
+                      <p>
+                        {folder.documentCount || 0}{" "}
+                        {(folder.documentCount || 0) === 1 ? "file" : "files"}
+                      </p>
+                    </div>
+
+                    {isAdmin && (
+                      <button
+                        className="folder-delete"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFolder(folder._id);
+                        }}
+                        type="button"
+                        title="Delete folder"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
-          ) : (
-            filteredDocuments.map((doc) => (
-              <div className="document-card" key={doc._id}>
-                <div className="document-file-icon">
-                  <FileText size={28} />
-                </div>
+          )}
 
-                <div className="document-main">
-                  <div className="document-title-row">
-                    <h3>{doc.title}</h3>
-                    {getAccessBadge(doc.accessLevel)}
+          {activeFolder && (
+            <div className="document-list">
+              {loading ? (
+                <div className="doc-empty">Loading documents...</div>
+              ) : filteredDocuments.length === 0 ? (
+                <div className="doc-empty">
+                  <FileText size={42} />
+                  <h3>No documents found</h3>
+                  <p>Upload your first file inside this folder.</p>
+                </div>
+              ) : (
+                filteredDocuments.map((doc) => (
+                  <div className="document-card" key={doc._id}>
+                    <div className="document-file-icon">
+                      <FileText size={28} />
+                    </div>
+
+                    <div className="document-main">
+                      <div className="document-title-row">
+                        <h3>{doc.title}</h3>
+                        {getAccessBadge(doc.accessLevel)}
+                      </div>
+
+                      <p>{doc.description || "No description added"}</p>
+
+                      <div className="document-meta">
+                        <span>{doc.originalFileName}</span>
+                        <span>{formatFileSize(doc.fileSize)}</span>
+                        <span>Uploaded by {doc.uploadedBy?.name || "User"}</span>
+                      </div>
+                    </div>
+
+                    <div className="document-actions">
+                      <a
+                        href={getFullFileUrl(doc.fileUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="doc-icon-btn download"
+                        title="Download / View"
+                      >
+                        <Download size={18} />
+                      </a>
+
+                      {(isAdmin ||
+                        String(doc.uploadedBy?.userId) === String(user?._id)) && (
+                        <button
+                          className="doc-icon-btn delete"
+                          onClick={() => handleDeleteDocument(doc._id)}
+                          type="button"
+                          title="Delete"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-
-                  <p>{doc.description || "No description added"}</p>
-
-                  <div className="document-meta">
-                    <span>{doc.originalFileName}</span>
-                    <span>{formatFileSize(doc.fileSize)}</span>
-                    <span>Uploaded by {doc.uploadedBy?.name || "User"}</span>
-                  </div>
-                </div>
-
-                <div className="document-actions">
-                  <a
-                    href={getFullFileUrl(doc.fileUrl)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="doc-icon-btn download"
-                    title="Download / View"
-                  >
-                    <Download size={18} />
-                  </a>
-
-                  {(isAdmin ||
-                    String(doc.uploadedBy?.userId) === String(user?._id)) && (
-                    <button
-                      className="doc-icon-btn delete"
-                      onClick={() => handleDeleteDocument(doc._id)}
-                      type="button"
-                      title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
+                ))
+              )}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
       {showFolderModal && (
         <div className="doc-modal-overlay">
@@ -666,9 +855,7 @@ function DocumentPage() {
                 <button
                   className="doc-btn primary"
                   type="submit"
-                  disabled={
-                    uploading || !uploadForm.title.trim() || !uploadForm.file
-                  }
+                  disabled={uploading || !uploadForm.title.trim() || !uploadForm.file}
                 >
                   {uploading ? "Uploading..." : "Upload File"}
                 </button>
@@ -697,6 +884,25 @@ function DocumentPage() {
           </small>
         </div>
       )}
+    </div>
+  );
+}
+
+function DocPwaEmpty({ title, subtitle }) {
+  return (
+    <div className="doc-pwa-empty">
+      <div style={{ fontSize: 42 }}>📂</div>
+      <h3>{title}</h3>
+      {subtitle && <p>{subtitle}</p>}
+    </div>
+  );
+}
+
+function DocPwaMeta({ label, value }) {
+  return (
+    <div className="doc-pwa-meta-item">
+      <div className="doc-pwa-meta-label">{label}</div>
+      <div className="doc-pwa-meta-value">{value}</div>
     </div>
   );
 }

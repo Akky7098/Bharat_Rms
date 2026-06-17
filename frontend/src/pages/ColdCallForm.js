@@ -10,6 +10,12 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+const activityOptions = [
+  { value: "calling", label: "Calling", icon: "📞" },
+  { value: "visit", label: "Visit", icon: "🏢" },
+  { value: "email", label: "Email", icon: "✉️" },
+];
+
 const ColdCallForm = ({ onClose, refresh }) => {
   const [loading, setLoading] = useState(false);
   const todayDate = getTodayDate();
@@ -24,9 +30,7 @@ const ColdCallForm = ({ onClose, refresh }) => {
 
   const [error, setError] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
+  const updateField = (name, value) => {
     let finalValue = value;
 
     if (name === "contactPersonNumber") {
@@ -39,16 +43,15 @@ const ColdCallForm = ({ onClose, refresh }) => {
     }));
 
     if (name === "contactPersonNumber") {
-      if (finalValue.length === 0) {
-        setError("");
-      } else if (!/^[6-9]/.test(finalValue)) {
-        setError("Number must start from 6-9");
-      } else if (finalValue.length < 10) {
-        setError("Enter exactly 10 digits");
-      } else {
-        setError("");
-      }
+      if (finalValue.length === 0) setError("");
+      else if (!/^[6-9]/.test(finalValue)) setError("Number must start from 6-9");
+      else if (finalValue.length < 10) setError("Enter exactly 10 digits");
+      else setError("");
     }
+  };
+
+  const handleChange = (e) => {
+    updateField(e.target.name, e.target.value);
   };
 
   const validate = () => {
@@ -89,7 +92,7 @@ const ColdCallForm = ({ onClose, refresh }) => {
   };
 
   return (
-    <div className="cold-modal-overlay">
+    <div className="cold-modal-overlay cold-form-pwa-shell">
       <div className="cold-form-card">
         <div className="cold-form-header">
           <div>
@@ -103,9 +106,34 @@ const ColdCallForm = ({ onClose, refresh }) => {
         </div>
 
         <form onSubmit={handleSubmit}>
+          <div className="ios-cold-form-note">
+            Activity date is auto-filled with today’s date.
+          </div>
+
+          {/* MOBILE ONLY */}
+          <div className="ios-activity-option-section mobile-activity-options">
+            <label>Activity Type *</label>
+
+            <div className="ios-activity-option-grid">
+              {activityOptions.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={form.activityType === item.value ? "active" : ""}
+                  onClick={() => updateField("activityType", item.value)}
+                  disabled={loading}
+                >
+                  <span>{item.icon}</span>
+                  <b>{item.label}</b>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="cold-form-grid">
-            <div className="form-group">
-              <label>Activity</label>
+            {/* DESKTOP ONLY */}
+            <div className="form-group desktop-activity-select">
+              <label>Activity *</label>
               <select
                 name="activityType"
                 value={form.activityType}
@@ -133,7 +161,7 @@ const ColdCallForm = ({ onClose, refresh }) => {
             </div>
 
             <div className="form-group full-width">
-              <label>Company Name</label>
+              <label>Company Name *</label>
               <input
                 name="companyName"
                 placeholder="Enter company name"
@@ -144,7 +172,7 @@ const ColdCallForm = ({ onClose, refresh }) => {
             </div>
 
             <div className="form-group">
-              <label>Contact Person</label>
+              <label>Contact Person *</label>
               <input
                 name="contactPersonName"
                 placeholder="Enter person name"
@@ -155,7 +183,7 @@ const ColdCallForm = ({ onClose, refresh }) => {
             </div>
 
             <div className="form-group">
-              <label>Contact Number</label>
+              <label>Mobile Number *</label>
               <input
                 name="contactPersonNumber"
                 placeholder="10 digit mobile"
@@ -163,6 +191,7 @@ const ColdCallForm = ({ onClose, refresh }) => {
                 onChange={handleChange}
                 maxLength={10}
                 disabled={loading}
+                inputMode="numeric"
               />
 
               {error && <span className="cold-field-error">{error}</span>}
@@ -180,7 +209,7 @@ const ColdCallForm = ({ onClose, refresh }) => {
             </button>
 
             <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? "Saving..." : "Save"}
+              {loading ? "Saving..." : "Save Activity"}
             </button>
           </div>
         </form>

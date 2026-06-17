@@ -482,3 +482,219 @@
     font-size: 11px;
   }
 }
+/* ================================
+   iOS PWA WORKFLOW UPDATE
+   SAFE: does not touch website UI
+================================ */
+
+.ios-workflow-card {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .workflow-desktop-card {
+    display: none !important;
+  }
+
+  .workflow-overlay {
+    padding: 0 !important;
+    align-items: stretch !important;
+    background: rgba(15, 23, 42, 0.58) !important;
+  }
+
+  .ios-workflow-card {
+    width: 100vw !important;
+    height: 100dvh !important;
+    background: #f4f7f5 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .ios-workflow-header {
+    padding: calc(52px + env(safe-area-inset-top)) 18px 18px !important;
+    background:
+      radial-gradient(circle at top right, rgba(20, 184, 166, 0.22), transparent 35%),
+      linear-gradient(135deg, #07111f, #0f2f2a, #14532d) !important;
+    border-bottom-left-radius: 30px !important;
+    border-bottom-right-radius: 30px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    color: #ffffff !important;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18) !important;
+  }
+
+  .ios-workflow-header h2 {
+    margin: 0 !important;
+    color: #ffffff !important;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+  }
+
+  .ios-workflow-header p {
+    margin: 4px 0 0 !important;
+    color: #bbf7d0 !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+  }
+
+  .ios-workflow-header button {
+    width: 42px !important;
+    height: 42px !important;
+    border: none !important;
+    border-radius: 16px !important;
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+    font-size: 30px !important;
+  }
+
+  .ios-workflow-body {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 16px 16px calc(40px + env(safe-area-inset-bottom)) !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .ios-workflow-section {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 24px !important;
+    padding: 16px !important;
+    margin-bottom: 14px !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .ios-workflow-section.locked {
+    background: #f1f5f9 !important;
+    opacity: 0.9 !important;
+  }
+
+  .ios-workflow-step-top {
+    display: flex !important;
+    gap: 12px !important;
+    align-items: flex-start !important;
+    margin-bottom: 14px !important;
+  }
+
+  .ios-workflow-step-top > span {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 15px !important;
+    background: #14532d !important;
+    color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 900 !important;
+  }
+
+  .ios-workflow-step-top strong {
+    display: block !important;
+    color: #0f172a !important;
+    font-size: 17px !important;
+    font-weight: 900 !important;
+  }
+
+  .ios-workflow-step-top p {
+    margin: 4px 0 0 !important;
+    color: #64748b !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+  }
+
+  .ios-workflow-locked-note {
+    margin-bottom: 14px !important;
+    padding: 11px !important;
+    border-radius: 16px !important;
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+  }
+
+  .ios-workflow-field {
+    margin-bottom: 14px !important;
+  }
+
+  .ios-workflow-field label {
+    display: block !important;
+    margin-bottom: 8px !important;
+    color: #334155 !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+  }
+
+  .ios-workflow-field input,
+  .ios-workflow-field textarea {
+    width: 100% !important;
+    min-height: 52px !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 18px !important;
+    background: #ffffff !important;
+    padding: 0 15px !important;
+    color: #0f172a !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    outline: none !important;
+  }
+
+  .ios-workflow-field textarea {
+    min-height: 105px !important;
+    padding: 14px !important;
+    resize: vertical !important;
+  }
+
+  .ios-workflow-chip-wrap {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .ios-workflow-chip {
+    border: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    padding: 10px 13px !important;
+    border-radius: 999px !important;
+    color: #334155 !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+  }
+
+  .ios-workflow-chip.active {
+    background: #14532d !important;
+    border-color: #14532d !important;
+    color: #ffffff !important;
+  }
+
+  .ios-workflow-chip:disabled {
+    opacity: 0.55 !important;
+    cursor: not-allowed !important;
+  }
+
+  .ios-workflow-actions {
+    display: grid !important;
+    gap: 10px !important;
+    margin-top: 20px !important;
+  }
+
+  .ios-workflow-actions button {
+    width: 100% !important;
+    min-height: 54px !important;
+    border: none !important;
+    border-radius: 18px !important;
+    font-size: 15px !important;
+    font-weight: 900 !important;
+  }
+
+  .ios-workflow-actions button:first-child {
+    background: #e5e7eb !important;
+    color: #111827 !important;
+  }
+
+  .ios-workflow-actions button:last-child {
+    background: #facc15 !important;
+    color: #111827 !important;
+  }
+}

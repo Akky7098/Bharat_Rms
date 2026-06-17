@@ -116,11 +116,11 @@ const DispatchForm = ({ onClose, refresh }) => {
     setOrders([]);
 
     setForm((prev) => ({
-      ...prev,
-      salesOrderId: order._id,
-      invoiceValue: order.orderValue || "",
-      paymentDueDays: "",
-    }));
+  ...prev,
+  salesOrderId: order._id,
+  invoiceValue: "",
+  paymentDueDays: "",
+}));
   };
 
   const clearSelectedOrder = () => {

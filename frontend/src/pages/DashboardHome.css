@@ -894,3 +894,1020 @@
   border-radius: 999px;
   background: linear-gradient(90deg, #2563eb, #38bdf8);
 }
+/* ================================
+   iOS PWA DASHBOARD HOME - APP UI
+   Desktop safe: mobile only
+================================ */
+
+.ios-dashboardhome {
+  display: none;
+}
+
+.desktop-dashboardhome {
+  display: block;
+}
+
+.ios-dashboardhome-loading {
+  display: none;
+}
+
+.desktop-dashboardhome-loading {
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .desktop-dashboardhome,
+  .desktop-dashboardhome-loading {
+    display: none;
+  }
+
+  .ios-dashboardhome,
+  .ios-dashboardhome-loading {
+    display: block;
+  }
+
+  .dashboard-home {
+    padding: 0 !important;
+    gap: 0;
+    background: #f4f7f5;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  .ios-dashboardhome {
+    min-height: 100dvh;
+    background: #f4f7f5;
+    animation: iosDashFade 0.22s ease both;
+  }
+
+  .ios-dh-header {
+    padding: calc(50px + env(safe-area-inset-top)) 18px 18px;
+    background:
+      radial-gradient(circle at top right, rgba(34, 197, 94, 0.2), transparent 35%),
+      linear-gradient(135deg, #07111f, #0f2f2a, #14532d);
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    color: #ffffff;
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.24);
+  }
+
+  .ios-dh-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .ios-dh-header h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 23px;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+  }
+
+  .ios-dh-header p {
+    margin: 3px 0 0;
+    color: #bbf7d0;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ios-dh-refresh {
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 900;
+    cursor: pointer;
+    backdrop-filter: blur(14px);
+  }
+
+  .ios-month-strip {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .ios-month-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ios-month-strip button,
+  .ios-year-row button {
+    border: none;
+    white-space: nowrap;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 900;
+  }
+
+  .ios-month-strip button {
+    padding: 10px 15px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #dbeafe;
+    font-size: 12px;
+  }
+
+  .ios-month-strip button.active {
+    background: #facc15;
+    color: #111827;
+  }
+
+  .ios-year-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .ios-year-row button {
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #dbeafe;
+    font-size: 12px;
+  }
+
+  .ios-year-row button.active {
+    background: #ffffff;
+    color: #14532d;
+  }
+
+  .ios-dh-content {
+    padding: 16px 16px calc(30px + env(safe-area-inset-bottom));
+  }
+
+  .ios-hero-card {
+    border-radius: 28px;
+    padding: 22px;
+    background: #ffffff;
+    margin-bottom: 14px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1);
+  }
+
+  .ios-hero-card span {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .ios-hero-card strong {
+    display: block;
+    margin-top: 8px;
+    color: #0f172a;
+    font-size: 31px;
+    line-height: 1.15;
+    font-weight: 900;
+    word-break: break-word;
+  }
+
+  .ios-hero-card p {
+    margin: 6px 0 0;
+    color: #166534;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ios-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .ios-kpi-card {
+    min-height: 122px;
+    padding: 15px;
+    border-radius: 22px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 9px 22px rgba(15, 23, 42, 0.07);
+  }
+
+  .ios-kpi-card span {
+    display: block;
+    font-size: 24px;
+  }
+
+  .ios-kpi-card p {
+    margin: 12px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .ios-kpi-card strong {
+    display: block;
+    margin-top: 4px;
+    color: #0f172a;
+    font-size: 24px;
+    font-weight: 900;
+    word-break: break-word;
+  }
+
+  .ios-section {
+    background: #ffffff;
+    border-radius: 26px;
+    padding: 16px;
+    margin-bottom: 14px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 9px 22px rgba(15, 23, 42, 0.07);
+  }
+
+  .ios-section h3 {
+    margin: 0 0 14px;
+    color: #0f172a;
+    font-size: 19px;
+    font-weight: 900;
+  }
+
+  .ios-insight-card {
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+
+  .ios-insight-card.green {
+    background: #dcfce7;
+  }
+
+  .ios-insight-card.orange {
+    background: #ffedd5;
+  }
+
+  .ios-insight-card.red {
+    background: #fee2e2;
+  }
+
+  .ios-insight-card span {
+    display: block;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .ios-insight-card strong {
+    display: block;
+    color: #0f172a;
+    font-size: 18px;
+    font-weight: 900;
+    margin-top: 6px;
+  }
+
+  .ios-insight-card p {
+    margin: 4px 0 0;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ios-reason-text {
+    margin: 4px 0 0;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 18px;
+  }
+
+  .ios-pie-wrap {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .ios-pie-wrap .recharts-wrapper {
+    margin: 0 auto;
+  }
+
+  .ios-revenue-list {
+    margin-top: 8px;
+  }
+
+  .ios-progress-row {
+    background: #f8fafc;
+    border-radius: 18px;
+    padding: 14px;
+    margin-bottom: 10px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ios-progress-row strong {
+    display: block;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .ios-progress-row p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .ios-progress-track {
+    height: 9px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+
+  .ios-progress-track span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  .ios-total-pill {
+    width: fit-content;
+    background: #ecfdf5;
+    color: #166534;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 12px;
+  }
+
+  .ios-score-card {
+    background: #f8fafc;
+    border-radius: 22px;
+    padding: 15px;
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .ios-score-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 5px;
+  }
+
+  .ios-score-card.excellent::before {
+    background: #16a34a;
+  }
+
+  .ios-score-card.average::before {
+    background: #f97316;
+  }
+
+  .ios-score-card.poor::before {
+    background: #dc2626;
+  }
+
+  .ios-score-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .ios-score-top span {
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .ios-score-top strong {
+    display: block;
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 900;
+    margin-top: 4px;
+  }
+
+  .ios-score-top b {
+    color: #0f172a;
+    font-size: 22px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .ios-score-track {
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 14px;
+  }
+
+  .ios-score-track div {
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  .ios-score-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .ios-mini-stat {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 9px 4px;
+    text-align: center;
+  }
+
+  .ios-mini-stat strong {
+    display: block;
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .ios-mini-stat span {
+    display: block;
+    margin-top: 2px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .ios-cash-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .ios-cash-card {
+    border-radius: 20px;
+    padding: 14px;
+    min-height: 94px;
+  }
+
+  .ios-cash-card.blue {
+    background: #dbeafe;
+  }
+
+  .ios-cash-card.green {
+    background: #dcfce7;
+  }
+
+  .ios-cash-card.orange {
+    background: #ffedd5;
+  }
+
+  .ios-cash-card.red {
+    background: #fee2e2;
+  }
+
+  .ios-cash-card span {
+    display: block;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .ios-cash-card strong {
+    display: block;
+    margin-top: 8px;
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 900;
+    word-break: break-word;
+  }
+
+  .ios-payment-box {
+    background: #f8fafc;
+    border-radius: 18px;
+    padding: 14px;
+    margin-top: 12px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ios-payment-box.danger {
+    background: #fff1f2;
+    border-color: #fecdd3;
+  }
+
+  .ios-payment-box h4 {
+    margin: 0 0 8px;
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .ios-payment-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .ios-payment-row:last-child {
+    border-bottom: none;
+  }
+
+  .ios-payment-row strong {
+    display: block;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.35;
+  }
+
+  .ios-payment-row span {
+    display: block;
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .ios-payment-row b {
+    color: #0f172a;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .ios-empty {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 20px;
+  }
+
+  .ios-dashboardhome-loading {
+    min-height: 70dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #334155;
+    font-weight: 900;
+  }
+
+  .ios-loader-spinner {
+    width: 34px;
+    height: 34px;
+    border: 4px solid #d1fae5;
+    border-top-color: #166534;
+    border-radius: 50%;
+    animation: iosSpin 0.8s linear infinite;
+    margin-bottom: 12px;
+  }
+
+  @keyframes iosSpin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes iosDashFade {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (max-width: 380px) {
+  .ios-hero-card strong {
+    font-size: 27px;
+  }
+
+  .ios-kpi-card {
+    min-height: 112px;
+    padding: 13px;
+  }
+
+  .ios-section {
+    padding: 14px;
+  }
+
+  .ios-payment-row {
+    flex-direction: column;
+  }
+
+  .ios-payment-row b {
+    white-space: normal;
+  }
+}
+
+/* =========================
+   MIS WEEKLY TARGET UPDATE
+   Add at end of DashboardHome.css
+========================= */
+
+.mis-monthly-label {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mis-week-premium {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fafc, #ffffff);
+  border: 1px solid #e2e8f0;
+}
+
+.mis-week-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.mis-week-title span {
+  display: block;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.mis-week-title strong {
+  display: block;
+  margin-top: 3px;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.mis-week-title > b {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.mis-week-progress {
+  margin-top: 12px;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.mis-week-progress span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.mis-week-target-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mis-week-target-grid div {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 10px 8px;
+}
+
+.mis-week-target-grid span {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.mis-week-target-grid b {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.mis-user-insight {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+/* Mobile MIS weekly card */
+@media (max-width: 900px) {
+  .ios-mis-week-card {
+    margin-top: 14px;
+    padding: 13px;
+    border-radius: 18px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ios-mis-week-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ios-mis-week-head span {
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .ios-mis-week-head strong {
+    color: #0f172a;
+    font-size: 18px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .ios-mis-week-score-track {
+    margin-top: 10px;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .ios-mis-week-score-track div {
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  .ios-mis-week-grid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .ios-mis-week-grid .ios-mini-stat {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 8px 4px;
+  }
+
+  .ios-mis-week-grid .ios-mini-stat strong {
+    font-size: 11px;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
+  .ios-mis-week-grid .ios-mini-stat span {
+    font-size: 9px;
+  }
+
+  .ios-mis-insight {
+    margin: 12px 0 0;
+    padding: 10px 11px;
+    border-radius: 14px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 420px) {
+  .ios-mis-week-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ios-mis-week-grid .ios-mini-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    gap: 10px;
+  }
+
+  .ios-mis-week-grid .ios-mini-stat strong {
+    font-size: 12px;
+    text-align: right;
+  }
+
+  .mis-week-target-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* =========================
+   MIS PREMIUM 3-CARD DESKTOP
+========================= */
+
+.mis-employee-grid-premium {
+  grid-template-columns: repeat(3, minmax(300px, 1fr)) !important;
+  align-items: stretch;
+}
+
+.mis-employee-grid-premium .mis-employee-card {
+  padding: 20px;
+}
+
+.mis-month-target-box {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.mis-target-title span {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.mis-target-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mis-target-grid div,
+.mis-week-target-grid div {
+  min-width: 0;
+}
+
+.mis-target-grid span,
+.mis-week-target-grid span {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.mis-target-grid b,
+.mis-week-target-grid b {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.mis-target-grid div {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 10px 8px;
+}
+
+.mis-week-target-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.mis-insight-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.mis-insight-list p {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.mis-employee-grid-premium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .mis-employee-grid-premium {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .mis-employee-grid-premium {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* MOBILE MIS MONTHLY FULL TARGET */
+
+@media (max-width: 900px) {
+  .ios-mis-month-card {
+    margin-top: 14px;
+    padding: 13px;
+    border-radius: 18px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ios-mis-month-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .ios-mis-month-head span {
+    color: #0f172a;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .ios-mis-month-head b {
+    color: #166534;
+    font-size: 13px;
+    font-weight: 900;
+    text-align: right;
+  }
+
+  .ios-mis-month-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 7px;
+  }
+
+  .ios-mis-month-grid div {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 9px 8px;
+  }
+
+  .ios-mis-month-grid span {
+    display: block;
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .ios-mis-month-grid b {
+    display: block;
+    margin-top: 4px;
+    color: #0f172a;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
+  .ios-mis-insight-list {
+    margin-top: 12px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .ios-mis-insight-list p {
+    margin: 0;
+    padding: 10px 11px;
+    border-radius: 14px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.45;
+  }
+}
+

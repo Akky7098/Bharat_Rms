@@ -466,3 +466,331 @@
     border-radius: 12px;
   }
 }
+/* =========================================
+   IOS PWA ENQUIRY FORM
+   SAFE - MOBILE ONLY
+========================================= */
+
+.ios-enquiry-form-card {
+  display: none;
+}
+
+@media (max-width: 900px) {
+
+  /* hide website modal only on mobile */
+  .enquiry-form-desktop-card {
+    display: none !important;
+  }
+
+  .ios-enquiry-form-card {
+    display: flex !important;
+    flex-direction: column;
+
+    width: 100vw;
+    height: 100dvh;
+
+    background: #f4f7f5;
+    overflow: hidden;
+  }
+
+  .ios-enquiry-form-header {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+
+    padding:
+      calc(52px + env(safe-area-inset-top))
+      18px
+      18px;
+
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(20,184,166,.22),
+        transparent 35%
+      ),
+      linear-gradient(
+        135deg,
+        #07111f,
+        #0f2f2a,
+        #14532d
+      );
+
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    box-shadow:
+      0 18px 40px rgba(15,23,42,.18);
+  }
+
+  .ios-enquiry-form-header h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 900;
+  }
+
+  .ios-enquiry-form-header p {
+    margin: 4px 0 0;
+    color: #bbf7d0;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ios-enquiry-form-header button {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 16px;
+
+    background: rgba(255,255,255,.14);
+    color: white;
+
+    font-size: 30px;
+    cursor: pointer;
+  }
+
+  .ios-enquiry-form-body {
+    flex: 1;
+    overflow-y: auto;
+
+    padding: 16px;
+    padding-bottom:
+      calc(40px + env(safe-area-inset-bottom));
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ios-enquiry-form-loading {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #334155;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .ios-enquiry-form-note {
+    background: #ecfdf5;
+    color: #166534;
+
+    padding: 14px;
+    border-radius: 18px;
+
+    font-size: 13px;
+    font-weight: 900;
+
+    margin-bottom: 16px;
+  }
+
+  .ios-enquiry-form-section {
+    margin: 0 0 14px;
+
+    color: #0f172a;
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  .ios-enquiry-form-field {
+    margin-bottom: 14px;
+  }
+
+  .ios-enquiry-form-field label,
+  .ios-enquiry-form-label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #334155;
+    font-size: 12px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+  }
+
+  .ios-enquiry-form-field input,
+  .ios-enquiry-form-field textarea {
+    width: 100%;
+    min-height: 52px;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    padding: 0 15px;
+
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 800;
+
+    outline: none;
+  }
+
+  .ios-enquiry-form-field textarea {
+    min-height: 110px;
+    padding: 14px;
+    resize: vertical;
+  }
+
+  .ios-enquiry-form-field input:focus,
+  .ios-enquiry-form-field textarea:focus {
+    border-color: #14532d;
+    box-shadow:
+      0 0 0 4px rgba(20,83,45,.12);
+  }
+
+  .ios-enquiry-readonly-box {
+    min-height: 52px;
+
+    display: flex;
+    align-items: center;
+
+    border-radius: 18px;
+
+    padding: 0 15px;
+
+    background: #e2e8f0;
+
+    color: #334155;
+    font-weight: 900;
+  }
+
+  /* CHIPS */
+
+  .ios-enquiry-chip-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ios-enquiry-chip {
+    border: 1px solid #e2e8f0;
+    background: white;
+
+    padding: 10px 13px;
+
+    border-radius: 999px;
+
+    color: #334155;
+    font-size: 12px;
+    font-weight: 900;
+
+    cursor: pointer;
+  }
+
+  .ios-enquiry-chip.active {
+    background: #14532d;
+    border-color: #14532d;
+    color: white;
+  }
+
+  .ios-enquiry-disabled-text {
+    display: block;
+
+    background: #e2e8f0;
+    color: #64748b;
+
+    padding: 12px;
+
+    border-radius: 16px;
+
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  /* PDF */
+
+  .ios-enquiry-upload-box {
+    border: 1.5px dashed #94a3b8;
+    border-radius: 20px;
+
+    background: white;
+
+    padding: 16px;
+  }
+
+  .ios-enquiry-upload-box input {
+    display: none;
+  }
+
+  .ios-enquiry-upload-box label {
+    display: block;
+    cursor: pointer;
+  }
+
+  .ios-enquiry-upload-box strong {
+    display: block;
+
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .ios-enquiry-upload-box span {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .ios-enquiry-remove-file {
+    width: 100%;
+
+    margin-top: 10px;
+
+    border: none;
+
+    background: #fee2e2;
+    color: #991b1b;
+
+    border-radius: 16px;
+
+    min-height: 48px;
+
+    font-weight: 900;
+  }
+
+  /* ACTIONS */
+
+  .ios-enquiry-form-actions {
+    display: grid;
+    gap: 10px;
+
+    margin-top: 20px;
+  }
+
+  .ios-enquiry-form-actions button {
+    width: 100%;
+    min-height: 54px;
+
+    border: none;
+    border-radius: 18px;
+
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .ios-enquiry-form-actions button:first-child {
+    background: #e5e7eb;
+    color: #111827;
+  }
+
+  .ios-enquiry-form-actions button:last-child {
+    background: #facc15;
+    color: #111827;
+  }
+
+  .ios-enquiry-form-actions button:disabled {
+    opacity: .6;
+  }
+}

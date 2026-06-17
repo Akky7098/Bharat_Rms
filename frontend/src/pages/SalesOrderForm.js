@@ -57,6 +57,12 @@ const supplyConditionOptions = [
 
 const approverOptions = ["nilesh_sir", "jatin_sir", "mayank_sir"];
 
+const orderTypeOptions = [
+  { value: "domestic", label: "Domestic" },
+  { value: "international", label: "International" },
+  { value: "special_economic_zone", label: "Special Economic Zone" },
+];
+
 const formatLabel = (value = "") =>
   String(value).replaceAll("_", " ").toUpperCase();
 
@@ -250,7 +256,32 @@ const getLatestHoldComment = (order) => {
 
 const getToday = () => new Date().toISOString().split("T")[0];
 
+const toDateInputValue = (value, fallback = getToday()) => {
+  if (!value) return fallback;
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return fallback;
+  }
+
+  return date.toISOString().split("T")[0];
+};
+
+const getFileName = (fileObj) => {
+  if (!fileObj) return "";
+
+  return (
+    fileObj.originalName ||
+    fileObj.fileName ||
+    fileObj.filename ||
+    fileObj.name ||
+    ""
+  );
+};
+
 const initialForm = {
+  orderType: "domestic",
   companyName: "",
   companyAddress: "",
   gstinNumber: "",
@@ -261,6 +292,7 @@ const initialForm = {
   supplyFinish: "supply_size",
   customerType: "existing",
   customerPOFile: null,
+  feasibilityReportFile: null,
 
   paymentTerms: "",
   otherPaymentTerms: "",
@@ -362,7 +394,9 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
       "contactPersonEmail",
     ]);
     addIf(["order value", "value", "amount"], ["orderValue"]);
+    addIf(["order type", "domestic", "international", "sez"], ["orderType"]);
     addIf(["po number", "po no", "po"], ["poNumber", "customerPOFile"]);
+    addIf(["feasibility", "feasibility report"], ["feasibilityReportFile"]);
     addIf(["po as per quotation", "quotation"], ["poAsPerQuotation"]);
     addIf(["checklist"], ["checklistNumber"]);
     addIf(["previous payment", "old payment"], [
@@ -443,15 +477,19 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
     setForm({
       ...initialForm,
 
+      orderType: resolveOptionValue(
+        getFirstFromOrder(editOrder, ["orderType"]),
+        orderTypeOptions.map((item) => item.value),
+        "domestic"
+      ),
+
       companyName: getFirstFromOrder(editOrder, ["companyName"]),
       companyAddress: getFirstFromOrder(editOrder, ["companyAddress"]),
       gstinNumber: getFirstFromOrder(editOrder, ["gstinNumber", "gstNumber"]),
 
      poNumber: getFirstFromOrder(editOrder, ["poNumber", "purchaseOrderNo"]),
 
-poDate: editOrder?.poDate
-  ? new Date(editOrder.poDate).toISOString().split("T")[0]
-  : getToday(),
+poDate: toDateInputValue(editOrder?.poDate),
 
 checklistNumber: getFirstFromOrder(editOrder, ["checklistNumber"]),
 
@@ -468,6 +506,7 @@ supplyFinish: getFirstFromOrder(
       ),
 
       customerPOFile: null,
+      feasibilityReportFile: null,
 
       paymentTerms: normalizePaymentTerm(savedPaymentTerms),
       otherPaymentTerms: getFirstFromOrder(editOrder, [
@@ -621,6 +660,7 @@ supplyFinish: getFirstFromOrder(
     }, 350);
   }, [isEditMode, holdComment, revisionFields]);
 
+  const isDomesticOrder = form.orderType === "domestic";
   const isPaymentApproved = form.isPaymentTermsApprovedByManagement === "true";
   const isOtherPaymentTerms = form.paymentTerms === "other";
   const isOtherSupplyCondition = form.supplyCondition === "other";
@@ -668,9 +708,9 @@ supplyFinish: getFirstFromOrder(
     const newErrors = {};
 
     const requiredFields = [
+      ["orderType", "Order type is required"],
       ["companyName", "Company name is required"],
       ["companyAddress", "Company address is required"],
-      ["gstinNumber", "GSTIN is required"],
       ["poNumber", "PO number is required"],
       ["poDate", "PO Date is required"],
       ["supplyFinish", "Supply Finish is required"],
@@ -699,8 +739,12 @@ supplyFinish: getFirstFromOrder(
       }
     });
 
-    if (form.gstinNumber && !validateGstin(form.gstinNumber.trim())) {
-      newErrors.gstinNumber = "Please enter valid GSTIN";
+    if (isDomesticOrder) {
+      if (!form.gstinNumber.trim()) {
+        newErrors.gstinNumber = "GSTIN is required for domestic order";
+      } else if (!validateGstin(form.gstinNumber.trim())) {
+        newErrors.gstinNumber = "Please enter valid GSTIN";
+      }
     }
     if (form.enquiryFormFilled === "no") {
   newErrors.enquiryFormFilled =
@@ -718,10 +762,12 @@ if (
         newErrors.billingCombined = "Billing address is required";
       }
       
-      if (!form.billingGstinNumber.trim()) {
-        newErrors.billingCombined = "Billing GSTIN is required";
-      } else if (!validateGstin(form.billingGstinNumber.trim())) {
-        newErrors.billingCombined = "Please enter valid billing GSTIN";
+      if (isDomesticOrder) {
+        if (!form.billingGstinNumber.trim()) {
+          newErrors.billingCombined = "Billing GSTIN is required";
+        } else if (!validateGstin(form.billingGstinNumber.trim())) {
+          newErrors.billingCombined = "Please enter valid billing GSTIN";
+        }
       }
     }
 
@@ -730,10 +776,12 @@ if (
         newErrors.shippingCombined = "Shipping address is required";
       }
 
-      if (!form.shippingGstinNumber.trim()) {
-        newErrors.shippingCombined = "Shipping GSTIN is required";
-      } else if (!validateGstin(form.shippingGstinNumber.trim())) {
-        newErrors.shippingCombined = "Please enter valid shipping GSTIN";
+      if (isDomesticOrder) {
+        if (!form.shippingGstinNumber.trim()) {
+          newErrors.shippingCombined = "Shipping GSTIN is required";
+        } else if (!validateGstin(form.shippingGstinNumber.trim())) {
+          newErrors.shippingCombined = "Please enter valid shipping GSTIN";
+        }
       }
     }
 
@@ -774,6 +822,13 @@ if (
       newErrors.customerPOFile = "Only PDF file is allowed";
     }
 
+    if (
+      form.feasibilityReportFile &&
+      form.feasibilityReportFile.type !== "application/pdf"
+    ) {
+      newErrors.feasibilityReportFile = "Only PDF file is allowed";
+    }
+
     setErrors(newErrors);
 
     const firstErrorField = Object.keys(newErrors)[0];
@@ -792,6 +847,14 @@ if (
       setForm((prev) => ({
         ...prev,
         customerPOFile: files?.[0] || null,
+      }));
+      return;
+    }
+
+    if (name === "feasibilityReportFile") {
+      setForm((prev) => ({
+        ...prev,
+        feasibilityReportFile: files?.[0] || null,
       }));
       return;
     }
@@ -821,6 +884,12 @@ if (
         ...prev,
         [name]: value,
       };
+
+      if (name === "orderType" && value !== "domestic") {
+        updated.gstinNumber = "";
+        updated.billingGstinNumber = "";
+        updated.shippingGstinNumber = "";
+      }
 
       if (name === "billingSameAsCompany" && value === "true") {
         updated.billingAddress = "";
@@ -860,9 +929,11 @@ if (
 
   const buildPayload = () => {
     return {
+      orderType: form.orderType || "domestic",
+
       companyName: form.companyName.trim(),
       companyAddress: form.companyAddress.trim(),
-      gstinNumber: form.gstinNumber.trim(),
+      gstinNumber: isDomesticOrder ? form.gstinNumber.trim() : "",
 
      poNumber: form.poNumber.trim(),
 poDate: form.poDate,
@@ -918,10 +989,11 @@ supplyFinish: form.supplyFinish,
           form.billingSameAsCompany === "true"
             ? form.companyAddress.trim()
             : form.billingAddress.trim(),
-        gstinNumber:
-          form.billingSameAsCompany === "true"
+        gstinNumber: isDomesticOrder
+          ? form.billingSameAsCompany === "true"
             ? form.gstinNumber.trim()
-            : form.billingGstinNumber.trim(),
+            : form.billingGstinNumber.trim()
+          : "",
       },
 
       shippingAddress: {
@@ -930,10 +1002,11 @@ supplyFinish: form.supplyFinish,
           form.shippingSameAsCompany === "true"
             ? form.companyAddress.trim()
             : form.shippingAddress.trim(),
-        gstinNumber:
-          form.shippingSameAsCompany === "true"
+        gstinNumber: isDomesticOrder
+          ? form.shippingSameAsCompany === "true"
             ? form.gstinNumber.trim()
-            : form.shippingGstinNumber.trim(),
+            : form.shippingGstinNumber.trim()
+          : "",
       },
 
       tolerance: form.tolerance.trim(),
@@ -953,9 +1026,13 @@ supplyFinish: form.supplyFinish,
   const appendToFormData = (fd, payload) => {
     fd.append("data", JSON.stringify(payload));
 
-    if (form.customerPOFile) {
-      fd.append("customerPOFile", form.customerPOFile);
-    }
+   if (form.customerPOFile instanceof File) {
+  fd.append("customerPOFile", form.customerPOFile);
+}
+
+if (form.feasibilityReportFile instanceof File) {
+  fd.append("feasibilityReportFile", form.feasibilityReportFile);
+}
 
     return fd;
   };
@@ -1115,6 +1192,28 @@ if (isEditMode) {
           </div>
 
           <div
+            className={fieldClass("orderType", "order-type-field")}
+            {...refProp("orderType")}
+          >
+            <label>{mandatoryLabel("Order Type")}</label>
+            <select
+              name="orderType"
+              value={form.orderType}
+              onChange={handleChange}
+            >
+              {orderTypeOptions.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <small className="auto-hint">
+              Domestic selected by default. GSTIN is required only for Domestic.
+            </small>
+            {errorText("orderType")}
+          </div>
+
+          <div
             className={fieldClass("companyName")}
             {...refProp("companyName")}
           >
@@ -1129,16 +1228,26 @@ if (isEditMode) {
           </div>
 
           <div
-            className={fieldClass("gstinNumber")}
+           className={fieldClass(
+  "gstinNumber",
+  !isDomesticOrder ? "gstin-disabled" : ""
+)}
             {...refProp("gstinNumber")}
           >
-            <label>{mandatoryLabel("Company GSTIN")}</label>
+            <label>
+              {isDomesticOrder ? mandatoryLabel("Company GSTIN") : "Company GSTIN"}
+            </label>
             <input
               name="gstinNumber"
               value={form.gstinNumber}
               onChange={handleChange}
               maxLength={15}
-              placeholder="Example: 27ABCDE1234F1Z5"
+              disabled={!isDomesticOrder}
+              placeholder={
+                isDomesticOrder
+                  ? "Example: 27ABCDE1234F1Z5"
+                  : "GSTIN not required for International / SEZ"
+              }
             />
             {errorText("gstinNumber")}
           </div>
@@ -1159,19 +1268,6 @@ if (isEditMode) {
 
           <div className={fieldClass("poNumber")} {...refProp("poNumber")}>
             <label>{mandatoryLabel("PO Number")}</label>
-            <div
-  className={fieldClass("poDate")}
-  {...refProp("poDate")}
->
-  <label>{mandatoryLabel("PO Date")}</label>
-  <input
-    type="date"
-    name="poDate"
-    value={form.poDate}
-    onChange={handleChange}
-  />
-  {errorText("poDate")}
-</div>
             <input
               name="poNumber"
               value={form.poNumber}
@@ -1179,6 +1275,17 @@ if (isEditMode) {
               placeholder="Example: PO/2026/001"
             />
             {errorText("poNumber")}
+          </div>
+
+          <div className={fieldClass("poDate")} {...refProp("poDate")}>
+            <label>{mandatoryLabel("PO Date")}</label>
+            <input
+              type="date"
+              name="poDate"
+              value={form.poDate}
+              onChange={handleChange}
+            />
+            {errorText("poDate")}
           </div>
 
           <div
@@ -1212,7 +1319,7 @@ if (isEditMode) {
           </div>
 
           <div
-            className={fieldClass("customerPOFile")}
+            className={fieldClass("customerPOFile", "customer-po-file-box")}
             {...refProp("customerPOFile")}
           >
             <label>
@@ -1228,8 +1335,9 @@ if (isEditMode) {
             />
             {isEditMode && !form.customerPOFile && (
               <small className="auto-hint">
-                Existing PO file will remain unchanged unless you upload a new
-                PDF.
+                Existing PO file:{" "}
+                {getFileName(editOrder?.customerPOFile) || "Already uploaded"}.
+                Upload a new PDF only if you want to replace it.
               </small>
             )}
             {form.customerPOFile && (
@@ -1238,6 +1346,36 @@ if (isEditMode) {
               </small>
             )}
             {errorText("customerPOFile")}
+          </div>
+
+          <div
+            className={fieldClass(
+  "feasibilityReportFile",
+  "feasibility-file-box"
+)}
+            {...refProp("feasibilityReportFile")}
+          >
+            <label>Feasibility Report PDF</label>
+            <input
+              type="file"
+              name="feasibilityReportFile"
+              accept="application/pdf"
+              onChange={handleChange}
+            />
+            {isEditMode && !form.feasibilityReportFile && (
+              <small className="auto-hint">
+                Existing feasibility report:{" "}
+                {getFileName(editOrder?.feasibilityReportFile) ||
+                  "Not uploaded"}.
+                Upload a PDF only if you want to add/replace it.
+              </small>
+            )}
+            {form.feasibilityReportFile && (
+              <small className="file-selected">
+                Selected: {form.feasibilityReportFile.name}
+              </small>
+            )}
+            {errorText("feasibilityReportFile")}
           </div>
         </div>
 
@@ -1419,7 +1557,7 @@ if (isEditMode) {
               className={fieldClass("billingCombined", "sales-full-width")}
               {...refProp("billingCombined")}
             >
-              <label>{mandatoryLabel("Billing Address With GSTIN")}</label>
+              <label>{isDomesticOrder ? mandatoryLabel("Billing Address With GSTIN") : mandatoryLabel("Billing Address")}</label>
               <div className="combined-address-box">
                 <textarea
                   name="billingAddress"
@@ -1434,7 +1572,12 @@ if (isEditMode) {
                     value={form.billingGstinNumber}
                     onChange={handleChange}
                     maxLength={15}
-                    placeholder="27ABCDE1234F1Z5"
+                    disabled={!isDomesticOrder}
+                    placeholder={
+                      isDomesticOrder
+                        ? "27ABCDE1234F1Z5"
+                        : "GSTIN not required"
+                    }
                   />
                 </div>
               </div>
@@ -1462,7 +1605,7 @@ if (isEditMode) {
               className={fieldClass("shippingCombined", "sales-full-width")}
               {...refProp("shippingCombined")}
             >
-              <label>{mandatoryLabel("Shipping Address With GSTIN")}</label>
+              <label>{isDomesticOrder ? mandatoryLabel("Shipping Address With GSTIN") : mandatoryLabel("Shipping Address")}</label>
               <div className="combined-address-box">
                 <textarea
                   name="shippingAddress"
@@ -1477,7 +1620,12 @@ if (isEditMode) {
                     value={form.shippingGstinNumber}
                     onChange={handleChange}
                     maxLength={15}
-                    placeholder="27ABCDE1234F1Z5"
+                    disabled={!isDomesticOrder}
+                    placeholder={
+                      isDomesticOrder
+                        ? "27ABCDE1234F1Z5"
+                        : "GSTIN not required"
+                    }
                   />
                 </div>
               </div>
@@ -1485,26 +1633,11 @@ if (isEditMode) {
             </div>
           )}
 
-         <div
+          <div
             className={fieldClass("enquiryFormFilled")}
             {...refProp("enquiryFormFilled")}
           >
             <label>{mandatoryLabel("Enquiry Form Filled?")}</label>
-            {form.enquiryFormFilled === "yes" && (
-  <div
-    className={fieldClass("enquiryNumber")}
-    {...refProp("enquiryNumber")}
-  >
-    <label>{mandatoryLabel("Enquiry Number")}</label>
-    <input
-      name="enquiryNumber"
-      value={form.enquiryNumber}
-      onChange={handleChange}
-      placeholder="Example: Deepika-1"
-    />
-    {errorText("enquiryNumber")}
-  </div>
-)}
             <select
               name="enquiryFormFilled"
               value={form.enquiryFormFilled}
@@ -1516,6 +1649,22 @@ if (isEditMode) {
             </select>
             {errorText("enquiryFormFilled")}
           </div>
+
+          {form.enquiryFormFilled === "yes" && (
+            <div
+              className={fieldClass("enquiryNumber")}
+              {...refProp("enquiryNumber")}
+            >
+              <label>{mandatoryLabel("Enquiry Number")}</label>
+              <input
+                name="enquiryNumber"
+                value={form.enquiryNumber}
+                onChange={handleChange}
+                placeholder="Example: Deepika-1"
+              />
+              {errorText("enquiryNumber")}
+            </div>
+          )}
         </div>
 
         <div className="form-section-title premium-section-title">
