@@ -122,17 +122,16 @@ const generateSalesOrderPdf = async (req, res) => {
 // ===============================
 const getAllSalesOrders = async (req, res) => {
   try {
-    const result =
-      await salesOrderService.getAllSalesOrders(
-        req.query,
-        req.user
-      );
+    const result = await salesOrderService.getAllSalesOrders(
+      req.query,
+      req.user
+    );
 
     res.status(200).json({
       success: true,
       data: result.salesOrders,
-      summary: result.summary,
       pagination: result.pagination,
+      summary: result.summary,
     });
   } catch (error) {
     res.status(500).json({
@@ -141,7 +140,6 @@ const getAllSalesOrders = async (req, res) => {
     });
   }
 };
-
 // ===============================
 // GET SINGLE SALES ORDER
 // ===============================
@@ -412,18 +410,22 @@ const searchPendingDispatchSalesOrders = async (req, res) => {
 // ===============================
 const deleteSalesOrder = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (req.user.role !== "super_admin") {
       return res.status(403).json({
         success: false,
-        message: "Only admin can delete sales order",
+        message: "Only super admin can delete sales order",
       });
     }
 
-    await salesOrderService.deleteSalesOrder(req.params.id);
+    const data = await salesOrderService.deleteSalesOrder(
+      req.params.id,
+      req.user
+    );
 
     return res.status(200).json({
       success: true,
-      message: "Sales order deleted successfully",
+      message: "Sales order deleted successfully.",
+      data,
     });
   } catch (error) {
     return res.status(400).json({

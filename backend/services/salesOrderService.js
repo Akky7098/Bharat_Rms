@@ -1057,12 +1057,21 @@ const runAdminRejectBackgroundTasks = (
 // ========================================
 // ADMIN APPROVE
 // ========================================
+// ========================================
+// ADMIN APPROVE
+// Admin approval only moves order to MD approval.
+// Final approval is always done by MD / super_admin.
+// ========================================
 const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
   try {
     const salesOrder = await SalesOrder.findById(salesOrderId);
 
     if (!salesOrder) {
       throw new Error("Sales order not found");
+    }
+
+    if (salesOrder.approvalStatus !== "pending_admin_review") {
+      throw new Error("Sales order is not pending Sonia review.");
     }
 
     salesOrder.approvalStatus = "pending_manager_approval";
@@ -1073,8 +1082,10 @@ const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
     salesOrder.checkedAt = new Date();
 
     salesOrder.adminApproval = {
+      ...salesOrder.adminApproval,
       approvedBy: loggedInAdmin._id,
       approvedAt: new Date(),
+      rejectionComment: "",
     };
 
     const approvalToken = crypto.randomBytes(32).toString("hex");
@@ -1122,6 +1133,8 @@ const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
 
 // ========================================
 // ADMIN HOLD
+// Admin can hold only before MD final review.
+// Salesperson can edit and resubmit.
 // ========================================
 const rejectSalesOrderByAdmin = async (
   salesOrderId,
@@ -1135,10 +1148,15 @@ const rejectSalesOrderByAdmin = async (
       throw new Error("Sales order not found");
     }
 
+    if (salesOrder.approvalStatus !== "pending_admin_review") {
+      throw new Error("Sales order is not pending Sonia review.");
+    }
+
     salesOrder.approvalStatus = "rejected_by_admin";
     salesOrder.isEditableBySalesPerson = true;
 
     salesOrder.adminApproval = {
+      ...salesOrder.adminApproval,
       rejectedBy: loggedInAdmin._id,
       rejectedAt: new Date(),
       rejectionComment,
@@ -1185,7 +1203,10 @@ const rejectSalesOrderByAdmin = async (
 };
 
 // ========================================
-// MANAGER APPROVE
+// MANAGER / MD APPROVE
+// MD approval is always final.
+// MD can approve directly from pending_admin_review
+// OR after Sonia approval from pending_manager_approval.
 // ========================================
 const approveSalesOrderByManager = async (salesOrderId, loggedInManager) => {
   const salesOrder = await SalesOrder.findById(salesOrderId).populate(
@@ -1196,6 +1217,30 @@ const approveSalesOrderByManager = async (salesOrderId, loggedInManager) => {
   if (!salesOrder) {
     throw new Error("Sales order not found");
   }
+
+  if (
+    !["pending_admin_review", "pending_manager_approval"].includes(
+      salesOrder.approvalStatus
+    )
+  ) {
+    throw new Error("Sales order is not pending MD Sir approval.");
+  }
+
+  const wasDirectMdApproval =
+    salesOrder.approvalStatus === "pending_admin_review";
+
+  salesOrder.approvalHistory.push({
+    actionBy: loggedInManager._id,
+    role: "manager",
+    action: wasDirectMdApproval
+      ? "manager_direct_approved"
+      : "manager_approved",
+    comment: wasDirectMdApproval
+      ? "MD Sir directly approved sales order without Sonia review"
+      : "MD Sir finally approved sales order",
+  });
+
+  await salesOrder.save();
 
   const approvedOrder = await finalApprovalService.finalApproveSalesOrder(
     salesOrder,
@@ -1224,6 +1269,7 @@ const approveSalesOrderByManager = async (salesOrderId, loggedInManager) => {
       poNumber: approvedOrder.poNumber,
       salesPersonName: approvedOrder.salesPersonName,
       managerName: "MD Sir",
+      directApproval: wasDirectMdApproval,
     },
   });
 
@@ -1260,7 +1306,10 @@ const approveSalesOrderByManager = async (salesOrderId, loggedInManager) => {
 };
 
 // ========================================
-// MANAGER HOLD
+// MANAGER / MD HOLD
+// MD can hold directly from pending_admin_review
+// OR after Sonia approval from pending_manager_approval.
+// After MD hold, delete button can appear only for super_admin.
 // ========================================
 const rejectSalesOrderByManager = async (
   salesOrderId,
@@ -1277,9 +1326,15 @@ const rejectSalesOrderByManager = async (
       throw new Error("Sales order not found");
     }
 
-    if (salesOrder.approvalStatus !== "pending_manager_approval") {
-      throw new Error("Sales order is not pending md sir approval");
+    if (
+      !["pending_admin_review", "pending_manager_approval"].includes(
+        salesOrder.approvalStatus
+      )
+    ) {
+      throw new Error("Sales order is not pending MD Sir review.");
     }
+
+    const wasDirectMdHold = salesOrder.approvalStatus === "pending_admin_review";
 
     salesOrder.approvalStatus = "rejected_by_manager";
     salesOrder.isEditableBySalesPerson = true;
@@ -1291,12 +1346,15 @@ const rejectSalesOrderByManager = async (
       managerName: managerData.managerName || "MD Sir",
       managerEmail: managerData.managerEmail,
       rejectionComment,
+      directHold: wasDirectMdHold,
     };
 
     salesOrder.approvalHistory.push({
       actionBy: managerData.managerId,
       role: "manager",
-      action: "manager_rejected",
+      action: wasDirectMdHold
+        ? "manager_direct_rejected"
+        : "manager_rejected",
       comment: rejectionComment,
     });
 
@@ -1319,6 +1377,7 @@ const rejectSalesOrderByManager = async (
         poNumber: salesOrder.poNumber,
         rejectionComment,
         managerName: managerData.managerName || "MD Sir",
+        directHold: wasDirectMdHold,
       },
     });
 
@@ -1359,7 +1418,6 @@ const rejectSalesOrderByManager = async (
     throw error;
   }
 };
-
 const updatePdfDetails = async (salesOrderId, pdfData) => {
   try {
     const salesOrder = await SalesOrder.findById(salesOrderId);
