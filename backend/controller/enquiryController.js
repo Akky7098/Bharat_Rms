@@ -50,14 +50,12 @@ const updateWorkflow = async (req, res) => {
 };
 const getAllEnquiries = async (req, res) => {
   try {
-    const result = await enquiryService.getAllEnquiries(
-      req.query,
-      req.user
-    );
-     
+    const result = await enquiryService.getAllEnquiries(req.query, req.user);
+
     res.status(200).json({
       success: true,
       data: result.enquiries,
+      summary: result.summary,
       pagination: result.pagination,
     });
   } catch (error) {

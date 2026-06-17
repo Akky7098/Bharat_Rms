@@ -461,7 +461,9 @@ const getAllSalesOrders = async (query, user) => {
       poNumber,
     } = query;
 
-    const filter = {};
+    const filter = {
+  isActive: { $ne: false },
+};
 
     if (user.role === "admin" || user.role === "super_admin") {
       if (salesPersonId) {
@@ -1423,18 +1425,30 @@ const updateWhatsappGroupStatus = async (salesOrderId, whatsappData) => {
 // ========================================
 // DELETE SALES ORDER
 // ========================================
-const deleteSalesOrder = async (salesOrderId) => {
-  try {
-    const deletedOrder = await SalesOrder.findByIdAndDelete(salesOrderId);
+const deleteSalesOrder = async (salesOrderId, user) => {
+  const isSuperAdmin = user?.role === "super_admin";
 
-    if (!deletedOrder) {
-      throw new Error("Sales order not found");
-    }
-
-    return deletedOrder;
-  } catch (error) {
-    throw error;
+  if (!isSuperAdmin) {
+    throw new Error("Only super admin can delete sales order.");
   }
+
+  const order = await SalesOrder.findById(salesOrderId);
+
+  if (!order) {
+    throw new Error("Sales order not found.");
+  }
+
+  if (order.approvalStatus !== "rejected_by_manager") {
+    throw new Error("Only MD hold/rejected sales orders can be deleted.");
+  }
+
+  order.isActive = false;
+  order.deletedAt = new Date();
+  order.deletedBy = user._id || user.id;
+
+  await order.save();
+
+  return order;
 };
 
 // ========================================

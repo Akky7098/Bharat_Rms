@@ -520,6 +520,67 @@ const updateWorkflow = async (id, body) => {
 
   return enquiry;
 };
+const escapeRegex = (text = "") => {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const getStartOfMonth = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+};
+
+const getEndOfMonth = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+};
+
+const buildStatusFilter = (status) => {
+  switch (status) {
+    case "pending":
+      return {
+        $and: [
+          { "feasibility.status": { $ne: "not_feasible" } },
+          { "closure.status": { $nin: ["won", "lost"] } },
+          {
+            $or: [
+              { "feasibility.status": "pending" },
+              { "quotation.completed": { $ne: true } },
+              { "closure.status": "pending" },
+            ],
+          },
+        ],
+      };
+
+    case "feasible":
+      return {
+        "feasibility.status": "feasible",
+      };
+
+    case "not_feasible":
+      return {
+        "feasibility.status": "not_feasible",
+      };
+
+    case "quotation_done":
+      return {
+        "quotation.completed": true,
+      };
+
+    case "won":
+      return {
+        "closure.status": "won",
+      };
+
+    case "lost":
+      return {
+        "closure.status": "lost",
+      };
+
+    default:
+      return null;
+  }
+};
+
 const getAllEnquiries = async (query, user) => {
   const {
     page = 1,
@@ -527,49 +588,145 @@ const getAllEnquiries = async (query, user) => {
     salesPersonId,
     fromDate,
     toDate,
+    companyName,
+    search,
+    status = "all",
   } = query;
 
-  const filter = {};
+  const safePage = Math.max(Number(page) || 1, 1);
+  const safeLimit = Math.min(Number(limit) || 30, 100);
+  const skip = (safePage - 1) * safeLimit;
+
+  const baseFilter = {
+    isActive: { $ne: false },
+  };
 
   if (user.role === "admin" || user.role === "super_admin") {
     if (salesPersonId) {
-      filter.salesPersonId = salesPersonId;
+      baseFilter.salesPersonId = salesPersonId;
     }
   } else {
-    filter.salesPersonId = user.id;
+    baseFilter.salesPersonId = user._id || user.id;
   }
 
-  if (fromDate || toDate) {
-    filter.enquiryDate = {};
+  // Default current month until date filter is applied
+  baseFilter.enquiryDate = {};
 
+  if (fromDate || toDate) {
     if (fromDate) {
-      filter.enquiryDate.$gte = new Date(fromDate);
+      const startDate = new Date(fromDate);
+      startDate.setHours(0, 0, 0, 0);
+      baseFilter.enquiryDate.$gte = startDate;
     }
 
     if (toDate) {
       const endDate = new Date(toDate);
       endDate.setHours(23, 59, 59, 999);
-      filter.enquiryDate.$lte = endDate;
+      baseFilter.enquiryDate.$lte = endDate;
     }
+  } else {
+    baseFilter.enquiryDate.$gte = getStartOfMonth();
+    baseFilter.enquiryDate.$lte = getEndOfMonth();
   }
 
-  const skip = (Number(page) - 1) * Number(limit);
+  const searchText = String(companyName || search || "").trim();
 
-  const totalRecords = await Enquiry.countDocuments(filter);
+  if (searchText) {
+    const regex = new RegExp(escapeRegex(searchText), "i");
 
-  const enquiries = await Enquiry.find(filter)
-    .populate("salesPersonId", "name email role")
-    .sort({ enquiryDate: -1, createdAt: -1 })
-    .skip(skip)
-    .limit(Number(limit));
+    baseFilter.$or = [
+  { companyName: regex },
+  { customerName: regex },
+  { customerContactNo: regex },
+  { customerEmailId: regex },
+  { enquiryNumber: regex },
+  { grade: regex },
+];
+  }
+
+  const finalFilter = { ...baseFilter };
+  const cleanStatus = String(status || "all").trim();
+
+  const selectedStatusFilter = buildStatusFilter(cleanStatus);
+
+  if (selectedStatusFilter) {
+    finalFilter.$and = [...(finalFilter.$and || []), selectedStatusFilter];
+  }
+
+  const summaryBaseFilter = { ...baseFilter };
+  delete summaryBaseFilter.$and;
+
+  const [
+    totalRecords,
+    enquiries,
+    totalEnquiries,
+    feasibleEnquiries,
+    notFeasibleEnquiries,
+    quotationDoneEnquiries,
+    wonEnquiries,
+    lostEnquiries,
+    pendingEnquiries,
+  ] = await Promise.all([
+    Enquiry.countDocuments(finalFilter),
+
+    Enquiry.find(finalFilter)
+      .populate("salesPersonId", "name email role")
+      .sort({ enquiryDate: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(safeLimit)
+      .lean(),
+
+    Enquiry.countDocuments(summaryBaseFilter),
+
+    Enquiry.countDocuments({
+      ...summaryBaseFilter,
+      $and: [buildStatusFilter("feasible")],
+    }),
+
+    Enquiry.countDocuments({
+      ...summaryBaseFilter,
+      $and: [buildStatusFilter("not_feasible")],
+    }),
+
+    Enquiry.countDocuments({
+      ...summaryBaseFilter,
+      $and: [buildStatusFilter("quotation_done")],
+    }),
+
+    Enquiry.countDocuments({
+      ...summaryBaseFilter,
+      $and: [buildStatusFilter("won")],
+    }),
+
+    Enquiry.countDocuments({
+      ...summaryBaseFilter,
+      $and: [buildStatusFilter("lost")],
+    }),
+
+    Enquiry.countDocuments({
+      ...summaryBaseFilter,
+      $and: [buildStatusFilter("pending")],
+    }),
+  ]);
 
   return {
     enquiries,
+    summary: {
+      totalEnquiries,
+      feasibleEnquiries,
+      notFeasibleEnquiries,
+      quotationDoneEnquiries,
+      wonEnquiries,
+      lostEnquiries,
+      pendingEnquiries,
+      activeFilter: cleanStatus,
+      defaultRange: fromDate || toDate ? "custom" : "current_month",
+    },
     pagination: {
       totalRecords,
-      currentPage: Number(page),
-      totalPages: Math.ceil(totalRecords / Number(limit)),
-      limit: Number(limit),
+      currentPage: safePage,
+      totalPages: Math.ceil(totalRecords / safeLimit),
+      limit: safeLimit,
     },
   };
 };

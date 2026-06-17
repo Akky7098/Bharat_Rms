@@ -121,54 +121,29 @@ const isTimesheetFilledForToday = async (userId, attendanceDate) => {
     throw new Error("Timesheet module is not configured. Checkout is not allowed.");
   }
 
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("Invalid user id.");
+  }
+
+  const safeUserId = new mongoose.Types.ObjectId(String(userId));
+
   const start = getStartOfDay(attendanceDate);
   const end = getEndOfDay(attendanceDate);
 
   const timesheet = await Timesheet.findOne({
-    $and: [
-      {
-        $or: [
-          { employeeId: userId },
-          { userId },
-          { createdBy: userId },
-        ],
-      },
-      {
-        $or: [
-          { timesheetDate: { $gte: start, $lte: end } },
-          { attendanceDate: { $gte: start, $lte: end } },
-          { date: { $gte: start, $lte: end } },
-        ],
-      },
-      {
-        isActive: { $ne: false },
-      },
-    ],
+    employeeId: safeUserId,
+    reportDate: {
+      $gte: start,
+      $lte: end,
+    },
+    status: "submitted",
+    workSummary: {
+      $exists: true,
+      $ne: "",
+    },
   }).lean();
 
-  if (!timesheet) return false;
-
-  if (["submitted", "approved", "completed"].includes(timesheet.status)) {
-    return true;
-  }
-
-  if (Number(timesheet.totalMinutes || timesheet.totalWorkingMinutes || 0) > 0) {
-    return true;
-  }
-
-  if (Array.isArray(timesheet.entries) && timesheet.entries.length > 0) {
-    return true;
-  }
-
-  if (Array.isArray(timesheet.tasks) && timesheet.tasks.length > 0) {
-    return true;
-  }
-
-  if (String(timesheet.workSummary || timesheet.description || "").trim()) {
-    return true;
-  }
-
-  return false;
+  return Boolean(timesheet);
 };
 
 const createDailyUniqueAttendanceNotification = async ({

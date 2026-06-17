@@ -31,12 +31,17 @@ const formatTime = (date) => {
 const formatRegularizedTime = (date) => {
   if (!date) return "-";
 
-  return new Date(date).toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: "Asia/Kolkata",
-  });
+  const d = new Date(date);
+  const hours = d.getUTCHours();
+  const minutes = d.getUTCMinutes();
+
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 || 12;
+
+  return `${String(displayHour).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )} ${suffix}`;
 };
 
 const baseTemplate = ({ title, subtitle, body }) => {
@@ -179,12 +184,20 @@ const sendRegularizationRequestMailToAdmin = async (attendance) => {
 const sendRegularizationDecisionMailToUser = async (attendance, status) => {
   const approved = status === "approved";
 
+  const isRegularized =
+    attendance.attendanceStatus === "regularized" ||
+    attendance.attendanceSource === "regularization" ||
+    attendance.regularization?.status === "approved";
+
+  const checkInTime = attendance.checkIn?.time || null;
+  const checkOutTime = attendance.checkOut?.time || null;
+
   return transporter.sendMail({
     from: `"${COMPANY.name}" <${process.env.ADMIN_EMAIL}>`,
     to: attendance.employeeEmail,
-    subject: `Attendance Regularization ${approved ? "Approved" : "Rejected"} | ${formatDate(
-      attendance.attendanceDate
-    )}`,
+    subject: `Attendance Regularization ${
+      approved ? "Approved" : "Rejected"
+    } | ${formatDate(attendance.attendanceDate)}`,
     html: baseTemplate({
       title: approved ? "Regularization Approved" : "Regularization Rejected",
       subtitle: `Attendance date: ${formatDate(attendance.attendanceDate)}`,
@@ -205,17 +218,24 @@ const sendRegularizationDecisionMailToUser = async (attendance, status) => {
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
           ${infoRow("Date", formatDate(attendance.attendanceDate))}
           ${infoRow(
-  "Check-in",
-  formatTime(attendance.checkIn?.time || attendance.checkIn?.createdAt)
-)}
-${infoRow(
-  "Check-out",
-  formatTime(attendance.checkOut?.time || attendance.checkOut?.createdAt)
-)}
+            "Check-in",
+            isRegularized
+              ? formatRegularizedTime(checkInTime)
+              : formatTime(checkInTime)
+          )}
+          ${infoRow(
+            "Check-out",
+            isRegularized
+              ? formatRegularizedTime(checkOutTime)
+              : formatTime(checkOutTime)
+          )}
           ${infoRow("Status", attendance.attendanceStatus)}
           ${
             !approved
-              ? infoRow("Rejection Reason", attendance.regularization?.rejectionReason)
+              ? infoRow(
+                  "Rejection Reason",
+                  attendance.regularization?.rejectionReason || "-"
+                )
               : ""
           }
         </table>

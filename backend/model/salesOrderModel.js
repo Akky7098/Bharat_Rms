@@ -493,7 +493,17 @@ specialNote: {
         trim: true,
       },
     },
-
+     isActive: {
+  type: Boolean,
+  default: true,
+},
+deletedAt: {
+  type: Date,
+},
+deletedBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+},
     // =========================
     // PDF DETAILS
     // =========================
