@@ -2260,6 +2260,7 @@ body.sales-order-browser-scroll-page .sales-pagination {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
 .delete-btn,
 .ios-sales-delete-btn {
   background: #dc2626;
@@ -2281,22 +2282,65 @@ body.sales-order-browser-scroll-page .sales-pagination {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.delete-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  min-width: 76px !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 9px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+/* FINAL DATE + TIME STICKY FIX */
 .sales-order-datetime {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.3;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+}
+
+.sales-order-date,
+.sales-order-time {
+  display: block !important;
 }
 
 .sales-order-date {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1e293b;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
 }
 
 .sales-order-time {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  margin-top: 2px;
-  text-transform: uppercase;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+}
+.modal-delete-btn {
+  flex: 1;
+  height: 42px;
+  border: none;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.modal-delete-btn:hover {
+  background: #991b1b;
+  transform: translateY(-1px);
+}
+
+.modal-delete-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }

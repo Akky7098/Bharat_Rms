@@ -18,9 +18,14 @@ const BACKEND_URL =
 const SalesOrderList = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  const isAdmin = user?.role === "admin";
-  const isManager = user?.role === "super_admin";
-  const isSalesPerson = user?.role === "user";
+ const userRole = String(user?.role || "")
+  .trim()
+  .toLowerCase()
+  .replace(/\s+/g, "_");
+
+const isAdmin = userRole === "admin";
+const isManager = userRole === "super_admin";
+const isSalesPerson = userRole === "user";
   const canViewSalesPersonFilter = isAdmin || isManager;
 
   const [salesOrders, setSalesOrders] = useState([]);
@@ -71,16 +76,21 @@ const SalesOrderList = () => {
   approvalTab: "approved",
 });
 
-  const isRejectAction = approvalModal.type.includes("reject");
-  const isApproveAction = approvalModal.type.includes("approve");
+  
 
-  const getActionButtonText = () => {
-    if (actionSubmitting) {
-      return isApproveAction ? "Approving..." : "Holding...";
-    }
+ const isDeleteAction = approvalModal.type === "delete_order";
+const isRejectAction = approvalModal.type.includes("reject");
+const isApproveAction = approvalModal.type.includes("approve");
 
-    return isApproveAction ? "Yes, Approve" : "Hold";
-  };
+const getActionButtonText = () => {
+  if (actionSubmitting) {
+    if (isDeleteAction) return "Deleting...";
+    return isApproveAction ? "Approving..." : "Holding...";
+  }
+
+  if (isDeleteAction) return "Yes, Delete";
+  return isApproveAction ? "Yes, Approve" : "Hold";
+};
 
   const fetchSalesOrders = useCallback(async () => {
   try {
@@ -348,12 +358,24 @@ const SalesOrderList = () => {
     return isAdmin && order.approvalStatus === "pending_admin_review";
   };
 
-  const canManagerApproveReject = (order) => {
-    return isManager && order.approvalStatus === "pending_manager_approval";
-  };
-  const canDeleteOrder = (order) => {
-  return isManager && order.approvalStatus === "rejected_by_manager";
+ const canManagerApproveReject = (order) => {
+  const status = String(order?.approvalStatus || "").trim();
+
+  return (
+    isManager &&
+    ["pending_admin_review", "pending_manager_approval"].includes(status)
+  );
 };
+
+const canDeleteOrder = (order) => {
+  const status = String(order?.approvalStatus || "").trim();
+
+  return (
+    isManager &&
+    ["rejected_by_admin", "rejected_by_manager"].includes(status)
+  );
+};
+ 
   const handleAdminApprove = (orderId) => {
     if (actionSubmitting) return;
 
@@ -441,7 +463,10 @@ const SalesOrderList = () => {
         });
         alert("Sales order put on hold by md sir.");
       }
-
+      if (approvalModal.type === "delete_order") {
+  await deleteSalesOrder(approvalModal.orderId);
+  alert("Sales order deleted successfully.");
+}
       closeApprovalModal();
       fetchSalesOrders();
     } catch (error) {
@@ -491,114 +516,103 @@ const SalesOrderList = () => {
       </>
     );
   };
-  const handleDeleteSalesOrder = async (order) => {
+ const handleDeleteSalesOrder = (order) => {
   if (!canDeleteOrder(order)) {
-    alert("Only super admin can delete MD hold sales orders.");
+    alert("Only super admin can delete hold sales orders.");
     return;
   }
 
-  const confirmed = window.confirm(
-    `Are you sure you want to delete sales order for ${
-      order.companyName || "this company"
-    }?`
-  );
-
-  if (!confirmed) return;
-
-  try {
-    setActionSubmitting(true);
-    await deleteSalesOrder(order._id);
-    alert("Sales order deleted successfully.");
-    fetchSalesOrders();
-  } catch (error) {
-    alert(error.response?.data?.message || "Failed to delete sales order");
-  } finally {
-    setActionSubmitting(false);
-  }
+  setApprovalModal({
+    open: true,
+    type: "delete_order",
+    orderId: order._id,
+    companyName: order.companyName || "this company",
+  });
 };
-  const renderOrderActions = (order, mode = "desktop") => {
-    const pdfUrl = getPdfUrl(order);
+const renderOrderActions = (order, mode = "desktop") => {
+  const pdfUrl = getPdfUrl(order);
 
-    return (
-      <>
-       {mode === "ios" && pdfUrl && (
-  <a
-    className="ios-sales-pdf-btn"
-    href={pdfUrl}
-    target="_blank"
-    rel="noreferrer"
-  >
-    Open PDF
-  </a>
-)}
+  return (
+    <>
+      {mode === "ios" && pdfUrl && (
+        <a
+          className="ios-sales-pdf-btn"
+          href={pdfUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open PDF
+        </a>
+      )}
 
-        {canEditOrder(order) && (
+      {canEditOrder(order) && (
+        <button
+          className={mode === "ios" ? "ios-sales-edit-btn" : "edit-btn"}
+          onClick={() => openEditForm(order)}
+          disabled={actionSubmitting}
+          type="button"
+        >
+          Edit
+        </button>
+      )}
+
+      {canAdminApproveReject(order) && (
+        <>
           <button
-            className={mode === "ios" ? "ios-sales-edit-btn" : "edit-btn"}
-            onClick={() => openEditForm(order)}
+            className={mode === "ios" ? "ios-sales-approve-btn" : "approve-btn"}
+            onClick={() => handleAdminApprove(order._id)}
             disabled={actionSubmitting}
             type="button"
           >
-            Edit
+            Approve
           </button>
-        )}
 
-        {canAdminApproveReject(order) && (
-          <>
-            <button
-              className={mode === "ios" ? "ios-sales-approve-btn" : "approve-btn"}
-              onClick={() => handleAdminApprove(order._id)}
-              disabled={actionSubmitting}
-              type="button"
-            >
-              Approve
-            </button>
+          <button
+            className={mode === "ios" ? "ios-sales-hold-btn" : "reject-btn"}
+            onClick={() => handleAdminReject(order._id)}
+            disabled={actionSubmitting}
+            type="button"
+          >
+            Hold
+          </button>
+        </>
+      )}
 
-            <button
-              className={mode === "ios" ? "ios-sales-hold-btn" : "reject-btn"}
-              onClick={() => handleAdminReject(order._id)}
-              disabled={actionSubmitting}
-              type="button"
-            >
-              Hold
-            </button>
-            {canDeleteOrder(order) && (
-  <button
-    className={mode === "ios" ? "ios-sales-delete-btn" : "delete-btn"}
-    onClick={() => handleDeleteSalesOrder(order)}
-    disabled={actionSubmitting}
-    type="button"
-  >
-    Delete
-  </button>
-)}
-          </>
-        )}
+      {canManagerApproveReject(order) && (
+        <>
+          <button
+            className={mode === "ios" ? "ios-sales-approve-btn" : "approve-btn"}
+            onClick={() => handleManagerApprove(order._id)}
+            disabled={actionSubmitting}
+            type="button"
+          >
+            Approve
+          </button>
 
-        {canManagerApproveReject(order) && (
-          <>
-            <button
-              className={mode === "ios" ? "ios-sales-approve-btn" : "approve-btn"}
-              onClick={() => handleManagerApprove(order._id)}
-              disabled={actionSubmitting}
-              type="button"
-            >
-              Approve
-            </button>
+          <button
+            className={mode === "ios" ? "ios-sales-hold-btn" : "reject-btn"}
+            onClick={() => handleManagerReject(order._id)}
+            disabled={actionSubmitting}
+            type="button"
+          >
+            Hold
+          </button>
+        </>
+      )}
 
-            <button
-              className={mode === "ios" ? "ios-sales-hold-btn" : "reject-btn"}
-              onClick={() => handleManagerReject(order._id)}
-              disabled={actionSubmitting}
-              type="button"
-            >
-              Hold
-            </button>
-          </>
-        )}
-      </>
-    );
-  };
+      {canDeleteOrder(order) && (
+        <button
+          className={mode === "ios" ? "ios-sales-delete-btn" : "delete-btn"}
+          onClick={() => handleDeleteSalesOrder(order)}
+          disabled={actionSubmitting}
+          type="button"
+        >
+          Delete
+        </button>
+      )}
+    </>
+  );
+};
 
   return (
     <div className={`sales-order-page-root ${canViewSalesPersonFilter ? "admin-view" : "user-view"}`}>
@@ -915,27 +929,38 @@ const SalesOrderList = () => {
         </div>
 
         <div className="sales-status-tabs">
-          <button
-            className={activeTab === "approved" ? "active-tab" : ""}
-            onClick={() => {
-  const newTab =
-    activeTab === "approved"
-      ? "pending_rejected"
-      : "approved";
+  <button
+    className={activeTab === "approved" ? "active-tab" : ""}
+    onClick={() => {
+      setActiveTab("approved");
+      setFilters((prev) => ({
+        ...prev,
+        page: 1,
+        approvalTab: "approved",
+      }));
+    }}
+    disabled={actionSubmitting}
+    type="button"
+  >
+    Approved
+  </button>
 
-  setActiveTab(newTab);
-
-  setFilters((prev) => ({
-    ...prev,
-    page: 1,
-    approvalTab: newTab,
-  }));
-}}
-            disabled={actionSubmitting}
-          >
-            {activeTab === "approved" ? "Pending / Hold" : "Approved"}
-          </button>
-        </div>
+  <button
+    className={activeTab === "pending_rejected" ? "active-tab" : ""}
+    onClick={() => {
+      setActiveTab("pending_rejected");
+      setFilters((prev) => ({
+        ...prev,
+        page: 1,
+        approvalTab: "pending_rejected",
+      }));
+    }}
+    disabled={actionSubmitting}
+    type="button"
+  >
+    Pending / Hold
+  </button>
+</div>
           <div className="sales-insight-strip">
   <div className="sales-insight-card today-order">
     <span>Today Orders</span>
@@ -1075,7 +1100,7 @@ const SalesOrderList = () => {
 
                   return (
                     <tr key={order._id}>
-                      <td className="col-date">
+                     <td className="sticky-col col-date">
   <div className="sales-order-datetime">
     <span className="sales-order-date">
       {formatDateTimeParts(order.orderDate || order.createdAt).date}
@@ -1202,15 +1227,23 @@ const SalesOrderList = () => {
               {isApproveAction ? "✓" : "!"}
             </div>
 
-            <h3>{isApproveAction ? "Approve Sales Order" : "Hold Sales Order"}</h3>
+            <h3>
+  {isDeleteAction
+    ? "Delete Sales Order"
+    : isApproveAction
+    ? "Approve Sales Order"
+    : "Hold Sales Order"}
+</h3>
 
             <p>
-              {isApproveAction
-                ? "Are you sure you want to approve this sales order?"
-                : "Please enter hold reason below."}
-            </p>
+  {isDeleteAction
+    ? "Are you sure you want to permanently delete this sales order?"
+    : isApproveAction
+    ? "Are you sure you want to approve this sales order?"
+    : "Please enter hold reason below."}
+</p>
 
-            {isRejectAction && (
+            {isRejectAction && !isDeleteAction && (
               <textarea
                 value={rejectionComment}
                 onChange={(e) => setRejectionComment(e.target.value)}
@@ -1230,9 +1263,13 @@ const SalesOrderList = () => {
               </button>
 
               <button
-                className={
-                  isApproveAction ? "modal-approve-btn" : "modal-reject-btn"
-                }
+  className={
+    isDeleteAction
+      ? "modal-delete-btn"
+      : isApproveAction
+      ? "modal-approve-btn"
+      : "modal-reject-btn"
+  }
                 onClick={submitApprovalAction}
                 disabled={actionSubmitting}
                 type="button"
