@@ -149,19 +149,25 @@ useEffect(() => {
     setMobileMenuOpen(false);
   };
 
- const handleLogout = async () => {
+const handleLogout = async () => {
+  const confirmLogout = window.confirm("Are you sure you want to logout?");
+
+  if (!confirmLogout) return;
+
   try {
     await disablePushNotifications();
   } catch (error) {
-    console.log("Push disable on logout failed:", error.message);
+    console.log("Push disable on logout failed:", error?.message || error);
   }
 
   localStorage.removeItem("token");
   localStorage.removeItem("user");
+  localStorage.removeItem("isLoggedIn");
   localStorage.removeItem("activeModule");
   localStorage.removeItem("sidebarCollapsed");
   localStorage.removeItem("notificationFocus");
-  window.location.href = "/";
+
+  window.location.replace("/");
 };
 
   const handleMenuClick = (key) => {
@@ -449,5 +455,4 @@ useEffect(() => {
     </div>
   );
 }
-
 export default Dashboard;

@@ -12,13 +12,17 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const clearOldSession = async () => {
+  // Production-safe old session cleanup
+  // This runs only before a fresh login, not on app open/reload.
+  const clearOldSessionBeforeLogin = async () => {
+    const oldToken = localStorage.getItem("token");
+
     try {
-      if (localStorage.getItem("token")) {
+      if (oldToken) {
         await disablePushNotifications();
       }
     } catch (error) {
-      console.log("Old push cleanup failed:", error.message);
+      console.log("Old push cleanup failed:", error?.message || error);
     }
 
     localStorage.removeItem("token");
@@ -26,6 +30,27 @@ function Login() {
     localStorage.removeItem("activeModule");
     localStorage.removeItem("sidebarCollapsed");
     localStorage.removeItem("notificationFocus");
+  };
+
+  const saveLoginSession = (response) => {
+    const token = response?.data?.data?.token;
+    const loggedUser = response?.data?.data?.user;
+
+    if (!token || !loggedUser) {
+      throw new Error("Invalid login response from server");
+    }
+
+    const normalizedUser = {
+      ...loggedUser,
+      id: loggedUser.id || loggedUser._id,
+      _id: loggedUser._id || loggedUser.id,
+    };
+
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
+
+    // Extra flag for PWA route guards
+    localStorage.setItem("isLoggedIn", "true");
   };
 
   const handleLogin = async (e) => {
@@ -41,28 +66,24 @@ function Login() {
     setIsLoggingIn(true);
 
     try {
-      await clearOldSession();
+      await clearOldSessionBeforeLogin();
 
       const response = await loginUser({
         email: email.trim(),
         password,
       });
 
-      const loggedUser = response.data.data.user;
+      saveLoginSession(response);
 
-      localStorage.setItem("token", response.data.data.token);
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          ...loggedUser,
-          id: loggedUser.id || loggedUser._id,
-          _id: loggedUser._id || loggedUser.id,
-        })
-      );
-
-      navigate("/dashboard", { replace: true });
+      // Better for PWA production than navigate()
+      // Ensures all services read latest token after login.
+      window.location.replace("/dashboard");
     } catch (error) {
-      alert(error.response?.data?.message || "Login failed");
+      alert(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Login failed"
+      );
     } finally {
       setIsLoggingIn(false);
     }
@@ -88,6 +109,7 @@ function Login() {
           </div>
 
           <h1 className="login-title">Welcome Back</h1>
+
           <p className="login-subtitle">
             Login to manage sales, dispatch, attendance and approvals.
           </p>
@@ -100,6 +122,7 @@ function Login() {
               value={email}
               autoComplete="email"
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoggingIn}
               required
             />
           </div>
@@ -114,13 +137,15 @@ function Login() {
                 value={password}
                 autoComplete="current-password"
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoggingIn}
                 required
               />
 
               <button
                 type="button"
                 className="login-show-btn"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowPassword((prev) => !prev)}
+                disabled={isLoggingIn}
               >
                 {showPassword ? "Hide" : "Show"}
               </button>
