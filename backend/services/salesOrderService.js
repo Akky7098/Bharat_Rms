@@ -1233,7 +1233,7 @@ const approveSalesOrderByManager = async (salesOrderId, loggedInManager) => {
     actionBy: loggedInManager._id,
     role: "manager",
     action: wasDirectMdApproval
-      ? "manager_approved"
+      ? "manager_direct_approved"
       : "manager_approved",
     comment: wasDirectMdApproval
       ? "MD Sir directly approved sales order without Sonia review"
@@ -1353,7 +1353,7 @@ const rejectSalesOrderByManager = async (
       actionBy: managerData.managerId,
       role: "manager",
       action: wasDirectMdHold
-        ? "manager_rejected"
+        ? "manager_direct_rejected"
         : "manager_rejected",
       comment: rejectionComment,
     });

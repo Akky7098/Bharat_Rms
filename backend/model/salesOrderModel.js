@@ -35,26 +35,32 @@ const approvalHistorySchema = new mongoose.Schema(
       enum: ["salesperson", "admin", "manager", "system"],
       required: true,
     },
+action: {
+  type: String,
+  enum: [
+    "created",
+    "submitted",
+    "updated",
+    "resubmitted",
 
-    action: {
-      type: String,
-      enum: [
-        "created",
-        "submitted",
-        "updated",
-        "resubmitted",
-        "admin_approved",
-        "admin_rejected",
-        "manager_approval_sent",
-        "manager_approved",
-        "manager_rejected",
-        "pdf_generated",
-        "whatsapp_group_sent",
-        "email_sent",
-        "failed",
-      ],
-      required: true,
-    },
+    "admin_approved",
+    "admin_rejected",
+
+    "manager_approval_sent",
+
+    "manager_approved",
+    "manager_rejected",
+
+    "manager_direct_approved",
+    "manager_direct_rejected",
+
+    "pdf_generated",
+    "whatsapp_group_sent",
+    "email_sent",
+    "failed",
+  ],
+  required: true,
+},
 
     comment: {
       type: String,

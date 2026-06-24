@@ -220,9 +220,16 @@ const finalApproveSalesOrder = async (
 
   if (!salesOrder) throw new Error("Sales order not found");
 
-  if (salesOrder.approvalStatus !== "pending_manager_approval") {
-    throw new Error("Sales order is not pending MD Sir approval");
-  }
+  const isDirectMdApproval =
+  salesOrder.approvalStatus === "pending_admin_review";
+
+if (
+  !["pending_admin_review", "pending_manager_approval"].includes(
+    salesOrder.approvalStatus
+  )
+) {
+  throw new Error("Sales order is not pending MD Sir approval");
+}
 
   salesOrder.managerEmailApproval = salesOrder.managerEmailApproval || {};
 
@@ -251,11 +258,15 @@ const finalApproveSalesOrder = async (
   }
 
   salesOrder.approvalHistory.push({
-    actionBy: managerData.managerId || undefined,
-    role: "manager",
-    action: "manager_approved",
-    comment: `Sales order approved by MD Sir from ${source}`,
-  });
+  actionBy: managerData.managerId || undefined,
+  role: "manager",
+  action: isDirectMdApproval
+    ? "manager_direct_approved"
+    : "manager_approved",
+  comment: isDirectMdApproval
+    ? `MD Sir directly approved sales order from ${source}`
+    : `Sales order approved by MD Sir from ${source}`,
+});
 
   await safeSaveSalesOrder(salesOrder);
 
@@ -300,9 +311,16 @@ const holdSalesOrderByMd = async (
 ) => {
   if (!salesOrder) throw new Error("Sales order not found");
 
-  if (salesOrder.approvalStatus !== "pending_manager_approval") {
-    throw new Error("Sales order is not pending MD Sir approval");
-  }
+  const isDirectMdHold =
+  salesOrder.approvalStatus === "pending_admin_review";
+
+if (
+  !["pending_admin_review", "pending_manager_approval"].includes(
+    salesOrder.approvalStatus
+  )
+) {
+  throw new Error("Sales order is not pending MD Sir approval");
+}
 
   if (!rejectionComment || !rejectionComment.trim()) {
     throw new Error("Hold comment is required");
@@ -335,11 +353,13 @@ const holdSalesOrderByMd = async (
   }
 
   salesOrder.approvalHistory.push({
-    actionBy: managerData.managerId || undefined,
-    role: "manager",
-    action: "manager_rejected",
-    comment: rejectionComment.trim(),
-  });
+  actionBy: managerData.managerId || undefined,
+  role: "manager",
+  action: isDirectMdHold
+    ? "manager_direct_rejected"
+    : "manager_rejected",
+  comment: rejectionComment.trim(),
+});
 
   await safeSaveSalesOrder(salesOrder);
 

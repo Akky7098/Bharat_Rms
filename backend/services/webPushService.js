@@ -1,5 +1,6 @@
 const webpush = require("web-push");
 const PushSubscription = require("../model/pushSubscriptionModel");
+const mongoose = require("mongoose");
 
 webpush.setVapidDetails(
   process.env.WEB_PUSH_SUBJECT || "mailto:admin@bharatspecialsteels.com",
@@ -117,15 +118,35 @@ const sendPushNotification = async (notification) => {
       return;
     }
 
-    const subscriptions = await PushSubscription.find({
-      isActive: true,
-      $or: [
-        ...(targetUserIds.length
-          ? [{ userId: { $in: targetUserIds } }]
-          : []),
-        ...(targetRoles.length ? [{ role: { $in: targetRoles } }] : []),
-      ],
-    });
+ console.log("WEB PUSH TARGET USER IDS =>", targetUserIds);
+console.log("WEB PUSH TARGET ROLES =>", targetRoles);
+
+
+
+const objectIds = targetUserIds
+  .filter((id) => mongoose.Types.ObjectId.isValid(id))
+  .map((id) => new mongoose.Types.ObjectId(id));
+
+const subscriptions = await PushSubscription.find({
+  isActive: true,
+  $or: [
+    ...(objectIds.length
+      ? [{ userId: { $in: objectIds } }]
+      : []),
+    ...(targetRoles.length
+      ? [{ role: { $in: targetRoles } }]
+      : []),
+  ],
+});
+
+console.log(
+  "WEB PUSH MATCHED SUBSCRIPTIONS =>",
+  subscriptions.map((s) => ({
+    userId: String(s.userId),
+    role: s.role,
+    active: s.isActive,
+  }))
+);
 
     console.log(
       `WEB PUSH TARGETS => notification=${notification._id}, users=${targetUserIds.length}, roles=${targetRoles.join(
