@@ -162,16 +162,24 @@ console.log(
         : "";
 
     const payload = {
-      title: notification.title || "Bharat RMS",
-      body: notification.message || "You have a new update.",
-      icon: "/bharat-rms-icon-12-06-2026.png",
-      badge: "/bharat-rms-icon-12-06-2026.png",
-      url: hash ? `/dashboard#${hash}` : notification.actionUrl || "/dashboard",
-      notificationId: String(notification._id || ""),
-      module: notification.module || "",
-      referenceId: String(notification.referenceId || ""),
-      priority: notification.priority || "normal",
-    };
+  title: notification.title || "Bharat RMS",
+  body: notification.message || "You have a new update.",
+
+  icon:
+    "https://dashboard.bharatspecialsteels.com/bharat-rms-icon-12-06-2026.png",
+
+  badge:
+    "https://dashboard.bharatspecialsteels.com/bharat-rms-icon-12-06-2026.png",
+
+  url: hash
+    ? `/dashboard#${hash}`
+    : notification.actionUrl || "/dashboard",
+
+  notificationId: String(notification._id || ""),
+  module: notification.module || "",
+  referenceId: String(notification.referenceId || ""),
+  priority: notification.priority || "normal",
+};
 
     await Promise.all(
       subscriptions.map((sub) => sendPushToSubscription(sub, payload))
