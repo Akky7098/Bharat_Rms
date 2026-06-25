@@ -69,17 +69,38 @@ const removeSubscription = async (endpoint) => {
   return true;
 };
 
-const sendPushToSubscription = async (subscriptionDoc, payload) => {
+const sendPushToSubscription = async (
+  subscriptionDoc,
+  payload
+) => {
   try {
-    await webpush.sendNotification(
-      {
-        endpoint: subscriptionDoc.endpoint,
-        keys: subscriptionDoc.keys,
-      },
-      JSON.stringify(payload)
+    console.log(
+      "WEB PUSH ENDPOINT =>",
+      subscriptionDoc.endpoint
     );
 
-    subscriptionDoc.lastUsedAt = new Date();
+    await webpush.sendNotification(
+      {
+        endpoint:
+          subscriptionDoc.endpoint,
+        keys: {
+          p256dh:
+            subscriptionDoc.keys.p256dh,
+          auth:
+            subscriptionDoc.keys.auth,
+        },
+      },
+      JSON.stringify(payload),
+      {
+        TTL: 86400,
+        urgency: "high",
+        topic: "bharat-rms",
+      }
+    );
+
+    subscriptionDoc.lastUsedAt =
+      new Date();
+
     await subscriptionDoc.save();
 
     console.log(
@@ -93,10 +114,16 @@ const sendPushToSubscription = async (subscriptionDoc, payload) => {
       error.statusCode,
       error.message,
       "endpoint=",
-      String(subscriptionDoc.endpoint || "").slice(0, 60)
+      String(
+        subscriptionDoc.endpoint || ""
+      ).slice(0, 60)
     );
 
-    if ([404, 410].includes(error.statusCode)) {
+    if (
+      [404, 410].includes(
+        error.statusCode
+      )
+    ) {
       subscriptionDoc.isActive = false;
       await subscriptionDoc.save();
     }
@@ -104,7 +131,6 @@ const sendPushToSubscription = async (subscriptionDoc, payload) => {
     return false;
   }
 };
-
 const sendPushNotification = async (notification) => {
   try {
     const targetUserIds = (notification.targetUserIds || []).map((id) =>
@@ -161,9 +187,14 @@ console.log(
         ? notification.actionUrl.split("#")[1]
         : "";
 
-    const payload = {
-  title: notification.title || "Bharat RMS",
-  body: notification.message || "You have a new update.",
+   const payload = {
+  title:
+    notification.title ||
+    "Bharat RMS",
+
+  body:
+    notification.message ||
+    "You have a new update.",
 
   icon:
     "https://dashboard.bharatspecialsteels.com/bharat-rms-icon-12-06-2026.png",
@@ -171,16 +202,51 @@ console.log(
   badge:
     "https://dashboard.bharatspecialsteels.com/bharat-rms-icon-12-06-2026.png",
 
+  image:
+    "https://dashboard.bharatspecialsteels.com/bharat-rms-icon-12-06-2026.png",
+
+  sound: "default",
+
+  vibrate: [300, 100, 300],
+
+  requireInteraction: true,
+
+  timestamp: Date.now(),
+
   url: hash
     ? `/dashboard#${hash}`
-    : notification.actionUrl || "/dashboard",
+    : notification.actionUrl ||
+      "/dashboard",
 
-  notificationId: String(notification._id || ""),
-  module: notification.module || "",
-  referenceId: String(notification.referenceId || ""),
-  priority: notification.priority || "normal",
+  notificationId: String(
+    notification._id || ""
+  ),
+
+  module:
+    notification.module || "",
+
+  referenceId: String(
+    notification.referenceId || ""
+  ),
+
+  priority: "high",
 };
+   console.log(
+  "WEB PUSH SUBSCRIPTIONS FOUND =>",
+  subscriptions.length
+);
 
+subscriptions.forEach((s) => {
+  console.log({
+    userId: String(s.userId),
+    role: s.role,
+    platform: s.platform,
+    active: s.isActive,
+    endpoint: String(
+      s.endpoint || ""
+    ).substring(0, 60),
+  });
+});
     await Promise.all(
       subscriptions.map((sub) => sendPushToSubscription(sub, payload))
     );
