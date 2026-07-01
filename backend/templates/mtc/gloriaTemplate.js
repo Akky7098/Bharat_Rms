@@ -41,6 +41,11 @@ const getChem = (mtc, element) => {
     }
   );
 };
+const displaySpecValue = (value, item) => {
+  if (item.min === null && item.max === null) return "X";
+  if (value === null || value === undefined) return "";
+  return value;
+};
 
 const renderChemTable = (mtc, elements) => {
   const rows = elements.map((element) => getChem(mtc, element));
@@ -53,14 +58,18 @@ const renderChemTable = (mtc, elements) => {
       </tr>
 
       <tr>
-        <td class="label-cell">Min.</td>
-        ${rows.map((item) => `<td>${safe(item.min)}</td>`).join("")}
-      </tr>
+  <td class="label-cell">Min.</td>
+  ${rows
+    .map((item) => `<td>${displaySpecValue(item.min, item)}</td>`)
+    .join("")}
+</tr>
 
       <tr>
-        <td class="label-cell">Max.</td>
-        ${rows.map((item) => `<td>${safe(item.max)}</td>`).join("")}
-      </tr>
+  <td class="label-cell">Max.</td>
+  ${rows
+    .map((item) => `<td>${displaySpecValue(item.max, item)}</td>`)
+    .join("")}
+</tr>
 
       <tr>
         <td class="label-cell">Result</td>

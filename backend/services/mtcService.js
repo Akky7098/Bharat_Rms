@@ -58,13 +58,13 @@ const validateChemicalComposition = (grade, inputComposition = []) => {
     const noMinMax = spec.min === null && spec.max === null;
 
     if (noMinMax) {
-      return {
-        element,
-        min: "X",
-        max: "X",
-        result: "X",
-      };
-    }
+  return {
+    element,
+    min: null,
+    max: null,
+    result: "X",
+  };
+}
 
     if (!input || input.result === "" || input.result === null || input.result === undefined) {
       throw new Error(`${element} result is required`);
@@ -160,7 +160,7 @@ const generateMtcPdfBuffer = async (mtc) => {
 };
 
 const generateMtcPdf = async (mtc) => {
-  return await runWithChromiumLock(async () => {
+  return await runWithChromiumLock("MTC PDF", async () => {
     const pdfDirectory = getMtcPdfDirectory();
 
     if (!fs.existsSync(pdfDirectory)) {
@@ -195,6 +195,12 @@ const generateMtcPdf = async (mtc) => {
 const createMtcCertificate = async (payload, loggedInUser) => {
   const mtcProvider = payload.mtcProvider || "gloria";
 
+  const gradeConfig = mtcChemicalSpecs[payload.grade];
+
+  if (!gradeConfig) {
+    throw new Error(`MTC configuration not found for grade ${payload.grade}`);
+  }
+
   const chemicalComposition = validateChemicalComposition(
     payload.grade,
     payload.chemicalComposition || []
@@ -204,6 +210,12 @@ const createMtcCertificate = async (payload, loggedInUser) => {
     ...payload,
     mtcProvider,
     chemicalComposition,
+
+    // Auto-filled from backend specs
+    hardness: gradeConfig.hardness,
+    hardenability: gradeConfig.hardenability,
+    seat: gradeConfig.seat,
+
     createdBy: loggedInUser?._id,
   });
 
