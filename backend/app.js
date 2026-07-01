@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
+
 const authRoutes = require("./routes/authRoutes");
 const enquiryRoutes = require("./routes/enquiryRoutes");
 const salesOrderRoutes = require("./routes/salesOrderRoutes");
@@ -18,12 +19,17 @@ const attendanceRoutes = require("./routes/attendanceRoutes");
 const receivableRoutes = require("./routes/receivableRoutes");
 const pushSubscriptionRoutes = require("./routes/pushSubscriptionRoutes");
 const appPushRoutes = require("./routes/appPushRoutes");
+const mtcRoutes = require("./routes/mtcRoutes");
+
 const app = express();
 
-// OPEN CORS - temporary for testing
+/* CORS */
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  );
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
@@ -39,15 +45,17 @@ app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "uploads"))
-);
-app.get("/api/cors-test", (req, res) => {
-  res.json({ message: "cors working" });
-});
+/* EXISTING UPLOADS - KEEP FOR OTHER MODULES */
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+/* DISPATCH ONLY - PERSISTENT UPLOAD PATH */
+const dispatchUploadDir =
+  process.env.DISPATCH_UPLOAD_DIR ||
+  path.join(__dirname, "uploads", "dispatch");
 
+app.use("/uploads/dispatch", express.static(dispatchUploadDir));
+
+/* SALES ORDER PDF */
 app.use(
   "/uploads/sales-orders",
   express.static(
@@ -56,13 +64,16 @@ app.use(
   )
 );
 
-
+/* MTC PDF - PERSISTENT UPLOAD PATH */
 app.use(
-  "/logo.png",
+  "/uploads/mtc",
   express.static(
-    path.join(__dirname, "public/logo.png")
+    process.env.MTC_PDF_STORAGE_PATH ||
+      path.join(__dirname, "uploads", "mtc")
   )
 );
+
+/* CUSTOMER PO */
 app.use(
   "/uploads/customer-po",
   express.static(
@@ -70,6 +81,8 @@ app.use(
       path.join(__dirname, "uploads", "customer-po")
   )
 );
+
+/* FEASIBILITY REPORT */
 app.use(
   "/uploads/feasibility-report",
   express.static(
@@ -77,8 +90,18 @@ app.use(
       path.join(__dirname, "uploads", "feasibility-report")
   )
 );
+
+/* LOGO */
+app.use("/logo.png", express.static(path.join(__dirname, "public/logo.png")));
+
+app.get("/api/cors-test", (req, res) => {
+  res.json({ message: "cors working" });
+});
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
+/* API ROUTES */
 app.use("/api/auth", authRoutes);
 app.use("/api/enquiry", enquiryRoutes);
 app.use("/api/sales-order", salesOrderRoutes);
@@ -87,14 +110,16 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/cold-call", coldCallRoutes);
 app.use("/api/timesheet", timesheetRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/uploads", express.static("uploads"));
 app.use("/api/dispatch", dispatchRoutes);
 app.use("/api/whatsapp-approval", whatsappApprovalRoutes);
 app.use("/api/whatsapp", whatsappStatusRoutes);
-app.use("/uploads", express.static("uploads"));
 app.use("/api/documents", documentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/receivables", receivableRoutes);
 app.use("/api/push-subscriptions", pushSubscriptionRoutes);
 app.use("/api/app-push", appPushRoutes);
+
+/* MTC ROUTES */
+app.use("/api/mtc", mtcRoutes);
+
 module.exports = app;

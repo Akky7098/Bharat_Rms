@@ -71,7 +71,16 @@ const salesOrderService = require("../services/salesOrderService");
 // ===============================
 const createSalesOrder = async (req, res) => {
   try {
-    const payload = req.body.data ? JSON.parse(req.body.data) : { ...req.body };
+    let payload;
+
+    try {
+      payload = req.body.data ? JSON.parse(req.body.data) : { ...req.body };
+    } catch (parseError) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request data format.",
+      });
+    }
 
     const uploadedPOFile = req.files?.customerPOFile?.[0] || null;
     const uploadedFeasibilityReportFile =

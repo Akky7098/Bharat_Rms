@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const finalApprovalService = require("./finalApprovalService");
 const crypto = require("crypto");
 
+
 let notificationService = null;
 
 try {
@@ -335,7 +336,58 @@ const createSalesOrder = async (
       ],
     });
 
-    const savedOrder = await salesOrder.save();
+    let savedOrder = await salesOrder.save();
+
+    try {
+      const pdfDetails = await pdfService.generateSalesOrderPdf(savedOrder);
+
+      if (
+        !pdfDetails ||
+        !pdfDetails.fileName ||
+        !pdfDetails.filePath ||
+        !pdfDetails.fileUrl
+      ) {
+        throw new Error("PDF details missing");
+      }
+
+      savedOrder.pdf = {
+        generated: true,
+        fileName: pdfDetails.fileName,
+        filePath: pdfDetails.filePath,
+        fileUrl: pdfDetails.fileUrl,
+        generatedAt: new Date(),
+      };
+
+      savedOrder.finalSalesOrderPackage = {
+        generated: true,
+        fileName: pdfDetails.fileName,
+        filePath: pdfDetails.filePath,
+        fileUrl: pdfDetails.fileUrl,
+        generatedAt: new Date(),
+      };
+
+      savedOrder.preShipmentInspectionPdf = {
+        generated: true,
+        fileName: pdfDetails.fileName,
+        filePath: pdfDetails.filePath,
+        fileUrl: pdfDetails.fileUrl,
+        generatedAt: new Date(),
+      };
+
+      savedOrder.approvalHistory.push({
+        role: "system",
+        action: "pdf_generated",
+        comment: "Sales order PDF generated successfully during creation",
+      });
+
+      savedOrder = await savedOrder.save();
+    } catch (pdfError) {
+      await SalesOrder.deleteOne({ _id: savedOrder._id });
+
+      throw new Error(
+        `PDF not generated. Failed to create sales order. ${pdfError.message}`
+      );
+    }
 
     await safeCreateNotification({
       module: "sales_order",
@@ -367,7 +419,7 @@ const createSalesOrder = async (
 
           await addHistoryAndSave(
             freshOrder,
-            "whatsapp_sent",
+            "whatsapp_group_sent",
             "Sales order creation WhatsApp sent to Sonia"
           );
         } catch (waError) {

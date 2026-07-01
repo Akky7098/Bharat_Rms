@@ -1,11 +1,13 @@
 const dispatchService = require("../services/dispatchService");
 
 const parseBodyData = (req) => {
-  if (req.body.data) {
-    return JSON.parse(req.body.data);
-  }
+  if (!req.body?.data) return req.body || {};
 
-  return req.body;
+  try {
+    return JSON.parse(req.body.data);
+  } catch (error) {
+    throw new Error("Invalid request data format.");
+  }
 };
 
 /* =========================
@@ -114,7 +116,7 @@ const getDispatchById = async (req, res) => {
 
 const updateDispatchPayment = async (req, res) => {
   try {
-    const body = req.body.data ? JSON.parse(req.body.data) : req.body;
+    const body = parseBodyData(req);
 
     const dispatch = await dispatchService.updateDispatchPayment(
       req.params.dispatchId,

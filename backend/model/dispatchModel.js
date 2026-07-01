@@ -2,43 +2,19 @@ const mongoose = require("mongoose");
 
 const fileSchema = new mongoose.Schema(
   {
-    originalName: {
-      type: String,
-      trim: true,
-    },
-    fileName: {
-      type: String,
-      trim: true,
-    },
-    filePath: {
-      type: String,
-      trim: true,
-    },
-    fileUrl: {
-      type: String,
-      trim: true,
-    },
-    mimeType: {
-      type: String,
-      trim: true,
-    },
-    fileSize: {
-      type: Number,
-      default: 0,
-    },
-    uploadedAt: {
-      type: Date,
-    },
+    originalName: String,
+    fileName: String,
+    filePath: String,
+    fileUrl: String,
+    mimeType: String,
+    fileSize: { type: Number, default: 0 },
+    uploadedAt: Date,
   },
   { _id: false }
 );
 
 const dispatchSchema = new mongoose.Schema(
   {
-    /* =========================
-       SALES ORDER LINK
-    ========================= */
-
     salesOrderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "SalesOrderForm",
@@ -46,27 +22,9 @@ const dispatchSchema = new mongoose.Schema(
       index: true,
     },
 
-    salesOrderNo: {
-      type: String,
-      trim: true,
-      index: true,
-    },
-
-    poNumber: {
-      type: String,
-      trim: true,
-    },
-
-    companyName: {
-      type: String,
-      required: true,
-      trim: true,
-      index: true,
-    },
-
-    /* =========================
-       SALES PERSON SNAPSHOT
-    ========================= */
+    salesOrderNo: { type: String, trim: true, index: true },
+    poNumber: { type: String, trim: true },
+    companyName: { type: String, required: true, trim: true, index: true },
 
     salesPersonId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -74,81 +32,21 @@ const dispatchSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    salesPersonName: String,
+    salesPersonEmail: { type: String, lowercase: true, trim: true },
+    salesPersonMobile: String,
 
-    salesPersonName: {
-      type: String,
-      trim: true,
-    },
-
-    salesPersonEmail: {
-      type: String,
-      trim: true,
-      lowercase: true,
-    },
-
-    salesPersonMobile: {
-      type: String,
-      trim: true,
-    },
-
-    /* =========================
-       CUSTOMER SNAPSHOT
-    ========================= */
-
-    contactPersonName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    contactPersonEmail: {
-      type: String,
-      required: true,
-      trim: true,
-      lowercase: true,
-    },
-
-    contactPersonNumber: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    shippingAddress: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
-    /* =========================
-       CREATED BY DISPATCH USER
-    ========================= */
+    contactPersonName: { type: String, required: true, trim: true },
+    contactPersonEmail: { type: String, required: true, trim: true, lowercase: true },
+    contactPersonNumber: { type: String, required: true, trim: true },
+    shippingAddress: { type: String, trim: true, default: "" },
 
     dispatchCreatedBy: {
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-        index: true,
-      },
-      name: {
-        type: String,
-        trim: true,
-      },
-      email: {
-        type: String,
-        trim: true,
-        lowercase: true,
-      },
-      role: {
-        type: String,
-        trim: true,
-      },
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+      name: String,
+      email: { type: String, lowercase: true, trim: true },
+      role: String,
     },
-
-    /* =========================
-       INVOICE / DISPATCH DETAILS
-    ========================= */
 
     invoiceNumber: {
       type: String,
@@ -157,92 +55,34 @@ const dispatchSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    invoiceDate: { type: Date, required: true },
+    dispatchDate: { type: Date, required: true, default: Date.now, index: true },
 
-    invoiceDate: {
-      type: Date,
-      required: true,
-    },
+    dispatchQty: { type: Number, required: true, min: 0 },
+    invoiceValue: { type: Number, required: true, min: 0 },
+    materialDescription: { type: String, required: true, trim: true },
 
-    dispatchDate: {
-      type: Date,
-      required: true,
-      default: Date.now,
+    salesOrderTotalQtySnapshot: { type: Number, default: 0, min: 0 },
+    previousDispatchedQty: { type: Number, default: 0, min: 0 },
+    remainingQtyAfterDispatch: { type: Number, default: 0, min: 0 },
+
+    dispatchCompletionStatus: {
+      type: String,
+      enum: ["partial_dispatched", "fully_dispatched"],
+      default: "partial_dispatched",
       index: true,
     },
 
-    dispatchQty: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+    lrNumber: { type: String, trim: true, default: "" },
+    lrDate: Date,
 
-    invoiceValue: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+    billPdf: { type: fileSchema, required: true },
+    lrCopyPdf: fileSchema,
+    tcCertificatePdf: fileSchema,
 
-    materialDescription: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    /* =========================
-       SIMPLE LOGISTICS
-       LR details come from LR copy,
-       but LR number/date are useful in table/search/mail.
-    ========================= */
-
-    lrNumber: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
-    lrDate: {
-      type: Date,
-    },
-
-    /* =========================
-       DOCUMENTS
-       billPdf = full bill set:
-       tax invoice + eway bill + transporter copy + supplier copy
-    ========================= */
-
-    billPdf: {
-      type: fileSchema,
-      required: true,
-    },
-
-    lrCopyPdf: {
-      type: fileSchema,    
-    },
-    
-     tcCertificatePdf: {
-     type: fileSchema,
-     },
-    /* =========================
-       PAYMENT TRACKING
-    ========================= */
-
-    paymentTerms: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
-    paymentDueDays: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-
-    paymentDueDate: {
-      type: Date,
-      required: true,
-      index: true,
-    },
+    paymentTerms: { type: String, trim: true, default: "" },
+    paymentDueDays: { type: Number, required: true, min: 0 },
+    paymentDueDate: { type: Date, required: true, index: true },
 
     paymentStatus: {
       type: String,
@@ -251,175 +91,61 @@ const dispatchSchema = new mongoose.Schema(
       index: true,
     },
 
-    paidAmount: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-
-    pendingAmount: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-
-    paymentRemark: {
-      type: String,
-      trim: true,
-      default: "",
-    },
+    paidAmount: { type: Number, default: 0, min: 0 },
+    pendingAmount: { type: Number, required: true, min: 0 },
+    paymentRemark: { type: String, trim: true, default: "" },
 
     paymentHistory: [
-  {
-    amount: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-
-    receivedAt: {
-      type: Date,
-      default: Date.now,
-    },
-
-    remark: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
-    paymentBillPdf: {
-      originalName: String,
-      fileName: String,
-      filePath: String,
-      fileUrl: String,
-      mimeType: String,
-      fileSize: Number,
-      uploadedAt: Date,
-    },
-
-    mailStatus: {
-      sent: {
-        type: Boolean,
-        default: false,
+      {
+        amount: { type: Number, required: true, min: 0 },
+        receivedAt: { type: Date, default: Date.now },
+        remark: { type: String, trim: true, default: "" },
+        paymentBillPdf: fileSchema,
+        mailStatus: {
+          sent: { type: Boolean, default: false },
+          sentAt: Date,
+          messageId: String,
+          errorMessage: String,
+        },
+        updatedBy: {
+          userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+          name: String,
+          email: String,
+        },
       },
+    ],
+
+    additionalCcEmails: [{ type: String, trim: true, lowercase: true }],
+
+    notificationEmail: {
+      sent: { type: Boolean, default: false },
       sentAt: Date,
+      sentTo: { type: String, trim: true, lowercase: true },
+      cc: [{ type: String, trim: true, lowercase: true }],
       messageId: String,
       errorMessage: String,
     },
 
-    updatedBy: {
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-      name: String,
-      email: String,
-    },
-  },
-],
-
-    /* =========================
-       CUSTOMER EMAIL / CC TRACKING
-    ========================= */
-
-    additionalCcEmails: [
-      {
-        type: String,
-        trim: true,
-        lowercase: true,
-      },
-    ],
-
-    notificationEmail: {
-      sent: {
-        type: Boolean,
-        default: false,
-      },
-      sentAt: Date,
-
-      sentTo: {
-        type: String,
-        trim: true,
-        lowercase: true,
-      },
-
-      cc: [
-        {
-          type: String,
-          trim: true,
-          lowercase: true,
-        },
-      ],
-
-      messageId: {
-        type: String,
-        trim: true,
-      },
-
-      errorMessage: {
-        type: String,
-        trim: true,
-      },
-    },
-
-    /* =========================
-       MOBILE / WHATSAPP FUTURE TRACKING
-    ========================= */
-
     mobileNotification: {
-      sent: {
-        type: Boolean,
-        default: false,
-      },
+      sent: { type: Boolean, default: false },
       sentAt: Date,
-      sentTo: {
-        type: String,
-        trim: true,
-      },
-      provider: {
-        type: String,
-        trim: true,
-        default: "",
-      },
-      messageId: {
-        type: String,
-        trim: true,
-      },
-      errorMessage: {
-        type: String,
-        trim: true,
-      },
+      sentTo: String,
+      provider: { type: String, default: "" },
+      messageId: String,
+      errorMessage: String,
     },
 
-    /* =========================
-       PAYMENT REMINDER TRACKING
-    ========================= */
-
-  paymentReminder: {
-  beforeDueDateSent: {
-    type: Boolean,
-    default: false,
-  },
-  dueDateSent: {
-    type: Boolean,
-    default: false,
-  },
-  overdueReminderCount: {
-    type: Number,
-    default: 0,
-  },
-  lastReminderSentAt: Date,
-  lastReminderType: {
-    type: String,
-    enum: ["before_due_date", "due_date", "overdue", null],
-    default: null,
-  },
-},
-
-    /* =========================
-       DISPATCH STATUS
-    ========================= */
+    paymentReminder: {
+      beforeDueDateSent: { type: Boolean, default: false },
+      dueDateSent: { type: Boolean, default: false },
+      overdueReminderCount: { type: Number, default: 0 },
+      lastReminderSentAt: Date,
+      lastReminderType: {
+        type: String,
+        enum: ["before_due_date", "due_date", "overdue", null],
+        default: null,
+      },
+    },
 
     dispatchStatus: {
       type: String,
@@ -428,44 +154,17 @@ const dispatchSchema = new mongoose.Schema(
       index: true,
     },
 
-    deliveredAt: {
-      type: Date,
-    },
-
-    /* =========================
-       INTERNAL REMARKS
-    ========================= */
-
-    internalRemark: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-
-    isActive: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
+    deliveredAt: Date,
+    internalRemark: { type: String, default: "", trim: true },
+    isActive: { type: Boolean, default: true, index: true },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-/* =========================
-   AUTO CALCULATIONS
-========================= */
-
 dispatchSchema.pre("validate", function () {
-  if (!this.dispatchDate) {
-    this.dispatchDate = new Date();
-  }
+  if (!this.dispatchDate) this.dispatchDate = new Date();
 
-  if (
-    this.paymentDueDays !== undefined &&
-    this.paymentDueDays !== null
-  ) {
+  if (this.paymentDueDays !== undefined && this.paymentDueDays !== null) {
     const dueDate = new Date(this.dispatchDate);
     dueDate.setDate(dueDate.getDate() + Number(this.paymentDueDays || 0));
     this.paymentDueDate = dueDate;
@@ -474,7 +173,7 @@ dispatchSchema.pre("validate", function () {
   const invoiceValue = Number(this.invoiceValue || 0);
   const paidAmount = Number(this.paidAmount || 0);
 
-  this.pendingAmount = Math.max(invoiceValue - paidAmount, 0);
+  this.pendingAmount = Math.max(Number((invoiceValue - paidAmount).toFixed(2)), 0);
 
   if (this.pendingAmount === 0 && invoiceValue > 0) {
     this.paymentStatus = "paid";
@@ -482,13 +181,25 @@ dispatchSchema.pre("validate", function () {
     this.paymentStatus = "partial";
   } else {
     const today = new Date();
-    if (this.paymentDueDate && today > this.paymentDueDate) {
-      this.paymentStatus = "overdue";
-    } else {
-      this.paymentStatus = "pending";
-    }
+    today.setHours(0, 0, 0, 0);
+
+    const dueDate = this.paymentDueDate ? new Date(this.paymentDueDate) : null;
+    if (dueDate) dueDate.setHours(0, 0, 0, 0);
+
+    this.paymentStatus = dueDate && today > dueDate ? "overdue" : "pending";
+  }
+
+  const total = Number(this.salesOrderTotalQtySnapshot || 0);
+  const remaining = Number(this.remainingQtyAfterDispatch || 0);
+
+  if (total > 0 && remaining <= 0) {
+    this.dispatchCompletionStatus = "fully_dispatched";
+  } else {
+    this.dispatchCompletionStatus = "partial_dispatched";
   }
 });
-const Dispatch = mongoose.model("Dispatch", dispatchSchema);
 
-module.exports = Dispatch;
+dispatchSchema.index({ salesOrderId: 1, isActive: 1, dispatchStatus: 1 });
+dispatchSchema.index({ companyName: 1, invoiceNumber: 1 });
+
+module.exports = mongoose.model("Dispatch", dispatchSchema);
