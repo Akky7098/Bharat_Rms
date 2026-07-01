@@ -31,6 +31,27 @@ const getImageBase64 = (fileName) => {
   }
 };
 
+const getFontBase64 = (fileName) => {
+  try {
+    const fontPath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "node_modules",
+      "@fontsource",
+      "roboto",
+      "files",
+      fileName
+    );
+
+    const fontBuffer = fs.readFileSync(fontPath);
+    return fontBuffer.toString("base64");
+  } catch (error) {
+    console.log("MTC FONT LOAD ERROR =>", fileName, error.message);
+    return "";
+  }
+};
+
 const getChem = (mtc, element) => {
   return (
     mtc.chemicalComposition?.find((item) => item.element === element) || {
@@ -41,6 +62,7 @@ const getChem = (mtc, element) => {
     }
   );
 };
+
 const displaySpecValue = (value, item) => {
   if (item.min === null && item.max === null) return "X";
   if (value === null || value === undefined) return "";
@@ -58,18 +80,18 @@ const renderChemTable = (mtc, elements) => {
       </tr>
 
       <tr>
-  <td class="label-cell">Min.</td>
-  ${rows
-    .map((item) => `<td>${displaySpecValue(item.min, item)}</td>`)
-    .join("")}
-</tr>
+        <td class="label-cell">Min.</td>
+        ${rows
+          .map((item) => `<td>${displaySpecValue(item.min, item)}</td>`)
+          .join("")}
+      </tr>
 
       <tr>
-  <td class="label-cell">Max.</td>
-  ${rows
-    .map((item) => `<td>${displaySpecValue(item.max, item)}</td>`)
-    .join("")}
-</tr>
+        <td class="label-cell">Max.</td>
+        ${rows
+          .map((item) => `<td>${displaySpecValue(item.max, item)}</td>`)
+          .join("")}
+      </tr>
 
       <tr>
         <td class="label-cell">Result</td>
@@ -109,6 +131,9 @@ const gloriaTemplate = (mtc) => {
   const qrCode = getImageBase64("qr-code.png");
   const signature = getImageBase64("signature.png");
 
+  const robotoRegular = getFontBase64("roboto-latin-400-normal.woff2");
+  const robotoBold = getFontBase64("roboto-latin-700-normal.woff2");
+
   return `
 <!DOCTYPE html>
 <html>
@@ -116,6 +141,18 @@ const gloriaTemplate = (mtc) => {
 <meta charset="UTF-8" />
 
 <style>
+@font-face {
+  font-family: "RobotoEmbedded";
+  src: url("data:font/woff2;base64,${robotoRegular}") format("woff2");
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "RobotoEmbedded";
+  src: url("data:font/woff2;base64,${robotoBold}") format("woff2");
+  font-weight: 700;
+}
+
 @page {
   size: A4 portrait;
   margin: 0;
@@ -130,7 +167,7 @@ body {
   padding: 0;
   color: #000;
   background: #fff;
-  font-family: "Times New Roman", serif;
+  font-family: "RobotoEmbedded", Arial, sans-serif;
 }
 
 .page {
@@ -360,7 +397,6 @@ table {
 
 <body>
 
-<!-- PAGE 1 -->
 <div class="page">
   <div class="header">
     <div class="logo-left">
@@ -401,81 +437,32 @@ table {
     <div>
       <div class="table-heading">Hardness</div>
       <table class="small-table">
-        <tr>
-          <th></th>
-          <th>1/2R(1)</th>
-          <th>1/2R(2)</th>
-        </tr>
-        <tr>
-          <td class="label-cell">Spec. Min.</td>
-          <td>${safe(mtc.hardness?.halfR1?.specMin)}</td>
-          <td>${safe(mtc.hardness?.halfR2?.specMin)}</td>
-        </tr>
-        <tr>
-          <td class="label-cell">Spec. Max.</td>
-          <td>${safe(mtc.hardness?.halfR1?.specMax)}</td>
-          <td>${safe(mtc.hardness?.halfR2?.specMax)}</td>
-        </tr>
-        <tr>
-          <td class="label-cell">Result</td>
-          <td>${safe(mtc.hardness?.halfR1?.result)}</td>
-          <td>${safe(mtc.hardness?.halfR2?.result)}</td>
-        </tr>
+        <tr><th></th><th>1/2R(1)</th><th>1/2R(2)</th></tr>
+        <tr><td class="label-cell">Spec. Min.</td><td>${safe(mtc.hardness?.halfR1?.specMin)}</td><td>${safe(mtc.hardness?.halfR2?.specMin)}</td></tr>
+        <tr><td class="label-cell">Spec. Max.</td><td>${safe(mtc.hardness?.halfR1?.specMax)}</td><td>${safe(mtc.hardness?.halfR2?.specMax)}</td></tr>
+        <tr><td class="label-cell">Result</td><td>${safe(mtc.hardness?.halfR1?.result)}</td><td>${safe(mtc.hardness?.halfR2?.result)}</td></tr>
       </table>
     </div>
 
     <div>
       <div class="table-heading">Hardenability</div>
       <table class="small-table">
-        <tr>
-          <th></th>
-          <th>1/2R</th>
-          <th>1/2R</th>
-        </tr>
-        <tr>
-          <td class="label-cell">Spec. Min.</td>
-          <td>${safe(mtc.hardenability?.halfR1?.specMin)}</td>
-          <td>${safe(mtc.hardenability?.halfR2?.specMin)}</td>
-        </tr>
-        <tr>
-          <td class="label-cell">Spec. Max.</td>
-          <td>${safe(mtc.hardenability?.halfR1?.specMax)}</td>
-          <td>${safe(mtc.hardenability?.halfR2?.specMax)}</td>
-        </tr>
-        <tr>
-          <td class="label-cell">Result</td>
-          <td>${safe(mtc.hardenability?.halfR1?.result)}</td>
-          <td>${safe(mtc.hardenability?.halfR2?.result)}</td>
-        </tr>
+        <tr><th></th><th>1/2R</th><th>1/2R</th></tr>
+        <tr><td class="label-cell">Spec. Min.</td><td>${safe(mtc.hardenability?.halfR1?.specMin)}</td><td>${safe(mtc.hardenability?.halfR2?.specMin)}</td></tr>
+        <tr><td class="label-cell">Spec. Max.</td><td>${safe(mtc.hardenability?.halfR1?.specMax)}</td><td>${safe(mtc.hardenability?.halfR2?.specMax)}</td></tr>
+        <tr><td class="label-cell">Result</td><td>${safe(mtc.hardenability?.halfR1?.result)}</td><td>${safe(mtc.hardenability?.halfR2?.result)}</td></tr>
       </table>
     </div>
   </div>
 
   <table class="seat-table">
     <tr>
-      <th></th>
-      <th>AT</th>
-      <th>AH</th>
-      <th>BT</th>
-      <th>BH</th>
-      <th>CT</th>
-      <th>CH</th>
-      <th>DT</th>
-      <th>DH</th>
+      <th></th><th>AT</th><th>AH</th><th>BT</th><th>BH</th><th>CT</th><th>CH</th><th>DT</th><th>DH</th>
     </tr>
-
     <tr>
       <td class="label-cell">Seat<br/>Max.</td>
-      <td>1</td>
-      <td>1</td>
-      <td>2</td>
-      <td>2</td>
-      <td>1</td>
-      <td>1</td>
-      <td>2</td>
-      <td>1.5</td>
+      <td>1</td><td>1</td><td>2</td><td>2</td><td>1</td><td>1</td><td>2</td><td>1.5</td>
     </tr>
-
     <tr>
       <td class="label-cell">Result</td>
       <td>${safe(mtc.seat?.at)}</td>
@@ -501,7 +488,6 @@ table {
   </div>
 </div>
 
-<!-- PAGE 2 -->
 <div class="page">
   <div class="header">
     <div class="logo-left">
@@ -571,10 +557,7 @@ table {
   </div>
 
   <div class="bottom-footer">
-    <div>
-      ${qrCode ? `<img src="${qrCode}" />` : ""}
-    </div>
-
+    <div>${qrCode ? `<img src="${qrCode}" />` : ""}</div>
     <div>
       <div class="address">
         台灣台南市新營區新中路35號 / NO.35, HSIN CHUNG RD., HSIN YING, TAINAN, TAIWAN

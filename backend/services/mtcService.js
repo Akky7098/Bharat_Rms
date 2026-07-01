@@ -112,9 +112,9 @@ const generateMtcPdfBuffer = async (mtc) => {
   try {
     pauseWhatsappHealthForPdf();
 
-    const browser = getWhatsappBrowser();
+    const whatsappBrowser = getWhatsappBrowser();
 
-    if (!browser || !browser.isConnected()) {
+    if (!whatsappBrowser || !whatsappBrowser.isConnected()) {
       throw new Error(
         "WhatsApp Chromium is not connected. Please restart the Node app once and try again."
       );
@@ -122,7 +122,7 @@ const generateMtcPdfBuffer = async (mtc) => {
 
     console.log("MTC PDF USING WHATSAPP CHROMIUM");
 
-    page = await browser.newPage();
+    page = await whatsappBrowser.newPage();
 
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
