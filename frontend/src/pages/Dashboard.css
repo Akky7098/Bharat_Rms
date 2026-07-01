@@ -1214,3 +1214,79 @@
 .notification-push-box button.disable {
   background: #dc2626;
 }
+/* FINAL FIX - Sales Order PWA first open viewport jump */
+@media (max-width: 900px) {
+  .dashboard.pwa-module-salesOrder,
+  .dashboard.pwa-module-salesOrder .dashboard-layout,
+  .dashboard.pwa-module-salesOrder .main {
+    height: 100svh !important;
+    min-height: 100svh !important;
+    max-height: 100svh !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard.pwa-module-salesOrder .main {
+    padding: 0 !important;
+    background: #f4f7f5 !important;
+  }
+}
+/* FINAL FIX - Dispatch PWA viewport */
+/* FINAL FIX - Dispatch PWA scroll viewport */
+/* ================================
+   DISPATCH PWA VIEWPORT
+================================ */
+
+@media (max-width: 900px) {
+
+  .dashboard.pwa-module-dispatch,
+  .dashboard.pwa-module-dispatch .dashboard-layout {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard.pwa-module-dispatch .main {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #f4f7f5 !important;
+
+    overflow: hidden !important;
+    position: relative !important;
+  }
+
+}
+/* =========================
+   MTC PWA Layout Fix
+========================= */
+
+@media (max-width: 900px) {
+  .dashboard.pwa-module-mtc .mobile-topbar,
+  .dashboard.pwa-module-mtc .mobile-menu-panel,
+  .dashboard.pwa-module-mtc .mobile-menu-overlay {
+    display: none !important;
+  }
+
+  .dashboard.pwa-module-mtc,
+  .dashboard.pwa-module-mtc .dashboard-layout {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard.pwa-module-mtc .main {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #f4f7f5 !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+}

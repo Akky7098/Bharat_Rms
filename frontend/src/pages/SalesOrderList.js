@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   getAllSalesOrders,
   getSalesPersons,
@@ -36,8 +42,22 @@ const isSalesPerson = userRole === "user";
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [iosRefreshing, setIosRefreshing] = useState(false);
   const [showIosFilters, setShowIosFilters] = useState(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
   document.body.classList.add("sales-order-browser-scroll-page");
+
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+
+  const main = document.querySelector(".main");
+  if (main) {
+    main.scrollTop = 0;
+  }
+
+  const dashboardMain = document.querySelector(".dashboard-main");
+  if (dashboardMain) {
+    dashboardMain.scrollTop = 0;
+  }
 
   return () => {
     document.body.classList.remove("sales-order-browser-scroll-page");

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell, X } from "lucide-react";
 import { io } from "socket.io-client";
 
@@ -54,25 +54,27 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [socketConnected, setSocketConnected] = useState(false);
-
   const [pushPermission, setPushPermission] = useState(getPushPermission());
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
 
   const socketRef = useRef(null);
+  const mountedRef = useRef(false);
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     try {
       const data = await getNotifications();
+
+      if (!mountedRef.current) return;
 
       setNotifications(data?.notifications || []);
       setUnreadCount(data?.unreadCount || 0);
     } catch (error) {
-      console.log("Notification load failed:", error.message);
+      console.log("Notification load failed:", error?.message || error);
     }
-  };
+  }, []);
 
-  const checkPushStatus = async () => {
+  const checkPushStatus = useCallback(async () => {
     try {
       setPushPermission(getPushPermission());
 
@@ -83,62 +85,131 @@ const NotificationBell = () => {
 
       const sub = await getCurrentPushSubscription();
 
+      if (!mountedRef.current) return;
+
       setPushEnabled(Boolean(sub) && getPushPermission() === "granted");
     } catch (error) {
-      console.log("Push check failed:", error.message);
+      console.log("Push check failed:", error?.message || error);
       setPushEnabled(false);
     }
-  };
+  }, []);
+
+  const syncPushSubscription = useCallback(async () => {
+    try {
+      if (!isPushSupported()) return;
+
+      if (Notification.permission !== "granted") {
+        await checkPushStatus();
+        return;
+      }
+
+      const sub = await getCurrentPushSubscription();
+
+      if (!sub) {
+        await enablePushNotifications();
+      }
+
+      await checkPushStatus();
+    } catch (error) {
+      console.log("Push sync failed:", error?.message || error);
+    }
+  }, [checkPushStatus]);
 
   useEffect(() => {
+    mountedRef.current = true;
+
     loadNotifications();
-    checkPushStatus();
+    syncPushSubscription();
 
     const token = localStorage.getItem("token");
 
-    if (!token) return;
+    if (!token) {
+      return () => {
+        mountedRef.current = false;
+      };
+    }
+
+    if (socketRef.current) {
+      socketRef.current.off();
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
 
     const socket = io(SOCKET_URL, {
-      auth: {
-        token,
-      },
-      transports: ["websocket", "polling"],
+      auth: { token },
+      transports: ["websocket"],
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 2000,
+      reconnectionDelay: 3000,
+      reconnectionDelayMax: 10000,
+      reconnectionAttempts: Infinity,
+      timeout: 10000,
+      forceNew: false,
     });
 
     socketRef.current = socket;
 
-    socket.on("connect", () => {
+    const handleConnect = () => {
+      if (!mountedRef.current) return;
       setSocketConnected(true);
       console.log("Notification socket connected");
-    });
+    };
 
-    socket.on("disconnect", () => {
+    const handleDisconnect = () => {
+      if (!mountedRef.current) return;
       setSocketConnected(false);
       console.log("Notification socket disconnected");
-    });
+    };
 
-    socket.on("notification:new", (notification) => {
-      setNotifications((prev) => [notification, ...prev].slice(0, 20));
+    const handleConnectError = (error) => {
+      console.log("Notification socket connect error:", error?.message || error);
+    };
+
+    const handleNotification = (notification) => {
+      if (!mountedRef.current || !notification?._id) return;
+
+      setNotifications((prev) => {
+        const alreadyExists = prev.some((item) => item._id === notification._id);
+
+        if (alreadyExists) return prev;
+
+        return [notification, ...prev].slice(0, 20);
+      });
+
       setUnreadCount((prev) => Number(prev || 0) + 1);
 
       if ("vibrate" in navigator) {
         navigator.vibrate(120);
       }
-    });
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("connect_error", handleConnectError);
+    socket.on("error", handleConnectError);
+    socket.on("notification:new", handleNotification);
 
     return () => {
+      mountedRef.current = false;
+
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("connect_error", handleConnectError);
+      socket.off("error", handleConnectError);
+      socket.off("notification:new", handleNotification);
+
       socket.disconnect();
+
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
     };
-  }, []);
+  }, [loadNotifications, syncPushSubscription]);
 
   useEffect(() => {
     if (open) {
       checkPushStatus();
     }
-  }, [open]);
+  }, [open, checkPushStatus]);
 
   const handleEnablePush = async () => {
     try {
@@ -154,7 +225,7 @@ const NotificationBell = () => {
       setPushPermission(getPushPermission());
       await checkPushStatus();
 
-      alert(error.message || "Unable to enable notifications.");
+      alert(error?.message || "Unable to enable notifications.");
     } finally {
       setPushLoading(false);
     }
@@ -174,7 +245,7 @@ const NotificationBell = () => {
       setPushPermission(getPushPermission());
       await checkPushStatus();
 
-      alert(error.message || "Unable to disable notifications.");
+      alert(error?.message || "Unable to disable notifications.");
     } finally {
       setPushLoading(false);
     }
@@ -192,7 +263,7 @@ const NotificationBell = () => {
 
       setUnreadCount((prev) => Math.max(Number(prev || 0) - 1, 0));
     } catch (error) {
-      console.log("Mark read failed:", error.message);
+      console.log("Mark read failed:", error?.message || error);
     }
 
     localStorage.setItem(
@@ -229,7 +300,7 @@ const NotificationBell = () => {
 
       setUnreadCount(0);
     } catch (error) {
-      console.log("Mark all read failed:", error.message);
+      console.log("Mark all read failed:", error?.message || error);
     }
   };
 
@@ -257,9 +328,7 @@ const NotificationBell = () => {
           <div className="notification-panel-header">
             <div>
               <h3>Notifications</h3>
-              <p>
-                {socketConnected ? "Live updates active" : "Connecting live..."}
-              </p>
+              <p>{socketConnected ? "Live updates active" : "Connecting live..."}</p>
             </div>
 
             <button

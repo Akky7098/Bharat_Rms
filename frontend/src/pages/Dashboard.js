@@ -12,6 +12,7 @@ import ReceivablePage from "./ReceivablePage";
 import ColdCallList from "./ColdCallList";
 import DocumentPage from "./DocumentPage";
 import NotificationBell from "../components/NotificationBell";
+import MtcPage from "./MtcPage";
 import { disablePushNotifications } from "../services/pushNotificationService";
 
 function Dashboard() {
@@ -30,6 +31,7 @@ function Dashboard() {
     if (hash === "receivables") return "receivables";
     if (hash === "cold-call") return "coldCall";
     if (hash === "documents") return "documents";
+    if (hash === "mtc") return "mtc";
 
     return "dashboard";
   };
@@ -95,6 +97,12 @@ function Dashboard() {
       icon: "📁",
       desc: "Company files",
     },
+    {
+  key: "mtc",
+  label: "MTC",
+  icon: "📄",
+  desc: "Material certificates",
+},
   ];
 
  
@@ -117,6 +125,7 @@ useEffect(() => {
     receivables: "receivables",
     coldCall: "cold-call",
     documents: "documents",
+    mtc: "mtc",
   };
 
   window.history.replaceState(
@@ -149,23 +158,30 @@ useEffect(() => {
     setMobileMenuOpen(false);
   };
 
-const handleLogout = async () => {
+const handleLogout = () => {
   const confirmLogout = window.confirm("Are you sure you want to logout?");
 
   if (!confirmLogout) return;
 
-  try {
-    await disablePushNotifications();
-  } catch (error) {
-    console.log("Push disable on logout failed:", error?.message || error);
-  }
+  const token = localStorage.getItem("token");
 
+  // Clear login immediately — do not wait for push/browser/network
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   localStorage.removeItem("isLoggedIn");
+  localStorage.removeItem("lastLoginTime");
   localStorage.removeItem("activeModule");
   localStorage.removeItem("sidebarCollapsed");
   localStorage.removeItem("notificationFocus");
+
+  sessionStorage.clear();
+
+  // Push unsubscribe should run in background only
+  if (token) {
+    disablePushNotifications().catch((error) => {
+      console.log("Push disable on logout failed:", error?.message || error);
+    });
+  }
 
   window.location.replace("/");
 };
@@ -450,6 +466,7 @@ const handleLogout = async () => {
           )}
 
           {active === "documents" && <DocumentPage />}
+          {active === "mtc" && <MtcPage />}
         </main>
       </div>
     </div>

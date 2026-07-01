@@ -45,7 +45,7 @@ export const getCurrentPushSubscription = async () => {
   if (!isPushSupported()) return null;
 
   const registration = await navigator.serviceWorker.register(
-    "/service-worker.js"
+    "/bharat-rms-sw-v5.js"
   );
 
   return registration.pushManager.getSubscription();
@@ -63,7 +63,7 @@ export const enablePushNotifications = async () => {
   }
 
   const registration = await navigator.serviceWorker.register(
-    "/service-worker.js"
+    "/bharat-rms-sw-v5.js"
   );
 
   const keyResponse = await axios.get(`${API_URL}/public-key`, {
@@ -121,7 +121,7 @@ export const disablePushNotifications = async () => {
   if (!isPushSupported()) return true;
 
   const registration = await navigator.serviceWorker.register(
-    "/service-worker.js"
+    "/bharat-rms-sw-v5.js"
   );
 
   const subscription = await registration.pushManager.getSubscription();

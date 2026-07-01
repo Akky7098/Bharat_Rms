@@ -1323,30 +1323,26 @@
     display: none !important;
   }
 
-  .sales-order-page-root {
-    height: 100dvh !important;
-    overflow: hidden !important;
-    background: #f4f7f5 !important;
-  }
+  .sales-order-page-root,
+.sales-order-pwa-shell,
+.ios-sales-page {
+  height: 100svh !important;
+  min-height: 100svh !important;
+  overflow: hidden !important;
+  background: #f4f7f5 !important;
+}
 
-  .sales-order-pwa-shell {
-    display: block !important;
-    height: 100dvh !important;
-    overflow: hidden !important;
-    background: #f4f7f5 !important;
-  }
-
-  .ios-sales-page {
-    height: 100dvh !important;
-    overflow: hidden !important;
-    background: #f4f7f5 !important;
-  }
+.sales-order-pwa-shell {
+  display: block !important;
+}
 
   .ios-sales-header {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 9999 !important;
-    padding: calc(50px + env(safe-area-inset-top)) 18px 20px !important;
+  position: relative !important;
+  top: auto !important;
+  z-index: 9999 !important;
+  padding: calc(18px + env(safe-area-inset-top)) 18px 20px !important;
+  transform: translateZ(0) !important;
+  -webkit-transform: translateZ(0) !important;
     background:
       radial-gradient(circle at top right, rgba(20, 184, 166, 0.22), transparent 35%),
       linear-gradient(135deg, #07111f, #0f2f2a, #14532d) !important;
@@ -1442,13 +1438,27 @@
     font-weight: 900 !important;
   }
 
-  .ios-sales-content {
-    height: calc(100dvh - 300px) !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: 14px 14px calc(30px + env(safe-area-inset-bottom)) !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
+ .ios-sales-page {
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.ios-sales-header {
+  flex-shrink: 0 !important;
+}
+
+.ios-sales-content {
+  flex: 1 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 14px 14px calc(110px + env(safe-area-inset-bottom)) !important;
+  -webkit-overflow-scrolling: touch !important;
+}
 
   .ios-sales-tab-card {
     background: #ffffff !important;
@@ -2343,4 +2353,76 @@ body.sales-order-browser-scroll-page .sales-pagination {
 .modal-delete-btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+/* FINAL PWA PAGINATION VISIBILITY FIX */
+
+@media (max-width: 900px) {
+
+  body.sales-order-browser-scroll-page,
+  body.sales-order-browser-scroll-page #root,
+  body.sales-order-browser-scroll-page .dashboard-layout,
+  body.sales-order-browser-scroll-page .main {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  body.sales-order-browser-scroll-page .sales-order-page-root,
+  body.sales-order-browser-scroll-page .sales-order-pwa-shell,
+  body.sales-order-browser-scroll-page .ios-sales-page {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Fixed Header */
+  body.sales-order-browser-scroll-page .ios-sales-header {
+    flex: 0 0 auto !important;
+    position: relative !important;
+    z-index: 5 !important;
+  }
+
+  /* Scrollable Cards */
+  body.sales-order-browser-scroll-page .ios-sales-content {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+
+    padding: 14px 14px calc(30px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Pagination at END OF LIST */
+  body.sales-order-browser-scroll-page .ios-sales-pagination {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: auto !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    width: 100% !important;
+    margin: 22px 0 26px !important;
+    padding: 12px 16px !important;
+
+    background: #ffffff !important;
+    border-radius: 18px !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+  }
+
+  body.sales-order-browser-scroll-page .ios-sales-pagination button {
+    min-width: 90px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+  }
+
+  body.sales-order-browser-scroll-page .ios-sales-pagination button:disabled {
+    opacity: .5 !important;
+  }
 }

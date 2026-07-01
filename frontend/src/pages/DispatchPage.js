@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import "./Dispatch.css";
 import DispatchForm from "./DispatchForm";
 
@@ -24,10 +30,13 @@ const DispatchPage = () => {
   const [dispatches, setDispatches] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [paymentModal, setPaymentModal] = useState(null);
   const [paymentUpdating, setPaymentUpdating] = useState(false);
+  const [showPwaFilters, setShowPwaFilters] = useState(false);
+  const [activeInsight, setActiveInsight] = useState("");
 
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
@@ -45,18 +54,23 @@ const DispatchPage = () => {
     companyName: "",
     invoiceNumber: "",
     page: 1,
-    limit: 10,
+    limit: 30,
   });
 
-  const resetPaymentForm = () => {
-    setPaymentForm({
-      amount: "",
-      remark: "",
-      paymentBillPdf: null,
-      dispatchStatus: "dispatched",
-      internalRemark: "",
-    });
-  };
+  useLayoutEffect(() => {
+    document.body.classList.add("dispatch-pwa-page");
+
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    const main = document.querySelector(".main");
+    if (main) main.scrollTop = 0;
+
+    return () => {
+      document.body.classList.remove("dispatch-pwa-page");
+    };
+  }, []);
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -89,12 +103,140 @@ const DispatchPage = () => {
     return "pending";
   };
 
+  const getMonthRange = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    const toInputDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    return {
+      fromDate: toInputDate(firstDay),
+      toDate: toInputDate(lastDay),
+    };
+  };
+
+  const isThisMonth = (date) => {
+    if (!date) return false;
+    const value = new Date(date);
+    const now = new Date();
+
+    return (
+      value.getMonth() === now.getMonth() &&
+      value.getFullYear() === now.getFullYear()
+    );
+  };
+
+  const dispatchSummary = useMemo(() => {
+    return dispatches.reduce(
+      (summary, item) => {
+        const invoiceValue = Number(item.invoiceValue || 0);
+        const pendingAmount = Number(item.pendingAmount || 0);
+        const paidAmount = Number(item.paidAmount || 0);
+        const paymentStatus = item.paymentStatus || "pending";
+
+        if (isThisMonth(item.dispatchDate || item.invoiceDate || item.createdAt)) {
+          summary.monthlyDispatch += invoiceValue;
+          summary.monthlyPaid += paidAmount;
+        }
+
+        summary.totalDue += pendingAmount;
+
+        if (paymentStatus === "overdue") {
+          summary.overdueThisMonth += pendingAmount;
+        }
+
+        return summary;
+      },
+      {
+        monthlyDispatch: 0,
+        monthlyPaid: 0,
+        totalDue: 0,
+        overdueThisMonth: 0,
+      }
+    );
+  }, [dispatches]);
+
+  const getBaseFilters = () => ({
+    fromDate: "",
+    toDate: "",
+    paymentStatus: "",
+    dispatchStatus: "",
+    companyName: "",
+    invoiceNumber: "",
+    page: 1,
+    limit: 30,
+  });
+
+  const applyInsightFilter = (type) => {
+    if (activeInsight === type) {
+      setActiveInsight("");
+      setFilters(getBaseFilters());
+      return;
+    }
+
+    const monthRange = getMonthRange();
+    setActiveInsight(type);
+
+    if (type === "monthlyDispatch") {
+      setFilters((prev) => ({
+        ...prev,
+        ...monthRange,
+        paymentStatus: "",
+        dispatchStatus: "",
+        page: 1,
+        limit: 30,
+      }));
+      return;
+    }
+
+    if (type === "monthlyPaid") {
+      setFilters((prev) => ({
+        ...prev,
+        ...monthRange,
+        paymentStatus: "paid",
+        dispatchStatus: "",
+        page: 1,
+        limit: 30,
+      }));
+      return;
+    }
+
+    if (type === "totalDue") {
+      setFilters((prev) => ({
+        ...prev,
+        fromDate: "",
+        toDate: "",
+        paymentStatus: "pending",
+        dispatchStatus: "",
+        page: 1,
+        limit: 30,
+      }));
+      return;
+    }
+
+    if (type === "overdueThisMonth") {
+      setFilters((prev) => ({
+        ...prev,
+        ...monthRange,
+        paymentStatus: "overdue",
+        dispatchStatus: "",
+        page: 1,
+        limit: 30,
+      }));
+    }
+  };
+
   const loadDispatches = useCallback(async () => {
     try {
       setLoading(true);
 
       const cleanFilters = {};
-
       Object.keys(filters).forEach((key) => {
         if (
           filters[key] !== "" &&
@@ -106,7 +248,6 @@ const DispatchPage = () => {
       });
 
       const response = await getDispatches(cleanFilters);
-
       setDispatches(response.data || []);
       setPagination(response.pagination || null);
     } catch (error) {
@@ -120,27 +261,31 @@ const DispatchPage = () => {
     loadDispatches();
   }, [loadDispatches]);
 
+  const refreshDispatches = async () => {
+    try {
+      setRefreshing(true);
+      await loadDispatches();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
 
+    setActiveInsight("");
     setFilters((prev) => ({
       ...prev,
       [name]: value,
       page: 1,
+      limit: 30,
     }));
   };
 
   const clearFilters = () => {
-    setFilters({
-      fromDate: "",
-      toDate: "",
-      paymentStatus: "",
-      dispatchStatus: "",
-      companyName: "",
-      invoiceNumber: "",
-      page: 1,
-      limit: 10,
-    });
+    setActiveInsight("");
+    setFilters(getBaseFilters());
+    setShowPwaFilters(false);
   };
 
   const openCreateForm = () => {
@@ -149,6 +294,24 @@ const DispatchPage = () => {
 
   const closeForm = () => {
     setShowForm(false);
+  };
+
+  const goDashboardModules = () => {
+    if (window.__goDashboardHome) {
+      window.__goDashboardHome();
+    } else {
+      window.location.href = "/dashboard#dashboard";
+    }
+  };
+
+  const resetPaymentForm = () => {
+    setPaymentForm({
+      amount: "",
+      remark: "",
+      paymentBillPdf: null,
+      dispatchStatus: "dispatched",
+      internalRemark: "",
+    });
   };
 
   const openPaymentModal = (dispatch) => {
@@ -164,7 +327,6 @@ const DispatchPage = () => {
 
   const closePaymentModal = () => {
     if (paymentUpdating) return;
-
     setPaymentModal(null);
     resetPaymentForm();
   };
@@ -241,9 +403,7 @@ const DispatchPage = () => {
   };
 
   const handleDelete = async (dispatchId) => {
-    if (!window.confirm("Are you sure you want to delete this dispatch?")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to delete this dispatch?")) return;
 
     try {
       await deleteDispatch(dispatchId);
@@ -258,23 +418,24 @@ const DispatchPage = () => {
     setFilters((prev) => ({
       ...prev,
       page,
+      limit: 30,
     }));
   };
 
-  const renderDocuments = (item) => {
+  const renderDocuments = (item, mode = "desktop") => {
     const billUrl = item.billPdf?.fileUrl;
     const lrUrl = item.lrCopyPdf?.fileUrl;
     const paymentBills =
       item.paymentHistory?.filter((p) => p.paymentBillPdf?.fileUrl) || [];
 
     return (
-      <div className="dispatch-doc-list">
+      <div className={mode === "pwa" ? "ios-dispatch-doc-list" : "dispatch-doc-list"}>
         {billUrl && (
           <a
             href={getFullFileUrl(billUrl)}
             target="_blank"
             rel="noreferrer"
-            className="dispatch-doc-link"
+            className={mode === "pwa" ? "ios-dispatch-doc-btn" : "dispatch-doc-link"}
           >
             Bill
           </a>
@@ -285,7 +446,7 @@ const DispatchPage = () => {
             href={getFullFileUrl(lrUrl)}
             target="_blank"
             rel="noreferrer"
-            className="dispatch-doc-link"
+            className={mode === "pwa" ? "ios-dispatch-doc-btn" : "dispatch-doc-link"}
           >
             LR
           </a>
@@ -297,7 +458,7 @@ const DispatchPage = () => {
             href={getFullFileUrl(payment.paymentBillPdf.fileUrl)}
             target="_blank"
             rel="noreferrer"
-            className="dispatch-doc-link payment-doc"
+            className={mode === "pwa" ? "ios-dispatch-doc-btn" : "dispatch-doc-link payment-doc"}
           >
             Payment {index + 1}
           </a>
@@ -311,9 +472,7 @@ const DispatchPage = () => {
   };
 
   const renderPaymentHistory = (item) => {
-    if (!item.paymentHistory || item.paymentHistory.length === 0) {
-      return null;
-    }
+    if (!item.paymentHistory || item.paymentHistory.length === 0) return null;
 
     return (
       <div className="dispatch-payment-history">
@@ -327,22 +486,26 @@ const DispatchPage = () => {
     );
   };
 
-  return (
-    <div className="dispatch-container">
-      <div className="dispatch-header">
-        <div>
-          <h2>Dispatch Management</h2>
-          <p>Approved order dispatch, bill/LR tracking and payment follow-up</p>
+  const renderPwaFilters = () => (
+    <div className="ios-dispatch-filter-overlay">
+      <div className="ios-dispatch-filter-card">
+        <div className="ios-dispatch-filter-head">
+          <div>
+            <h3>Filters</h3>
+            <p>Filter dispatch records</p>
+          </div>
+
+          <button
+            type="button"
+            className="ios-dispatch-filter-close"
+            onClick={() => setShowPwaFilters(false)}
+          >
+            ×
+          </button>
         </div>
 
-        <button className="dispatch-new-btn" onClick={openCreateForm}>
-          + New Dispatch
-        </button>
-      </div>
-
-      <div className="dispatch-filters-card">
-        <div className="dispatch-filters-grid">
-          <div className="dispatch-filter-field">
+        <div className="ios-dispatch-filter-grid">
+          <div className="ios-dispatch-field">
             <label>Company Name</label>
             <input
               type="text"
@@ -353,7 +516,7 @@ const DispatchPage = () => {
             />
           </div>
 
-          <div className="dispatch-filter-field">
+          <div className="ios-dispatch-field">
             <label>Invoice Number</label>
             <input
               type="text"
@@ -364,314 +527,496 @@ const DispatchPage = () => {
             />
           </div>
 
-          <div className="dispatch-filter-field">
-            <label>From Dispatch Date</label>
-            <input
-              type="date"
-              name="fromDate"
-              value={filters.fromDate}
-              onChange={handleFilterChange}
-            />
+          <div className="ios-dispatch-date-grid">
+            <div className="ios-dispatch-field">
+              <label>From Date</label>
+              <input
+                type="date"
+                name="fromDate"
+                value={filters.fromDate}
+                onChange={handleFilterChange}
+              />
+            </div>
+
+            <div className="ios-dispatch-field">
+              <label>To Date</label>
+              <input
+                type="date"
+                name="toDate"
+                value={filters.toDate}
+                min={filters.fromDate || ""}
+                disabled={!filters.fromDate}
+                onChange={handleFilterChange}
+              />
+            </div>
           </div>
 
-          <div className="dispatch-filter-field">
-            <label>To Dispatch Date</label>
-            <input
-              type="date"
-              name="toDate"
-              value={filters.toDate}
-              min={filters.fromDate || ""}
-              disabled={!filters.fromDate}
-              onChange={handleFilterChange}
-            />
+          <div className="ios-dispatch-date-grid">
+            <div className="ios-dispatch-field">
+              <label>Payment</label>
+              <select
+                name="paymentStatus"
+                value={filters.paymentStatus}
+                onChange={handleFilterChange}
+              >
+                <option value="">All Payment</option>
+                <option value="pending">Pending</option>
+                <option value="partial">Partial</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+              </select>
+            </div>
+
+            <div className="ios-dispatch-field">
+              <label>Dispatch</label>
+              <select
+                name="dispatchStatus"
+                value={filters.dispatchStatus}
+                onChange={handleFilterChange}
+              >
+                <option value="">All Dispatch</option>
+                <option value="dispatched">Dispatched</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
           </div>
 
-          <div className="dispatch-filter-field">
-            <label>Payment Status</label>
-            <select
-              name="paymentStatus"
-              value={filters.paymentStatus}
-              onChange={handleFilterChange}
-            >
-              <option value="">All Payment</option>
-              <option value="pending">Pending</option>
-              <option value="partial">Partial</option>
-              <option value="paid">Paid</option>
-              <option value="overdue">Overdue</option>
-            </select>
-          </div>
-
-          <div className="dispatch-filter-field">
-            <label>Dispatch Status</label>
-            <select
-              name="dispatchStatus"
-              value={filters.dispatchStatus}
-              onChange={handleFilterChange}
-            >
-              <option value="">All Dispatch</option>
-              <option value="dispatched">Dispatched</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-
-          <div className="dispatch-filter-actions">
+          <div className="ios-dispatch-filter-actions">
             <button type="button" onClick={clearFilters}>
               Clear
+            </button>
+
+            <button type="button" onClick={() => setShowPwaFilters(false)}>
+              Apply
             </button>
           </div>
         </div>
       </div>
+    </div>
+  );
 
-      <div className="dispatch-table-wrapper">
-        <table className="dispatch-table">
-          <thead>
-            <tr>
-              <th>Company / Customer</th>
-              <th>Invoice</th>
-              <th>Dispatch</th>
-              <th>Qty</th>
-              <th>Invoice Value</th>
-              <th>Payment</th>
-              <th>Due Date</th>
-              <th>Documents</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
+  const renderInsights = (mode = "desktop") => {
+    const InsightComponent = mode === "pwa" ? PwaInsight : DispatchInsight;
 
-          <tbody>
+    return (
+      <>
+        <InsightComponent
+          label="Monthly Dispatch"
+          value={formatCurrency(dispatchSummary.monthlyDispatch)}
+          active={activeInsight === "monthlyDispatch"}
+          onClick={() => applyInsightFilter("monthlyDispatch")}
+        />
+
+        <InsightComponent
+          label="Monthly Paid"
+          value={formatCurrency(dispatchSummary.monthlyPaid)}
+          active={activeInsight === "monthlyPaid"}
+          onClick={() => applyInsightFilter("monthlyPaid")}
+        />
+
+        <InsightComponent
+          label="Total Due"
+          value={formatCurrency(dispatchSummary.totalDue)}
+          active={activeInsight === "totalDue"}
+          onClick={() => applyInsightFilter("totalDue")}
+        />
+
+        <InsightComponent
+          label="Overdue This Month"
+          value={formatCurrency(dispatchSummary.overdueThisMonth)}
+          active={activeInsight === "overdueThisMonth"}
+          onClick={() => applyInsightFilter("overdueThisMonth")}
+        />
+      </>
+    );
+  };
+
+  return (
+    <div className="dispatch-container">
+      <div className="dispatch-pwa-shell">
+        <div className="ios-dispatch-page">
+          <div className="ios-dispatch-header">
+            <div className="ios-dispatch-header-row">
+              <button type="button" className="ios-dispatch-back" onClick={goDashboardModules}>
+                ‹
+              </button>
+
+              <div className="ios-dispatch-title">
+                <h2>Dispatch</h2>
+                <p>Bill, LR and payment follow-up</p>
+              </div>
+
+              <button
+                type="button"
+                className={`ios-dispatch-refresh ${refreshing ? "spinning" : ""}`}
+                onClick={refreshDispatches}
+                disabled={refreshing || loading}
+              >
+                ↻
+              </button>
+            </div>
+
+            <div className="ios-dispatch-insight-card ios-dispatch-insight-card-four">
+              {renderInsights("pwa")}
+            </div>
+
+            <button type="button" className="ios-dispatch-new-btn" onClick={openCreateForm}>
+              + New Dispatch
+            </button>
+          </div>
+
+          <div className="ios-dispatch-content">
+            <button
+              type="button"
+              className="ios-dispatch-filter-open"
+              onClick={() => setShowPwaFilters(true)}
+            >
+              Filters
+            </button>
+
+            {showPwaFilters && renderPwaFilters()}
+
             {loading ? (
-              <tr>
-                <td className="no-data" colSpan="10">
-                  Loading dispatch data...
-                </td>
-              </tr>
+              <div className="ios-dispatch-empty">Loading dispatch data...</div>
             ) : dispatches.length === 0 ? (
-              <tr>
-                <td className="no-data" colSpan="10">
-                  No dispatch records found
-                </td>
-              </tr>
+              <div className="ios-dispatch-empty">No dispatch records found</div>
             ) : (
               dispatches.map((item) => {
                 const paymentStatus = item.paymentStatus || "pending";
 
                 return (
-                  <tr key={item._id}>
-                    <td data-label="Company / Customer">
-                      <div className="dispatch-company-cell">
-                        <strong>{item.companyName || "-"}</strong>
-                        <span>{item.contactPersonName || "-"}</span>
-                        <small>{item.contactPersonEmail || "-"}</small>
+                  <div key={item._id} className="ios-dispatch-card">
+                    <div className="ios-dispatch-card-top">
+                      <div>
+                        <h4>{item.companyName || "-"}</h4>
+                        <p className="ios-dispatch-sales-person">
+                          Sales: {item.salesPersonName || item.salesPersonId?.name || "-"}
+                        </p>
+                        <p>{item.contactPersonName || "-"}</p>
+                        <p>{item.contactPersonEmail || "-"}</p>
                       </div>
-                    </td>
 
-                    <td data-label="Invoice">
-                      <div className="dispatch-company-cell">
-                        <strong>{item.invoiceNumber || "-"}</strong>
-                        <span>{formatDate(item.invoiceDate)}</span>
-                        <small>PO: {item.poNumber || "-"}</small>
-                      </div>
-                    </td>
-
-                    <td data-label="Dispatch">
-                      <div className="dispatch-company-cell">
-                        <strong>{formatDate(item.dispatchDate)}</strong>
-                      </div>
-                    </td>
-
-                    <td data-label="Qty">{formatQty(item.dispatchQty)}</td>
-
-                    <td data-label="Invoice Value">
-                      {formatCurrency(item.invoiceValue)}
-                    </td>
-
-                    <td data-label="Payment">
-                      <div className="dispatch-company-cell">
-                        <span
-                          className={`dispatch-status ${getPaymentStatusClass(
-                            paymentStatus
-                          )}`}
-                        >
-                          {paymentStatus}
-                        </span>
-                        <small>Paid: {formatCurrency(item.paidAmount)}</small>
-                        <small>
-                          Pending: {formatCurrency(item.pendingAmount)}
-                        </small>
-                        {renderPaymentHistory(item)}
-                      </div>
-                    </td>
-
-                    <td data-label="Due Date">
-                      {formatDate(item.paymentDueDate)}
-                    </td>
-
-                    <td data-label="Documents">{renderDocuments(item)}</td>
-
-                    <td data-label="Status">
-                      <span
-                        className={`dispatch-status dispatch-${
-                          item.dispatchStatus || "dispatched"
-                        }`}
-                      >
-                        {formatStatus(item.dispatchStatus)}
+                      <span className={`dispatch-status ${getPaymentStatusClass(paymentStatus)}`}>
+                        {paymentStatus}
                       </span>
-                    </td>
+                    </div>
 
-                    <td data-label="Action">
-                      <div className="dispatch-action-group">
+                    <div className="ios-dispatch-money-card">
+                      <span>Invoice Value</span>
+                      <strong>{formatCurrency(item.invoiceValue)}</strong>
+                    </div>
+
+                    <div className="ios-dispatch-info-grid">
+                      <PwaInfo label="Sales Person" value={item.salesPersonName || item.salesPersonId?.name || "-"} />
+                      <PwaInfo label="Invoice" value={item.invoiceNumber || "-"} />
+                      <PwaInfo label="PO Number" value={item.poNumber || "-"} />
+                      <PwaInfo label="Dispatch Date" value={formatDate(item.dispatchDate)} />
+                      <PwaInfo label="Quantity" value={formatQty(item.dispatchQty)} />
+                      <PwaInfo label="Paid" value={formatCurrency(item.paidAmount)} />
+                      <PwaInfo label="Pending" value={formatCurrency(item.pendingAmount)} />
+                      <PwaInfo label="Due Date" value={formatDate(item.paymentDueDate)} />
+                      <PwaInfo label="Status" value={formatStatus(item.dispatchStatus)} />
+                      <PwaInfo label="Email" value={item.contactPersonEmail || "-"} full />
+                    </div>
+
+                    {renderPaymentHistory(item)}
+
+                    <div className="ios-dispatch-bottom-row">
+                      <div className="ios-dispatch-doc-section">
+                        <span>Documents</span>
+                        {renderDocuments(item, "pwa")}
+                      </div>
+
+                      <div className="ios-dispatch-actions">
                         {canManageItem(item) && (
                           <button
                             type="button"
-                            className="dispatch-edit-btn"
+                            className="ios-dispatch-edit-btn"
                             onClick={() => openPaymentModal(item)}
                           >
-                            Edit
+                            Edit Dispatch
                           </button>
                         )}
 
                         {canDeleteDispatch && (
                           <button
                             type="button"
-                            className="dispatch-delete-btn"
+                            className="ios-dispatch-delete-btn"
                             onClick={() => handleDelete(item._id)}
                           >
                             Delete
                           </button>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 );
               })
             )}
-          </tbody>
-        </table>
 
-        <div className="dispatch-mobile-list">
-          {loading ? (
-            <div className="dispatch-mobile-empty">Loading dispatch data...</div>
-          ) : dispatches.length === 0 ? (
-            <div className="dispatch-mobile-empty">No dispatch records found</div>
-          ) : (
-            dispatches.map((item) => {
-              const paymentStatus = item.paymentStatus || "pending";
+            {pagination && pagination.totalPages > 1 && (
+              <div className="ios-dispatch-pagination">
+                <button
+                  type="button"
+                  disabled={pagination.currentPage <= 1}
+                  onClick={() => changePage(pagination.currentPage - 1)}
+                >
+                  Prev
+                </button>
 
-              return (
-                <div key={item._id} className="dispatch-mobile-card">
-                  <div className="dispatch-mobile-card-top">
-                    <div>
-                      <h3>{item.companyName || "-"}</h3>
-                      <p>{item.contactPersonName || "-"}</p>
-                    </div>
+                <span>
+                  Page {pagination.currentPage} / {pagination.totalPages}
+                </span>
 
-                    <span
-                      className={`dispatch-status ${getPaymentStatusClass(
-                        paymentStatus
-                      )}`}
-                    >
-                      {paymentStatus}
-                    </span>
-                  </div>
+                <button
+                  type="button"
+                  disabled={pagination.currentPage >= pagination.totalPages}
+                  onClick={() => changePage(pagination.currentPage + 1)}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-                  <div className="dispatch-mobile-row">
-                    <span>Invoice</span>
-                    <strong>{item.invoiceNumber || "-"}</strong>
-                  </div>
+      <div className="dispatch-desktop-page">
+        <div className="dispatch-header">
+          <div>
+            <h2>Dispatch Management</h2>
+            <p>Approved order dispatch, bill/LR tracking and payment follow-up</p>
+          </div>
 
-                  <div className="dispatch-mobile-row">
-                    <span>Dispatch Date</span>
-                    <strong>{formatDate(item.dispatchDate)}</strong>
-                  </div>
-
-                  <div className="dispatch-mobile-row">
-                    <span>Quantity</span>
-                    <strong>{formatQty(item.dispatchQty)}</strong>
-                  </div>
-
-                  <div className="dispatch-mobile-row">
-                    <span>Invoice Value</span>
-                    <strong>{formatCurrency(item.invoiceValue)}</strong>
-                  </div>
-
-                  <div className="dispatch-mobile-row">
-                    <span>Paid</span>
-                    <strong>{formatCurrency(item.paidAmount)}</strong>
-                  </div>
-
-                  <div className="dispatch-mobile-row">
-                    <span>Pending</span>
-                    <strong>{formatCurrency(item.pendingAmount)}</strong>
-                  </div>
-
-                  <div className="dispatch-mobile-row">
-                    <span>Due Date</span>
-                    <strong>{formatDate(item.paymentDueDate)}</strong>
-                  </div>
-
-                  <div className="dispatch-mobile-row">
-                    <span>Dispatch Status</span>
-                    <strong>{formatStatus(item.dispatchStatus)}</strong>
-                  </div>
-
-                  {renderPaymentHistory(item)}
-
-                  <div className="dispatch-mobile-docs">
-                    {renderDocuments(item)}
-                  </div>
-
-                  {canManageItem(item) && (
-                    <div className="dispatch-mobile-actions">
-                      <button
-                        type="button"
-                        className="dispatch-mobile-edit-btn"
-                        onClick={() => openPaymentModal(item)}
-                      >
-                        Edit Dispatch
-                      </button>
-
-                      {canDeleteDispatch && (
-                        <button
-                          type="button"
-                          className="dispatch-mobile-delete-btn"
-                          onClick={() => handleDelete(item._id)}
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
+          <button className="dispatch-new-btn" onClick={openCreateForm}>
+            + New Dispatch
+          </button>
         </div>
 
-        {pagination && pagination.totalPages > 1 && (
-          <div className="dispatch-pagination">
-            <button
-              type="button"
-              disabled={pagination.currentPage <= 1}
-              onClick={() => changePage(pagination.currentPage - 1)}
-            >
-              Previous
-            </button>
+        <div className="dispatch-insight-strip">{renderInsights("desktop")}</div>
 
-            <span>
-              Page {pagination.currentPage} of {pagination.totalPages}
-            </span>
+        <div className="dispatch-filters-card">
+          <div className="dispatch-filters-grid">
+            <div className="dispatch-filter-field">
+              <label>Company Name</label>
+              <input
+                type="text"
+                name="companyName"
+                value={filters.companyName}
+                onChange={handleFilterChange}
+                placeholder="Search company..."
+              />
+            </div>
 
-            <button
-              type="button"
-              disabled={pagination.currentPage >= pagination.totalPages}
-              onClick={() => changePage(pagination.currentPage + 1)}
-            >
-              Next
-            </button>
+            <div className="dispatch-filter-field">
+              <label>Invoice Number</label>
+              <input
+                type="text"
+                name="invoiceNumber"
+                value={filters.invoiceNumber}
+                onChange={handleFilterChange}
+                placeholder="Search invoice..."
+              />
+            </div>
+
+            <div className="dispatch-filter-field">
+              <label>From Dispatch Date</label>
+              <input
+                type="date"
+                name="fromDate"
+                value={filters.fromDate}
+                onChange={handleFilterChange}
+              />
+            </div>
+
+            <div className="dispatch-filter-field">
+              <label>To Dispatch Date</label>
+              <input
+                type="date"
+                name="toDate"
+                value={filters.toDate}
+                min={filters.fromDate || ""}
+                disabled={!filters.fromDate}
+                onChange={handleFilterChange}
+              />
+            </div>
+
+            <div className="dispatch-filter-field">
+              <label>Payment Status</label>
+              <select
+                name="paymentStatus"
+                value={filters.paymentStatus}
+                onChange={handleFilterChange}
+              >
+                <option value="">All Payment</option>
+                <option value="pending">Pending</option>
+                <option value="partial">Partial</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+              </select>
+            </div>
+
+            <div className="dispatch-filter-field">
+              <label>Dispatch Status</label>
+              <select
+                name="dispatchStatus"
+                value={filters.dispatchStatus}
+                onChange={handleFilterChange}
+              >
+                <option value="">All Dispatch</option>
+                <option value="dispatched">Dispatched</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div className="dispatch-filter-actions">
+              <button type="button" onClick={clearFilters}>
+                Clear
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+
+        <div className="dispatch-table-wrapper">
+          <table className="dispatch-table">
+            <thead>
+              <tr>
+                <th>Company / Customer</th>
+                <th>Invoice</th>
+                <th>Dispatch</th>
+                <th>Qty</th>
+                <th>Invoice Value</th>
+                <th>Payment</th>
+                <th>Due Date</th>
+                <th>Documents</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td className="no-data" colSpan="10">
+                    Loading dispatch data...
+                  </td>
+                </tr>
+              ) : dispatches.length === 0 ? (
+                <tr>
+                  <td className="no-data" colSpan="10">
+                    No dispatch records found
+                  </td>
+                </tr>
+              ) : (
+                dispatches.map((item) => {
+                  const paymentStatus = item.paymentStatus || "pending";
+
+                  return (
+                    <tr key={item._id}>
+                      <td>
+                        <div className="dispatch-company-cell">
+                          <strong>{item.companyName || "-"}</strong>
+                          <span className="dispatch-sales-person-text">
+                            Sales: {item.salesPersonName || item.salesPersonId?.name || "-"}
+                          </span>
+                          <span>{item.contactPersonName || "-"}</span>
+                          <small>{item.contactPersonEmail || "-"}</small>
+                        </div>
+                      </td>
+
+                      <td>
+                        <div className="dispatch-company-cell">
+                          <strong>{item.invoiceNumber || "-"}</strong>
+                          <span>{formatDate(item.invoiceDate)}</span>
+                          <small>PO: {item.poNumber || "-"}</small>
+                        </div>
+                      </td>
+
+                      <td>
+                        <div className="dispatch-company-cell">
+                          <strong>{formatDate(item.dispatchDate)}</strong>
+                        </div>
+                      </td>
+
+                      <td>{formatQty(item.dispatchQty)}</td>
+                      <td>{formatCurrency(item.invoiceValue)}</td>
+
+                      <td>
+                        <div className="dispatch-company-cell">
+                          <span className={`dispatch-status ${getPaymentStatusClass(paymentStatus)}`}>
+                            {paymentStatus}
+                          </span>
+                          <small>Paid: {formatCurrency(item.paidAmount)}</small>
+                          <small>Pending: {formatCurrency(item.pendingAmount)}</small>
+                          {renderPaymentHistory(item)}
+                        </div>
+                      </td>
+
+                      <td>{formatDate(item.paymentDueDate)}</td>
+                      <td>{renderDocuments(item)}</td>
+
+                      <td>
+                        <span className={`dispatch-status dispatch-${item.dispatchStatus || "dispatched"}`}>
+                          {formatStatus(item.dispatchStatus)}
+                        </span>
+                      </td>
+
+                      <td>
+                        <div className="dispatch-action-group">
+                          {canManageItem(item) && (
+                            <button
+                              type="button"
+                              className="dispatch-edit-btn"
+                              onClick={() => openPaymentModal(item)}
+                            >
+                              Edit
+                            </button>
+                          )}
+
+                          {canDeleteDispatch && (
+                            <button
+                              type="button"
+                              className="dispatch-delete-btn"
+                              onClick={() => handleDelete(item._id)}
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+
+          {pagination && pagination.totalPages > 1 && (
+            <div className="dispatch-pagination">
+              <button
+                type="button"
+                disabled={pagination.currentPage <= 1}
+                onClick={() => changePage(pagination.currentPage - 1)}
+              >
+                Previous
+              </button>
+
+              <span>
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </span>
+
+              <button
+                type="button"
+                disabled={pagination.currentPage >= pagination.totalPages}
+                onClick={() => changePage(pagination.currentPage + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {showForm && <DispatchForm onClose={closeForm} refresh={loadDispatches} />}
@@ -688,11 +1033,7 @@ const DispatchPage = () => {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={closePaymentModal}
-                disabled={paymentUpdating}
-              >
+              <button type="button" onClick={closePaymentModal} disabled={paymentUpdating}>
                 ×
               </button>
             </div>
@@ -717,24 +1058,25 @@ const DispatchPage = () => {
 
                 <div className="dispatch-field">
                   <label>Dispatch Status</label>
-                 <select
-  value={paymentForm.dispatchStatus}
-  onChange={(e) =>
-    setPaymentForm((prev) => ({
-      ...prev,
-      dispatchStatus: e.target.value,
-    }))
-  }
-  disabled={paymentUpdating || paymentModal?.dispatchStatus === "delivered"}
->
-  <option value="dispatched">Dispatched</option>
-  <option value="delivered">Delivered</option>
-</select>
-{paymentModal?.dispatchStatus === "delivered" && (
-  <small className="dispatch-lock-note">
-    Delivery status is locked. Payment can still be updated.
-  </small>
-)}
+                  <select
+                    value={paymentForm.dispatchStatus}
+                    onChange={(e) =>
+                      setPaymentForm((prev) => ({
+                        ...prev,
+                        dispatchStatus: e.target.value,
+                      }))
+                    }
+                    disabled={paymentUpdating || paymentModal?.dispatchStatus === "delivered"}
+                  >
+                    <option value="dispatched">Dispatched</option>
+                    <option value="delivered">Delivered</option>
+                  </select>
+
+                  {paymentModal?.dispatchStatus === "delivered" && (
+                    <small className="dispatch-lock-note">
+                      Delivery status is locked. Payment can still be updated.
+                    </small>
+                  )}
                 </div>
 
                 <div className="dispatch-field dispatch-full">
@@ -800,11 +1142,7 @@ const DispatchPage = () => {
                   Cancel
                 </button>
 
-                <button
-                  type="submit"
-                  className="dispatch-submit"
-                  disabled={paymentUpdating}
-                >
+                <button type="submit" className="dispatch-submit" disabled={paymentUpdating}>
                   {paymentUpdating ? "Updating..." : "Save Changes"}
                 </button>
               </div>
@@ -815,5 +1153,42 @@ const DispatchPage = () => {
     </div>
   );
 };
+
+function DispatchInsight({ label, value, active, onClick }) {
+  return (
+    <button
+      type="button"
+      className={`dispatch-insight-card ${active ? "active" : ""}`}
+      onClick={onClick}
+    >
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{active ? "Click to clear" : "Click to filter"}</small>
+    </button>
+  );
+}
+
+function PwaInsight({ label, value, active, onClick }) {
+  return (
+    <button
+      type="button"
+      className={`ios-dispatch-insight-box ${active ? "active" : ""}`}
+      onClick={onClick}
+    >
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{active ? "Tap to clear" : "Tap to filter"}</small>
+    </button>
+  );
+}
+
+function PwaInfo({ label, value, full }) {
+  return (
+    <div className={`ios-dispatch-info-box ${full ? "full" : ""}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
 
 export default DispatchPage;

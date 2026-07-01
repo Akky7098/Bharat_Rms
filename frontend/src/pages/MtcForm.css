@@ -1,0 +1,508 @@
+.mtc-form-page {
+  width: 100%;
+}
+
+.mtc-form-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.mtc-form-back {
+  border: none;
+  background: #fff;
+  color: #101828;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+}
+
+.mtc-form-topbar span {
+  font-size: 12px;
+  color: #06429c;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mtc-form-topbar h2 {
+  margin: 3px 0 0;
+  font-size: 26px;
+  color: #101828;
+}
+
+.mtc-form-error {
+  background: #fff1f3;
+  border: 1px solid #fda29b;
+  color: #b42318;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.mtc-premium-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mtc-form-card {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e4e7ec;
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.06);
+}
+
+.mtc-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mtc-card-title > div {
+  width: 42px;
+  height: 42px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #e8f1ff, #f4f8ff);
+  color: #06429c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mtc-card-title h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #101828;
+}
+
+.mtc-card-title p {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: #667085;
+}
+
+.mtc-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.mtc-field label,
+.mtc-chem-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #344054;
+  margin-bottom: 7px;
+}
+
+.mtc-field input,
+.mtc-field select,
+.mtc-chem-field input,
+.mtc-mini-table input {
+  width: 100%;
+  height: 43px;
+  border: 1px solid #d0d5dd;
+  border-radius: 13px;
+  padding: 0 12px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+  color: #101828;
+  transition: 0.2s ease;
+}
+
+.mtc-field input:focus,
+.mtc-field select:focus,
+.mtc-chem-field input:focus,
+.mtc-mini-table input:focus {
+  border-color: #0b67d1;
+  box-shadow: 0 0 0 4px rgba(11, 103, 209, 0.12);
+}
+
+.mtc-field input::placeholder,
+.mtc-chem-field input::placeholder {
+  color: #98a2b3;
+}
+
+.mtc-input-icon {
+  height: 43px;
+  border: 1px solid #d0d5dd;
+  border-radius: 13px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+}
+
+.mtc-input-icon input {
+  border: none;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none !important;
+}
+
+.mtc-chem-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 10px;
+}
+
+.mtc-chem-field {
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid #eef2f6;
+}
+
+.mtc-chem-field label {
+  color: #06429c;
+}
+
+.mtc-chem-field input:disabled {
+  background: #f2f4f7;
+  color: #667085;
+  font-weight: 800;
+  cursor: not-allowed;
+}
+
+.mtc-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fffaeb;
+  color: #93370d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mtc-two-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.mtc-mini-table {
+  display: grid;
+  grid-template-columns: 110px 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.mtc-mini-table strong {
+  text-align: center;
+  color: #06429c;
+  font-size: 13px;
+}
+
+.mtc-mini-table label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #344054;
+}
+
+.mtc-seat-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 12px;
+}
+
+.mtc-form-actions {
+  position: sticky;
+  bottom: 0;
+  background: rgba(244, 247, 251, 0.92);
+  backdrop-filter: blur(14px);
+  padding: 14px 0 4px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  z-index: 3;
+}
+
+.mtc-cancel-btn,
+.mtc-save-btn {
+  border: none;
+  height: 46px;
+  border-radius: 15px;
+  padding: 0 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mtc-cancel-btn {
+  background: #fff;
+  color: #344054;
+  border: 1px solid #e4e7ec;
+}
+
+.mtc-save-btn {
+  background: linear-gradient(135deg, #06429c, #0b67d1);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 12px 28px rgba(6, 66, 156, 0.25);
+}
+
+.mtc-save-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.mtc-spin {
+  animation: mtcSpin 0.8s linear infinite;
+}
+
+@keyframes mtcSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tablet */
+@media (max-width: 1100px) {
+  .mtc-form-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .mtc-chem-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .mtc-seat-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .mtc-two-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* PWA Mobile */
+@media (max-width: 768px) {
+  .mtc-form-page {
+    padding-bottom: 80px;
+  }
+
+  .mtc-form-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(244, 247, 251, 0.94);
+    backdrop-filter: blur(16px);
+    padding: 8px 0 12px;
+    margin-bottom: 10px;
+  }
+
+  .mtc-form-back {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 15px;
+  }
+
+  .mtc-form-back svg + * {
+    display: none;
+  }
+
+  .mtc-form-topbar h2 {
+    font-size: 21px;
+  }
+
+  .mtc-form-topbar span {
+    font-size: 11px;
+  }
+
+  .mtc-premium-form {
+    gap: 14px;
+  }
+
+  .mtc-form-card {
+    border-radius: 24px;
+    padding: 15px;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+  }
+
+  .mtc-card-title {
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .mtc-card-title > div {
+    width: 40px;
+    height: 40px;
+    border-radius: 15px;
+    flex: 0 0 auto;
+  }
+
+  .mtc-card-title h3 {
+    font-size: 16px;
+  }
+
+  .mtc-card-title p {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .mtc-form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .mtc-field input,
+  .mtc-field select,
+  .mtc-chem-field input,
+  .mtc-mini-table input,
+  .mtc-input-icon {
+    height: 46px;
+    border-radius: 16px;
+    background: #f9fafb;
+  }
+
+  .mtc-chem-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .mtc-chem-field {
+    border-radius: 18px;
+  }
+
+  .mtc-note {
+    border-radius: 16px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .mtc-two-section {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .mtc-mini-table {
+    grid-template-columns: 86px 1fr 1fr;
+    gap: 8px;
+  }
+
+  .mtc-mini-table label {
+    font-size: 11px;
+  }
+
+  .mtc-mini-table strong {
+    font-size: 12px;
+  }
+
+  .mtc-seat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mtc-form-actions {
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    bottom: 12px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid #e4e7ec;
+    border-radius: 22px;
+    box-shadow: 0 14px 36px rgba(16, 24, 40, 0.16);
+  }
+
+  .mtc-cancel-btn {
+    width: 36%;
+  }
+
+  .mtc-save-btn {
+    width: 64%;
+    justify-content: center;
+  }
+}
+.mtc-chem-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.mtc-chem-spec-card {
+  background: #f8fafc;
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.mtc-chem-symbol {
+  font-size: 16px;
+  font-weight: 900;
+  color: #06429c;
+  margin-bottom: 8px;
+}
+
+.mtc-chem-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.mtc-chem-range span {
+  background: #fff;
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  padding: 7px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #475467;
+  text-align: center;
+}
+
+.mtc-chem-spec-card input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #d0d5dd;
+  border-radius: 13px;
+  padding: 0 11px;
+  font-size: 14px;
+  outline: none;
+}
+
+.mtc-chem-spec-card input:disabled {
+  background: #f2f4f7;
+  color: #667085;
+  font-weight: 900;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1100px) {
+  .mtc-chem-spec-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .mtc-chem-spec-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mtc-chem-spec-card {
+    border-radius: 20px;
+    padding: 11px;
+  }
+
+  .mtc-chem-range {
+    grid-template-columns: 1fr;
+  }
+}

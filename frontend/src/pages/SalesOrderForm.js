@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   createSalesOrder,
   updateSalesOrder,
-  generateSalesOrderPdf,
 } from "../services/salesOrderService";
 import "./SalesOrderForm.css";
 
@@ -1037,14 +1036,7 @@ if (form.feasibilityReportFile instanceof File) {
     return fd;
   };
 
-  const getSalesOrderId = (response) => {
-    return (
-      response?.data?._id ||
-      response?.salesOrder?._id ||
-      response?._id ||
-      response?.data?.salesOrder?._id
-    );
-  };
+ 
 
   const getPdfUrlFromResponse = (response) => {
     const fileUrl =
@@ -1067,66 +1059,50 @@ if (form.feasibilityReportFile instanceof File) {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (isSubmitting) return;
-    if (!validateForm()) return;
+  if (isSubmitting) return;
+  if (!validateForm()) return;
 
-    setIsSubmitting(true);
-    setPdfGenerating(false);
-    setPdfUrl("");
+  setIsSubmitting(true);
+  setPdfGenerating(true);
+  setPdfUrl("");
 
-    try {
-      const payload = buildPayload();
-
-      let savedResponse;
-
+  try {
+    const payload = buildPayload();
     const formData = appendToFormData(new FormData(), payload);
 
-if (isEditMode) {
-  savedResponse = await updateSalesOrder(
-    editOrder._id,
-    formData
-  );
-} else {
-  savedResponse = await createSalesOrder(formData);
-}
+    const savedResponse = isEditMode
+      ? await updateSalesOrder(editOrder._id, formData)
+      : await createSalesOrder(formData);
 
-      const salesOrderId = isEditMode
-        ? editOrder._id
-        : getSalesOrderId(savedResponse);
+    const generatedUrl = getPdfUrlFromResponse(savedResponse);
 
-      if (salesOrderId) {
-        setPdfGenerating(true);
-
-        try {
-          const pdfResponse = await generateSalesOrderPdf(salesOrderId);
-          const generatedUrl = getPdfUrlFromResponse(pdfResponse);
-
-          if (generatedUrl) setPdfUrl(generatedUrl);
-        } catch (pdfError) {
-          console.log(pdfError);
-          alert("Sales order saved, but PDF generation failed.");
-        } finally {
-          setPdfGenerating(false);
-        }
-      }
-
-      alert(
-        isEditMode
-          ? "Sales order updated successfully"
-          : "Sales order created successfully"
-      );
-
-      refresh();
-      onClose();
-    } catch (error) {
-      alert(error.response?.data?.message || "Failed to save sales order");
-    } finally {
-      setIsSubmitting(false);
-      setPdfGenerating(false);
+    if (generatedUrl) {
+      setPdfUrl(generatedUrl);
     }
-  };
+
+    alert(
+      isEditMode
+        ? "Sales order updated successfully"
+        : "Sales order created successfully"
+    );
+
+    refresh();
+    onClose();
+  } catch (error) {
+    alert(
+      error.response?.data?.message ||
+        "PDF not generated. Failed to create sales order."
+    );
+
+    // Important: do not call refresh() or onClose()
+    // Form data stays filled for retry.
+  } finally {
+    setIsSubmitting(false);
+    setPdfGenerating(false);
+  }
+};
 
   const fieldClass = (name, extra = "") =>
     `sales-form-group ${errors[name] ? "has-error" : ""} ${

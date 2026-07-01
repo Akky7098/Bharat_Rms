@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../services/authService";
 import { disablePushNotifications } from "../services/pushNotificationService";
@@ -12,25 +12,39 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Production-safe old session cleanup
-  // This runs only before a fresh login, not on app open/reload.
-  const clearOldSessionBeforeLogin = async () => {
-    const oldToken = localStorage.getItem("token");
-
+  // Auto restore session when PWA opens
+  useEffect(() => {
     try {
-      if (oldToken) {
-        await disablePushNotifications();
+      const token = localStorage.getItem("token");
+      const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+      if (token && isLoggedIn === "true") {
+        navigate("/dashboard", { replace: true });
       }
     } catch (error) {
-      console.log("Old push cleanup failed:", error?.message || error);
+      console.error("Session restore failed:", error);
     }
+  }, [navigate]);
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("activeModule");
-    localStorage.removeItem("sidebarCollapsed");
-    localStorage.removeItem("notificationFocus");
-  };
+ const clearOldSessionBeforeLogin = () => {
+  const oldToken = localStorage.getItem("token");
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("activeModule");
+  localStorage.removeItem("sidebarCollapsed");
+  localStorage.removeItem("notificationFocus");
+  localStorage.removeItem("isLoggedIn");
+  localStorage.removeItem("lastLoginTime");
+
+  sessionStorage.clear();
+
+  if (oldToken) {
+    disablePushNotifications().catch((error) => {
+      console.log("Old push cleanup failed:", error?.message || error);
+    });
+  }
+};
 
   const saveLoginSession = (response) => {
     const token = response?.data?.data?.token;
@@ -46,11 +60,10 @@ function Login() {
       _id: loggedUser._id || loggedUser.id,
     };
 
-    localStorage.setItem("token", token);
+    localStorage.setItem("token", String(token));
     localStorage.setItem("user", JSON.stringify(normalizedUser));
-
-    // Extra flag for PWA route guards
     localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("lastLoginTime", Date.now().toString());
   };
 
   const handleLogin = async (e) => {
@@ -66,7 +79,7 @@ function Login() {
     setIsLoggingIn(true);
 
     try {
-      await clearOldSessionBeforeLogin();
+       clearOldSessionBeforeLogin();
 
       const response = await loginUser({
         email: email.trim(),
@@ -75,9 +88,10 @@ function Login() {
 
       saveLoginSession(response);
 
-      // Better for PWA production than navigate()
-      // Ensures all services read latest token after login.
-      window.location.replace("/dashboard");
+      // small delay ensures storage write completion
+      setTimeout(() => {
+        navigate("/dashboard", { replace: true });
+      }, 100);
     } catch (error) {
       alert(
         error?.response?.data?.message ||
