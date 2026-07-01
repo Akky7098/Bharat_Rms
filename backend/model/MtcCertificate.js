@@ -26,17 +26,29 @@ const chemicalResultSchema = new mongoose.Schema(
 const mtcCertificateSchema = new mongoose.Schema(
   {
     mtcProvider: {
-      type: String,
-      enum: ["gloria"],
-      default: "gloria",
-      required: true,
-    },
+  type: String,
+  enum: ["gloria"],
+  default: "gloria",
+  required: true,
+},
 
-    orderNo: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+messers: {
+  type: String,
+  default: "",
+  trim: true,
+},
+
+companyName: {
+  type: String,
+  default: "",
+  trim: true,
+},
+
+orderNo: {
+  type: String,
+  required: true,
+  trim: true,
+},
     poNo: {
       type: String,
       default: "",

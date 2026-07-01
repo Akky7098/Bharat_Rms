@@ -205,19 +205,20 @@ const createMtcCertificate = async (payload, loggedInUser) => {
     payload.grade,
     payload.chemicalComposition || []
   );
-
+const messers = payload.messers || payload.companyName || "";
   const mtc = await MtcCertificate.create({
-    ...payload,
-    mtcProvider,
-    chemicalComposition,
+  ...payload,
+  mtcProvider,
+  messers,
+  companyName: payload.companyName || messers,
+  chemicalComposition,
 
-    // Auto-filled from backend specs
-    hardness: gradeConfig.hardness,
-    hardenability: gradeConfig.hardenability,
-    seat: gradeConfig.seat,
+  hardness: gradeConfig.hardness,
+  hardenability: gradeConfig.hardenability,
+  seat: gradeConfig.seat,
 
-    createdBy: loggedInUser?._id,
-  });
+  createdBy: loggedInUser?._id,
+});
 
   const pdfData = await generateMtcPdf(mtc);
 
