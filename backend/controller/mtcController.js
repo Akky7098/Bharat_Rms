@@ -52,8 +52,24 @@ const getMtcCertificates = async (req, res) => {
     });
   }
 };
+const getMtcChemicalSpecs = async (req, res) => {
+  try {
+    const specs = await mtcService.getMtcChemicalSpecs();
+
+    return res.status(200).json({
+      success: true,
+      data: specs,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 module.exports = {
   createMtcCertificate,
   getMtcCertificates,
+  getMtcChemicalSpecs,
   downloadMtcPdf,
 };

@@ -40,11 +40,13 @@ const getTemplateByProvider = (provider) => {
 };
 
 const validateChemicalComposition = (grade, inputComposition = []) => {
-  const gradeSpec = mtcChemicalSpecs[grade];
+  const gradeConfig = mtcChemicalSpecs[grade];
 
-  if (!gradeSpec) {
+  if (!gradeConfig) {
     throw new Error(`Chemical composition spec not configured for grade ${grade}`);
   }
+
+  const gradeSpec = gradeConfig.elements || gradeConfig;
 
   return Object.keys(gradeSpec).map((element) => {
     const spec = gradeSpec[element];
@@ -52,10 +54,6 @@ const validateChemicalComposition = (grade, inputComposition = []) => {
     const input = inputComposition.find(
       (item) => String(item.element).trim() === element
     );
-
-    if (!input) {
-      throw new Error(`${element} result is required`);
-    }
 
     const noMinMax = spec.min === null && spec.max === null;
 
@@ -66,6 +64,10 @@ const validateChemicalComposition = (grade, inputComposition = []) => {
         max: "X",
         result: "X",
       };
+    }
+
+    if (!input || input.result === "" || input.result === null || input.result === undefined) {
+      throw new Error(`${element} result is required`);
     }
 
     const result = Number(input.result);
@@ -89,6 +91,10 @@ const validateChemicalComposition = (grade, inputComposition = []) => {
       result,
     };
   });
+};
+
+const getMtcChemicalSpecs = async () => {
+  return mtcChemicalSpecs;
 };
 
 const generateMtcPdfBuffer = async (mtc) => {
@@ -260,5 +266,6 @@ const getMtcCertificates = async (filters = {}) => {
 module.exports = {
   createMtcCertificate,
   getMtcCertificates,
+  getMtcChemicalSpecs,
   getMtcPdf,
 };
