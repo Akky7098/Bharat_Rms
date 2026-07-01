@@ -27,6 +27,27 @@ const getImageBase64 = (fileName) => {
   }
 };
 
+const getFontBase64 = (fileName) => {
+  try {
+    const fontPath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "node_modules",
+      "@fontsource",
+      "roboto",
+      "files",
+      fileName
+    );
+
+    const fontBuffer = fs.readFileSync(fontPath);
+    return fontBuffer.toString("base64");
+  } catch (error) {
+    console.log("MTC FONT LOAD ERROR =>", fileName, error.message);
+    return "";
+  }
+};
+
 const getChem = (mtc, element) =>
   mtc.chemicalComposition?.find((item) => item.element === element) || {
     element,
@@ -142,6 +163,9 @@ const gloriaTemplate = (mtc) => {
   const qrCode = getImageBase64("qr-code.png");
   const signature = getImageBase64("signature.png");
 
+  const robotoRegular = getFontBase64("roboto-latin-400-normal.woff2");
+  const robotoBold = getFontBase64("roboto-latin-700-normal.woff2");
+
   return `
 <!DOCTYPE html>
 <html>
@@ -149,6 +173,18 @@ const gloriaTemplate = (mtc) => {
 <meta charset="UTF-8" />
 
 <style>
+@font-face {
+  font-family: "RobotoEmbedded";
+  src: url("data:application/font-woff2;base64,${robotoRegular}") format("woff2");
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "RobotoEmbedded";
+  src: url("data:application/font-woff2;base64,${robotoBold}") format("woff2");
+  font-weight: 700;
+}
+
 @page {
   size: A4 portrait;
   margin: 0;
@@ -163,7 +199,7 @@ body {
   padding: 0;
   color: #000;
   background: #fff;
-  font-family: "Times New Roman", serif;
+  font-family: "Times New Roman", "RobotoEmbedded", serif;
 }
 
 .page {
