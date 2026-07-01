@@ -18,9 +18,11 @@ const safe = (value) => {
 
 const getImageBase64 = (fileName) => {
   try {
-    const imagePath = path.join(__dirname, "assets", fileName);
-    const buffer = fs.readFileSync(imagePath);
+    // gloriaTemplate.js is in templates/mtc/
+    // images are in templates/asset/
+    const imagePath = path.join(__dirname, "..", "asset", fileName);
 
+    const buffer = fs.readFileSync(imagePath);
     const ext = path.extname(fileName).replace(".", "").toLowerCase();
     const mime = ext === "jpg" || ext === "jpeg" ? "jpeg" : "png";
 
@@ -105,20 +107,42 @@ const renderHeaderInfo = (mtc) => {
   return `
     <div class="info-grid">
       <div>
-        <div class="info-row"><span>Messers</span><span>:</span><span>${safe(mtc.messers)}</span></div>
-        <div class="info-row"><span>Order No.</span><span>:</span><span>${safe(mtc.orderNo)}</span></div>
-        <div class="info-row"><span>File No.</span><span>:</span><span>${safe(mtc.fileNo)}</span></div>
-        <div class="info-row"><span>Grade</span><span>:</span><span>${safe(mtc.grade)}</span></div>
-        <div class="info-row"><span>Size</span><span>:</span><span>${safe(mtc.size)}</span></div>
-        <div class="info-row"><span>Heat-Lot No.</span><span>:</span><span>${safe(mtc.heatLotNo)}</span></div>
-        <div class="info-row"><span>Condition</span><span>:</span><span>${safe(mtc.condition)}</span></div>
+        <div class="info-row"><span>Messers</span><span>:</span><span>${safe(
+          mtc.messers
+        )}</span></div>
+        <div class="info-row"><span>Order No.</span><span>:</span><span>${safe(
+          mtc.orderNo
+        )}</span></div>
+        <div class="info-row"><span>File No.</span><span>:</span><span>${safe(
+          mtc.fileNo
+        )}</span></div>
+        <div class="info-row"><span>Grade</span><span>:</span><span>${safe(
+          mtc.grade
+        )}</span></div>
+        <div class="info-row"><span>Size</span><span>:</span><span>${safe(
+          mtc.size
+        )}</span></div>
+        <div class="info-row"><span>Heat-Lot No.</span><span>:</span><span>${safe(
+          mtc.heatLotNo
+        )}</span></div>
+        <div class="info-row"><span>Condition</span><span>:</span><span>${safe(
+          mtc.condition
+        )}</span></div>
       </div>
 
       <div>
-        <div class="info-row"><span>P.O.No.</span><span>:</span><span>${safe(mtc.poNo)}</span></div>
-        <div class="info-row"><span>Date</span><span>:</span><span>${formatDate(mtc.mtcDate)}</span></div>
-        <div class="info-row"><span>Weight</span><span>:</span><span>${safe(mtc.weight)}</span></div>
-        <div class="info-row"><span>Pcs</span><span>:</span><span>${safe(mtc.pcs)}</span></div>
+        <div class="info-row"><span>P.O.No.</span><span>:</span><span>${safe(
+          mtc.poNo
+        )}</span></div>
+        <div class="info-row"><span>Date</span><span>:</span><span>${formatDate(
+          mtc.mtcDate
+        )}</span></div>
+        <div class="info-row"><span>Weight</span><span>:</span><span>${safe(
+          mtc.weight
+        )}</span></div>
+        <div class="info-row"><span>Pcs</span><span>:</span><span>${safe(
+          mtc.pcs
+        )}</span></div>
       </div>
     </div>
   `;
@@ -167,67 +191,71 @@ body {
   padding: 0;
   color: #000;
   background: #fff;
-  font-family: "RobotoEmbedded", Arial, sans-serif;
+  font-family: "Times New Roman", "RobotoEmbedded", Arial, serif;
 }
 
 .page {
   width: 210mm;
   height: 297mm;
   position: relative;
-  padding: 27mm 10mm 8mm;
+  padding: 25mm 10mm 8mm;
   page-break-after: always;
 }
 
 .header {
   display: grid;
-  grid-template-columns: 35mm 1fr 35mm;
+  grid-template-columns: 34mm 1fr 34mm;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 11px;
 }
 
 .logo-left img {
-  width: 31mm;
-  height: auto;
-}
-
-.logo-right img {
   width: 27mm;
   height: auto;
 }
 
+.logo-right {
+  text-align: right;
+}
+
+.logo-right img {
+  width: 22mm;
+  height: auto;
+}
+
 .fallback-logo-left {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: #e48321;
-  line-height: 18px;
+  line-height: 17px;
 }
 
 .fallback-logo-left span {
   display: block;
   color: #2a9d63;
-  font-size: 15px;
+  font-size: 14px;
   letter-spacing: 4px;
 }
 
 .fallback-logo-right {
   color: #e48321;
-  font-size: 25px;
+  font-size: 24px;
   font-weight: 700;
 }
 
 .title {
   text-align: center;
   font-weight: 700;
-  font-size: 20px;
-  line-height: 29px;
+  font-size: 18px;
+  line-height: 27px;
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: 45mm;
-  font-size: 13px;
-  line-height: 1.25;
+  column-gap: 48mm;
+  font-size: 12px;
+  line-height: 1.22;
 }
 
 .info-row {
@@ -243,7 +271,7 @@ body {
 
 .chem-title {
   text-align: center;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   margin-bottom: 7px;
 }
@@ -258,7 +286,7 @@ table {
 .chem-table td {
   text-align: center;
   padding: 3px 5px;
-  font-size: 13px;
+  font-size: 12px;
   height: 20px;
 }
 
@@ -282,14 +310,14 @@ table {
 
 .table-heading {
   text-align: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .small-table th,
 .small-table td {
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   padding: 3px 5px;
   height: 20px;
 }
@@ -301,24 +329,24 @@ table {
 .seat-table th,
 .seat-table td {
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   padding: 3px 5px;
   height: 20px;
 }
 
 .specification {
   margin-top: 12px;
-  font-size: 13px;
-  line-height: 21px;
+  font-size: 12px;
+  line-height: 20px;
 }
 
 .certification {
   position: absolute;
   left: 10mm;
   right: 10mm;
-  bottom: 20mm;
-  font-size: 9.2px;
-  line-height: 13px;
+  bottom: 19mm;
+  font-size: 8.5px;
+  line-height: 12px;
 }
 
 .bottom-footer {
@@ -327,69 +355,66 @@ table {
   right: 10mm;
   bottom: 5mm;
   display: grid;
-  grid-template-columns: 18mm 1fr;
-  column-gap: 5mm;
+  grid-template-columns: 16mm 1fr;
+  column-gap: 4mm;
   align-items: end;
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .bottom-footer img {
-  width: 16mm;
+  width: 15mm;
   height: auto;
 }
 
 .address {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 
 .page2-standard {
-  font-size: 13px;
-  line-height: 21px;
+  font-size: 12px;
+  line-height: 20px;
 }
 
 .remarks-title {
   margin-top: 22px;
   margin-bottom: 7px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .remarks {
-  font-size: 13px;
-  line-height: 22px;
+  font-size: 12px;
+  line-height: 21px;
 }
 
 .cert-logos {
   position: absolute;
   left: 10mm;
-  bottom: 30mm;
+  bottom: 31mm;
 }
 
 .cert-logos img {
-  width: 38mm;
+  width: 48mm;
   height: auto;
 }
 
 .cert-logos-fallback {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
 }
 
 .signature {
   position: absolute;
-  right: 11mm;
-  bottom: 28mm;
-  width: 28mm;
-  min-height: 15mm;
+  right: 10mm;
+  bottom: 29mm;
+  width: 26mm;
+  min-height: 14mm;
   text-align: center;
-  font-size: 9px;
-  border: 1px solid #000;
-  padding: 3px;
 }
 
 .signature img {
-  width: 22mm;
+  width: 26mm;
   height: auto;
 }
 </style>
@@ -438,9 +463,15 @@ table {
       <div class="table-heading">Hardness</div>
       <table class="small-table">
         <tr><th></th><th>1/2R(1)</th><th>1/2R(2)</th></tr>
-        <tr><td class="label-cell">Spec. Min.</td><td>${safe(mtc.hardness?.halfR1?.specMin)}</td><td>${safe(mtc.hardness?.halfR2?.specMin)}</td></tr>
-        <tr><td class="label-cell">Spec. Max.</td><td>${safe(mtc.hardness?.halfR1?.specMax)}</td><td>${safe(mtc.hardness?.halfR2?.specMax)}</td></tr>
-        <tr><td class="label-cell">Result</td><td>${safe(mtc.hardness?.halfR1?.result)}</td><td>${safe(mtc.hardness?.halfR2?.result)}</td></tr>
+        <tr><td class="label-cell">Spec. Min.</td><td>${safe(
+          mtc.hardness?.halfR1?.specMin
+        )}</td><td>${safe(mtc.hardness?.halfR2?.specMin)}</td></tr>
+        <tr><td class="label-cell">Spec. Max.</td><td>${safe(
+          mtc.hardness?.halfR1?.specMax
+        )}</td><td>${safe(mtc.hardness?.halfR2?.specMax)}</td></tr>
+        <tr><td class="label-cell">Result</td><td>${safe(
+          mtc.hardness?.halfR1?.result
+        )}</td><td>${safe(mtc.hardness?.halfR2?.result)}</td></tr>
       </table>
     </div>
 
@@ -448,9 +479,15 @@ table {
       <div class="table-heading">Hardenability</div>
       <table class="small-table">
         <tr><th></th><th>1/2R</th><th>1/2R</th></tr>
-        <tr><td class="label-cell">Spec. Min.</td><td>${safe(mtc.hardenability?.halfR1?.specMin)}</td><td>${safe(mtc.hardenability?.halfR2?.specMin)}</td></tr>
-        <tr><td class="label-cell">Spec. Max.</td><td>${safe(mtc.hardenability?.halfR1?.specMax)}</td><td>${safe(mtc.hardenability?.halfR2?.specMax)}</td></tr>
-        <tr><td class="label-cell">Result</td><td>${safe(mtc.hardenability?.halfR1?.result)}</td><td>${safe(mtc.hardenability?.halfR2?.result)}</td></tr>
+        <tr><td class="label-cell">Spec. Min.</td><td>${safe(
+          mtc.hardenability?.halfR1?.specMin
+        )}</td><td>${safe(mtc.hardenability?.halfR2?.specMin)}</td></tr>
+        <tr><td class="label-cell">Spec. Max.</td><td>${safe(
+          mtc.hardenability?.halfR1?.specMax
+        )}</td><td>${safe(mtc.hardenability?.halfR2?.specMax)}</td></tr>
+        <tr><td class="label-cell">Result</td><td>${safe(
+          mtc.hardenability?.halfR1?.result
+        )}</td><td>${safe(mtc.hardenability?.halfR2?.result)}</td></tr>
       </table>
     </div>
   </div>
