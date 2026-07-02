@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const mtcChemicalSpecs = require("../../util/mtcChemicalSpecs");
 
 const formatDate = (date) => {
   if (!date) return "";
@@ -40,8 +41,7 @@ const getFontBase64 = (fileName) => {
       fileName
     );
 
-    const fontBuffer = fs.readFileSync(fontPath);
-    return fontBuffer.toString("base64");
+    return fs.readFileSync(fontPath).toString("base64");
   } catch (error) {
     console.log("MTC FONT LOAD ERROR =>", fileName, error.message);
     return "";
@@ -56,7 +56,13 @@ const getChem = (mtc, element) =>
     result: "",
   };
 
-const displaySpecValue = (value, item) => {
+const displaySpecValue = (value, item, type, grade) => {
+  const textValue =
+    mtcChemicalSpecs?.[grade]?.elements?.[item.element]?.[
+      type === "min" ? "minText" : "maxText"
+    ];
+
+  if (textValue !== undefined) return textValue;
   if (item.min === null && item.max === null) return "X";
   if (value === null || value === undefined) return "";
   return value;
@@ -73,11 +79,21 @@ const renderChemTable = (mtc, elements) => {
       </tr>
       <tr>
         <td class="label-cell">Min.</td>
-        ${rows.map((item) => `<td>${displaySpecValue(item.min, item)}</td>`).join("")}
+        ${rows
+          .map(
+            (item) =>
+              `<td>${displaySpecValue(item.min, item, "min", mtc.grade)}</td>`
+          )
+          .join("")}
       </tr>
       <tr>
         <td class="label-cell">Max.</td>
-        ${rows.map((item) => `<td>${displaySpecValue(item.max, item)}</td>`).join("")}
+        ${rows
+          .map(
+            (item) =>
+              `<td>${displaySpecValue(item.max, item, "max", mtc.grade)}</td>`
+          )
+          .join("")}
       </tr>
       <tr>
         <td class="label-cell">Result</td>
@@ -90,7 +106,7 @@ const renderChemTable = (mtc, elements) => {
 const renderHeaderInfo = (mtc) => `
   <div class="info-grid">
     <div>
-      <div class="info-row"><span>Messers</span><span>:</span><span>${safe(mtc.messers)}</span></div>
+      <div class="info-row"><span>Messers</span><span>:</span><span></span></div>
       <div class="info-row"><span>Order No.</span><span>:</span><span>${safe(mtc.orderNo)}</span></div>
       <div class="info-row"><span>File No.</span><span>:</span><span>${safe(mtc.fileNo)}</span></div>
       <div class="info-row"><span>Grade</span><span>:</span><span>${safe(mtc.grade)}</span></div>
@@ -301,32 +317,56 @@ table {
   margin-top: 4.2mm;
 }
 
-.two-table {
-  display: grid;
-  grid-template-columns: 42mm 42mm;
-  column-gap: 22mm;
-  margin-left: 17mm;
-  margin-top: 3mm;
-}
-
-.table-heading {
-  text-align: center;
-  font-size: 10.5px;
-  font-weight: 700;
-  margin-bottom: 1mm;
-}
-
-.small-table th,
-.small-table td {
-  text-align: center;
-  font-size: 10.5px;
-  padding: 0.9mm;
-  height: 4.9mm;
-}
-
 .non-metallic {
   margin-top: 2.2mm;
   font-size: 10.5px;
+}
+
+.mechanical-block {
+  width: 58mm;
+  margin-left: 16mm;
+  margin-top: 2mm;
+}
+
+.mechanical-pair {
+  display: grid;
+  grid-template-columns: 28mm 28mm;
+  column-gap: 7mm;
+  margin-bottom: 4mm;
+}
+
+.mechanical-head {
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-bottom: 4mm;
+}
+
+.mechanical-sub {
+  text-align: center;
+  font-size: 10.5px;
+  margin-bottom: 2.2mm;
+}
+
+.mechanical-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.mechanical-table td {
+  font-size: 10.5px;
+  padding: 0.8mm 0;
+  height: 4.5mm;
+}
+
+.mechanical-label {
+  width: 17mm;
+  text-align: left;
+  font-weight: 700;
+}
+
+.mechanical-value {
+  text-align: center;
 }
 
 .seat-table {
@@ -448,25 +488,49 @@ table {
 
     <div class="non-metallic">Mechanical Properties Spec.</div>
 
-    <div class="two-table">
-      <div>
-        <div class="table-heading">Hardness&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hardness</div>
-        <table class="small-table">
-          <tr><th></th><th>1/2R(1)</th><th>1/2R(2)</th></tr>
-          <tr><td class="label-cell">Spec. Min.</td><td>${safe(mtc.hardness?.halfR1?.specMin)}</td><td>${safe(mtc.hardness?.halfR2?.specMin)}</td></tr>
-          <tr><td class="label-cell">Spec. Max.</td><td>${safe(mtc.hardness?.halfR1?.specMax)}</td><td>${safe(mtc.hardness?.halfR2?.specMax)}</td></tr>
-          <tr><td class="label-cell">Result</td><td>${safe(mtc.hardness?.halfR1?.result)}</td><td>${safe(mtc.hardness?.halfR2?.result)}</td></tr>
-        </table>
+    <div class="mechanical-block">
+      <div class="mechanical-pair">
+        <div>
+          <div class="mechanical-head">Hardness</div>
+          <div class="mechanical-sub">1/2R(1)</div>
+          <table class="mechanical-table">
+            <tr><td class="mechanical-label">Spec. Min.</td><td class="mechanical-value">${safe(mtc.hardness?.halfR1?.specMin)}</td></tr>
+            <tr><td class="mechanical-label">Spec. Max.</td><td class="mechanical-value">${safe(mtc.hardness?.halfR1?.specMax)}</td></tr>
+            <tr><td class="mechanical-label">Result</td><td class="mechanical-value">${safe(mtc.hardness?.halfR1?.result)}</td></tr>
+          </table>
+        </div>
+
+        <div>
+          <div class="mechanical-head">Hardness</div>
+          <div class="mechanical-sub">1/2R(2)</div>
+          <table class="mechanical-table">
+            <tr><td class="mechanical-value">${safe(mtc.hardness?.halfR2?.specMin)}</td></tr>
+            <tr><td class="mechanical-value">${safe(mtc.hardness?.halfR2?.specMax)}</td></tr>
+            <tr><td class="mechanical-value">${safe(mtc.hardness?.halfR2?.result)}</td></tr>
+          </table>
+        </div>
       </div>
 
-      <div>
-        <div class="table-heading">Hardenability&nbsp;&nbsp;&nbsp;&nbsp;Hardenability</div>
-        <table class="small-table">
-          <tr><th></th><th>1/2R</th><th>1/2R</th></tr>
-          <tr><td class="label-cell">Spec. Min.</td><td>${safe(mtc.hardenability?.halfR1?.specMin)}</td><td>${safe(mtc.hardenability?.halfR2?.specMin)}</td></tr>
-          <tr><td class="label-cell">Spec. Max.</td><td>${safe(mtc.hardenability?.halfR1?.specMax)}</td><td>${safe(mtc.hardenability?.halfR2?.specMax)}</td></tr>
-          <tr><td class="label-cell">Result</td><td>${safe(mtc.hardenability?.halfR1?.result)}</td><td>${safe(mtc.hardenability?.halfR2?.result)}</td></tr>
-        </table>
+      <div class="mechanical-pair">
+        <div>
+          <div class="mechanical-head">Hardenability</div>
+          <div class="mechanical-sub">1/2R</div>
+          <table class="mechanical-table">
+            <tr><td class="mechanical-label">Spec. Min.</td><td class="mechanical-value">${safe(mtc.hardenability?.halfR1?.specMin)}</td></tr>
+            <tr><td class="mechanical-label">Spec. Max.</td><td class="mechanical-value">${safe(mtc.hardenability?.halfR1?.specMax)}</td></tr>
+            <tr><td class="mechanical-label">Result</td><td class="mechanical-value">${safe(mtc.hardenability?.halfR1?.result)}</td></tr>
+          </table>
+        </div>
+
+        <div>
+          <div class="mechanical-head">Hardenability</div>
+          <div class="mechanical-sub">1/2R</div>
+          <table class="mechanical-table">
+            <tr><td class="mechanical-value">${safe(mtc.hardenability?.halfR2?.specMin)}</td></tr>
+            <tr><td class="mechanical-value">${safe(mtc.hardenability?.halfR2?.specMax)}</td></tr>
+            <tr><td class="mechanical-value">${safe(mtc.hardenability?.halfR2?.result)}</td></tr>
+          </table>
+        </div>
       </div>
     </div>
 

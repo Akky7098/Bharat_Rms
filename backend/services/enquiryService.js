@@ -200,20 +200,55 @@ const createEnquiry = async (body, user, file) => {
   }
 
   const allowedSupplyConditions = [
-    "as_per_standard",
-    "as_rolled",
-    "as_forged",
-    "as_rolled_or_as_forged",
-    "as_rolled_annealed",
-    "as_forged_annealed",
-    "as_rolled_or_forged_annealed",
-    "as_rolled_normalised",
-    "as_rolled_or_as_forged_normalised",
-    "as_rolled_qt",
-    "as_forged_qt",
-    "as_rolled_or_as_forged_qt",
-    "other",
-  ];
+  /* Existing Supply Conditions */
+  "as_per_standard",
+
+  "as_rolled",
+  "as_forged",
+
+  "as_rolled_or_as_forged",
+
+  "as_rolled_annealed",
+  "as_forged_annealed",
+  "as_rolled_or_forged_annealed",
+
+  "as_rolled_normalised",
+  "as_rolled_or_as_forged_normalised",
+
+  "as_rolled_qt",
+  "as_forged_qt",
+  "as_rolled_or_as_forged_qt",
+
+  /* New General Supply Conditions - Hot Rolled */
+
+  "hot_rolled",
+  "hot_rolled_annealed",
+  "hot_rolled_normalized",
+  "hot_rolled_qt_ht",
+  "hot_rolled_annealed_cold_drawn",
+  "hot_rolled_annealed_peeled",
+  "hot_rolled_normalized_peeled",
+  "hot_rolled_normalized_cold_drawn",
+  "hot_rolled_annealed_qt_ht",
+  "hot_rolled_normalized_qt_ht",
+  "hot_rolled_qt_peeled",
+  "double_rolled_condition",
+
+  /* New General Supply Conditions - Hot Forged */
+
+  "hot_forged",
+  "hot_forged_annealed",
+  "hot_forged_normalized",
+  "hot_forged_annealed_machined",
+  "hot_forged_normalized_machined",
+  "hot_forged_qt_ht",
+  "hot_forged_qt_ht_machined",
+  "hot_forged_rolled",
+
+  /* Custom */
+
+  "other",
+];
 
   if (!allowedSupplyConditions.includes(supplyCondition)) {
     throw new Error("Invalid supply condition selected");

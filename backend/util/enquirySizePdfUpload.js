@@ -2,7 +2,9 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const uploadDir = path.join(__dirname, "../uploads/enquiry-size-pdf");
+const uploadDir =
+  process.env.ENQUIRY_SIZE_PDF_UPLOAD_DIR ||
+  path.join(__dirname, "..", "uploads", "enquiry-size-pdf");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -37,7 +39,7 @@ const uploadEnquirySizePdf = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
+    fileSize: 5 * 1024 * 1024,
   },
 });
 

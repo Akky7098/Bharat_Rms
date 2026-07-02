@@ -4,22 +4,25 @@ const mongoose = require("mongoose");
 const Receivable = require("../model/receivableModel");
 const ColdCall = require("../model/coldCallModel");
 
+const getISTDateRange = (fromDate, toDate) => {
+  const range = {};
+
+  if (fromDate) {
+    range.$gte = new Date(`${fromDate}T00:00:00.000+05:30`);
+  }
+
+  if (toDate) {
+    range.$lte = new Date(`${toDate}T23:59:59.999+05:30`);
+  }
+
+  return range;
+};
+
 const getDateFilter = (fromDate, toDate, fieldName) => {
   const filter = {};
 
   if (fromDate || toDate) {
-    filter[fieldName] = {};
-
-    if (fromDate) {
-      filter[fieldName].$gte = new Date(fromDate);
-    }
-
-    if (toDate) {
-      const endDate = new Date(toDate);
-      endDate.setHours(23, 59, 59, 999);
-
-      filter[fieldName].$lte = endDate;
-    }
+    filter[fieldName] = getISTDateRange(fromDate, toDate);
   }
 
   return filter;

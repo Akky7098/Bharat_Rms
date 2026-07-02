@@ -37,12 +37,21 @@ const dispatchSchema = new mongoose.Schema(
     salesPersonMobile: String,
 
     contactPersonName: { type: String, required: true, trim: true },
-    contactPersonEmail: { type: String, required: true, trim: true, lowercase: true },
+    contactPersonEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
     contactPersonNumber: { type: String, required: true, trim: true },
     shippingAddress: { type: String, trim: true, default: "" },
 
     dispatchCreatedBy: {
-      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
       name: String,
       email: { type: String, lowercase: true, trim: true },
       role: String,
@@ -56,7 +65,12 @@ const dispatchSchema = new mongoose.Schema(
       index: true,
     },
     invoiceDate: { type: Date, required: true },
-    dispatchDate: { type: Date, required: true, default: Date.now, index: true },
+    dispatchDate: {
+      type: Date,
+      required: true,
+      default: Date.now,
+      index: true,
+    },
 
     dispatchQty: { type: Number, required: true, min: 0 },
     invoiceValue: { type: Number, required: true, min: 0 },
@@ -78,6 +92,14 @@ const dispatchSchema = new mongoose.Schema(
 
     billPdf: { type: fileSchema, required: true },
     lrCopyPdf: fileSchema,
+
+    tcApplicable: {
+      type: String,
+      enum: ["applicable", "not_applicable"],
+      default: "not_applicable",
+      index: true,
+    },
+
     tcCertificatePdf: fileSchema,
 
     paymentTerms: { type: String, trim: true, default: "" },
@@ -164,16 +186,40 @@ const dispatchSchema = new mongoose.Schema(
 dispatchSchema.pre("validate", function () {
   if (!this.dispatchDate) this.dispatchDate = new Date();
 
+  if (!this.tcApplicable) {
+    this.tcApplicable = this.tcCertificatePdf
+      ? "applicable"
+      : "not_applicable";
+  }
+
+  if (
+    this.tcApplicable === "applicable" &&
+    (!this.tcCertificatePdf || !this.tcCertificatePdf.fileUrl)
+  ) {
+    this.invalidate(
+      "tcCertificatePdf",
+      "MTC / TC PDF is required when TC is applicable."
+    );
+  }
+
+  if (this.tcApplicable === "not_applicable") {
+    this.tcCertificatePdf = undefined;
+  }
+
   if (this.paymentDueDays !== undefined && this.paymentDueDays !== null) {
     const dueDate = new Date(this.dispatchDate);
     dueDate.setDate(dueDate.getDate() + Number(this.paymentDueDays || 0));
+    dueDate.setHours(12, 0, 0, 0);
     this.paymentDueDate = dueDate;
   }
 
   const invoiceValue = Number(this.invoiceValue || 0);
   const paidAmount = Number(this.paidAmount || 0);
 
-  this.pendingAmount = Math.max(Number((invoiceValue - paidAmount).toFixed(2)), 0);
+  this.pendingAmount = Math.max(
+    Number((invoiceValue - paidAmount).toFixed(2)),
+    0
+  );
 
   if (this.pendingAmount === 0 && invoiceValue > 0) {
     this.paymentStatus = "paid";
@@ -201,5 +247,6 @@ dispatchSchema.pre("validate", function () {
 
 dispatchSchema.index({ salesOrderId: 1, isActive: 1, dispatchStatus: 1 });
 dispatchSchema.index({ companyName: 1, invoiceNumber: 1 });
+dispatchSchema.index({ tcApplicable: 1, isActive: 1 });
 
 module.exports = mongoose.model("Dispatch", dispatchSchema);

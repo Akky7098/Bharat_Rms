@@ -20,6 +20,7 @@ const receivableRoutes = require("./routes/receivableRoutes");
 const pushSubscriptionRoutes = require("./routes/pushSubscriptionRoutes");
 const appPushRoutes = require("./routes/appPushRoutes");
 const mtcRoutes = require("./routes/mtcRoutes");
+const supportTicketRoutes = require("./routes/supportTicketRoutes");
 
 const app = express();
 
@@ -48,12 +49,35 @@ app.use(express.urlencoded({ extended: true }));
 /* EXISTING UPLOADS - KEEP FOR OTHER MODULES */
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+/* DOCUMENTS - PERSISTENT UPLOAD PATH */
+const documentUploadDir =
+  process.env.DOCUMENT_UPLOAD_DIR ||
+  path.join(__dirname, "uploads", "documents");
+
+app.use("/uploads/documents", express.static(documentUploadDir));
+
+/* ENQUIRY SIZE PDF - PERSISTENT UPLOAD PATH */
+const enquirySizePdfUploadDir =
+  process.env.ENQUIRY_SIZE_PDF_UPLOAD_DIR ||
+  path.join(__dirname, "uploads", "enquiry-size-pdf");
+
+app.use("/uploads/enquiry-size-pdf", express.static(enquirySizePdfUploadDir));
+
 /* DISPATCH ONLY - PERSISTENT UPLOAD PATH */
 const dispatchUploadDir =
   process.env.DISPATCH_UPLOAD_DIR ||
   path.join(__dirname, "uploads", "dispatch");
 
 app.use("/uploads/dispatch", express.static(dispatchUploadDir));
+
+/* SUPPORT TICKET - PERSISTENT UPLOAD PATH */
+app.use(
+  "/uploads/support",
+  express.static(
+    process.env.SUPPORT_UPLOAD_DIR ||
+      path.join(__dirname, "uploads", "support")
+  )
+);
 
 /* SALES ORDER PDF */
 app.use(
@@ -118,8 +142,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/receivables", receivableRoutes);
 app.use("/api/push-subscriptions", pushSubscriptionRoutes);
 app.use("/api/app-push", appPushRoutes);
-
-/* MTC ROUTES */
+app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/mtc", mtcRoutes);
 
 module.exports = app;

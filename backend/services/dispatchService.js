@@ -126,9 +126,25 @@ const deleteUploadedFiles = (files = []) => {
   });
 };
 
+const parseLocalDateOnly = (dateValue) => {
+  if (!dateValue) return new Date();
+
+  if (dateValue instanceof Date) return dateValue;
+
+  const value = String(dateValue);
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0, 0);
+  }
+
+  return new Date(value);
+};
+
 const calculatePaymentDueDate = (dispatchDate, paymentDueDays) => {
-  const dueDate = new Date(dispatchDate);
+  const dueDate = parseLocalDateOnly(dispatchDate);
   dueDate.setDate(dueDate.getDate() + Number(paymentDueDays || 0));
+  dueDate.setHours(12, 0, 0, 0);
   return dueDate;
 };
 
@@ -407,8 +423,11 @@ const createDispatch = async (body, files, user) => {
         ? Math.max(Number((remainingBeforeDispatch - qty).toFixed(3)), 0)
         : 0;
 
-    const finalDispatchDate = dispatchDate ? new Date(dispatchDate) : new Date();
-    const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
+   const finalDispatchDate = dispatchDate
+  ? parseLocalDateOnly(dispatchDate)
+  : new Date();
+
+const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
     const pendingAmount = Number((value - paid).toFixed(2));
     const paymentStatus = calculatePaymentStatus(pendingAmount, paymentDueDate, paid);
 
@@ -574,6 +593,7 @@ const getAllDispatches = async (query, user) => {
     invoiceNumber,
     fromDate,
     toDate,
+    cardFilter,
   } = query;
 
   const safePage = Math.max(Number(page) || 1, 1);
@@ -581,7 +601,10 @@ const getAllDispatches = async (query, user) => {
 
   const match = { isActive: true };
 
-  if (salesOrderId) match.salesOrderId = new mongoose.Types.ObjectId(salesOrderId);
+  if (salesOrderId) {
+    match.salesOrderId = new mongoose.Types.ObjectId(salesOrderId);
+  }
+
   if (paymentStatus) match.paymentStatus = paymentStatus;
   if (dispatchStatus) match.dispatchStatus = dispatchStatus;
 
@@ -593,12 +616,50 @@ const getAllDispatches = async (query, user) => {
     match.invoiceNumber = { $regex: escapeRegex(invoiceNumber), $options: "i" };
   }
 
-  if (fromDate || toDate) {
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  if (cardFilter === "monthly_dispatch") {
+    match.dispatchDate = {
+      $gte: monthStart,
+      $lte: monthEnd,
+    };
+  }
+
+  if (cardFilter === "monthly_paid") {
+    match.dispatchDate = {
+      $gte: monthStart,
+      $lte: monthEnd,
+    };
+    match.paymentStatus = "paid";
+  }
+
+  if (cardFilter === "total_due") {
+    match.pendingAmount = { $gt: 0 };
+    match.paymentStatus = { $in: ["pending", "partial", "overdue"] };
+  }
+
+  if (cardFilter === "overdue_this_month") {
+    match.pendingAmount = { $gt: 0 };
+    match.paymentStatus = "overdue";
+    match.paymentDueDate = {
+      $gte: monthStart,
+      $lte: monthEnd,
+    };
+  }
+
+  if (!cardFilter && (fromDate || toDate)) {
     match.dispatchDate = {};
-    if (fromDate) match.dispatchDate.$gte = new Date(fromDate);
+
+    if (fromDate) {
+      const startDate = parseLocalDateOnly(fromDate);
+      startDate.setHours(0, 0, 0, 0);
+      match.dispatchDate.$gte = startDate;
+    }
 
     if (toDate) {
-      const endDate = new Date(toDate);
+      const endDate = parseLocalDateOnly(toDate);
       endDate.setHours(23, 59, 59, 999);
       match.dispatchDate.$lte = endDate;
     }
@@ -622,7 +683,7 @@ const getAllDispatches = async (query, user) => {
     pagination: {
       totalRecords,
       currentPage: safePage,
-      totalPages: Math.ceil(totalRecords / safeLimit),
+      totalPages: Math.ceil(totalRecords / safeLimit) || 1,
       limit: safeLimit,
     },
   };
