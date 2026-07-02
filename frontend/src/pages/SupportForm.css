@@ -1,0 +1,335 @@
+.support-form-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(15, 23, 42, 0.58);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.support-form-modal {
+  width: min(780px, 96vw);
+  max-height: 92vh;
+  background: #ffffff;
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.38);
+}
+
+.support-form-head {
+  padding: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.22), transparent 34%),
+    linear-gradient(135deg, #07111f, #0f2f2a, #14532d);
+  color: #ffffff;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.support-form-head span {
+  display: inline-flex;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #bbf7d0;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.support-form-head h2 {
+  margin: 12px 0 4px;
+  color: #ffffff;
+  font-size: 25px;
+  font-weight: 950;
+  letter-spacing: -0.4px;
+}
+
+.support-form-head p {
+  margin: 0;
+  color: #d1fae5;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.support-form-head button {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.support-form-body {
+  padding: 22px;
+  max-height: calc(92vh - 190px);
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.06), transparent 32%),
+    #ffffff;
+}
+
+.support-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.support-form-section-full {
+  grid-column: 1 / -1;
+}
+
+.support-form-section label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.support-form-section input,
+.support-form-section select,
+.support-form-section textarea {
+  width: 100%;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 13px 14px;
+  font-size: 13px;
+  font-weight: 850;
+  outline: none;
+  font-family: inherit;
+}
+
+.support-form-section textarea {
+  resize: vertical;
+  line-height: 1.65;
+}
+
+.support-form-section input:focus,
+.support-form-section select:focus,
+.support-form-section textarea:focus {
+  border-color: #16a34a;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.12);
+}
+
+.support-form-preview {
+  padding: 16px;
+  border-radius: 20px;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+}
+
+.support-form-preview strong {
+  display: block;
+  color: #14532d;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.support-form-preview p {
+  margin: 6px 0 0;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.support-form-actions {
+  padding: 16px 22px 22px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: flex;
+  justify-content: flex-end;
+  gap: 11px;
+}
+
+.support-form-actions button {
+  min-height: 46px;
+  border: none;
+  border-radius: 16px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 950;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.support-form-cancel {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.support-form-submit {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 12px 26px rgba(22, 163, 74, 0.24);
+}
+
+.support-form-actions button:disabled,
+.support-form-head button:disabled,
+.support-form-section input:disabled,
+.support-form-section select:disabled,
+.support-form-section textarea:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ================= PWA FORM ================= */
+
+@media (max-width: 900px) {
+  .support-form-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .support-form-modal {
+    width: 100%;
+    max-height: 94dvh;
+    border-radius: 30px 30px 0 0;
+  }
+
+  .support-form-head {
+    padding:
+      calc(20px + env(safe-area-inset-top))
+      18px
+      18px;
+  }
+
+  .support-form-head h2 {
+    font-size: 23px;
+  }
+
+  .support-form-body {
+    grid-template-columns: 1fr;
+    padding: 18px;
+    max-height: calc(94dvh - 202px - env(safe-area-inset-top));
+  }
+
+  .support-form-section-full {
+    grid-column: auto;
+  }
+
+  .support-form-actions {
+    padding: 14px 18px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .support-form-actions button {
+    flex: 1;
+  }
+}
+.support-form-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.support-form-attachment-list span {
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.support-form-attachment-list button {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  line-height: 18px;
+}
+.support-form-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.support-form-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.support-form-actions {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: #ffffff;
+}
+
+.support-form-submit {
+  min-width: 190px;
+  justify-content: center;
+}
+
+@media (min-width: 901px) {
+  .support-form-modal {
+    height: auto;
+    max-height: 88vh;
+  }
+
+  .support-form-body {
+    max-height: calc(88vh - 190px);
+  }
+
+  .support-form-actions {
+    padding: 14px 22px 18px;
+  }
+}
+
+@media (max-width: 900px) {
+  .support-form-actions {
+    padding: 12px 18px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .support-form-submit {
+    min-width: 0;
+  }
+}
+.support-form-section input[type="file"] {
+  cursor: pointer;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.support-form-section input[type="file"]::file-selector-button {
+  border: none;
+  border-radius: 12px;
+  background: #e0ecff;
+  color: #1d4ed8;
+  padding: 9px 12px;
+  margin-right: 12px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}

@@ -13,13 +13,16 @@ import ColdCallList from "./ColdCallList";
 import DocumentPage from "./DocumentPage";
 import NotificationBell from "../components/NotificationBell";
 import MtcPage from "./MtcPage";
+import SupportPage from "./SupportPage";
+
 import { disablePushNotifications } from "../services/pushNotificationService";
 
 function Dashboard() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  const getInitialActive = () => {
-    const hash = window.location.hash.replace("#", "");
+    const getInitialActive = () => {
+    const rawHash = window.location.hash.replace("#", "") || "dashboard";
+    const hash = rawHash.split("?")[0];
 
     if (hash === "dashboard") return "dashboard";
     if (hash === "dashboard-home") return "dashboardHome";
@@ -32,11 +35,13 @@ function Dashboard() {
     if (hash === "cold-call") return "coldCall";
     if (hash === "documents") return "documents";
     if (hash === "mtc") return "mtc";
+if (hash === "support") return "support";
 
     return "dashboard";
   };
 
-  const [active, setActive] = useState(getInitialActive);
+    const [active, setActive] = useState(getInitialActive);
+  const [modulePayload, setModulePayload] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true"
@@ -103,6 +108,12 @@ function Dashboard() {
   icon: "📄",
   desc: "Material certificates",
 },
+{
+  key: "support",
+  label: "Support",
+  icon: "🎫",
+  desc: "Tasks & delegation",
+},
   ];
 
  
@@ -126,12 +137,24 @@ useEffect(() => {
     coldCall: "cold-call",
     documents: "documents",
     mtc: "mtc",
+    support: "support",
   };
+
+  const targetHash = hashMap[active] || "dashboard";
+
+  const currentRawHash = window.location.hash.replace("#", "");
+  const currentModule = currentRawHash.split("?")[0];
+  const currentQuery = currentRawHash.includes("?")
+    ? `?${currentRawHash.split("?")[1]}`
+    : "";
+
+  const shouldKeepDashboardQuery =
+    currentModule === targetHash && currentQuery.includes("source=dashboard");
 
   window.history.replaceState(
     null,
     "",
-    `/dashboard#${hashMap[active] || "dashboard"}`
+    `/dashboard#${targetHash}${shouldKeepDashboardQuery ? currentQuery : ""}`
   );
 
   localStorage.setItem("activeModule", active);
@@ -139,6 +162,23 @@ useEffect(() => {
   useEffect(() => {
     localStorage.setItem("sidebarCollapsed", sidebarCollapsed);
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    window.__openDashboardModule = (moduleKey, filters = {}) => {
+      setModulePayload({
+        moduleKey,
+        filters,
+        openedAt: Date.now(),
+      });
+
+      setActive(moduleKey);
+      setMobileMenuOpen(false);
+    };
+
+    return () => {
+      delete window.__openDashboardModule;
+    };
+  }, []);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -153,7 +193,8 @@ useEffect(() => {
     };
   }, []);
 
-  const goDashboardModules = () => {
+    const goDashboardModules = () => {
+    setModulePayload(null);
     setActive("dashboard");
     setMobileMenuOpen(false);
   };
@@ -186,7 +227,29 @@ const handleLogout = () => {
   window.location.replace("/");
 };
 
-  const handleMenuClick = (key) => {
+      const handleMenuClick = (key) => {
+    setModulePayload(null);
+
+    const hashMap = {
+      dashboard: "dashboard",
+      dashboardHome: "dashboard-home",
+      attendance: "attendance",
+      sheet: "enquiry",
+      salesOrder: "sales-order",
+      dispatch: "dispatch",
+      timesheet: "timesheet",
+      receivables: "receivables",
+      coldCall: "cold-call",
+      documents: "documents",
+      mtc: "mtc",
+    };
+
+    window.history.replaceState(
+      null,
+      "",
+      `/dashboard#${hashMap[key] || "dashboard"}`
+    );
+
     setActive(key);
     setMobileMenuOpen(false);
   };
@@ -341,7 +404,7 @@ const handleLogout = () => {
                     ? "active"
                     : ""
                 }
-                onClick={() => setActive(item.key)}
+               onClick={() => handleMenuClick(item.key)}
                 title={sidebarCollapsed ? item.label : ""}
                 type="button"
               >
@@ -451,22 +514,32 @@ const handleLogout = () => {
             <AttendancePage goDashboardHome={goDashboardModules} />
           )}
 
-          {active === "sheet" && <EnquiryList />}
+                    {active === "sheet" && (
+            <EnquiryList dashboardFilters={modulePayload?.filters} />
+          )}
 
-          {active === "salesOrder" && <SalesOrderList />}
+          {active === "salesOrder" && (
+            <SalesOrderList dashboardFilters={modulePayload?.filters} />
+          )}
 
           {active === "dispatch" && <DispatchPage />}
 
           {active === "timesheet" && <TimesheetPage />}
 
-          {active === "receivables" && <ReceivablePage />}
+          {active === "receivables" && (
+            <ReceivablePage dashboardFilters={modulePayload?.filters} />
+          )}
 
           {active === "coldCall" && (
-            <ColdCallList goDashboardHome={goDashboardModules} />
+            <ColdCallList
+              goDashboardHome={goDashboardModules}
+              dashboardFilters={modulePayload?.filters}
+            />
           )}
 
           {active === "documents" && <DocumentPage />}
           {active === "mtc" && <MtcPage />}
+{active === "support" && <SupportPage />}
         </main>
       </div>
     </div>

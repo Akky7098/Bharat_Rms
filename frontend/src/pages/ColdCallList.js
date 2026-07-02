@@ -10,7 +10,7 @@ const activityOptions = [
   { value: "email", label: "Email", icon: "✉️" },
 ];
 
-const ColdCallList = () => {
+const ColdCallList = ({ dashboardFilters, goDashboardHome }) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
@@ -27,14 +27,17 @@ const ColdCallList = () => {
     limit: 10,
   });
 
-  const [filters, setFilters] = useState({
+    const [filters, setFilters] = useState(() => ({
     page: 1,
     limit: 10,
-    salesPersonId: "",
-    fromDate: "",
-    toDate: "",
-    activityType: "",
-  });
+    salesPersonId: dashboardFilters?.salesPersonId || "",
+    fromDate: dashboardFilters?.fromDate || "",
+    toDate: dashboardFilters?.toDate || "",
+    activityType:
+      dashboardFilters?.activityType ||
+      (dashboardFilters?.type === "visits" ? "visit" : ""),
+    weekNo: dashboardFilters?.weekNo || "",
+  }));
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -66,7 +69,7 @@ const ColdCallList = () => {
     }
   }, [filters]);
 
-  const fetchSalesPersons = useCallback(async () => {
+    const fetchSalesPersons = useCallback(async () => {
     try {
       const data = await getSalesPersons();
       setSalesPersons(data || []);
@@ -74,6 +77,7 @@ const ColdCallList = () => {
       console.log(error);
     }
   }, []);
+
 
   useEffect(() => {
     fetchColdCalls();

@@ -41,6 +41,16 @@ const DispatchForm = ({ onClose, refresh }) => {
     tcCertificatePdf: null,
   });
 
+  const parseLocalDateOnly = (dateValue) => {
+    if (!dateValue) return null;
+
+    const [year, month, day] = String(dateValue).split("-").map(Number);
+
+    if (!year || !month || !day) return null;
+
+    return new Date(year, month - 1, day, 12, 0, 0, 0);
+  };
+
   const formatDate = (date) => {
     if (!date) return "-";
     return new Date(date).toLocaleDateString("en-IN");
@@ -48,6 +58,22 @@ const DispatchForm = ({ onClose, refresh }) => {
 
   const formatCurrency = (value) => {
     return `₹ ${Number(value || 0).toLocaleString("en-IN")}`;
+  };
+
+  const formatKg = (value) => {
+    const num = Number(value || 0);
+    if (!num) return "0 Kg";
+    return `${num.toLocaleString("en-IN")} Kg`;
+  };
+
+  const formatDispatchStatus = (status) => {
+    const map = {
+      pending_dispatch: "Pending Dispatch",
+      partial_dispatched: "Partial Dispatch",
+      fully_dispatched: "Fully Dispatched",
+    };
+
+    return map[status] || status || "-";
   };
 
   const formatFileSize = (size) => {
@@ -66,7 +92,9 @@ const DispatchForm = ({ onClose, refresh }) => {
   const calculateDueDatePreview = () => {
     if (!form.dispatchDate || form.paymentDueDays === "") return "-";
 
-    const dueDate = new Date(form.dispatchDate);
+    const dueDate = parseLocalDateOnly(form.dispatchDate);
+    if (!dueDate) return "-";
+
     dueDate.setDate(dueDate.getDate() + Number(form.paymentDueDays || 0));
 
     return formatDate(dueDate);
@@ -90,9 +118,7 @@ const DispatchForm = ({ onClose, refresh }) => {
   };
 
   useEffect(() => {
-    if (!hasFocusedSearch || selectedOrder) {
-      return;
-    }
+    if (!hasFocusedSearch || selectedOrder) return;
 
     const delay = setTimeout(() => {
       loadOrders(search);
@@ -116,11 +142,12 @@ const DispatchForm = ({ onClose, refresh }) => {
     setOrders([]);
 
     setForm((prev) => ({
-  ...prev,
-  salesOrderId: order._id,
-  invoiceValue: "",
-  paymentDueDays: "",
-}));
+      ...prev,
+      salesOrderId: order._id,
+      invoiceValue: "",
+      paymentDueDays: "",
+      dispatchQty: "",
+    }));
   };
 
   const clearSelectedOrder = () => {
@@ -134,6 +161,7 @@ const DispatchForm = ({ onClose, refresh }) => {
       ...prev,
       salesOrderId: "",
       invoiceValue: "",
+      dispatchQty: "",
     }));
   };
 
@@ -163,9 +191,12 @@ const DispatchForm = ({ onClose, refresh }) => {
     }
 
     setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  ...prev,
+  [name]: value,
+  ...(name === "tcApplicable" && value === "not_applicable"
+    ? { tcCertificatePdf: null }
+    : {}),
+}));
   };
 
   const getAdditionalCcEmails = () => {
@@ -201,6 +232,16 @@ const DispatchForm = ({ onClose, refresh }) => {
       return false;
     }
 
+    if (
+      selectedOrder?.remainingDispatchQty > 0 &&
+      Number(form.dispatchQty) > Number(selectedOrder.remainingDispatchQty)
+    ) {
+      alert(
+        `Dispatch quantity cannot be greater than remaining quantity ${selectedOrder.remainingDispatchQty} Kg.`
+      );
+      return false;
+    }
+
     if (Number(form.invoiceValue) <= 0) {
       alert("Invoice value must be greater than 0");
       return false;
@@ -226,38 +267,45 @@ const DispatchForm = ({ onClose, refresh }) => {
       return false;
     }
 
-    
-
     if (form.billPdf.type !== "application/pdf") {
       alert("Bill file must be PDF");
       return false;
     }
-     if (form.billPdf.size > 30 * 1024 * 1024) {
+
+    if (form.billPdf.size > 30 * 1024 * 1024) {
       alert("Bill PDF must be under 30MB");
       return false;
     }
-    if (form.lrCopyPdf) {
-  if (form.lrCopyPdf.type !== "application/pdf") {
-    alert("LR copy file must be PDF");
-    return false;
-  }
 
-  if (form.lrCopyPdf.size > 30 * 1024 * 1024) {
-    alert("LR copy PDF must be under 30MB");
-    return false;
-  }
+    if (form.lrCopyPdf) {
+      if (form.lrCopyPdf.type !== "application/pdf") {
+        alert("LR copy file must be PDF");
+        return false;
+      }
+
+      if (form.lrCopyPdf.size > 30 * 1024 * 1024) {
+        alert("LR copy PDF must be under 30MB");
+        return false;
+      }
+    }
+
+    if (form.tcApplicable === "applicable" && !form.tcCertificatePdf) {
+  alert("MTC / TC PDF is required when TC is applicable.");
+  return false;
 }
+
 if (form.tcCertificatePdf) {
   if (form.tcCertificatePdf.type !== "application/pdf") {
-    alert("TC Certificate file must be PDF");
+    alert("MTC / TC file must be PDF");
     return false;
   }
 
   if (form.tcCertificatePdf.size > 30 * 1024 * 1024) {
-    alert("TC Certificate PDF must be under 30MB");
+    alert("MTC / TC PDF must be under 30MB");
     return false;
   }
 }
+
     return true;
   };
 
@@ -274,6 +322,7 @@ if (form.tcCertificatePdf) {
     dispatchStatus: form.dispatchStatus,
     internalRemark: form.internalRemark,
     paymentRemark: form.paymentRemark,
+tcApplicable: form.tcApplicable,
   });
 
   const resetUploadProgress = () => {
@@ -298,7 +347,11 @@ if (form.tcCertificatePdf) {
       const totalSize =
   Number(form.billPdf?.size || 0) +
   Number(form.lrCopyPdf?.size || 0) +
-  Number(form.tcCertificatePdf?.size || 0);
+  Number(
+    form.tcApplicable === "applicable"
+      ? form.tcCertificatePdf?.size || 0
+      : 0
+  );
 
       setUploadProgress({
         show: true,
@@ -465,12 +518,42 @@ if (form.tcCertificatePdf) {
                       </div>
 
                       <div>
+                        <label>Total Qty</label>
+                        <p>
+                          {order.totalOrderQty > 0
+                            ? formatKg(order.totalOrderQty)
+                            : "-"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label>Already Dispatched</label>
+                        <p>{formatKg(order.totalDispatchedQty)}</p>
+                      </div>
+
+                      <div>
+                        <label>Remaining Qty</label>
+                        <p>
+                          {order.totalOrderQty > 0
+                            ? formatKg(order.remainingDispatchQty)
+                            : "Open"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label>Dispatch Status</label>
+                        <p>
+                          {formatDispatchStatus(order.dispatchAvailabilityStatus)}
+                        </p>
+                      </div>
+
+                      <div>
                         <label>Payment Terms</label>
                         <p>{order.paymentTerms || "-"}</p>
                       </div>
 
                       <div>
-                        <label>Status</label>
+                        <label>Approval Status</label>
                         <p>{order.approvalStatus || "-"}</p>
                       </div>
                     </div>
@@ -525,14 +608,46 @@ if (form.tcCertificatePdf) {
                   <strong>{selectedOrder.salesPersonName || "-"}</strong>
                 </div>
 
-                <div className="dispatch-selected-wide">
-                  <span>Material</span>
-                  <strong>{selectedOrder.sizeGradeQuantityRate || "-"}</strong>
-                </div>
-
                 <div>
                   <span>Order Value</span>
                   <strong>{formatCurrency(selectedOrder.orderValue)}</strong>
+                </div>
+
+                <div>
+                  <span>Total Qty</span>
+                  <strong>
+                    {selectedOrder.totalOrderQty > 0
+                      ? formatKg(selectedOrder.totalOrderQty)
+                      : "-"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Already Dispatched</span>
+                  <strong>{formatKg(selectedOrder.totalDispatchedQty)}</strong>
+                </div>
+
+                <div>
+                  <span>Remaining Qty</span>
+                  <strong>
+                    {selectedOrder.totalOrderQty > 0
+                      ? formatKg(selectedOrder.remainingDispatchQty)
+                      : "Open"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Dispatch Status</span>
+                  <strong>
+                    {formatDispatchStatus(
+                      selectedOrder.dispatchAvailabilityStatus
+                    )}
+                  </strong>
+                </div>
+
+                <div className="dispatch-selected-wide">
+                  <span>Material</span>
+                  <strong>{selectedOrder.sizeGradeQuantityRate || "-"}</strong>
                 </div>
               </div>
             </div>
@@ -592,7 +707,11 @@ if (form.tcCertificatePdf) {
                 name="dispatchQty"
                 value={form.dispatchQty}
                 onChange={handleChange}
-                placeholder="Enter dispatch quantity"
+                placeholder={
+                  selectedOrder?.remainingDispatchQty > 0
+                    ? `Max ${selectedOrder.remainingDispatchQty} Kg`
+                    : "Enter dispatch quantity"
+                }
                 disabled={submitting}
               />
             </div>
@@ -687,9 +806,9 @@ if (form.tcCertificatePdf) {
           <div className="dispatch-section-title">
             <h3>PDF Documents</h3>
             <p>
-  Bill PDF is mandatory. LR Copy and TC Certificate are optional and
-  will be attached in customer email if uploaded.
-</p>
+              Bill PDF is mandatory. LR Copy and TC Certificate are optional and
+              will be attached in customer email if uploaded.
+            </p>
           </div>
 
           <div className="dispatch-grid">
@@ -712,9 +831,7 @@ if (form.tcCertificatePdf) {
             </div>
 
             <div className="dispatch-field dispatch-file-field">
-              <label>
-  LR Copy PDF
-</label>
+              <label>LR Copy PDF</label>
               <input
                 type="file"
                 name="lrCopyPdf"
@@ -728,24 +845,44 @@ if (form.tcCertificatePdf) {
                 </small>
               )}
             </div>
-             <div className="dispatch-field dispatch-file-field">
-  <label>TC Certificate PDF</label>
 
-  <input
-    type="file"
-    name="tcCertificatePdf"
-    accept="application/pdf"
+            <div className="dispatch-field">
+  <label>TC Applicable</label>
+
+  <select
+    name="tcApplicable"
+    value={form.tcApplicable}
     onChange={handleChange}
     disabled={submitting}
-  />
-
-  {form.tcCertificatePdf && (
-    <small>
-      {form.tcCertificatePdf.name} ·{" "}
-      {formatFileSize(form.tcCertificatePdf.size)}
-    </small>
-  )}
+  >
+    <option value="not_applicable">Not Applicable</option>
+    <option value="applicable">Applicable</option>
+  </select>
 </div>
+
+{form.tcApplicable === "applicable" && (
+  <div className="dispatch-field dispatch-file-field dispatch-mtc-upload">
+    <label>
+      MTC / TC PDF <span className="dispatch-required">*</span>
+    </label>
+
+    <input
+      type="file"
+      name="tcCertificatePdf"
+      accept="application/pdf"
+      onChange={handleChange}
+      disabled={submitting}
+    />
+
+    {form.tcCertificatePdf && (
+      <small>
+        {form.tcCertificatePdf.name} ·{" "}
+        {formatFileSize(form.tcCertificatePdf.size)}
+      </small>
+    )}
+  </div>
+)}
+
             <div className="dispatch-field dispatch-full">
               <label>Additional CC Emails</label>
               <input

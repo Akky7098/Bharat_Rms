@@ -21,7 +21,7 @@ const BACKEND_URL =
   process.env.REACT_APP_BACKEND_URL ||
   "https://bharatspecialsteels.bharatspecialsteels.com";
 
-const SalesOrderList = () => {
+const SalesOrderList = ({ dashboardFilters }) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
  const userRole = String(user?.role || "")
@@ -38,10 +38,13 @@ const isSalesPerson = userRole === "user";
   const [salesPersons, setSalesPersons] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
-  const [activeTab, setActiveTab] = useState("approved");
+    const [activeTab, setActiveTab] = useState(
+    dashboardFilters?.approvalTab || "approved"
+  );
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [iosRefreshing, setIosRefreshing] = useState(false);
-  const [showIosFilters, setShowIosFilters] = useState(false);
+    const [showIosFilters, setShowIosFilters] = useState(false);
+  const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
   useLayoutEffect(() => {
   document.body.classList.add("sales-order-browser-scroll-page");
 
@@ -87,14 +90,18 @@ const isSalesPerson = userRole === "user";
     totalApprovedValue: 0,
   },
 });
-  const [filters, setFilters] = useState({
-  page: 1,
-  limit: 30,
-  fromDate: "",
-  toDate: "",
-  salesPersonId: "",
-  approvalTab: "approved",
-});
+    const [filters, setFilters] = useState(() => ({
+    page: 1,
+    limit: 30,
+    fromDate: dashboardFilters?.fromDate || "",
+    toDate: dashboardFilters?.toDate || "",
+    salesPersonId: dashboardFilters?.salesPersonId || "",
+    approvalTab: dashboardFilters?.approvalTab || "approved",
+    grade: dashboardFilters?.grade || "",
+    status: dashboardFilters?.status || "",
+    view: dashboardFilters?.view || "",
+    weekNo: dashboardFilters?.weekNo || "",
+  }));
 
   
 
@@ -155,7 +162,7 @@ const getActionButtonText = () => {
   }
 }, [filters]);
 
-  const fetchSalesPersons = useCallback(async () => {
+    const fetchSalesPersons = useCallback(async () => {
     try {
       const data = await getSalesPersons();
       setSalesPersons(data || []);
@@ -163,10 +170,12 @@ const getActionButtonText = () => {
       console.log(error);
     }
   }, []);
+  
 
   useEffect(() => {
     fetchSalesOrders();
   }, [fetchSalesOrders]);
+
 
   useEffect(() => {
     if (canViewSalesPersonFilter) {
@@ -219,16 +228,21 @@ const getActionButtonText = () => {
     });
   };
 
-  const clearFilters = () => {
-  setFilters({
-    page: 1,
-    limit: 30,
-    fromDate: "",
-    toDate: "",
-    salesPersonId: "",
-    approvalTab: activeTab,
-  });
-};
+   const clearFilters = () => {
+    setFilters({
+      page: 1,
+      limit: 30,
+      companyName: "",
+      fromDate: "",
+      toDate: "",
+      salesPersonId: "",
+      approvalTab: activeTab,
+      grade: "",
+      status: "",
+      view: "",
+      weekNo: "",
+    });
+  };
 
   const goToPage = (page) => {
     setFilters((prev) => ({
@@ -549,6 +563,52 @@ const canDeleteOrder = (order) => {
     companyName: order.companyName || "this company",
   });
 };
+const openOrderDetail = (order) => {
+  if (!order) return;
+  setSelectedOrderDetail(order);
+};
+
+const closeOrderDetail = () => {
+  setSelectedOrderDetail(null);
+};
+
+const stopRowClick = (e) => {
+  e.stopPropagation();
+};
+
+const filterTodayOrders = () => {
+  const today = new Date().toISOString().split("T")[0];
+
+  setActiveTab("approved");
+  setFilters((prev) => ({
+    ...prev,
+    page: 1,
+    approvalTab: "approved",
+    fromDate: today,
+    toDate: today,
+  }));
+};
+
+const filterCurrentMonthOrders = () => {
+  const now = new Date();
+  const fromDate = new Date(now.getFullYear(), now.getMonth(), 1)
+    .toISOString()
+    .split("T")[0];
+
+  const toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    .toISOString()
+    .split("T")[0];
+
+  setActiveTab("approved");
+  setFilters((prev) => ({
+    ...prev,
+    page: 1,
+    approvalTab: "approved",
+    fromDate,
+    toDate,
+  }));
+};
+
 const renderOrderActions = (order, mode = "desktop") => {
   const pdfUrl = getPdfUrl(order);
 
@@ -840,10 +900,11 @@ const renderOrderActions = (order, mode = "desktop") => {
                 const holdComment = getHoldComment(order);
 
                 return (
-                  <div
+                                   <div
                     key={order._id}
-                    className="ios-sales-card"
+                    className="ios-sales-card sales-click-row"
                     style={{ borderLeftColor: meta.border }}
+                    onClick={() => openOrderDetail(order)}
                   >
                     <div className="ios-sales-card-top">
                       <div>
@@ -894,7 +955,7 @@ const renderOrderActions = (order, mode = "desktop") => {
                       <IosInfo label="Address" value={order.companyAddress || "-"} full />
                     </div>
 
-                    <div className="ios-sales-action-row">
+                     <div className="ios-sales-action-row" onClick={stopRowClick}>
                       {renderOrderActions(order, "ios")}
                     </div>
                   </div>
@@ -982,50 +1043,78 @@ const renderOrderActions = (order, mode = "desktop") => {
   </button>
 </div>
           <div className="sales-insight-strip">
-  <div className="sales-insight-card today-order">
+    <button
+    type="button"
+    className="sales-insight-card today-order sales-click-card"
+    onClick={filterTodayOrders}
+  >
     <span>Today Orders</span>
     <strong>
       {salesSummary.todayApproved.totalApprovedOrders || 0}
     </strong>
-  </div>
+    </button>
 
-  <div className="sales-insight-card today-revenue">
-    <span>Today Revenue</span>
-    <strong>
-      {formatSummaryCurrency(
-        salesSummary.todayApproved.totalApprovedValue
-      )}
-    </strong>
-  </div>
+  <button
+  type="button"
+  className="sales-insight-card today-revenue sales-click-card"
+  onClick={filterTodayOrders}
+>
+  <span>Today Revenue</span>
+  <strong>
+    {formatSummaryCurrency(
+      salesSummary.todayApproved.totalApprovedValue
+    )}
+  </strong>
+</button>
 
-  <div className="sales-insight-card month-order">
-    <span>
-      {filters.fromDate || filters.toDate
-        ? "Filtered Orders"
-        : "Monthly Orders"}
-    </span>
+ <button
+  type="button"
+  className="sales-insight-card month-order sales-click-card"
+  onClick={filterCurrentMonthOrders}
+>
+  <span>
+    {filters.fromDate || filters.toDate
+      ? "Filtered Orders"
+      : "Monthly Orders"}
+  </span>
 
-    <strong>
-      {salesSummary.filteredApproved.totalApprovedOrders || 0}
-    </strong>
-  </div>
+  <strong>
+    {salesSummary.filteredApproved.totalApprovedOrders || 0}
+  </strong>
+</button>
 
-  <div className="sales-insight-card month-revenue">
-    <span>
-      {filters.fromDate || filters.toDate
-        ? "Filtered Revenue"
-        : "Monthly Revenue"}
-    </span>
+  <button
+  type="button"
+  className="sales-insight-card month-revenue sales-click-card"
+  onClick={filterCurrentMonthOrders}
+>
+  <span>
+    {filters.fromDate || filters.toDate
+      ? "Filtered Revenue"
+      : "Monthly Revenue"}
+  </span>
 
-    <strong>
-      {formatSummaryCurrency(
-        salesSummary.filteredApproved.totalApprovedValue
-      )}
-    </strong>
-  </div>
+  <strong>
+    {formatSummaryCurrency(
+      salesSummary.filteredApproved.totalApprovedValue
+    )}
+  </strong>
+</button>
 </div>
         <div className="sales-filter-card">
-          <div className="sales-filter-grid">
+                    <div className="sales-filter-grid">
+            <div className="filter-field">
+              <label>Company</label>
+              <input
+                type="text"
+                name="companyName"
+                value={filters.companyName || ""}
+                onChange={handleFilterChange}
+                placeholder="Search company..."
+                disabled={actionSubmitting}
+              />
+            </div>
+
             {canViewSalesPersonFilter && (
               <div className="filter-field">
                 <label>Sales Person</label>
@@ -1119,7 +1208,11 @@ const renderOrderActions = (order, mode = "desktop") => {
                   const pdfUrl = getPdfUrl(order);
 
                   return (
-                    <tr key={order._id}>
+                                        <tr
+                      key={order._id}
+                      className="sales-click-row"
+                      onClick={() => openOrderDetail(order)}
+                    >
                      <td className="sticky-col col-date">
   <div className="sales-order-datetime">
     <span className="sales-order-date">
@@ -1160,7 +1253,7 @@ const renderOrderActions = (order, mode = "desktop") => {
 
                       <td>{renderStatusBlock(order)}</td>
 
-                      <td>
+                                            <td onClick={stopRowClick}>
                         {pdfUrl ? (
                           <a
                             className="pdf-btn"
@@ -1175,7 +1268,7 @@ const renderOrderActions = (order, mode = "desktop") => {
                         )}
                       </td>
 
-                      <td>
+                                            <td onClick={stopRowClick}>
                         {renderOrderActions(order)}
                         {!canEditOrder(order) &&
                           !canAdminApproveReject(order) &&
@@ -1233,6 +1326,18 @@ const renderOrderActions = (order, mode = "desktop") => {
           onClose={closeForm}
           refresh={fetchSalesOrders}
           editOrder={editOrder}
+        />
+      )}
+
+                  {selectedOrderDetail && (
+        <SalesOrderDetailModal
+          order={selectedOrderDetail}
+          onClose={closeOrderDetail}
+          formatCurrency={formatCurrency}
+          formatPaymentTerms={formatPaymentTerms}
+          formatStatus={formatStatus}
+          formatDateTimeParts={formatDateTimeParts}
+          getPdfUrl={getPdfUrl}
         />
       )}
 
@@ -1298,7 +1403,7 @@ const renderOrderActions = (order, mode = "desktop") => {
               </button>
             </div>
 
-            {actionSubmitting && (
+                        {actionSubmitting && (
               <div className="approval-progress-note">
                 Please wait, processing request and sending email...
               </div>
@@ -1306,9 +1411,104 @@ const renderOrderActions = (order, mode = "desktop") => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
+
+function SalesOrderDetailModal({
+  order,
+  onClose,
+  formatCurrency,
+  formatPaymentTerms,
+  formatStatus,
+  formatDateTimeParts,
+  getPdfUrl,
+}) {
+  const pdfUrl = getPdfUrl(order);
+  const dateParts = formatDateTimeParts(order.orderDate || order.createdAt);
+
+  const approvedDate =
+    order.managerApproval?.approvedAt ||
+    order.adminApproval?.approvedAt ||
+    order.checkedAt ||
+    "";
+
+  const approvalDate = approvedDate
+    ? (() => {
+        const parts = formatDateTimeParts(approvedDate);
+        return `${parts.date} ${parts.time}`;
+      })()
+    : "-";
+
+  const rows = [
+    ["Company", order.companyName],
+    ["Address", order.companyAddress],
+    ["GSTIN", order.gstinNumber],
+    ["PO Number", order.poNumber],
+    ["Checklist No", order.checklistNumber],
+    ["Order Type", order.orderType],
+    ["Supply / Finish", order.supplyFinish],
+    ["Customer Type", order.customerType],
+    ["Contact Person", order.contactPersonName],
+    ["Contact Number", order.contactPersonNumber],
+    ["Sales Person", order.salesPersonName || order.salesPersonId?.name],
+    ["Sales Email", order.salesPersonEmail],
+    ["Payment Terms", formatPaymentTerms(order.paymentTerms)],
+    ["Approval Status", formatStatus(order.approvalStatus)],
+    ["Final Approval Date", approvalDate],
+    ["Order Value", `₹${formatCurrency(order.orderValue)}`],
+    ["Material / Size / Qty", order.sizeGradeQuantityRate || "-"],
+    ["Created Date", `${dateParts.date} ${dateParts.time}`],
+  ];
+
+  return (
+    <div className="sales-detail-overlay" onClick={onClose}>
+      <div className="sales-detail-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="sales-detail-head">
+          <div>
+            <span>Sales Order Detail</span>
+            <h3>{order.companyName || "-"}</h3>
+            <p>PO: {order.poNumber || "-"}</p>
+          </div>
+
+          <button type="button" onClick={onClose}>
+            ×
+          </button>
+        </div>
+
+        <div className="sales-detail-value-card">
+          <span>Order Value</span>
+          <strong>₹{formatCurrency(order.orderValue)}</strong>
+        </div>
+
+        <div className="sales-detail-grid">
+          {rows.map(([label, value]) => (
+            <div
+              key={label}
+              className={`sales-detail-item ${
+                label === "Material / Size / Qty"
+                  ? "sales-detail-item-wide"
+                  : ""
+              }`}
+            >
+              <span>{label}</span>
+              <strong>{value || "-"}</strong>
+            </div>
+          ))}
+        </div>
+
+        {pdfUrl && (
+          <div className="sales-detail-actions">
+            <a href={pdfUrl} target="_blank" rel="noreferrer">
+              Open PDF
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function IosStat({ label, value }) {
   return (

@@ -34,6 +34,7 @@ const DispatchPage = () => {
 
   const [showForm, setShowForm] = useState(false);
   const [paymentModal, setPaymentModal] = useState(null);
+const [selectedDispatchDetail, setSelectedDispatchDetail] = useState(null);
   const [paymentUpdating, setPaymentUpdating] = useState(false);
   const [showPwaFilters, setShowPwaFilters] = useState(false);
   const [activeInsight, setActiveInsight] = useState("");
@@ -46,16 +47,17 @@ const DispatchPage = () => {
     internalRemark: "",
   });
 
-  const [filters, setFilters] = useState({
-    fromDate: "",
-    toDate: "",
-    paymentStatus: "",
-    dispatchStatus: "",
-    companyName: "",
-    invoiceNumber: "",
-    page: 1,
-    limit: 30,
-  });
+ const [filters, setFilters] = useState({
+  fromDate: "",
+  toDate: "",
+  paymentStatus: "",
+  dispatchStatus: "",
+  companyName: "",
+  invoiceNumber: "",
+  cardFilter: "",
+  page: 1,
+  limit: 30,
+});
 
   useLayoutEffect(() => {
     document.body.classList.add("dispatch-pwa-page");
@@ -103,23 +105,23 @@ const DispatchPage = () => {
     return "pending";
   };
 
-  const getMonthRange = () => {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  // const getMonthRange = () => {
+  //   const now = new Date();
+  //   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  //   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const toInputDate = (date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    };
+  //   const toInputDate = (date) => {
+  //     const year = date.getFullYear();
+  //     const month = String(date.getMonth() + 1).padStart(2, "0");
+  //     const day = String(date.getDate()).padStart(2, "0");
+  //     return `${year}-${month}-${day}`;
+  //   };
 
-    return {
-      fromDate: toInputDate(firstDay),
-      toDate: toInputDate(lastDay),
-    };
-  };
+  //   return {
+  //     fromDate: toInputDate(firstDay),
+  //     toDate: toInputDate(lastDay),
+  //   };
+  // };
 
   const isThisMonth = (date) => {
     if (!date) return false;
@@ -163,74 +165,41 @@ const DispatchPage = () => {
   }, [dispatches]);
 
   const getBaseFilters = () => ({
-    fromDate: "",
-    toDate: "",
-    paymentStatus: "",
-    dispatchStatus: "",
-    companyName: "",
-    invoiceNumber: "",
+  fromDate: "",
+  toDate: "",
+  paymentStatus: "",
+  dispatchStatus: "",
+  companyName: "",
+  invoiceNumber: "",
+  cardFilter: "",
+  page: 1,
+  limit: 30,
+});
+
+ const applyInsightFilter = (type) => {
+  if (activeInsight === type) {
+    setActiveInsight("");
+    setFilters(getBaseFilters());
+    return;
+  }
+
+  const cardMap = {
+    monthlyDispatch: "monthly_dispatch",
+    monthlyPaid: "monthly_paid",
+    totalDue: "total_due",
+    overdueThisMonth: "overdue_this_month",
+  };
+
+  setActiveInsight(type);
+
+  setFilters({
+    ...getBaseFilters(),
+    cardFilter: cardMap[type] || "",
     page: 1,
     limit: 30,
   });
+};
 
-  const applyInsightFilter = (type) => {
-    if (activeInsight === type) {
-      setActiveInsight("");
-      setFilters(getBaseFilters());
-      return;
-    }
-
-    const monthRange = getMonthRange();
-    setActiveInsight(type);
-
-    if (type === "monthlyDispatch") {
-      setFilters((prev) => ({
-        ...prev,
-        ...monthRange,
-        paymentStatus: "",
-        dispatchStatus: "",
-        page: 1,
-        limit: 30,
-      }));
-      return;
-    }
-
-    if (type === "monthlyPaid") {
-      setFilters((prev) => ({
-        ...prev,
-        ...monthRange,
-        paymentStatus: "paid",
-        dispatchStatus: "",
-        page: 1,
-        limit: 30,
-      }));
-      return;
-    }
-
-    if (type === "totalDue") {
-      setFilters((prev) => ({
-        ...prev,
-        fromDate: "",
-        toDate: "",
-        paymentStatus: "pending",
-        dispatchStatus: "",
-        page: 1,
-        limit: 30,
-      }));
-      return;
-    }
-
-    if (type === "overdueThisMonth") {
-      setFilters((prev) => ({
-        ...prev,
-        ...monthRange,
-        paymentStatus: "overdue",
-        dispatchStatus: "",
-        page: 1,
-        limit: 30,
-      }));
-    }
-  };
 
   const loadDispatches = useCallback(async () => {
     try {
@@ -271,16 +240,18 @@ const DispatchPage = () => {
   };
 
   const handleFilterChange = (e) => {
-    const { name, value } = e.target;
+  const { name, value } = e.target;
 
-    setActiveInsight("");
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-      page: 1,
-      limit: 30,
-    }));
-  };
+  setActiveInsight("");
+
+  setFilters((prev) => ({
+    ...prev,
+    [name]: value,
+    cardFilter: "",
+    page: 1,
+    limit: 30,
+  }));
+};
 
   const clearFilters = () => {
     setActiveInsight("");
@@ -314,7 +285,20 @@ const DispatchPage = () => {
     });
   };
 
-  const openPaymentModal = (dispatch) => {
+  const openDispatchDetail = (dispatch) => {
+  if (!dispatch) return;
+  setSelectedDispatchDetail(dispatch);
+};
+
+const closeDispatchDetail = () => {
+  setSelectedDispatchDetail(null);
+};
+
+const stopRowClick = (e) => {
+  e.stopPropagation();
+};
+
+const openPaymentModal = (dispatch) => {
     setPaymentModal(dispatch);
     setPaymentForm({
       amount: "",
@@ -686,7 +670,11 @@ const DispatchPage = () => {
                 const paymentStatus = item.paymentStatus || "pending";
 
                 return (
-                  <div key={item._id} className="ios-dispatch-card">
+                  <div
+  key={item._id}
+  className="ios-dispatch-card dispatch-click-row"
+  onClick={() => openDispatchDetail(item)}
+>
                     <div className="ios-dispatch-card-top">
                       <div>
                         <h4>{item.companyName || "-"}</h4>
@@ -722,7 +710,7 @@ const DispatchPage = () => {
 
                     {renderPaymentHistory(item)}
 
-                    <div className="ios-dispatch-bottom-row">
+                    <div className="ios-dispatch-bottom-row" onClick={stopRowClick}>
                       <div className="ios-dispatch-doc-section">
                         <span>Documents</span>
                         {renderDocuments(item, "pwa")}
@@ -914,7 +902,11 @@ const DispatchPage = () => {
                   const paymentStatus = item.paymentStatus || "pending";
 
                   return (
-                    <tr key={item._id}>
+                    <tr
+  key={item._id}
+  className="dispatch-click-row"
+  onClick={() => openDispatchDetail(item)}
+>
                       <td>
                         <div className="dispatch-company-cell">
                           <strong>{item.companyName || "-"}</strong>
@@ -955,16 +947,15 @@ const DispatchPage = () => {
                       </td>
 
                       <td>{formatDate(item.paymentDueDate)}</td>
-                      <td>{renderDocuments(item)}</td>
+                      <td onClick={stopRowClick}>{renderDocuments(item)}</td>
 
                       <td>
                         <span className={`dispatch-status dispatch-${item.dispatchStatus || "dispatched"}`}>
                           {formatStatus(item.dispatchStatus)}
                         </span>
                       </td>
-
-                      <td>
-                        <div className="dispatch-action-group">
+<td onClick={stopRowClick}>
+  <div className="dispatch-action-group">
                           {canManageItem(item) && (
                             <button
                               type="button"
@@ -1021,7 +1012,20 @@ const DispatchPage = () => {
 
       {showForm && <DispatchForm onClose={closeForm} refresh={loadDispatches} />}
 
-      {paymentModal && (
+      {selectedDispatchDetail && (
+  <DispatchDetailModal
+    item={selectedDispatchDetail}
+    onClose={closeDispatchDetail}
+    formatDate={formatDate}
+    formatCurrency={formatCurrency}
+    formatQty={formatQty}
+    formatStatus={formatStatus}
+    getPaymentStatusClass={getPaymentStatusClass}
+    renderDocuments={renderDocuments}
+  />
+)}
+
+{paymentModal && (
         <div className="dispatch-modal-overlay">
           <div className="dispatch-payment-card">
             <div className="dispatch-form-header">
@@ -1153,6 +1157,105 @@ const DispatchPage = () => {
     </div>
   );
 };
+
+
+function DispatchDetailModal({
+  item,
+  onClose,
+  formatDate,
+  formatCurrency,
+  formatQty,
+  formatStatus,
+  getPaymentStatusClass,
+  renderDocuments,
+}) {
+  const paymentStatus = item.paymentStatus || "pending";
+
+  const rows = [
+    ["Company", item.companyName],
+    ["Sales Person", item.salesPersonName || item.salesPersonId?.name],
+    ["Contact Person", item.contactPersonName],
+    ["Contact Email", item.contactPersonEmail],
+    ["Invoice Number", item.invoiceNumber],
+    ["Invoice Date", formatDate(item.invoiceDate)],
+    ["PO Number", item.poNumber],
+    ["Dispatch Date", formatDate(item.dispatchDate)],
+    ["Quantity", formatQty(item.dispatchQty)],
+    ["Invoice Value", formatCurrency(item.invoiceValue)],
+    ["Paid Amount", formatCurrency(item.paidAmount)],
+    ["Pending Amount", formatCurrency(item.pendingAmount)],
+    ["Payment Due Date", formatDate(item.paymentDueDate)],
+    ["Payment Status", formatStatus(paymentStatus)],
+    ["Dispatch Status", formatStatus(item.dispatchStatus)],
+    ["Internal Remark", item.internalRemark],
+  ];
+
+  return (
+    <div className="dispatch-detail-overlay" onClick={onClose}>
+      <div className="dispatch-detail-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="dispatch-detail-head">
+          <div>
+            <span>Dispatch Detail</span>
+            <h3>{item.companyName || "-"}</h3>
+            <p>Invoice: {item.invoiceNumber || "-"} · PO: {item.poNumber || "-"}</p>
+          </div>
+
+          <button type="button" onClick={onClose}>×</button>
+        </div>
+
+        <div className="dispatch-detail-hero-grid">
+          <div className="dispatch-detail-value-card">
+            <span>Invoice Value</span>
+            <strong>{formatCurrency(item.invoiceValue)}</strong>
+          </div>
+
+          <div className={`dispatch-detail-status-card ${getPaymentStatusClass(paymentStatus)}`}>
+            <span>Payment Status</span>
+            <strong>{formatStatus(paymentStatus)}</strong>
+            <p>Pending: {formatCurrency(item.pendingAmount)}</p>
+          </div>
+        </div>
+
+        <div className="dispatch-detail-grid">
+          {rows.map(([label, value]) => (
+            <div
+              key={label}
+              className={`dispatch-detail-item ${
+                ["Internal Remark", "Company"].includes(label)
+                  ? "dispatch-detail-wide"
+                  : ""
+              }`}
+            >
+              <span>{label}</span>
+              <strong>{value || "-"}</strong>
+            </div>
+          ))}
+        </div>
+
+        {item.paymentHistory?.length > 0 && (
+          <div className="dispatch-detail-section">
+            <h4>Payment History</h4>
+
+            <div className="dispatch-detail-payment-list">
+              {item.paymentHistory.map((payment, index) => (
+                <div key={index} className="dispatch-detail-payment-card">
+                  <span>Payment {index + 1}</span>
+                  <strong>{formatCurrency(payment.amount)}</strong>
+                  <p>{payment.remark || "-"}</p>
+                  <small>{formatDate(payment.createdAt || payment.paidAt)}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="dispatch-detail-actions">
+          {renderDocuments(item)}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function DispatchInsight({ label, value, active, onClick }) {
   return (

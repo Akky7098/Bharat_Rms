@@ -34,34 +34,11 @@ const COLORS = [
   "#be123c",
 ];
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const FULL_MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 const YEARS = [2026, 2025, 2024];
@@ -104,14 +81,84 @@ const DashboardHome = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const getMonthDateRange = (month, year) => {
-    const fromDate = new Date(year, month, 1);
-    const toDate = new Date(year, Number(month) + 1, 0);
+    const formatLocalDate = useCallback((date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-    return {
-      fromDate: fromDate.toISOString().split("T")[0],
-      toDate: toDate.toISOString().split("T")[0],
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  const getMonthDateRange = useCallback(
+    (month, year) => {
+      const fromDate = new Date(Number(year), Number(month), 1);
+      const toDate = new Date(Number(year), Number(month) + 1, 0);
+
+      return {
+        fromDate: formatLocalDate(fromDate),
+        toDate: formatLocalDate(toDate),
+      };
+    },
+    [formatLocalDate]
+  );
+
+  const getActiveDateRange = useCallback(() => {
+    return getMonthDateRange(Number(filters.month), Number(filters.year));
+  }, [filters.month, filters.year, getMonthDateRange]);
+
+  const buildQuery = (params = {}) => {
+    const cleanParams = {};
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        cleanParams[key] = value;
+      }
+    });
+
+    return new URLSearchParams(cleanParams).toString();
+  };
+
+   const drillTo = (moduleKey, params = {}) => {
+    const dateRange = getActiveDateRange();
+
+    const filtersPayload = {
+      fromDate: dateRange.fromDate,
+      toDate: dateRange.toDate,
+      source: "dashboard",
+      ...params,
     };
+
+    if (window.__openDashboardModule) {
+      window.__openDashboardModule(moduleKey, filtersPayload);
+      return;
+    }
+
+    const query = buildQuery(filtersPayload);
+    window.location.hash = `${moduleKey}${query ? `?${query}` : ""}`;
+  };
+
+      const openSalesOrders = (extra = {}) => {
+    drillTo("salesOrder", {
+      approvalTab: "approved",
+      status: "approved",
+      ...extra,
+    });
+  };
+
+  const openPendingSalesOrders = (extra = {}) => {
+    drillTo("salesOrder", {
+      approvalTab: "pending_rejected",
+      status: "pending",
+      ...extra,
+    });
+  };
+
+  const openEnquiries = (extra = {}) => {
+    drillTo("sheet", extra);
+  };
+
+  const openReceivables = (extra = {}) => {
+    drillTo("receivables", extra);
   };
 
   const fetchDashboard = useCallback(
@@ -149,7 +196,7 @@ const DashboardHome = () => {
         setLoading(false);
       }
     },
-    [filters]
+        [filters, getMonthDateRange]
   );
 
   const fetchNotifications = useCallback(async () => {
@@ -228,33 +275,32 @@ const DashboardHome = () => {
     return "poor";
   };
 
-   const getMonthlyScore = (item) => {
-  return Number(item?.monthlyScore ?? item?.score ?? 0);
-};
+  const getFrontendCurrentWeek = (item) => {
+    if (item?.currentWeek?.weekNo) return item.currentWeek;
+    return item?.weeklyReport?.[0] || {};
+  };
 
-const getWeeklyScore = (item) => {
-  const currentWeek = getFrontendCurrentWeek(item);
-  return Number(currentWeek?.weekScore || 0);
-};
+  const getMonthlyScore = (item) => {
+    return Number(item?.monthlyScore ?? item?.score ?? 0);
+  };
 
-const getWeekLabel = (item) => {
-  return item?.currentWeek?.label || "Current Week";
-};
+  const getWeeklyScore = (item) => {
+    const currentWeek = getFrontendCurrentWeek(item);
+    return Number(currentWeek?.weekScore || 0);
+  };
 
-const getMisChartData = (items = []) => {
-  return items.map((item) => ({
-    ...item,
-    weeklyScore: getWeeklyScore(item),
-    monthlyScoreValue: getMonthlyScore(item),
-  }));
-};
-const getFrontendCurrentWeek = (item) => {
-  if (item?.currentWeek?.weekNo) {
-    return item.currentWeek;
-  }
+  const getWeekLabel = (item) => {
+    return item?.currentWeek?.label || "Current Week";
+  };
 
-  return item?.weeklyReport?.[0] || {};
-};
+  const getMisChartData = (items = []) => {
+    return items.map((item) => ({
+      ...item,
+      weeklyScore: getWeeklyScore(item),
+      monthlyScoreValue: getMonthlyScore(item),
+    }));
+  };
+
   if (loading) {
     return (
       <div className="dashboard-home">
@@ -280,22 +326,15 @@ const getFrontendCurrentWeek = (item) => {
 
   return (
     <div className="dashboard-home">
-      {/* ================= iOS PWA VERSION ================= */}
       <div className="ios-dashboardhome">
         <div className="ios-dh-header">
           <div className="ios-dh-header-top">
             <div>
               <h2>Business Dashboard</h2>
-              <p>
-                {MONTHS[Number(filters.month)]} {filters.year} performance
-              </p>
+              <p>{MONTHS[Number(filters.month)]} {filters.year} performance</p>
             </div>
 
-            <button
-              type="button"
-              className="ios-dh-refresh"
-              onClick={handleRefresh}
-            >
+            <button type="button" className="ios-dh-refresh" onClick={handleRefresh}>
               ↻
             </button>
           </div>
@@ -328,21 +367,25 @@ const getFrontendCurrentWeek = (item) => {
         </div>
 
         <div className="ios-dh-content">
-          <div className="ios-hero-card">
+          <button
+            type="button"
+            className="ios-hero-card drill-card"
+            onClick={() => openSalesOrders({ view: "revenue" })}
+          >
             <span>Total Revenue</span>
             <strong>{formatCurrency(data?.totalRevenue)}</strong>
-            <p>Approved sales performance</p>
-          </div>
+            <p>Tap to open approved sales orders</p>
+          </button>
 
           <div className="ios-kpi-grid">
-            <MobileKpi title="Pending Orders" value={data?.pendingOrders || 0} icon="💼" />
-            <MobileKpi title="Total Enquiries" value={data?.totalEnquiries || 0} icon="📝" />
-            <MobileKpi title="Won" value={data?.wonEnquiries || 0} icon="✅" />
-            <MobileKpi title="Lost" value={data?.lostEnquiries || 0} icon="❌" />
-            <MobileKpi title="Delayed" value={data?.delayedEnquiries || 0} icon="⏳" />
-            <MobileKpi title="Active" value={data?.activeEnquiries || 0} icon="🔥" />
-            <MobileKpi title="Hot Leads" value={misScoring?.hotLeads || 0} icon="🚨" />
-            <MobileKpi title="Warm Leads" value={misScoring?.warmLeads || 0} icon="⚠️" />
+            <MobileKpi title="Pending Orders" value={data?.pendingOrders || 0} icon="💼" onClick={() => openPendingSalesOrders()} />
+            <MobileKpi title="Total Enquiries" value={data?.totalEnquiries || 0} icon="📝" onClick={() => openEnquiries({})} />
+            <MobileKpi title="Won" value={data?.wonEnquiries || 0} icon="✅" onClick={() => openEnquiries({ status: "won" })} />
+            <MobileKpi title="Lost" value={data?.lostEnquiries || 0} icon="❌" onClick={() => openEnquiries({ status: "lost" })} />
+            <MobileKpi title="Delayed" value={data?.delayedEnquiries || 0} icon="⏳" onClick={() => openEnquiries({ status: "delayed" })} />
+            <MobileKpi title="Active" value={data?.activeEnquiries || 0} icon="🔥" onClick={() => openEnquiries({ status: "active" })} />
+            <MobileKpi title="Hot Leads" value={misScoring?.hotLeads || 0} icon="🚨" onClick={() => openEnquiries({ leadType: "hot" })} />
+            <MobileKpi title="Warm Leads" value={misScoring?.warmLeads || 0} icon="⚠️" onClick={() => openEnquiries({ leadType: "warm" })} />
           </div>
 
           <MobileSection title="Business Insights">
@@ -350,10 +393,13 @@ const getFrontendCurrentWeek = (item) => {
               tone="green"
               label="Top Performer"
               title={data?.topWonEmployee?.name || "No data"}
-              desc={
-                data?.topWonEmployee
-                  ? `${data.topWonEmployee.wonCount} won enquiries`
-                  : "No won enquiry found"
+              desc={data?.topWonEmployee ? `${data.topWonEmployee.wonCount} won enquiries` : "No won enquiry found"}
+              onClick={() =>
+                openEnquiries({
+                  status: "won",
+                  salesPersonId: data?.topWonEmployee?.salesPersonId || data?.topWonEmployee?._id,
+                  salesPersonName: data?.topWonEmployee?.name,
+                })
               }
             />
 
@@ -361,10 +407,13 @@ const getFrontendCurrentWeek = (item) => {
               tone="orange"
               label="Highest Delayed"
               title={data?.topDelayedEmployee?.name || "No delay"}
-              desc={
-                data?.topDelayedEmployee
-                  ? `${data.topDelayedEmployee.delayedCount} delayed enquiries`
-                  : "No delayed enquiry found"
+              desc={data?.topDelayedEmployee ? `${data.topDelayedEmployee.delayedCount} delayed enquiries` : "No delayed enquiry found"}
+              onClick={() =>
+                openEnquiries({
+                  status: "delayed",
+                  salesPersonId: data?.topDelayedEmployee?.salesPersonId || data?.topDelayedEmployee?._id,
+                  salesPersonName: data?.topDelayedEmployee?.name,
+                })
               }
             />
 
@@ -372,19 +421,31 @@ const getFrontendCurrentWeek = (item) => {
               tone="red"
               label="Highest Order Lost"
               title={data?.topLostEmployee?.name || "No lost order"}
-              desc={
-                data?.topLostEmployee
-                  ? `${data.topLostEmployee.lostCount} lost enquiries`
-                  : "No lost enquiry found"
+              desc={data?.topLostEmployee ? `${data.topLostEmployee.lostCount} lost enquiries` : "No lost enquiry found"}
+              onClick={() =>
+                openEnquiries({
+                  status: "lost",
+                  salesPersonId: data?.topLostEmployee?.salesPersonId || data?.topLostEmployee?._id,
+                  salesPersonName: data?.topLostEmployee?.name,
+                })
               }
             />
 
-            <p className="ios-reason-text">
+            <button
+              type="button"
+              className="ios-reason-text drill-link"
+              onClick={() =>
+                openEnquiries({
+                  status: "lost",
+                  lostReason: data?.topLostReason?.reason || data?.topLostReason?.rawReason,
+                })
+              }
+            >
               <b>Top Lost Reason:</b>{" "}
               {data?.topLostReason
                 ? `${data.topLostReason.reason || data.topLostReason.rawReason} (${data.topLostReason.count})`
                 : "No reason found"}
-            </p>
+            </button>
           </MobileSection>
 
           <MobileSection title="Sales Person Revenue Share">
@@ -401,20 +462,19 @@ const getFrontendCurrentWeek = (item) => {
                     cy="50%"
                     outerRadius={78}
                     label={({ percentage }) => `${percentage}%`}
+                    onClick={(entry) =>
+                      openSalesOrders({
+                        salesPersonId: entry?.salesPersonId,
+                        salesPersonName: entry?.name,
+                      })
+                    }
                   >
                     {revenueShare.map((entry, index) => (
-                      <Cell
-                        key={entry.salesPersonId || index}
-                        fill={COLORS[index % COLORS.length]}
-                      />
+                      <Cell key={entry.salesPersonId || index} fill={COLORS[index % COLORS.length]} className="drill-chart-cell" />
                     ))}
                   </Pie>
 
-                  <Tooltip
-                    formatter={(value) =>
-                      `₹ ${Number(value).toLocaleString("en-IN")}`
-                    }
-                  />
+                  <Tooltip formatter={(value) => `₹ ${Number(value).toLocaleString("en-IN")}`} />
                 </PieChart>
 
                 <div className="ios-revenue-list">
@@ -425,6 +485,12 @@ const getFrontendCurrentWeek = (item) => {
                       subtitle={`${formatCurrency(sp.revenue)} · ${sp.percentage || 0}%`}
                       value={Number(sp.percentage || 0)}
                       color={COLORS[index % COLORS.length]}
+                      onClick={() =>
+                        openSalesOrders({
+                          salesPersonId: sp.salesPersonId,
+                          salesPersonName: sp.name,
+                        })
+                      }
                     />
                   ))}
                 </div>
@@ -432,211 +498,103 @@ const getFrontendCurrentWeek = (item) => {
             )}
           </MobileSection>
 
-         <MobileSection title="MIS Scoring">
-  <div className="ios-total-pill">
-    Total Leads: {misScoring?.totalLeads || 0}
-  </div>
+          <MobileSection title="MIS Scoring">
+            <button
+              type="button"
+              className="ios-total-pill drill-pill"
+              onClick={() => openEnquiries({ leadSource: "mis" })}
+            >
+              Total Leads: {misScoring?.totalLeads || 0}
+            </button>
 
-  {!misChartData.length ? (
-    <p className="ios-empty">No MIS scoring data available</p>
-  ) : (
-    misChartData.map((item, index) => {
-  const monthlyScore = getMonthlyScore(item);
-  const currentWeek = getFrontendCurrentWeek(item);
-  const weekLabel = currentWeek?.label || getWeekLabel(item);
-  const weeklyScore = Number(currentWeek?.weekScore || 0);
-  const scoreClass = getScoreClass(monthlyScore);
+            {!misChartData.length ? (
+              <p className="ios-empty">No MIS scoring data available</p>
+            ) : (
+              misChartData.map((item, index) => {
+                const monthlyScore = getMonthlyScore(item);
+                const currentWeek = getFrontendCurrentWeek(item);
+                const weekLabel = currentWeek?.label || getWeekLabel(item);
+                const weeklyScore = Number(currentWeek?.weekScore || 0);
+                const scoreClass = getScoreClass(monthlyScore);
 
-  return (
-    <div
-      key={item.salesPersonId || index}
-      className={`ios-score-card ${scoreClass}`}
-    >
-      <div className="ios-score-top">
-        <div>
-          <span>#{index + 1}</span>
-          <strong>{item.name}</strong>
-        </div>
+                return (
+                  <div key={item.salesPersonId || index} className={`ios-score-card ${scoreClass}`}>
+                    <div className="ios-score-top">
+                      <button
+                        type="button"
+                        className="mis-person-drill"
+                        onClick={() =>
+                          openEnquiries({
+                            salesPersonId: item.salesPersonId,
+                            salesPersonName: item.name,
+                          })
+                        }
+                      >
+                        <span>#{index + 1}</span>
+                        <strong>{item.name}</strong>
+                      </button>
 
-        <b>{monthlyScore}/100</b>
-      </div>
+                      <b>{monthlyScore}/100</b>
+                    </div>
 
-      <div className="ios-score-track">
-        <div
-          style={{
-            width: `${Math.min(monthlyScore, 100)}%`,
-            background: getMisBarColor(monthlyScore),
-          }}
-        ></div>
-      </div>
+                    <div className="ios-score-track">
+                      <div style={{ width: `${Math.min(monthlyScore, 100)}%`, background: getMisBarColor(monthlyScore) }}></div>
+                    </div>
 
-      <div className="ios-score-stats">
-        <MiniStat label="Enq" value={item.totalEnquiries || 0} />
-        <MiniStat label="Won" value={item.wonEnquiries || 0} />
-        <MiniStat label="Orders" value={item.approvedOrders || 0} />
-        <MiniStat label="Visits" value={item.visitsDone || 0} />
-      </div>
+                    <div className="ios-score-stats">
+                      <MiniStat label="Enq" value={item.totalEnquiries || 0} onClick={() => openEnquiries({ salesPersonId: item.salesPersonId })} />
+                      <MiniStat label="Won" value={item.wonEnquiries || 0} onClick={() => openEnquiries({ status: "won", salesPersonId: item.salesPersonId })} />
+                      <MiniStat label="Orders" value={item.approvedOrders || 0} onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId })} />
+                      <MiniStat label="Visits" value={item.visitsDone || 0} onClick={() => drillTo("coldCall", { activityType: "visit", salesPersonId: item.salesPersonId })} />
+                    </div>
 
-      <div className="ios-mis-month-card">
-        <div className="ios-mis-month-head">
-          <span>Monthly Target</span>
-          <b>{formatCurrency(item?.target?.monthly?.salesValue || 0)}</b>
-        </div>
+                    <div className="ios-mis-month-card">
+                      <div className="ios-mis-month-head">
+                        <span>Monthly Target</span>
+                        <b>{formatCurrency(item?.target?.monthly?.salesValue || 0)}</b>
+                      </div>
 
-        <div className="ios-mis-month-grid">
-          <div>
-            <span>Sales Done</span>
-            <b>{formatCurrency(item?.approvedSalesValue || 0)}</b>
-          </div>
+                      <div className="ios-mis-month-grid">
+                        <MisMetric label="Sales Done" value={formatCurrency(item?.approvedSalesValue || 0)} onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId })} />
+                        <MisMetric label="Enq Done" value={item?.totalEnquiries || 0} onClick={() => openEnquiries({ salesPersonId: item.salesPersonId })} />
+                        <MisMetric label="Visit Done" value={item?.visitsDone || 0} onClick={() => drillTo("attendance", { type: "visits", salesPersonId: item.salesPersonId })} />
+                      </div>
+                    </div>
 
-          <div>
-            <span>Sales Missing</span>
-            <b>{formatCurrency(item?.shortBy?.salesValue || 0)}</b>
-          </div>
+                    <div className="ios-mis-week-card">
+                      <div className="ios-mis-week-head">
+                        <span>{weekLabel} Target</span>
+                        <strong>{weeklyScore}/100</strong>
+                      </div>
 
-          <div>
-            <span>Enq Target</span>
-            <b>{item?.target?.monthly?.enquiries || 0}</b>
-          </div>
+                      <div className="ios-mis-week-score-track">
+                        <div style={{ width: `${Math.min(weeklyScore, 100)}%`, background: getMisBarColor(weeklyScore) }}></div>
+                      </div>
 
-          <div>
-            <span>Enq Done</span>
-            <b>{item?.totalEnquiries || 0}</b>
-          </div>
-
-          <div>
-            <span>Enq Missing</span>
-            <b>{item?.shortBy?.enquiries || 0}</b>
-          </div>
-
-          <div>
-            <span>Visit Target</span>
-            <b>{item?.target?.monthly?.visits || 0}</b>
-          </div>
-
-          <div>
-            <span>Visit Done</span>
-            <b>{item?.visitsDone || 0}</b>
-          </div>
-
-          <div>
-            <span>Visit Missing</span>
-            <b>{item?.shortBy?.visits || 0}</b>
-          </div>
-        </div>
-      </div>
-
-      <div className="ios-mis-week-card">
-        <div className="ios-mis-week-head">
-          <span>{weekLabel} Target</span>
-          <strong>{weeklyScore}/100</strong>
-        </div>
-
-        <div className="ios-mis-week-score-track">
-          <div
-            style={{
-              width: `${Math.min(weeklyScore, 100)}%`,
-              background: getMisBarColor(weeklyScore),
-            }}
-          ></div>
-        </div>
-
-        <div className="ios-mis-week-grid">
-          <MiniStat
-            label="Sales Target"
-            value={formatCurrency(
-              currentWeek?.targetWithCarryForward?.salesValue || 0
+                      <div className="ios-mis-week-grid">
+                        <MiniStat label="Sales Done" value={formatCurrency(currentWeek?.approvedSalesValue || 0)} onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
+                        <MiniStat label="Enq Done" value={currentWeek?.enquiries || 0} onClick={() => openEnquiries({ salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
+                        <MiniStat label="Visit Done" value={currentWeek?.visits || 0} onClick={() => drillTo("coldCall", { activityType: "visit", salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
             )}
-          />
-
-          <MiniStat
-            label="Sales Done"
-            value={formatCurrency(currentWeek?.approvedSalesValue || 0)}
-          />
-
-          <MiniStat
-            label="Sales Missing"
-            value={formatCurrency(currentWeek?.shortBy?.salesValue || 0)}
-          />
-
-          <MiniStat
-            label="Enq Target"
-            value={Math.ceil(
-              currentWeek?.targetWithCarryForward?.enquiries || 0
-            )}
-          />
-
-          <MiniStat label="Enq Done" value={currentWeek?.enquiries || 0} />
-
-          <MiniStat
-            label="Enq Missing"
-            value={Math.ceil(currentWeek?.shortBy?.enquiries || 0)}
-          />
-
-          <MiniStat
-            label="Visit Target"
-            value={Math.ceil(
-              currentWeek?.targetWithCarryForward?.visits || 0
-            )}
-          />
-
-          <MiniStat label="Visit Done" value={currentWeek?.visits || 0} />
-
-          <MiniStat
-            label="Visit Missing"
-            value={Math.ceil(currentWeek?.shortBy?.visits || 0)}
-          />
-        </div>
-
-        <div className="ios-mis-insight-list">
-          <p>
-            {currentWeek?.insight?.sales ||
-              item?.userInsight?.sales ||
-              "No sales insight available"}
-          </p>
-
-          <p>
-            {currentWeek?.insight?.enquiries ||
-              item?.userInsight?.enquiries ||
-              "No enquiry insight available"}
-          </p>
-
-          <p>
-            {currentWeek?.insight?.visits ||
-              item?.userInsight?.visits ||
-              "No visit insight available"}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-})
-  )}
-</MobileSection>
+          </MobileSection>
 
           {cashflow && (
             <MobileSection title="Cashflow Overview">
               <div className="ios-cash-grid">
-                <MobileCash title="Revenue" value={formatCurrency(cashflow.totalRevenue)} tone="blue" />
-                <MobileCash title="Paid" value={formatCurrency(cashflow.totalPaid)} tone="green" />
-                <MobileCash title="Pending" value={formatCurrency(cashflow.totalPending)} tone="orange" />
-                <MobileCash title="Overdue" value={formatCurrency(cashflow.overdueAmount)} tone="red" />
+                <MobileCash title="Revenue" value={formatCurrency(cashflow.totalRevenue)} tone="blue" onClick={() => openReceivables({ paymentStatus: "all" })} />
+                <MobileCash title="Paid" value={formatCurrency(cashflow.totalPaid)} tone="green" onClick={() => openReceivables({ paymentStatus: "paid" })} />
+                <MobileCash title="Pending" value={formatCurrency(cashflow.totalPending)} tone="orange" onClick={() => openReceivables({ paymentStatus: "pending" })} />
+                <MobileCash title="Overdue" value={formatCurrency(cashflow.overdueAmount)} tone="red" onClick={() => openReceivables({ paymentStatus: "overdue" })} />
               </div>
 
-              <MobilePaymentList
-                title="Upcoming Due Payments"
-                data={cashflow.upcomingDuePayments || []}
-                formatCurrency={formatCurrency}
-                formatDate={formatDate}
-              />
+              <MobilePaymentList title="Upcoming Due Payments" data={cashflow.upcomingDuePayments || []} formatCurrency={formatCurrency} formatDate={formatDate} onClickItem={(item) => openReceivables({ companyName: item.companyName, paymentId: item._id })} />
 
-              <MobilePaymentList
-                title="Overdue Payments"
-                data={cashflow.overduePayments || []}
-                formatCurrency={formatCurrency}
-                formatDate={formatDate}
-                danger
-              />
+              <MobilePaymentList title="Overdue Payments" data={cashflow.overduePayments || []} formatCurrency={formatCurrency} formatDate={formatDate} danger onClickItem={(item) => openReceivables({ paymentStatus: "overdue", companyName: item.companyName, paymentId: item._id })} />
             </MobileSection>
           )}
 
@@ -654,6 +612,7 @@ const getFrontendCurrentWeek = (item) => {
                     subtitle={`${g.orders || 0} order(s) · ${formatCurrency(g.revenue || 0)}`}
                     value={width}
                     color="#166534"
+                    onClick={() => openSalesOrders({ grade: g.grade })}
                   />
                 );
               })
@@ -662,7 +621,6 @@ const getFrontendCurrentWeek = (item) => {
         </div>
       </div>
 
-      {/* ================= DESKTOP ORIGINAL VERSION ================= */}
       <div className="desktop-dashboardhome">
         <div className="dashboard-topbar">
           <div>
@@ -671,42 +629,21 @@ const getFrontendCurrentWeek = (item) => {
           </div>
 
           <div className="dashboard-top-actions">
-            <button
-              type="button"
-              className="notification-icon-btn"
-              onClick={() => setShowNotifications(true)}
-              title="Notifications"
-            >
+            <button type="button" className="notification-icon-btn" onClick={() => setShowNotifications(true)} title="Notifications">
               🔔
-              {notifications?.total > 0 && (
-                <span className="notification-count">
-                  {notifications.total}
-                </span>
-              )}
+              {notifications?.total > 0 && <span className="notification-count">{notifications.total}</span>}
             </button>
 
             <div className="month-filter">
-              <select
-                name="month"
-                value={filters.month}
-                onChange={handleMonthYearChange}
-              >
+              <select name="month" value={filters.month} onChange={handleMonthYearChange}>
                 {FULL_MONTHS.map((m, index) => (
-                  <option key={m} value={index}>
-                    {m}
-                  </option>
+                  <option key={m} value={index}>{m}</option>
                 ))}
               </select>
 
-              <select
-                name="year"
-                value={filters.year}
-                onChange={handleMonthYearChange}
-              >
+              <select name="year" value={filters.year} onChange={handleMonthYearChange}>
                 {YEARS.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
+                  <option key={y} value={y}>{y}</option>
                 ))}
               </select>
             </div>
@@ -714,55 +651,16 @@ const getFrontendCurrentWeek = (item) => {
         </div>
 
         <div className="card-grid">
-          <div className="card revenue">
-            <h3>Total Revenue</h3>
-            <p>{formatCurrency(data.totalRevenue)}</p>
-          </div>
-
-          <div className="card orders">
-            <h3>Pending Sales Order</h3>
-            <p>{data.pendingOrders || 0}</p>
-          </div>
-
-          <div className="card enquiries">
-            <h3>Total Enquiries</h3>
-            <p>{data.totalEnquiries}</p>
-          </div>
-
-          <div className="card won">
-            <h3>Won</h3>
-            <p>{data.wonEnquiries}</p>
-          </div>
-
-          <div className="card lost">
-            <h3>Lost</h3>
-            <p>{data.lostEnquiries}</p>
-          </div>
-
-          <div className="card delayed">
-            <h3>Delayed</h3>
-            <p>{data.delayedEnquiries}</p>
-          </div>
-
-          <div className="card active">
-            <h3>Active Enquiries</h3>
-            <p>{data.activeEnquiries || 0}</p>
-          </div>
-
-          <div className="card hot">
-            <h3>Hot Leads</h3>
-            <p>{misScoring.hotLeads || 0}</p>
-          </div>
-
-          <div className="card warm">
-            <h3>Warm Leads</h3>
-            <p>{misScoring.warmLeads || 0}</p>
-          </div>
-
-          <div className="card cold">
-            <h3>Cold Leads</h3>
-            <p>{misScoring.coldLeads || 0}</p>
-          </div>
+          <DashboardCard title="Total Revenue" value={formatCurrency(data.totalRevenue)} className="revenue" onClick={() => openSalesOrders({ view: "revenue" })} />
+          <DashboardCard title="Pending Sales Order" value={data.pendingOrders || 0} className="orders" onClick={() => openPendingSalesOrders()} />
+          <DashboardCard title="Total Enquiries" value={data.totalEnquiries} className="enquiries" onClick={() => openEnquiries({})} />
+          <DashboardCard title="Won" value={data.wonEnquiries} className="won" onClick={() => openEnquiries({ status: "won" })} />
+          <DashboardCard title="Lost" value={data.lostEnquiries} className="lost" onClick={() => openEnquiries({ status: "lost" })} />
+          <DashboardCard title="Delayed" value={data.delayedEnquiries} className="delayed" onClick={() => openEnquiries({ status: "delayed" })} />
+          <DashboardCard title="Active Enquiries" value={data.activeEnquiries || 0} className="active" onClick={() => openEnquiries({ status: "active" })} />
+          <DashboardCard title="Hot Leads" value={misScoring.hotLeads || 0} className="hot" onClick={() => openEnquiries({ leadType: "hot" })} />
+          <DashboardCard title="Warm Leads" value={misScoring.warmLeads || 0} className="warm" onClick={() => openEnquiries({ leadType: "warm" })} />
+          <DashboardCard title="Cold Leads" value={misScoring.coldLeads || 0} className="cold" onClick={() => openEnquiries({ leadType: "cold" })} />
         </div>
 
         <div className="dashboard-row">
@@ -780,39 +678,41 @@ const getFrontendCurrentWeek = (item) => {
                     cy="50%"
                     outerRadius={85}
                     label={({ percentage }) => `${percentage}%`}
+                    onClick={(entry) =>
+                      openSalesOrders({
+                        salesPersonId: entry?.salesPersonId,
+                        salesPersonName: entry?.name,
+                      })
+                    }
                   >
                     {(data.salesPersonRevenue || []).map((entry, index) => (
-                      <Cell
-                        key={entry.salesPersonId || index}
-                        fill={COLORS[index % COLORS.length]}
-                      />
+                      <Cell key={entry.salesPersonId || index} fill={COLORS[index % COLORS.length]} className="drill-chart-cell" />
                     ))}
                   </Pie>
 
-                  <Tooltip
-                    formatter={(value) =>
-                      `₹ ${Number(value).toLocaleString("en-IN")}`
-                    }
-                  />
+                  <Tooltip formatter={(value) => `₹ ${Number(value).toLocaleString("en-IN")}`} />
                 </PieChart>
               </div>
 
               <div className="pie-legend">
                 {(data.salesPersonRevenue || []).map((sp, index) => (
-                  <div key={sp.salesPersonId || index} className="legend-row">
-                    <span
-                      className="legend-dot"
-                      style={{ background: COLORS[index % COLORS.length] }}
-                    ></span>
-
+                  <button
+                    key={sp.salesPersonId || index}
+                    type="button"
+                    className="legend-row drill-legend"
+                    onClick={() =>
+                      openSalesOrders({
+                        salesPersonId: sp.salesPersonId,
+                        salesPersonName: sp.name,
+                      })
+                    }
+                  >
+                    <span className="legend-dot" style={{ background: COLORS[index % COLORS.length] }}></span>
                     <div>
                       <strong>{sp.name}</strong>
-                      <p>
-                        ₹ {Number(sp.revenue || 0).toLocaleString("en-IN")} ·{" "}
-                        {sp.percentage}%
-                      </p>
+                      <p>₹ {Number(sp.revenue || 0).toLocaleString("en-IN")} · {sp.percentage}%</p>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -821,310 +721,220 @@ const getFrontendCurrentWeek = (item) => {
           <div className="insight-card">
             <h3>Business Insights</h3>
 
-            <div className="insight-box green">
-              <span>Top Performer (Won)</span>
-              <h4>{data.topWonEmployee?.name || "No data"}</h4>
-              <p>
-                {data.topWonEmployee
-                  ? `${data.topWonEmployee.wonCount} won enquiries`
-                  : "No won enquiry"}
-              </p>
-            </div>
+            <InsightBox
+              tone="green"
+              label="Top Performer (Won)"
+              title={data.topWonEmployee?.name || "No data"}
+              desc={data.topWonEmployee ? `${data.topWonEmployee.wonCount} won enquiries` : "No won enquiry"}
+              onClick={() =>
+                openEnquiries({
+                  status: "won",
+                  salesPersonId: data?.topWonEmployee?.salesPersonId || data?.topWonEmployee?._id,
+                  salesPersonName: data?.topWonEmployee?.name,
+                })
+              }
+            />
 
-            <div className="insight-box orange">
-              <span>Highest Delayed</span>
-              <h4>{data.topDelayedEmployee?.name || "No delay"}</h4>
-              <p>
-                {data.topDelayedEmployee
-                  ? `${data.topDelayedEmployee.delayedCount} delayed enquiries`
-                  : "No delayed enquiry found"}
-              </p>
-            </div>
+            <InsightBox
+              tone="orange"
+              label="Highest Delayed"
+              title={data.topDelayedEmployee?.name || "No delay"}
+              desc={data.topDelayedEmployee ? `${data.topDelayedEmployee.delayedCount} delayed enquiries` : "No delayed enquiry found"}
+              onClick={() =>
+                openEnquiries({
+                  status: "delayed",
+                  salesPersonId: data?.topDelayedEmployee?.salesPersonId || data?.topDelayedEmployee?._id,
+                  salesPersonName: data?.topDelayedEmployee?.name,
+                })
+              }
+            />
 
-            <div className="insight-box red">
-              <span>Highest Order Lost</span>
-              <h4>{data.topLostEmployee?.name || "No lost order"}</h4>
-              <p>
-                {data.topLostEmployee
-                  ? `${data.topLostEmployee.lostCount} lost enquiries`
-                  : "No lost enquiry found"}
-              </p>
+            <InsightBox
+              tone="red"
+              label="Highest Order Lost"
+              title={data.topLostEmployee?.name || "No lost order"}
+              desc={data.topLostEmployee ? `${data.topLostEmployee.lostCount} lost enquiries` : "No lost enquiry found"}
+              onClick={() =>
+                openEnquiries({
+                  status: "lost",
+                  salesPersonId: data?.topLostEmployee?.salesPersonId || data?.topLostEmployee?._id,
+                  salesPersonName: data?.topLostEmployee?.name,
+                })
+              }
+            />
 
-              <div className="lost-reason-mini">
-                <b>Top Reason:</b>{" "}
-                {data.topLostReason
-                  ? `${data.topLostReason.reason || data.topLostReason.rawReason} (${data.topLostReason.count})`
-                  : "No reason found"}
-              </div>
-            </div>
+            <button
+              type="button"
+              className="lost-reason-mini drill-link"
+              onClick={() =>
+                openEnquiries({
+                  status: "lost",
+                  lostReason: data?.topLostReason?.reason || data?.topLostReason?.rawReason,
+                })
+              }
+            >
+              <b>Top Reason:</b>{" "}
+              {data.topLostReason
+                ? `${data.topLostReason.reason || data.topLostReason.rawReason} (${data.topLostReason.count})`
+                : "No reason found"}
+            </button>
           </div>
         </div>
 
         <div className="chart-card mis-card">
-  <div className="mis-header">
-    <div>
-      <h3>MIS Scoring Overview</h3>
-      <p>
-        Monthly score, current week target and action insight
-      </p>
-    </div>
+          <div className="mis-header">
+            <div>
+              <h3>MIS Scoring Overview</h3>
+              <p>Monthly score, current week target and action insight</p>
+            </div>
 
-    <div className="mis-total-pill">
-      Total Leads: {misScoring.totalLeads || 0}
-    </div>
-  </div>
-
-  {!misChartData.length ? (
-    <div className="cashflow-empty">No MIS scoring data available</div>
-  ) : (
-    <>
-      <div className="mis-employee-grid mis-employee-grid-premium">
-  {misChartData.map((item, index) => {
-    const monthlyScore = getMonthlyScore(item);
-const currentWeek = getFrontendCurrentWeek(item);
-const weekLabel = currentWeek?.label || getWeekLabel(item);
-const weeklyScore = Number(currentWeek?.weekScore || 0);
-const scoreClass = getScoreClass(monthlyScore);
-const monthlyTarget = item?.target?.monthly || {};
-const monthlyShortBy = item?.shortBy || {};
-
-    return (
-      <div
-        key={item.salesPersonId || index}
-        className={`mis-employee-card ${scoreClass}`}
-      >
-        <div className="mis-employee-top">
-          <div>
-            <span className="mis-rank">#{index + 1}</span>
-            <h4>{item.name}</h4>
+            <button type="button" className="mis-total-pill drill-pill" onClick={() => openEnquiries({ leadSource: "mis" })}>
+              Total Leads: {misScoring.totalLeads || 0}
+            </button>
           </div>
 
-          <strong>{monthlyScore}/100</strong>
+          {!misChartData.length ? (
+            <div className="cashflow-empty">No MIS scoring data available</div>
+          ) : (
+            <>
+              <div className="mis-employee-grid mis-employee-grid-premium">
+                {misChartData.map((item, index) => {
+                  const monthlyScore = getMonthlyScore(item);
+                  const currentWeek = getFrontendCurrentWeek(item);
+                  const weekLabel = currentWeek?.label || getWeekLabel(item);
+                  const weeklyScore = Number(currentWeek?.weekScore || 0);
+                  const scoreClass = getScoreClass(monthlyScore);
+                  const monthlyTarget = item?.target?.monthly || {};
+                  const monthlyShortBy = item?.shortBy || {};
+
+                  return (
+                    <div key={item.salesPersonId || index} className={`mis-employee-card ${scoreClass}`}>
+                      <div className="mis-employee-top">
+                        <button
+                          type="button"
+                          className="mis-person-drill"
+                          onClick={() =>
+                            openEnquiries({
+                              salesPersonId: item.salesPersonId,
+                              salesPersonName: item.name,
+                            })
+                          }
+                        >
+                          <span className="mis-rank">#{index + 1}</span>
+                          <h4>{item.name}</h4>
+                        </button>
+
+                        <strong>{monthlyScore}/100</strong>
+                      </div>
+
+                      <p className="mis-monthly-label">Monthly MIS Score</p>
+
+                      <div className="mis-progress">
+                        <span style={{ width: `${Math.min(monthlyScore, 100)}%` }}></span>
+                      </div>
+
+                      <div className="mis-employee-stats">
+                        <MisStat value={item.totalEnquiries || 0} label="Enquiries" onClick={() => openEnquiries({ salesPersonId: item.salesPersonId })} />
+                        <MisStat value={item.wonEnquiries || 0} label="Won" onClick={() => openEnquiries({ status: "won", salesPersonId: item.salesPersonId })} />
+                        <MisStat value={item.approvedOrders || 0} label="Orders" onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId })} />
+                        <MisStat value={item.visitsDone || 0} label="Visits" onClick={() => drillTo("attendance", { type: "visits", salesPersonId: item.salesPersonId })} />
+                      </div>
+
+                      <div className="mis-month-target-box">
+                        <div className="mis-target-title">
+                          <span>Monthly Target</span>
+                        </div>
+
+                        <div className="mis-target-grid">
+                          <div><span>Sales Target</span><b>{formatCurrency(monthlyTarget.salesValue || 0)}</b></div>
+                          <MisMetric label="Sales Done" value={formatCurrency(item.approvedSalesValue || 0)} onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId })} />
+                          <div><span>Sales Missing</span><b>{formatCurrency(monthlyShortBy.salesValue || 0)}</b></div>
+
+                          <div><span>Enquiry Target</span><b>{monthlyTarget.enquiries || 0}</b></div>
+                          <MisMetric label="Enquiry Done" value={item.totalEnquiries || 0} onClick={() => openEnquiries({ salesPersonId: item.salesPersonId })} />
+                          <div><span>Enquiry Missing</span><b>{monthlyShortBy.enquiries || 0}</b></div>
+
+                          <div><span>Visit Target</span><b>{monthlyTarget.visits || 0}</b></div>
+                          <MisMetric label="Visit Done" value={item.visitsDone || 0} onClick={() => drillTo("attendance", { type: "visits", salesPersonId: item.salesPersonId })} />
+                          <div><span>Visit Missing</span><b>{monthlyShortBy.visits || 0}</b></div>
+                        </div>
+                      </div>
+
+                      <div className="mis-week-premium">
+                        <div className="mis-week-title">
+                          <div>
+                            <span>{currentWeek?.label || weekLabel}</span>
+                            <strong>{Number(currentWeek?.weekScore || weeklyScore || 0)}/100</strong>
+                          </div>
+
+                          <b>Weekly Score</b>
+                        </div>
+
+                        <div className="mis-week-progress">
+                          <span
+                            style={{
+                              width: `${Math.min(Number(currentWeek?.weekScore || weeklyScore || 0), 100)}%`,
+                              background: getMisBarColor(Number(currentWeek?.weekScore || weeklyScore || 0)),
+                            }}
+                          ></span>
+                        </div>
+
+                        <div className="mis-week-target-grid">
+                          <div><span>Sales Target</span><b>{formatCurrency(currentWeek?.targetWithCarryForward?.salesValue || 0)}</b></div>
+                          <MisMetric label="Sales Done" value={formatCurrency(currentWeek?.approvedSalesValue || 0)} onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
+                          <div><span>Sales Missing</span><b>{formatCurrency(currentWeek?.shortBy?.salesValue || 0)}</b></div>
+
+                          <div><span>Enq Target</span><b>{Math.ceil(currentWeek?.targetWithCarryForward?.enquiries || 0)}</b></div>
+                          <MisMetric label="Enq Done" value={currentWeek?.enquiries || 0} onClick={() => openEnquiries({ salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
+                          <div><span>Enq Missing</span><b>{Math.ceil(currentWeek?.shortBy?.enquiries || 0)}</b></div>
+
+                          <div><span>Visit Target</span><b>{Math.ceil(currentWeek?.targetWithCarryForward?.visits || 0)}</b></div>
+                          <MisMetric label="Visit Done" value={currentWeek?.visits || 0} onClick={() => drillTo("attendance", { type: "visits", salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
+                          <div><span>Visit Missing</span><b>{Math.ceil(currentWeek?.shortBy?.visits || 0)}</b></div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mis-chart-compact">
+                <h4>Salesperson Weekly MIS Score Comparison</h4>
+
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={weeklyMisChartData} layout="vertical" margin={{ top: 10, right: 25, left: 35, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} />
+                    <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12, fontWeight: 700 }} />
+                    <Tooltip
+                      formatter={(value, name) => {
+                        if (name === "weeklyScore") return [`${value}/100`, "Weekly MIS Score"];
+                        if (name === "monthlyScoreValue") return [`${value}/100`, "Monthly MIS Score"];
+                        return [value, name];
+                      }}
+                      labelFormatter={(label) => `Sales Person: ${label}`}
+                    />
+                    <Bar
+                      dataKey="weeklyScore"
+                      radius={[0, 12, 12, 0]}
+                      onClick={(entry) =>
+                        openEnquiries({
+                          salesPersonId: entry?.salesPersonId,
+                          salesPersonName: entry?.name,
+                          sourceType: "weeklyMis",
+                        })
+                      }
+                    >
+                      {weeklyMisChartData.map((entry, index) => (
+                        <Cell key={index} fill={getMisBarColor(entry.weeklyScore)} className="drill-chart-cell" />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          )}
         </div>
-
-        <p className="mis-monthly-label">Monthly MIS Score</p>
-
-        <div className="mis-progress">
-          <span style={{ width: `${Math.min(monthlyScore, 100)}%` }}></span>
-        </div>
-
-        <div className="mis-employee-stats">
-          <div>
-            <b>{item.totalEnquiries || 0}</b>
-            <span>Enquiries</span>
-          </div>
-
-          <div>
-            <b>{item.wonEnquiries || 0}</b>
-            <span>Won</span>
-          </div>
-
-          <div>
-            <b>{item.approvedOrders || 0}</b>
-            <span>Orders</span>
-          </div>
-
-          <div>
-            <b>{item.visitsDone || 0}</b>
-            <span>Visits</span>
-          </div>
-        </div>
-
-        <div className="mis-month-target-box">
-  <div className="mis-target-title">
-    <span>Monthly Target</span>
-  </div>
-
-  <div className="mis-target-grid">
-    <div>
-      <span>Sales Target</span>
-      <b>{formatCurrency(monthlyTarget.salesValue || 0)}</b>
-    </div>
-
-    <div>
-      <span>Sales Done</span>
-      <b>{formatCurrency(item.approvedSalesValue || 0)}</b>
-    </div>
-
-    <div>
-      <span>Sales Missing</span>
-      <b>{formatCurrency(monthlyShortBy.salesValue || 0)}</b>
-    </div>
-
-    <div>
-      <span>Enquiry Target</span>
-      <b>{monthlyTarget.enquiries || 0}</b>
-    </div>
-
-    <div>
-      <span>Enquiry Done</span>
-      <b>{item.totalEnquiries || 0}</b>
-    </div>
-
-    <div>
-      <span>Enquiry Missing</span>
-      <b>{monthlyShortBy.enquiries || 0}</b>
-    </div>
-
-    <div>
-      <span>Visit Target</span>
-      <b>{monthlyTarget.visits || 0}</b>
-    </div>
-
-    <div>
-      <span>Visit Done</span>
-      <b>{item.visitsDone || 0}</b>
-    </div>
-
-    <div>
-      <span>Visit Missing</span>
-      <b>{monthlyShortBy.visits || 0}</b>
-    </div>
-  </div>
-</div>
-
-<div className="mis-week-premium">
-  <div className="mis-week-title">
-    <div>
-      <span>{currentWeek?.label || weekLabel}</span>
-      <strong>{Number(currentWeek?.weekScore || weeklyScore || 0)}/100</strong>
-    </div>
-
-    <b>Weekly Score</b>
-  </div>
-
-  <div className="mis-week-progress">
-    <span
-      style={{
-        width: `${Math.min(Number(currentWeek?.weekScore || weeklyScore || 0), 100)}%`,
-        background: getMisBarColor(Number(currentWeek?.weekScore || weeklyScore || 0)),
-      }}
-    ></span>
-  </div>
-
-  <div className="mis-week-target-grid">
-    <div>
-      <span>Sales Target</span>
-      <b>
-        {formatCurrency(
-          currentWeek?.targetWithCarryForward?.salesValue || 0
-        )}
-      </b>
-    </div>
-
-    <div>
-      <span>Sales Done</span>
-      <b>{formatCurrency(currentWeek?.approvedSalesValue || 0)}</b>
-    </div>
-
-    <div>
-      <span>Sales Missing</span>
-      <b>{formatCurrency(currentWeek?.shortBy?.salesValue || 0)}</b>
-    </div>
-
-    <div>
-      <span>Enq Target</span>
-      <b>
-        {Math.ceil(currentWeek?.targetWithCarryForward?.enquiries || 0)}
-      </b>
-    </div>
-
-    <div>
-      <span>Enq Done</span>
-      <b>{currentWeek?.enquiries || 0}</b>
-    </div>
-
-    <div>
-      <span>Enq Missing</span>
-      <b>{Math.ceil(currentWeek?.shortBy?.enquiries || 0)}</b>
-    </div>
-
-    <div>
-      <span>Visit Target</span>
-      <b>
-        {Math.ceil(currentWeek?.targetWithCarryForward?.visits || 0)}
-      </b>
-    </div>
-
-    <div>
-      <span>Visit Done</span>
-      <b>{currentWeek?.visits || 0}</b>
-    </div>
-
-    <div>
-      <span>Visit Missing</span>
-      <b>{Math.ceil(currentWeek?.shortBy?.visits || 0)}</b>
-    </div>
-  </div>
-
-  <div className="mis-insight-list">
-    <p>
-      {currentWeek?.insight?.sales ||
-        item?.userInsight?.sales ||
-        "No sales insight available"}
-    </p>
-
-    <p>
-      {currentWeek?.insight?.enquiries ||
-        item?.userInsight?.enquiries ||
-        "No enquiry insight available"}
-    </p>
-
-    <p>
-      {currentWeek?.insight?.visits ||
-        item?.userInsight?.visits ||
-        "No visit insight available"}
-    </p>
-  </div>
-</div>
-      </div>
-    );
-  })}
-</div>
-
-      <div className="mis-chart-compact">
-        <h4>Salesperson Weekly MIS Score Comparison</h4>
-
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart
-            data={weeklyMisChartData}
-            layout="vertical"
-            margin={{ top: 10, right: 25, left: 35, bottom: 10 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-            <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} />
-            <YAxis
-              type="category"
-              dataKey="name"
-              width={120}
-              tick={{ fontSize: 12, fontWeight: 700 }}
-            />
-            <Tooltip
-              formatter={(value, name) => {
-                if (name === "weeklyScore")
-                  return [`${value}/100`, "Weekly MIS Score"];
-
-                if (name === "monthlyScoreValue")
-                  return [`${value}/100`, "Monthly MIS Score"];
-
-                return [value, name];
-              }}
-              labelFormatter={(label) => `Sales Person: ${label}`}
-            />
-            <Bar dataKey="weeklyScore" radius={[0, 12, 12, 0]}>
-              {weeklyMisChartData.map((entry, index) => (
-                <Cell
-                  key={index}
-                  fill={getMisBarColor(entry.weeklyScore)}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </>
-  )}
-</div>
 
         {cashflow && (
           <div className="cashflow-section">
@@ -1136,42 +946,16 @@ const monthlyShortBy = item?.shortBy || {};
             </div>
 
             <div className="cashflow-grid">
-              <div className="cashflow-card total">
-                <span>Total Revenue</span>
-                <strong>{formatCurrency(cashflow.totalRevenue)}</strong>
-              </div>
-
-              <div className="cashflow-card paid">
-                <span>Total Paid</span>
-                <strong>{formatCurrency(cashflow.totalPaid)}</strong>
-              </div>
-
-              <div className="cashflow-card pending">
-                <span>Total Pending</span>
-                <strong>{formatCurrency(cashflow.totalPending)}</strong>
-              </div>
-
-              <div className="cashflow-card overdue">
-                <span>Overdue Amount</span>
-                <strong>{formatCurrency(cashflow.overdueAmount)}</strong>
-              </div>
+              <CashflowCard title="Total Revenue" value={formatCurrency(cashflow.totalRevenue)} tone="total" onClick={() => openReceivables({ paymentStatus: "all" })} />
+              <CashflowCard title="Total Paid" value={formatCurrency(cashflow.totalPaid)} tone="paid" onClick={() => openReceivables({ paymentStatus: "paid" })} />
+              <CashflowCard title="Total Pending" value={formatCurrency(cashflow.totalPending)} tone="pending" onClick={() => openReceivables({ paymentStatus: "pending" })} />
+              <CashflowCard title="Overdue Amount" value={formatCurrency(cashflow.overdueAmount)} tone="overdue" onClick={() => openReceivables({ paymentStatus: "overdue" })} />
             </div>
 
             <div className="cashflow-detail-grid">
-              <DesktopPaymentList
-                title="Upcoming Due Payments"
-                data={cashflow.upcomingDuePayments || []}
-                formatCurrency={formatCurrency}
-                formatDate={formatDate}
-              />
+              <DesktopPaymentList title="Upcoming Due Payments" data={cashflow.upcomingDuePayments || []} formatCurrency={formatCurrency} formatDate={formatDate} onClickItem={(item) => openReceivables({ companyName: item.companyName, paymentId: item._id })} />
 
-              <DesktopPaymentList
-                title="Overdue Payments"
-                data={cashflow.overduePayments || []}
-                formatCurrency={formatCurrency}
-                formatDate={formatDate}
-                danger
-              />
+              <DesktopPaymentList title="Overdue Payments" data={cashflow.overduePayments || []} formatCurrency={formatCurrency} formatDate={formatDate} danger onClickItem={(item) => openReceivables({ paymentStatus: "overdue", companyName: item.companyName, paymentId: item._id })} />
             </div>
           </div>
         )}
@@ -1192,26 +976,20 @@ const monthlyShortBy = item?.shortBy || {};
                 const width = (Number(g.orders || 0) / maxGradeOrders) * 100;
 
                 return (
-                  <div key={i} className="top-grade-item">
+                  <button key={i} type="button" className="top-grade-item drill-grade" onClick={() => openSalesOrders({ grade: g.grade })}>
                     <div className="top-grade-top">
                       <div>
                         <strong>{g.grade || "Not Specified"}</strong>
-                        <p>
-                          {g.orders || 0} order(s) ·{" "}
-                          {formatCurrency(g.revenue || 0)}
-                        </p>
+                        <p>{g.orders || 0} order(s) · {formatCurrency(g.revenue || 0)}</p>
                       </div>
 
                       <span>#{i + 1}</span>
                     </div>
 
                     <div className="top-grade-progress">
-                      <div
-                        className="top-grade-fill"
-                        style={{ width: `${width}%` }}
-                      ></div>
+                      <div className="top-grade-fill" style={{ width: `${width}%` }}></div>
                     </div>
-                  </div>
+                  </button>
                 );
               })
             )}
@@ -1228,30 +1006,15 @@ const monthlyShortBy = item?.shortBy || {};
                 <p>{notifications?.total || 0} business alert(s)</p>
               </div>
 
-              <button
-                type="button"
-                className="notification-close"
-                onClick={() => setShowNotifications(false)}
-              >
+              <button type="button" className="notification-close" onClick={() => setShowNotifications(false)}>
                 ×
               </button>
             </div>
 
             <div className="notification-summary-grid">
-              <div className="notification-summary-card high">
-                <span>High</span>
-                <strong>{notifications?.high || 0}</strong>
-              </div>
-
-              <div className="notification-summary-card medium">
-                <span>Medium</span>
-                <strong>{notifications?.medium || 0}</strong>
-              </div>
-
-              <div className="notification-summary-card low">
-                <span>Low</span>
-                <strong>{notifications?.low || 0}</strong>
-              </div>
+              <div className="notification-summary-card high"><span>High</span><strong>{notifications?.high || 0}</strong></div>
+              <div className="notification-summary-card medium"><span>Medium</span><strong>{notifications?.medium || 0}</strong></div>
+              <div className="notification-summary-card low"><span>Low</span><strong>{notifications?.low || 0}</strong></div>
             </div>
 
             <div className="notification-list">
@@ -1262,21 +1025,14 @@ const monthlyShortBy = item?.shortBy || {};
                 </div>
               ) : (
                 notifications.notifications.map((item, index) => (
-                  <div
-                    key={`${item.type}-${item.sourceId || index}`}
-                    className={`notification-item ${item.priority}`}
-                  >
+                  <div key={`${item.type}-${item.sourceId || index}`} className={`notification-item ${item.priority}`}>
                     <div className="notification-item-top">
                       <div>
-                        <strong>
-                          {getPriorityIcon(item.priority)} {item.title}
-                        </strong>
+                        <strong>{getPriorityIcon(item.priority)} {item.title}</strong>
                         <p>{item.message}</p>
                       </div>
 
-                      <span className={`priority-pill ${item.priority}`}>
-                        {item.priority}
-                      </span>
+                      <span className={`priority-pill ${item.priority}`}>{item.priority}</span>
                     </div>
 
                     <div className="notification-meta">
@@ -1295,13 +1051,23 @@ const monthlyShortBy = item?.shortBy || {};
   );
 };
 
-function MobileKpi({ title, value, icon }) {
+function DashboardCard({ title, value, className, onClick }) {
   return (
-    <div className="ios-kpi-card">
+    <button type="button" className={`card ${className} drill-card`} onClick={onClick}>
+      <h3>{title}</h3>
+      <p>{value}</p>
+      <small>View details →</small>
+    </button>
+  );
+}
+
+function MobileKpi({ title, value, icon, onClick }) {
+  return (
+    <button type="button" className="ios-kpi-card drill-card" onClick={onClick}>
       <span>{icon}</span>
       <p>{title}</p>
       <strong>{value}</strong>
-    </div>
+    </button>
   );
 }
 
@@ -1314,58 +1080,84 @@ function MobileSection({ title, children }) {
   );
 }
 
-function MobileInsight({ label, title, desc, tone }) {
+function MobileInsight({ label, title, desc, tone, onClick }) {
   return (
-    <div className={`ios-insight-card ${tone}`}>
+    <button type="button" className={`ios-insight-card ${tone} drill-card`} onClick={onClick}>
       <span>{label}</span>
       <strong>{title}</strong>
       <p>{desc}</p>
-    </div>
+    </button>
   );
 }
 
-function MobileProgress({ title, subtitle, value, color }) {
+function InsightBox({ tone, label, title, desc, onClick }) {
   return (
-    <div className="ios-progress-row">
+    <button type="button" className={`insight-box ${tone} drill-card`} onClick={onClick}>
+      <span>{label}</span>
+      <h4>{title}</h4>
+      <p>{desc}</p>
+    </button>
+  );
+}
+
+function MobileProgress({ title, subtitle, value, color, onClick }) {
+  return (
+    <button type="button" className="ios-progress-row drill-progress" onClick={onClick}>
       <strong>{title}</strong>
       <p>{subtitle}</p>
       <div className="ios-progress-track">
-        <span
-          style={{
-            width: `${Math.min(Number(value || 0), 100)}%`,
-            background: color || "#166534",
-          }}
-        ></span>
+        <span style={{ width: `${Math.min(Number(value || 0), 100)}%`, background: color || "#166534" }}></span>
       </div>
-    </div>
+    </button>
   );
 }
 
-function MiniStat({ label, value }) {
+function MiniStat({ label, value, onClick }) {
   return (
-    <div className="ios-mini-stat">
+    <button type="button" className="ios-mini-stat drill-mini" onClick={onClick}>
       <strong>{value}</strong>
       <span>{label}</span>
-    </div>
+    </button>
   );
 }
 
-function MobileCash({ title, value, tone }) {
+function MobileCash({ title, value, tone, onClick }) {
   return (
-    <div className={`ios-cash-card ${tone}`}>
+    <button type="button" className={`ios-cash-card ${tone} drill-card`} onClick={onClick}>
       <span>{title}</span>
       <strong>{value}</strong>
-    </div>
+    </button>
   );
 }
 
-function MobilePaymentList({
-  title,
-  data,
-  formatCurrency,
-  formatDate,
-  danger,
-}) {
+function CashflowCard({ title, value, tone, onClick }) {
+  return (
+    <button type="button" className={`cashflow-card ${tone} drill-card`} onClick={onClick}>
+      <span>{title}</span>
+      <strong>{value}</strong>
+    </button>
+  );
+}
+
+function MisStat({ value, label, onClick }) {
+  return (
+    <button type="button" className="mis-stat-drill" onClick={onClick}>
+      <b>{value}</b>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function MisMetric({ label, value, onClick }) {
+  return (
+    <button type="button" className="mis-metric-drill" onClick={onClick}>
+      <span>{label}</span>
+      <b>{value}</b>
+    </button>
+  );
+}
+
+function MobilePaymentList({ title, data, formatCurrency, formatDate, danger, onClickItem }) {
   return (
     <div className={`ios-payment-box ${danger ? "danger" : ""}`}>
       <h4>{title}</h4>
@@ -1374,45 +1166,37 @@ function MobilePaymentList({
         <p className="ios-empty">No records found</p>
       ) : (
         data.slice(0, 5).map((item) => (
-          <div key={item._id} className="ios-payment-row">
+          <button key={item._id} type="button" className="ios-payment-row drill-payment-row" onClick={() => onClickItem?.(item)}>
             <div>
               <strong>{item.companyName}</strong>
               <span>Due: {formatDate(item.paymentDueDate)}</span>
             </div>
 
             <b>{formatCurrency(item.pendingAmount)}</b>
-          </div>
+          </button>
         ))
       )}
     </div>
   );
 }
 
-function DesktopPaymentList({
-  title,
-  data,
-  formatCurrency,
-  formatDate,
-  danger,
-}) {
+function DesktopPaymentList({ title, data, formatCurrency, formatDate, danger, onClickItem }) {
   return (
     <div className={`cashflow-list-card ${danger ? "danger" : ""}`}>
       <h4>{title}</h4>
 
       {!data.length ? (
-        <p className="cashflow-empty">
-          {danger ? "No overdue payments" : "No upcoming dues"}
-        </p>
+        <p className="cashflow-empty">{danger ? "No overdue payments" : "No upcoming dues"}</p>
       ) : (
         data.map((item) => (
-          <div key={item._id} className="cashflow-row">
+          <button key={item._id} type="button" className="cashflow-row drill-payment-row" onClick={() => onClickItem?.(item)}>
             <div>
               <strong>{item.companyName}</strong>
               <span>Due: {formatDate(item.paymentDueDate)}</span>
             </div>
 
             <b>{formatCurrency(item.pendingAmount)}</b>
-          </div>
+          </button>
         ))
       )}
     </div>

@@ -1290,3 +1290,33 @@
     position: relative !important;
   }
 }
+/* =========================
+   SUPPORT PWA Layout Fix
+========================= */
+
+@media (max-width: 900px) {
+  .dashboard.pwa-module-support .mobile-topbar,
+  .dashboard.pwa-module-support .mobile-menu-panel,
+  .dashboard.pwa-module-support .mobile-menu-overlay {
+    display: none !important;
+  }
+
+  .dashboard.pwa-module-support,
+  .dashboard.pwa-module-support .dashboard-layout {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard.pwa-module-support .main {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #f4f7f5 !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+}

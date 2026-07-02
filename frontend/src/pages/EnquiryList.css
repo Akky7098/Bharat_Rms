@@ -3656,3 +3656,319 @@
     grid-template-columns: 240px 200px 170px 170px 170px;
   }
 }
+.enquiry-click-row {
+  cursor: pointer;
+}
+
+.enquiry-click-row:hover {
+  filter: saturate(1.04);
+}
+
+.enquiry-detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.58);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+}
+
+.enquiry-detail-modal {
+  width: min(980px, 96vw);
+  max-height: 90dvh;
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 26px;
+  padding: 22px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+
+.enquiry-detail-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.enquiry-detail-head span {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.enquiry-detail-head h3 {
+  margin: 5px 0 4px;
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.enquiry-detail-head p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.enquiry-detail-head button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 14px;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.enquiry-detail-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.enquiry-detail-status-card {
+  border-radius: 22px;
+  padding: 18px;
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+  border: 1px solid #e2e8f0;
+}
+
+.enquiry-detail-status-card span,
+.enquiry-detail-lost-box span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.enquiry-detail-status-card strong {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.enquiry-detail-section {
+  margin-top: 18px;
+}
+
+.enquiry-detail-section h4 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.enquiry-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.enquiry-detail-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.enquiry-detail-item span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.enquiry-detail-item strong {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.enquiry-detail-wide {
+  grid-column: span 2;
+}
+
+.enquiry-detail-lost-box {
+  margin-top: 18px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.enquiry-detail-lost-box strong {
+  display: block;
+  margin-top: 6px;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.enquiry-detail-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.enquiry-detail-actions a {
+  text-decoration: none;
+  border-radius: 14px;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+@media (max-width: 900px) {
+  .enquiry-detail-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .enquiry-detail-modal {
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: 26px 26px 0 0;
+    padding: 18px;
+  }
+
+  .enquiry-detail-hero-grid,
+  .enquiry-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .enquiry-detail-wide {
+    grid-column: span 1;
+  }
+
+  .enquiry-detail-head h3 {
+    font-size: 20px;
+  }
+}
+/* PREMIUM MOBILE DETAIL MODAL GRID */
+@media (max-width: 900px) {
+  .sales-detail-modal,
+  .enquiry-detail-modal {
+    padding: 14px !important;
+  }
+
+  .sales-detail-head h3,
+  .enquiry-detail-head h3 {
+    font-size: 17px !important;
+    line-height: 1.25;
+  }
+
+  .sales-detail-value-card,
+  .enquiry-detail-status-card {
+    padding: 13px !important;
+    border-radius: 17px !important;
+  }
+
+  .sales-detail-value-card strong,
+  .enquiry-detail-status-card strong {
+    font-size: 20px !important;
+  }
+
+  .sales-detail-grid,
+  .enquiry-detail-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .sales-detail-item,
+  .enquiry-detail-item {
+    padding: 9px 7px !important;
+    border-radius: 13px !important;
+    min-width: 0 !important;
+  }
+
+  .sales-detail-item span,
+  .enquiry-detail-item span {
+    font-size: 8px !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0.02em;
+  }
+
+  .sales-detail-item strong,
+  .enquiry-detail-item strong {
+    font-size: 10.5px !important;
+    line-height: 1.35 !important;
+    word-break: break-word;
+  }
+
+  .sales-detail-item-wide,
+  .enquiry-detail-wide {
+    grid-column: span 3 !important;
+  }
+
+  .sales-detail-actions,
+  .enquiry-detail-actions {
+    position: sticky;
+    bottom: 0;
+    background: #ffffff;
+    padding-top: 10px;
+    justify-content: stretch !important;
+  }
+
+  .sales-detail-actions a,
+  .enquiry-detail-actions a {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 390px) {
+  .sales-detail-grid,
+  .enquiry-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .sales-detail-item-wide,
+  .enquiry-detail-wide {
+    grid-column: span 2 !important;
+  }
+}
+/* Make modal PDF button compact */
+.sales-detail-actions {
+  justify-content: flex-end !important;
+  background: transparent !important;
+  padding-top: 10px !important;
+}
+
+.sales-detail-actions a {
+  width: auto !important;
+  min-width: 130px;
+  max-width: fit-content;
+  padding: 9px 14px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+}
+
+/* On mobile also keep it small */
+@media (max-width: 900px) {
+  .sales-detail-actions {
+    position: static !important;
+    justify-content: flex-end !important;
+  }
+
+  .sales-detail-actions a {
+    width: auto !important;
+    min-width: 120px;
+  }
+}

@@ -10,7 +10,7 @@ const API_BASE_URL =
   "https://bharatspecialsteels.bharatspecialsteels.com";
 
 
-const EnquiryList = () => {
+const EnquiryList = ({ dashboardFilters }) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
@@ -19,6 +19,7 @@ const EnquiryList = () => {
   const [showForm, setShowForm] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
+  const [selectedEnquiryDetail, setSelectedEnquiryDetail] = useState(null);
   const [iosRefreshing, setIosRefreshing] = useState(false);
   const [showIosFilters, setShowIosFilters] = useState(false);
  const [summary, setSummary] = useState({
@@ -38,16 +39,22 @@ const EnquiryList = () => {
     limit: 30,
   });
 
-const [filters, setFilters] = useState({
+const [filters, setFilters] = useState(() => ({
   page: 1,
   limit: 30,
-  salesPersonId: "",
-  fromDate: "",
-  toDate: "",
-  companyName: "",
-  enquiryNumber: "",
-  status: "all",
-});
+  salesPersonId: dashboardFilters?.salesPersonId || "",
+  fromDate: dashboardFilters?.fromDate || "",
+  toDate: dashboardFilters?.toDate || "",
+  companyName: dashboardFilters?.companyName || "",
+  enquiryNumber: dashboardFilters?.enquiryNumber || "",
+  status: dashboardFilters?.status || "all",
+  grade: dashboardFilters?.grade || "",
+  leadType: dashboardFilters?.leadType || "",
+  lostReason: dashboardFilters?.lostReason || "",
+  reason: dashboardFilters?.reason || "",
+  view: dashboardFilters?.view || "",
+  weekNo: dashboardFilters?.weekNo || "",
+}));
 
   const fetchEnquiries = useCallback(async () => {
     try {
@@ -73,7 +80,7 @@ setSummary(response.summary || {});
     }
   }, [filters]);
 
-  const fetchSalesPersons = useCallback(async () => {
+   const fetchSalesPersons = useCallback(async () => {
     try {
       const data = await getSalesPersons();
       setSalesPersons(data || []);
@@ -81,6 +88,8 @@ setSummary(response.summary || {});
       console.log(error);
     }
   }, []);
+
+  
 
   useEffect(() => {
     fetchEnquiries();
@@ -189,7 +198,20 @@ setSummary(response.summary || {});
     return pages;
   };
 
-  const openWorkflowModal = (enquiry) => {
+  const openEnquiryDetail = (enquiry) => {
+  if (!enquiry) return;
+  setSelectedEnquiryDetail(enquiry);
+};
+
+const closeEnquiryDetail = () => {
+  setSelectedEnquiryDetail(null);
+};
+
+const stopRowClick = (e) => {
+  e.stopPropagation();
+};
+
+const openWorkflowModal = (enquiry) => {
     setSelectedEnquiry(enquiry);
     setShowWorkflow(true);
   };
@@ -583,7 +605,11 @@ const handleStatusCardClick = (status) => {
       const sizePdfUrl = getSizePdfUrl(enquiry);
 
       return (
-        <div key={enquiry._id} className="ios-enquiry-card">
+       <div
+  key={enquiry._id}
+  className="ios-enquiry-card enquiry-click-row"
+  onClick={() => openEnquiryDetail(enquiry)}
+>
           <div className="ios-enquiry-card-top">
             <div>
               <h4>{enquiry.companyName || "-"}</h4>
@@ -664,7 +690,7 @@ const handleStatusCardClick = (status) => {
               </div>
             )}
 
-          <div className="ios-enquiry-action-bottom">
+          <div className="ios-enquiry-action-bottom" onClick={stopRowClick}>
             {sizePdfUrl && (
               <a
                 href={sizePdfUrl}
@@ -928,7 +954,11 @@ const handleStatusCardClick = (status) => {
                   const sizePdfUrl = getSizePdfUrl(enquiry);
 
                   return (
-                    <tr key={enquiry._id} className={getRowClass(enquiry)}>
+                    <tr
+  key={enquiry._id}
+  className={`${getRowClass(enquiry)} enquiry-click-row`}
+  onClick={() => openEnquiryDetail(enquiry)}
+>
                       <td className="sticky-col col-enquiry-no">
                         {enquiry.enquiryNumber || "-"}
                       </td>
@@ -962,7 +992,7 @@ const handleStatusCardClick = (status) => {
                       <td>{enquiry.grade || "-"}</td>
                       <td>{formatEnumLabel(enquiry.shape)}</td>
 
-                      <td className="size-cell">
+                      <td className="size-cell" onClick={stopRowClick}>
                         <div className="size-cell-content">
                           <div className="size-lines">
                             {formatSizeText(enquiry.size)}
@@ -991,8 +1021,8 @@ const handleStatusCardClick = (status) => {
 
                       <td>{formatDateTime(enquiry.quotation?.planDate)}</td>
                       <td>{formatDateTime(enquiry.quotation?.actualDate)}</td>
-                      <td>
-                        {enquiry.quotation?.quotationLink ? (
+                      <td onClick={stopRowClick}>
+  {enquiry.quotation?.quotationLink ? (
                           <a
                             href={enquiry.quotation.quotationLink}
                             target="_blank"
@@ -1019,15 +1049,15 @@ const handleStatusCardClick = (status) => {
                           )}
                       </td>
 
-                      <td>
-                        <button
-                          className="edit-btn"
-                          onClick={() => openWorkflowModal(enquiry)}
-                          type="button"
-                        >
-                          Edit
-                        </button>
-                      </td>
+                     <td onClick={stopRowClick}>
+  <button
+    className="edit-btn"
+    onClick={() => openWorkflowModal(enquiry)}
+    type="button"
+  >
+    Edit
+  </button>
+</td>
                     </tr>
                   );
                 })
@@ -1059,6 +1089,20 @@ const handleStatusCardClick = (status) => {
         </div>
       </div>
 
+            {selectedEnquiryDetail && (
+        <EnquiryDetailModal
+          enquiry={selectedEnquiryDetail}
+          onClose={closeEnquiryDetail}
+          isAdmin={isAdmin}
+          formatDateTime={formatDateTime}
+          formatDate={formatDate}
+          formatEnumLabel={formatEnumLabel}
+          formatSupplyCondition={formatSupplyCondition}
+          getStatusMeta={getStatusMeta}
+          getSizePdfUrl={getSizePdfUrl}
+        />
+      )}
+
       {showForm && (
         <EnquiryForm
           onClose={() => setShowForm(false)}
@@ -1079,6 +1123,145 @@ const handleStatusCardClick = (status) => {
     </div>
   );
 };
+
+function EnquiryDetailModal({
+  enquiry,
+  onClose,
+  isAdmin,
+  formatDateTime,
+  formatDate,
+  formatEnumLabel,
+  formatSupplyCondition,
+  getStatusMeta,
+  getSizePdfUrl,
+}) {
+  const meta = getStatusMeta(enquiry);
+  const sizePdfUrl = getSizePdfUrl(enquiry);
+
+  const enquiryRows = [
+    ["Enquiry No", enquiry.enquiryNumber],
+    ["Enquiry Date", formatDateTime(enquiry.createdAt)],
+    ["Status", meta.label],
+    ["Company", enquiry.companyName],
+    ["Customer", enquiry.customerName],
+    ["Contact", enquiry.customerContactNo],
+    ["Email", enquiry.customerEmailId],
+    ["Address", enquiry.customerAddress],
+    ["Sales Person", enquiry.salesPersonId?.name],
+    ["Mode", formatEnumLabel(enquiry.modeOfEnquiry)],
+  ];
+
+  const materialRows = [
+    ["Product", formatEnumLabel(enquiry.productCategory)],
+    ["Grade", enquiry.grade],
+    ["Shape", formatEnumLabel(enquiry.shape)],
+    ["Size", enquiry.size],
+    ["Quantity", enquiry.quantityInKg ? `${enquiry.quantityInKg} Kg` : "-"],
+    ["Supply", formatSupplyCondition(enquiry)],
+  ];
+
+  const workflowRows = [
+    ["Feasibility Plan", formatDateTime(enquiry.feasibility?.planDate)],
+    ["Feasibility Actual", formatDateTime(enquiry.feasibility?.actualDate)],
+    ["Feasibility Status", formatEnumLabel(enquiry.feasibility?.status)],
+
+    ["Quotation Plan", formatDateTime(enquiry.quotation?.planDate)],
+    ["Quotation Actual", formatDateTime(enquiry.quotation?.actualDate)],
+    ["Quotation Done", enquiry.quotation?.completed ? "Yes" : "No"],
+
+    ["Closure Plan", formatDateTime(enquiry.closure?.planDate)],
+    ["Closure Actual", formatDateTime(enquiry.closure?.actualDate)],
+    ["Closure Status", formatEnumLabel(enquiry.closure?.status)],
+  ];
+
+  const lostReason =
+    enquiry.closure?.status === "lost"
+      ? enquiry.closure?.lostRemark === "others"
+        ? enquiry.closure?.lostRemarkOtherText
+        : formatEnumLabel(enquiry.closure?.lostRemark)
+      : "";
+
+  const renderSection = (title, rows, wideLabels = []) => (
+    <div className="enquiry-detail-section">
+      <h4>{title}</h4>
+
+      <div className="enquiry-detail-grid">
+        {rows.map(([label, value]) => (
+          <div
+            key={label}
+            className={`enquiry-detail-item ${
+              wideLabels.includes(label) ? "enquiry-detail-wide" : ""
+            }`}
+          >
+            <span>{label}</span>
+            <strong>{value || "-"}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="enquiry-detail-overlay" onClick={onClose}>
+      <div className="enquiry-detail-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="enquiry-detail-head">
+          <div>
+            <span>Enquiry Detail</span>
+            <h3>{enquiry.companyName || "-"}</h3>
+            <p>
+              {enquiry.enquiryNumber || "-"} · {formatDate(enquiry.createdAt)}
+            </p>
+          </div>
+
+          <button type="button" onClick={onClose}>
+            ×
+          </button>
+        </div>
+
+        <div className="enquiry-detail-hero-grid">
+          <div className="enquiry-detail-status-card">
+            <span>Status</span>
+            <strong style={{ color: meta.color }}>{meta.label}</strong>
+          </div>
+
+          <div className="enquiry-detail-status-card">
+            <span>Quantity</span>
+            <strong>{enquiry.quantityInKg || 0} Kg</strong>
+          </div>
+        </div>
+
+        {renderSection("Customer / Enquiry Info", enquiryRows, ["Address"])}
+        {renderSection("Material Requirement", materialRows, ["Size"])}
+        {renderSection("Workflow Monitoring", workflowRows)}
+
+        {lostReason && (
+          <div className="enquiry-detail-lost-box">
+            <span>Lost Reason</span>
+            <strong>{lostReason}</strong>
+          </div>
+        )}
+
+        <div className="enquiry-detail-actions">
+          {sizePdfUrl && (
+            <a href={sizePdfUrl} target="_blank" rel="noreferrer">
+              Open Size PDF
+            </a>
+          )}
+
+          {enquiry.quotation?.quotationLink && (
+            <a
+              href={enquiry.quotation.quotationLink}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open Quotation
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function IosLegend({ label, color }) {
   return (
