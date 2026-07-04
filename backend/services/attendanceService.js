@@ -55,6 +55,13 @@ const getISTDateKey = (date = new Date()) => {
 
   return `${year}-${month}-${day}`;
 };
+const getISTDateTimeFromKey = (dateKey, hour, minute = 0) => {
+  return new Date(
+    `${getISTDateKey(dateKey)}T${String(hour).padStart(2, "0")}:${String(
+      minute
+    ).padStart(2, "0")}:00+05:30`
+  );
+};
 
 const parseDateKeyToDate = (dateKey) => {
   const [year, month, day] = String(dateKey).slice(0, 10).split("-").map(Number);
@@ -449,7 +456,6 @@ const requestRegularization = async (body, user) => {
   const allowedTypes = [
     "missed_check_in",
     "missed_check_out",
-    "wrong_time",
     "other",
   ];
 
@@ -507,22 +513,25 @@ const requestRegularization = async (body, user) => {
   }
 
   if (regularizationType === "missed_check_out") {
-    if (hasCheckOut) {
-      throw new Error(
-        "Check-out already exists. Missed check-out regularization is not allowed."
-      );
-    }
+  const currentMinutes = Number(existingAttendance?.totalWorkingMinutes || 0);
+  const isShortHours =
+    hasCheckIn &&
+    hasCheckOut &&
+    currentMinutes > 0 &&
+    currentMinutes < 9 * 60;
 
-    if (!requestedCheckOut) {
-      throw new Error("Requested check-out time is required.");
-    }
+  if (hasCheckOut && !isShortHours) {
+    throw new Error(
+      "Check-out already exists. Regularization is not allowed."
+    );
   }
 
-  if (regularizationType === "wrong_time") {
-    if (!requestedCheckIn || !requestedCheckOut) {
-      throw new Error("Requested check-in and check-out time are required.");
-    }
+  if (!requestedCheckOut) {
+    throw new Error("Requested check-out time is required.");
   }
+}
+
+  
 
   const attendance = await Attendance.findOneAndUpdate(
     {
