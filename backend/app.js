@@ -21,6 +21,7 @@ const pushSubscriptionRoutes = require("./routes/pushSubscriptionRoutes");
 const appPushRoutes = require("./routes/appPushRoutes");
 const mtcRoutes = require("./routes/mtcRoutes");
 const supportTicketRoutes = require("./routes/supportTicketRoutes");
+const enquiryLookupRoutes = require("./routes/enquiryLookupRoutes");
 
 const app = express();
 
@@ -144,5 +145,6 @@ app.use("/api/push-subscriptions", pushSubscriptionRoutes);
 app.use("/api/app-push", appPushRoutes);
 app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/mtc", mtcRoutes);
+app.use("/api/enquiry-lookup", enquiryLookupRoutes);
 
 module.exports = app;

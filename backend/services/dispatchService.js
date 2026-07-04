@@ -127,18 +127,46 @@ const deleteUploadedFiles = (files = []) => {
 };
 
 const parseLocalDateOnly = (dateValue) => {
-  if (!dateValue) return new Date();
+  if (!dateValue) {
+    const today = new Date();
+    return new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      12,
+      0,
+      0,
+      0
+    );
+  }
 
-  if (dateValue instanceof Date) return dateValue;
+  if (dateValue instanceof Date) {
+    return new Date(
+      dateValue.getFullYear(),
+      dateValue.getMonth(),
+      dateValue.getDate(),
+      12,
+      0,
+      0,
+      0
+    );
+  }
 
-  const value = String(dateValue);
+  const value = String(dateValue).trim();
 
+  // frontend date input format: yyyy-mm-dd
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split("-").map(Number);
     return new Date(year, month - 1, day, 12, 0, 0, 0);
   }
 
-  return new Date(value);
+  // Indian display format: dd/mm/yyyy or dd-mm-yyyy
+  if (/^\d{1,2}[/-]\d{1,2}[/-]\d{4}$/.test(value)) {
+    const [day, month, year] = value.split(/[/-]/).map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0, 0);
+  }
+
+  throw new Error("Invalid date format. Use yyyy-mm-dd or dd/mm/yyyy.");
 };
 
 const calculatePaymentDueDate = (dispatchDate, paymentDueDays) => {
@@ -423,9 +451,7 @@ const createDispatch = async (body, files, user) => {
         ? Math.max(Number((remainingBeforeDispatch - qty).toFixed(3)), 0)
         : 0;
 
-   const finalDispatchDate = dispatchDate
-  ? parseLocalDateOnly(dispatchDate)
-  : new Date();
+   const finalDispatchDate = parseLocalDateOnly(dispatchDate);
 
 const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
     const pendingAmount = Number((value - paid).toFixed(2));
@@ -588,7 +614,7 @@ const getAllDispatches = async (query, user) => {
     limit = 30,
     salesOrderId,
     paymentStatus,
-    dispatchStatus,
+    salesPersonId,
     companyName,
     invoiceNumber,
     fromDate,
@@ -605,8 +631,13 @@ const getAllDispatches = async (query, user) => {
     match.salesOrderId = new mongoose.Types.ObjectId(salesOrderId);
   }
 
-  if (paymentStatus) match.paymentStatus = paymentStatus;
-  if (dispatchStatus) match.dispatchStatus = dispatchStatus;
+  if (paymentStatus) {
+    match.paymentStatus = paymentStatus;
+  }
+
+  if (salesPersonId && canViewAllDispatches(user)) {
+    match.salesPersonId = new mongoose.Types.ObjectId(salesPersonId);
+  }
 
   if (companyName) {
     match.companyName = { $regex: escapeRegex(companyName), $options: "i" };
@@ -617,8 +648,25 @@ const getAllDispatches = async (query, user) => {
   }
 
   const today = new Date();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+  const monthStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1,
+    0,
+    0,
+    0,
+    0
+  );
+
+  const monthEnd = new Date(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999
+  );
 
   if (cardFilter === "monthly_dispatch") {
     match.dispatchDate = {

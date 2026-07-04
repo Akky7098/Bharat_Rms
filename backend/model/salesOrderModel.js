@@ -389,9 +389,10 @@ specialNote: {
 },
 
     enquiryNumber: {
-      type: String,
-      trim: true,
-    },
+  type: String,
+  trim: true,
+  index: true,
+},
 
     // =========================
     // BILLING / SHIPPING
