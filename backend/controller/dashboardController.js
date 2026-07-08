@@ -72,7 +72,7 @@ const getMisScoring = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Failed to fetch MIS scoring",
     });
   }
 };

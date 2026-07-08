@@ -1280,116 +1280,79 @@ const getActionRequiredInsights = async (query, user) => {
         : "No urgent action required",
   };
 };
+
 const getMisScoring = async (query, user) => {
   const { fromDate, toDate } = query;
 
   const MIS_TARGETS = {
-    "deepak yadav": { enquiry: 60, sales: 15000000, visits: 40 },
-    renu: { enquiry: 60, sales: 3000000, visits: 15 },
-    deepika: { enquiry: 100, sales: 10000000, visits: 15 },
-    shalu: { enquiry: 100, sales: 10000000, visits: 15 },
-    saloni: { enquiry: 70, sales: 5000000, visits: 15 },
-    kailash: { enquiry: 60, sales: 20000000, visits: 40 },
+    "deepak yadav": {
+      enquiry: 60,
+      sales: 15000000,
+      visits: 40,
+      orders: 10,
+    },
+    renu: {
+      enquiry: 60,
+      sales: 3000000,
+      visits: 15,
+      orders: 6,
+    },
+    deepika: {
+      enquiry: 100,
+      sales: 10000000,
+      visits: 15,
+      orders: 8,
+    },
+    shalu: {
+      enquiry: 100,
+      sales: 10000000,
+      visits: 15,
+      orders: 8,
+    },
+    saloni: {
+      enquiry: 70,
+      sales: 5000000,
+      visits: 15,
+      orders: 6,
+    },
+    kailash: {
+      enquiry: 60,
+      sales: 20000000,
+      visits: 40,
+      orders: 12,
+    },
+  };
+
+  const MIS_WEIGHTAGE = {
+    enquiry: 15,
+    visits: 25,
+    salesVolume: 20,
+    ordersWon: 40,
   };
 
   const normalizeName = (name = "") =>
     String(name).toLowerCase().trim().replace(/\s+/g, " ");
 
   const getTargetByName = (name = "") =>
-    MIS_TARGETS[normalizeName(name)] || { enquiry: 0, sales: 0, visits: 0 };
-
-  const startOfDay = (date) => {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  };
-
-  const endOfDay = (date) => {
-    const d = new Date(date);
-    d.setHours(23, 59, 59, 999);
-    return d;
-  };
-
-  const getMonthDateRange = () => {
-  if (fromDate && toDate) {
-    const start = new Date(`${fromDate}T06:00:00+05:30`);
-    const end = new Date(`${toDate}T23:59:59.999+05:30`);
-
-    return {
-      startDate: start,
-      endDate: end,
+    MIS_TARGETS[normalizeName(name)] || {
+      enquiry: 0,
+      sales: 0,
+      visits: 0,
+      orders: 0,
     };
-  }
 
-  const now = new Date();
-  const istNow = new Date(
-    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-  );
+  const makeObjectId = (id) => {
+    if (!id) return id;
 
-  const year = istNow.getFullYear();
-  const month = istNow.getMonth() + 1;
-
-  const start = new Date(
-    `${year}-${String(month).padStart(2, "0")}-01T06:00:00+05:30`
-  );
-
-  const lastDay = new Date(year, month, 0).getDate();
-
-  const end = new Date(
-    `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(
-      2,
-      "0"
-    )}T23:59:59.999+05:30`
-  );
-
-  return {
-    startDate: start,
-    endDate: end,
-  };
-};
-
- const getCalendarWeeks = (startDate, endDate) => {
-  const weeks = [];
-  let current = new Date(startDate);
-  let weekNo = 1;
-
-  while (current <= endDate) {
-    const weekStart = new Date(current);
-    const weekEnd = new Date(current);
-
-    weekEnd.setDate(weekStart.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
-
-    if (weekEnd > endDate) {
-      weekEnd.setTime(endDate.getTime());
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      return new mongoose.Types.ObjectId(id);
     }
 
-    weeks.push({
-      weekNo,
-      label: `Week ${weekNo}`,
-      startDate: new Date(weekStart),
-      endDate: new Date(weekEnd),
-    });
-
-    current = new Date(weekEnd);
-    current.setDate(current.getDate() + 1);
-    current.setHours(6, 0, 0, 0);
-
-    weekNo += 1;
-  }
-
-  return weeks;
-};
-
-  const findWeekIndex = (weeks, date) => {
-    if (!date) return -1;
-
-    const d = new Date(date);
-
-    return weeks.findIndex(
-      (week) => d >= new Date(week.startDate) && d <= new Date(week.endDate)
-    );
+    return id;
   };
+
+  const formatCurrency = (amount = 0) =>
+    `₹${Number(amount || 0).toLocaleString("en-IN")}`;
 
   const getPercent = (actual, target) => {
     actual = Number(actual || 0);
@@ -1403,42 +1366,126 @@ const getMisScoring = async (query, user) => {
   const getShortBy = (actual, target) =>
     Math.max(Number(target || 0) - Number(actual || 0), 0);
 
-  const formatCurrency = (amount = 0) =>
-    `₹${Number(amount || 0).toLocaleString("en-IN")}`;
-
-  const makeObjectId = (id) => {
-    if (!id) return id;
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      return new mongoose.Types.ObjectId(id);
-    }
-    return id;
-  };
-
   const calculateWeightedScore = ({
     enquiryPercent,
-    salesPercent,
     visitPercent,
+    salesPercent,
+    orderPercent,
   }) => {
-    return Math.min(
-      100,
-      Number(
-        (
-          Number(salesPercent || 0) * 0.5 +
-          Number(enquiryPercent || 0) * 0.3 +
-          Number(visitPercent || 0) * 0.2
-        ).toFixed(1)
-      )
+    const score =
+      (Number(enquiryPercent || 0) * MIS_WEIGHTAGE.enquiry) / 100 +
+      (Number(visitPercent || 0) * MIS_WEIGHTAGE.visits) / 100 +
+      (Number(salesPercent || 0) * MIS_WEIGHTAGE.salesVolume) / 100 +
+      (Number(orderPercent || 0) * MIS_WEIGHTAGE.ordersWon) / 100;
+
+    return Math.min(100, Number(score.toFixed(1)));
+  };
+
+  const getMonthDateRange = () => {
+    if (fromDate && toDate) {
+      return {
+        startDate: new Date(`${fromDate}T00:00:00.000+05:30`),
+        endDate: new Date(`${toDate}T23:59:59.999+05:30`),
+      };
+    }
+
+    const now = new Date();
+    const istNow = new Date(
+      now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    );
+
+    const year = istNow.getFullYear();
+    const month = istNow.getMonth() + 1;
+    const lastDay = new Date(year, month, 0).getDate();
+
+    return {
+      startDate: new Date(
+        `${year}-${String(month).padStart(2, "0")}-01T00:00:00.000+05:30`
+      ),
+      endDate: new Date(
+        `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(
+          2,
+          "0"
+        )}T23:59:59.999+05:30`
+      ),
+    };
+  };
+
+  const getFourMonthWeeks = (startDate, endDate) => {
+    const year = startDate.getFullYear();
+    const month = startDate.getMonth();
+    const lastDay = endDate.getDate();
+
+    const ranges = [
+      [1, 7],
+      [8, 14],
+      [15, 23],
+      [24, lastDay],
+    ];
+
+    return ranges.map(([startDay, endDay], index) => {
+      const weekStart = new Date(year, month, startDay, 0, 0, 0, 0);
+      const weekEnd = new Date(year, month, endDay, 23, 59, 59, 999);
+
+      return {
+        weekNo: index + 1,
+        label: `Week ${index + 1}`,
+        displayRange: `${startDay}-${endDay}`,
+        startDate: weekStart,
+        endDate: weekEnd,
+      };
+    });
+  };
+
+  const findWeekIndex = (weeks, date) => {
+    if (!date) return -1;
+
+    const d = new Date(date);
+
+    return weeks.findIndex(
+      (week) => d >= new Date(week.startDate) && d <= new Date(week.endDate)
     );
   };
 
+  const getPerformanceReason = (person) => {
+    const reasons = [];
+
+    if (person.achievement.orderPercent < 60) {
+      reasons.push("low number of approved orders");
+    }
+
+    if (person.achievement.salesPercent < 60) {
+      reasons.push("lower sales order value");
+    }
+
+    if (person.achievement.enquiryPercent < 60) {
+      reasons.push("less enquiry focus");
+    }
+
+    if (person.achievement.visitPercent < 60) {
+      reasons.push("less meeting/visit activity");
+    }
+
+    if (!reasons.length) {
+      reasons.push("balanced performance across MIS parameters");
+    }
+
+    return reasons.join(", ");
+  };
+
   const { startDate, endDate } = getMonthDateRange();
-  const weeks = getCalendarWeeks(startDate, endDate);
+  const weeks = getFourMonthWeeks(startDate, endDate);
 
   const enquiryFilter = {
-    enquiryDate: { $gte: startDate, $lte: endDate },
+    enquiryDate: {
+      $gte: startDate,
+      $lte: endDate,
+    },
   };
 
   const salesOrderFilter = {
+    approvalStatus: "approved",
+    isActive: { $ne: false },
     "managerApproval.approvedAt": {
       $gte: startDate,
       $lte: endDate,
@@ -1446,7 +1493,17 @@ const getMisScoring = async (query, user) => {
   };
 
   const visitFilter = {
-    createdAt: { $gte: startDate, $lte: endDate },
+    createdAt: {
+      $gte: startDate,
+      $lte: endDate,
+    },
+    $or: [
+      { activityType: { $in: ["visit", "meeting"] } },
+      { callType: { $in: ["visit", "meeting"] } },
+      { type: { $in: ["visit", "meeting"] } },
+      { visitType: { $exists: true } },
+      { meetingType: { $exists: true } },
+    ],
   };
 
   if (user.role !== "admin" && user.role !== "super_admin") {
@@ -1472,23 +1529,11 @@ const getMisScoring = async (query, user) => {
     )
     .lean();
 
-  const visits = await ColdCall.find({
-    ...visitFilter,
-    $or: [
-      { activityType: "visit" },
-      { callType: "visit" },
-      { type: "visit" },
-      { visitType: { $exists: true } },
-    ],
-  })
+  const visits = await ColdCall.find(visitFilter)
     .select("salesPersonId salesPersonName salesPersonEmail createdAt")
     .lean();
 
   const salesMap = {};
-
-  let hotLeads = 0;
-  let warmLeads = 0;
-  let coldLeads = 0;
 
   const ensurePerson = ({ id, name, email }) => {
     if (!id) return null;
@@ -1501,17 +1546,9 @@ const getMisScoring = async (query, user) => {
         name: name || "",
         email: email || "",
 
-        totalScore: 0,
-        score: 0,
-
-        hotLeads: 0,
-        warmLeads: 0,
-        coldLeads: 0,
-
         totalEnquiries: 0,
         wonEnquiries: 0,
         lostEnquiries: 0,
-        delayedEnquiries: 0,
         pendingEnquiries: 0,
 
         approvedSalesValue: 0,
@@ -1521,6 +1558,7 @@ const getMisScoring = async (query, user) => {
         weeklyReport: weeks.map((week) => ({
           weekNo: week.weekNo,
           label: week.label,
+          displayRange: week.displayRange,
           startDate: week.startDate,
           endDate: week.endDate,
           enquiries: 0,
@@ -1546,62 +1584,15 @@ const getMisScoring = async (query, user) => {
 
     if (!person) return;
 
-    let enquiryScore = 50;
-
-    if (enquiry.feasibility?.status === "feasible") enquiryScore += 15;
-    if (enquiry.feasibility?.status === "not_feasible") enquiryScore -= 25;
-
-    if (enquiry.quotation?.completed) enquiryScore += 10;
+    person.totalEnquiries += 1;
 
     if (enquiry.closure?.status === "won") {
-      enquiryScore += 25;
       person.wonEnquiries += 1;
-    }
-
-    if (enquiry.closure?.status === "lost") {
-      enquiryScore -= 30;
+    } else if (enquiry.closure?.status === "lost") {
       person.lostEnquiries += 1;
-    }
-
-    if (Number(enquiry.quantityInKg || 0) >= 500) enquiryScore += 10;
-
-    const now = new Date();
-
-    const isDelayed =
-      (enquiry.feasibility?.planDate &&
-        enquiry.feasibility?.completed !== true &&
-        new Date(enquiry.feasibility.planDate) < now) ||
-      (enquiry.quotation?.planDate &&
-        enquiry.quotation?.completed !== true &&
-        new Date(enquiry.quotation.planDate) < now) ||
-      (enquiry.closure?.planDate &&
-        enquiry.closure?.completed !== true &&
-        new Date(enquiry.closure.planDate) < now);
-
-    if (isDelayed) {
-      enquiryScore -= 20;
-      person.delayedEnquiries += 1;
-    }
-
-    if (!["won", "lost"].includes(enquiry.closure?.status)) {
+    } else {
       person.pendingEnquiries += 1;
     }
-
-    enquiryScore = Math.max(0, Math.min(enquiryScore, 100));
-
-    if (enquiryScore >= 75) {
-      hotLeads += 1;
-      person.hotLeads += 1;
-    } else if (enquiryScore >= 45) {
-      warmLeads += 1;
-      person.warmLeads += 1;
-    } else {
-      coldLeads += 1;
-      person.coldLeads += 1;
-    }
-
-    person.totalScore += enquiryScore;
-    person.totalEnquiries += 1;
 
     const weekIndex = findWeekIndex(weeks, enquiry.enquiryDate);
 
@@ -1624,7 +1615,7 @@ const getMisScoring = async (query, user) => {
     person.approvedSalesValue += value;
     person.approvedOrders += 1;
 
-    const approvalDate = order.managerApproval?.approvedAt;
+    const approvalDate = order.managerApproval?.approvedAt || order.orderDate;
     const weekIndex = findWeekIndex(weeks, approvalDate);
 
     if (weekIndex >= 0) {
@@ -1652,101 +1643,55 @@ const getMisScoring = async (query, user) => {
   });
 
   let currentWeekIndex = findWeekIndex(weeks, new Date());
-
-  if (currentWeekIndex < 0) {
-    currentWeekIndex = 0;
-  }
+  if (currentWeekIndex < 0) currentWeekIndex = 0;
 
   const salesPersonScores = Object.values(salesMap)
     .map((person) => {
       const target = getTargetByName(person.name);
 
       const weeklyBaseTarget = {
-        enquiries: Number((target.enquiry / weeks.length).toFixed(1)),
-        salesValue: Number((target.sales / weeks.length).toFixed(0)),
-        visits: Number((target.visits / weeks.length).toFixed(1)),
+        enquiries: Number((Number(target.enquiry || 0) / 4).toFixed(1)),
+        salesValue: Number((Number(target.sales || 0) / 4).toFixed(0)),
+        visits: Number((Number(target.visits || 0) / 4).toFixed(1)),
+        orders: Number((Number(target.orders || 0) / 4).toFixed(1)),
       };
 
       let cumulativeTarget = {
         enquiries: 0,
         salesValue: 0,
         visits: 0,
+        orders: 0,
       };
 
       let cumulativeActual = {
         enquiries: 0,
         salesValue: 0,
         visits: 0,
+        orders: 0,
       };
 
       const weeklyReport = person.weeklyReport.map((week) => {
         cumulativeTarget.enquiries += weeklyBaseTarget.enquiries;
         cumulativeTarget.salesValue += weeklyBaseTarget.salesValue;
         cumulativeTarget.visits += weeklyBaseTarget.visits;
+        cumulativeTarget.orders += weeklyBaseTarget.orders;
 
         cumulativeActual.enquiries += Number(week.enquiries || 0);
         cumulativeActual.salesValue += Number(week.approvedSalesValue || 0);
         cumulativeActual.visits += Number(week.visits || 0);
+        cumulativeActual.orders += Number(week.approvedOrders || 0);
 
-        const previousTarget = {
-          enquiries: cumulativeTarget.enquiries - weeklyBaseTarget.enquiries,
-          salesValue: cumulativeTarget.salesValue - weeklyBaseTarget.salesValue,
-          visits: cumulativeTarget.visits - weeklyBaseTarget.visits,
+        const weekAchievement = {
+          enquiryPercent: getPercent(week.enquiries, weeklyBaseTarget.enquiries),
+          salesPercent: getPercent(
+            week.approvedSalesValue,
+            weeklyBaseTarget.salesValue
+          ),
+          visitPercent: getPercent(week.visits, weeklyBaseTarget.visits),
+          orderPercent: getPercent(week.approvedOrders, weeklyBaseTarget.orders),
         };
 
-        const previousActual = {
-          enquiries: cumulativeActual.enquiries - Number(week.enquiries || 0),
-          salesValue:
-            cumulativeActual.salesValue - Number(week.approvedSalesValue || 0),
-          visits: cumulativeActual.visits - Number(week.visits || 0),
-        };
-
-        const carryForward = {
-          enquiries: getShortBy(
-            previousActual.enquiries,
-            previousTarget.enquiries
-          ),
-          salesValue: getShortBy(
-            previousActual.salesValue,
-            previousTarget.salesValue
-          ),
-          visits: getShortBy(previousActual.visits, previousTarget.visits),
-        };
-
-        const targetWithCarryForward = {
-          enquiries: weeklyBaseTarget.enquiries + carryForward.enquiries,
-          salesValue: weeklyBaseTarget.salesValue + carryForward.salesValue,
-          visits: weeklyBaseTarget.visits + carryForward.visits,
-        };
-
-        const shortBy = {
-          enquiries: getShortBy(
-            Number(week.enquiries || 0),
-            targetWithCarryForward.enquiries
-          ),
-          salesValue: getShortBy(
-            Number(week.approvedSalesValue || 0),
-            targetWithCarryForward.salesValue
-          ),
-          visits: getShortBy(
-            Number(week.visits || 0),
-            targetWithCarryForward.visits
-          ),
-        };
-
-        const cumulativeShortBy = {
-          enquiries: getShortBy(
-            cumulativeActual.enquiries,
-            cumulativeTarget.enquiries
-          ),
-          salesValue: getShortBy(
-            cumulativeActual.salesValue,
-            cumulativeTarget.salesValue
-          ),
-          visits: getShortBy(cumulativeActual.visits, cumulativeTarget.visits),
-        };
-
-        const achievement = {
+        const cumulativeAchievement = {
           enquiryPercent: getPercent(
             cumulativeActual.enquiries,
             cumulativeTarget.enquiries
@@ -1759,24 +1704,40 @@ const getMisScoring = async (query, user) => {
             cumulativeActual.visits,
             cumulativeTarget.visits
           ),
+          orderPercent: getPercent(
+            cumulativeActual.orders,
+            cumulativeTarget.orders
+          ),
         };
 
-        const weekAchievement = {
-          enquiryPercent: getPercent(
-            week.enquiries,
-            targetWithCarryForward.enquiries
-          ),
-          salesPercent: getPercent(
+        const shortBy = {
+          enquiries: getShortBy(week.enquiries, weeklyBaseTarget.enquiries),
+          salesValue: getShortBy(
             week.approvedSalesValue,
-            targetWithCarryForward.salesValue
+            weeklyBaseTarget.salesValue
           ),
-          visitPercent: getPercent(week.visits, targetWithCarryForward.visits),
+          visits: getShortBy(week.visits, weeklyBaseTarget.visits),
+          orders: getShortBy(week.approvedOrders, weeklyBaseTarget.orders),
+        };
+
+        const cumulativeShortBy = {
+          enquiries: getShortBy(
+            cumulativeActual.enquiries,
+            cumulativeTarget.enquiries
+          ),
+          salesValue: getShortBy(
+            cumulativeActual.salesValue,
+            cumulativeTarget.salesValue
+          ),
+          visits: getShortBy(cumulativeActual.visits, cumulativeTarget.visits),
+          orders: getShortBy(cumulativeActual.orders, cumulativeTarget.orders),
         };
 
         const weekScore = calculateWeightedScore({
           enquiryPercent: weekAchievement.enquiryPercent,
-          salesPercent: weekAchievement.salesPercent,
           visitPercent: weekAchievement.visitPercent,
+          salesPercent: weekAchievement.salesPercent,
+          orderPercent: weekAchievement.orderPercent,
         });
 
         return {
@@ -1786,69 +1747,69 @@ const getMisScoring = async (query, user) => {
             enquiries: Number(weeklyBaseTarget.enquiries.toFixed(1)),
             salesValue: Number(weeklyBaseTarget.salesValue.toFixed(0)),
             visits: Number(weeklyBaseTarget.visits.toFixed(1)),
-          },
-
-          carryForward: {
-            enquiries: Number(carryForward.enquiries.toFixed(1)),
-            salesValue: Number(carryForward.salesValue.toFixed(0)),
-            visits: Number(carryForward.visits.toFixed(1)),
-          },
-
-          targetWithCarryForward: {
-            enquiries: Number(targetWithCarryForward.enquiries.toFixed(1)),
-            salesValue: Number(targetWithCarryForward.salesValue.toFixed(0)),
-            visits: Number(targetWithCarryForward.visits.toFixed(1)),
+            orders: Number(weeklyBaseTarget.orders.toFixed(1)),
           },
 
           cumulativeTarget: {
             enquiries: Number(cumulativeTarget.enquiries.toFixed(1)),
             salesValue: Number(cumulativeTarget.salesValue.toFixed(0)),
             visits: Number(cumulativeTarget.visits.toFixed(1)),
+            orders: Number(cumulativeTarget.orders.toFixed(1)),
           },
 
           cumulativeActual: {
             enquiries: Number(cumulativeActual.enquiries.toFixed(1)),
             salesValue: Number(cumulativeActual.salesValue.toFixed(0)),
             visits: Number(cumulativeActual.visits.toFixed(1)),
+            orders: Number(cumulativeActual.orders.toFixed(1)),
           },
 
           shortBy: {
             enquiries: Math.ceil(shortBy.enquiries),
             salesValue: Number(shortBy.salesValue.toFixed(0)),
             visits: Math.ceil(shortBy.visits),
+            orders: Math.ceil(shortBy.orders),
           },
 
           cumulativeShortBy: {
             enquiries: Math.ceil(cumulativeShortBy.enquiries),
             salesValue: Number(cumulativeShortBy.salesValue.toFixed(0)),
             visits: Math.ceil(cumulativeShortBy.visits),
+            orders: Math.ceil(cumulativeShortBy.orders),
           },
 
-          achievement,
+          achievement: cumulativeAchievement,
           weekAchievement,
           weekScore,
 
           insight: {
+            orders:
+              shortBy.orders > 0
+                ? `Need ${Math.ceil(
+                    shortBy.orders
+                  )} more approved order(s) in ${week.label}.`
+                : `Order target is on track in ${week.label}.`,
+
             sales:
               shortBy.salesValue > 0
-                ? `You need ${formatCurrency(
+                ? `Need ${formatCurrency(
                     shortBy.salesValue
-                  )} sales in ${week.label} to recover your weekly target.`
-                : `Sales target is on track in ${week.label}.`,
+                  )} more sales volume in ${week.label}.`
+                : `Sales volume target is on track in ${week.label}.`,
 
             enquiries:
               shortBy.enquiries > 0
-                ? `You need ${Math.ceil(
+                ? `Need ${Math.ceil(
                     shortBy.enquiries
-                  )} enquiries in ${week.label} to recover your weekly target.`
+                  )} more enquiries in ${week.label}.`
                 : `Enquiry target is on track in ${week.label}.`,
 
             visits:
               shortBy.visits > 0
-                ? `You need ${Math.ceil(
+                ? `Need ${Math.ceil(
                     shortBy.visits
-                  )} visits in ${week.label} to recover your weekly target.`
-                : `Visit target is on track in ${week.label}.`,
+                  )} more meeting/visit(s) in ${week.label}.`
+                : `Meeting/visit target is on track in ${week.label}.`,
           },
         };
       });
@@ -1860,70 +1821,65 @@ const getMisScoring = async (query, user) => {
         enquiryPercent: getPercent(person.totalEnquiries, target.enquiry),
         salesPercent: getPercent(person.approvedSalesValue, target.sales),
         visitPercent: getPercent(person.visitsDone, target.visits),
+        orderPercent: getPercent(person.approvedOrders, target.orders),
       };
 
       const monthlyScore = calculateWeightedScore({
         enquiryPercent: monthlyAchievement.enquiryPercent,
-        salesPercent: monthlyAchievement.salesPercent,
         visitPercent: monthlyAchievement.visitPercent,
+        salesPercent: monthlyAchievement.salesPercent,
+        orderPercent: monthlyAchievement.orderPercent,
       });
-
-      const enquiryQualityScore =
-        person.totalEnquiries > 0
-          ? Number((person.totalScore / person.totalEnquiries).toFixed(1))
-          : 0;
 
       const monthlyShortBy = {
         enquiries: getShortBy(person.totalEnquiries, target.enquiry),
         salesValue: getShortBy(person.approvedSalesValue, target.sales),
         visits: getShortBy(person.visitsDone, target.visits),
+        orders: getShortBy(person.approvedOrders, target.orders),
       };
 
       const userInsight = {
-        title: `${person.name}, your MIS target update`,
+        title: `${person.name}, MIS performance update`,
 
         weekly:
           currentWeek?.weekScore >= 80
-            ? `Good performance in ${currentWeek.label}. Your weekly score is ${currentWeek.weekScore}/100.`
-            : `Your ${currentWeek.label} score is ${
+            ? `Good performance in ${currentWeek.label}. Weekly weighted score is ${currentWeek.weekScore}/100.`
+            : `${currentWeek?.label} weighted score is ${
                 currentWeek?.weekScore || 0
-              }/100. Focus on pending sales, enquiries and visits.`,
+              }/100. Focus first on approved orders, then visits and sales volume.`,
+
+        orders:
+          currentWeek?.shortBy?.orders > 0
+            ? `Need ${currentWeek.shortBy.orders} more approved order(s) in ${currentWeek.label}. Orders carry highest MIS weightage of 40%.`
+            : `Approved order target is on track in ${currentWeek?.label}.`,
 
         sales:
           currentWeek?.shortBy?.salesValue > 0
-            ? `You need ${formatCurrency(
+            ? `Need ${formatCurrency(
                 currentWeek.shortBy.salesValue
-              )} sales in ${currentWeek.label}. Weekly target with carry forward is ${formatCurrency(
-                currentWeek.targetWithCarryForward.salesValue
-              )}.`
-            : `Your sales target is on track in ${currentWeek?.label}.`,
+              )} more sales volume in ${currentWeek.label}.`
+            : `Sales volume target is on track in ${currentWeek?.label}.`,
 
         enquiries:
           currentWeek?.shortBy?.enquiries > 0
-            ? `You need ${Math.ceil(
-                currentWeek.shortBy.enquiries
-              )} enquiries in ${currentWeek.label}. Weekly target with carry forward is ${Math.ceil(
-                currentWeek.targetWithCarryForward.enquiries
-              )}.`
-            : `Your enquiry target is on track in ${currentWeek?.label}.`,
+            ? `Need ${currentWeek.shortBy.enquiries} more enquiries in ${currentWeek.label}.`
+            : `Enquiry target is on track in ${currentWeek?.label}.`,
 
         visits:
           currentWeek?.shortBy?.visits > 0
-            ? `You need ${Math.ceil(
-                currentWeek.shortBy.visits
-              )} visits in ${currentWeek.label}. Weekly target with carry forward is ${Math.ceil(
-                currentWeek.targetWithCarryForward.visits
-              )}.`
-            : `Your visit target is on track in ${currentWeek?.label}.`,
+            ? `Need ${currentWeek.shortBy.visits} more meeting/visit(s) in ${currentWeek.label}.`
+            : `Meeting/visit target is on track in ${currentWeek?.label}.`,
 
         monthly:
-          monthlyShortBy.salesValue > 0
-            ? `Monthly pending: ${formatCurrency(
+          monthlyScore >= 80
+            ? `Monthly MIS is strong at ${monthlyScore}/100.`
+            : `Monthly pending: ${Math.ceil(
+                monthlyShortBy.orders
+              )} orders, ${formatCurrency(
                 monthlyShortBy.salesValue
-              )} sales, ${Math.ceil(
+              )} sales volume, ${Math.ceil(
                 monthlyShortBy.enquiries
-              )} enquiries and ${Math.ceil(monthlyShortBy.visits)} visits.`
-            : `Monthly sales target achieved. Keep maintaining enquiries and visits.`,
+              )} enquiries and ${Math.ceil(monthlyShortBy.visits)} visits.`,
       };
 
       return {
@@ -1931,18 +1887,14 @@ const getMisScoring = async (query, user) => {
         name: person.name,
         email: person.email,
 
-        score: enquiryQualityScore,
-        enquiryQualityScore,
         monthlyScore,
+        score: monthlyScore,
 
-        hotLeads: person.hotLeads,
-        warmLeads: person.warmLeads,
-        coldLeads: person.coldLeads,
+        weightage: MIS_WEIGHTAGE,
 
         totalEnquiries: person.totalEnquiries,
         wonEnquiries: person.wonEnquiries,
         lostEnquiries: person.lostEnquiries,
-        delayedEnquiries: person.delayedEnquiries,
         pendingEnquiries: person.pendingEnquiries,
 
         approvedSalesValue: person.approvedSalesValue,
@@ -1954,6 +1906,7 @@ const getMisScoring = async (query, user) => {
             enquiries: target.enquiry,
             salesValue: target.sales,
             visits: target.visits,
+            orders: target.orders,
           },
           weeklyBase: weeklyBaseTarget,
         },
@@ -1964,6 +1917,7 @@ const getMisScoring = async (query, user) => {
           enquiries: Math.ceil(monthlyShortBy.enquiries),
           salesValue: monthlyShortBy.salesValue,
           visits: Math.ceil(monthlyShortBy.visits),
+          orders: Math.ceil(monthlyShortBy.orders),
         },
 
         currentWeek,
@@ -1976,44 +1930,103 @@ const getMisScoring = async (query, user) => {
         return b.monthlyScore - a.monthlyScore;
       }
 
-      return b.enquiryQualityScore - a.enquiryQualityScore;
+      if (b.approvedOrders !== a.approvedOrders) {
+        return b.approvedOrders - a.approvedOrders;
+      }
+
+      return b.approvedSalesValue - a.approvedSalesValue;
     });
 
+  const totalMonthlyOrdersWon = salesPersonScores.reduce(
+    (sum, item) => sum + Number(item.approvedOrders || 0),
+    0
+  );
+
+  const totalMonthlySalesVolume = salesPersonScores.reduce(
+    (sum, item) => sum + Number(item.approvedSalesValue || 0),
+    0
+  );
+
+  const totalMonthlyEnquiries = salesPersonScores.reduce(
+    (sum, item) => sum + Number(item.totalEnquiries || 0),
+    0
+  );
+
+  const totalMonthlyVisits = salesPersonScores.reduce(
+    (sum, item) => sum + Number(item.visitsDone || 0),
+    0
+  );
+
+  const topPerformer = salesPersonScores[0] || null;
+  const worstPerformer =
+    salesPersonScores.length > 1
+      ? salesPersonScores[salesPersonScores.length - 1]
+      : null;
+
+  const businessInsight = {
+    totalMonthlyOrdersWon,
+    totalMonthlySalesVolume,
+    totalMonthlyEnquiries,
+    totalMonthlyVisits,
+
+    topPerformer: topPerformer
+      ? {
+          salesPersonId: topPerformer.salesPersonId,
+          name: topPerformer.name,
+          score: topPerformer.monthlyScore,
+          approvedOrders: topPerformer.approvedOrders,
+          approvedSalesValue: topPerformer.approvedSalesValue,
+          reason: `Top performer due to ${topPerformer.approvedOrders} approved order(s), ${formatCurrency(
+            topPerformer.approvedSalesValue
+          )} sales volume and strong MIS score of ${topPerformer.monthlyScore}/100.`,
+        }
+      : null,
+
+    worstPerformer: worstPerformer
+      ? {
+          salesPersonId: worstPerformer.salesPersonId,
+          name: worstPerformer.name,
+          score: worstPerformer.monthlyScore,
+          approvedOrders: worstPerformer.approvedOrders,
+          approvedSalesValue: worstPerformer.approvedSalesValue,
+          reason: getPerformanceReason(worstPerformer),
+        }
+      : null,
+
+    summaryMessage:
+      topPerformer && worstPerformer
+        ? `${topPerformer.name} is leading this month with ${topPerformer.approvedOrders} approved order(s). ${worstPerformer.name} needs focus on ${getPerformanceReason(
+            worstPerformer
+          )}.`
+        : "MIS business insight will appear once employee performance data is available.",
+  };
+
   return {
-    reportType: "monthly",
+    reportType: "monthly_weightage_mis",
 
     dateRange: {
       fromDate: startDate,
       toDate: endDate,
     },
 
+    weightage: MIS_WEIGHTAGE,
+
     summary: {
-      hotLeads,
-      warmLeads,
-      coldLeads,
-      totalLeads: hotLeads + warmLeads + coldLeads,
-
-      totalApprovedSalesValue: salesPersonScores.reduce(
-        (sum, item) => sum + Number(item.approvedSalesValue || 0),
-        0
-      ),
-
-      totalApprovedOrders: salesPersonScores.reduce(
-        (sum, item) => sum + Number(item.approvedOrders || 0),
-        0
-      ),
-
-      totalVisits: salesPersonScores.reduce(
-        (sum, item) => sum + Number(item.visitsDone || 0),
-        0
-      ),
+      totalApprovedSalesValue: totalMonthlySalesVolume,
+      totalApprovedOrders: totalMonthlyOrdersWon,
+      totalMonthlyOrdersWon,
+      totalEnquiries: totalMonthlyEnquiries,
+      totalVisits: totalMonthlyVisits,
     },
+
+    businessInsight,
 
     weeks,
 
     salesPersonScores,
   };
 };
+
 module.exports = {
   getDashboardSummary,
   getCashflowSummary,

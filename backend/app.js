@@ -22,6 +22,7 @@ const appPushRoutes = require("./routes/appPushRoutes");
 const mtcRoutes = require("./routes/mtcRoutes");
 const supportTicketRoutes = require("./routes/supportTicketRoutes");
 const enquiryLookupRoutes = require("./routes/enquiryLookupRoutes");
+const itSupportRoutes = require("./routes/itSupportRoutes");
 
 const app = express();
 
@@ -115,6 +116,14 @@ app.use(
       path.join(__dirname, "uploads", "feasibility-report")
   )
 );
+/* IT SUPPORT - PERSISTENT UPLOAD PATH */
+app.use(
+  "/uploads/it-support",
+  express.static(
+    process.env.IT_SUPPORT_UPLOAD_DIR ||
+      path.join(__dirname, "uploads", "it-support")
+  )
+);
 
 /* LOGO */
 app.use("/logo.png", express.static(path.join(__dirname, "public/logo.png")));
@@ -146,5 +155,6 @@ app.use("/api/app-push", appPushRoutes);
 app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/mtc", mtcRoutes);
 app.use("/api/enquiry-lookup", enquiryLookupRoutes);
+app.use("/api/it-support", itSupportRoutes);
 
 module.exports = app;
