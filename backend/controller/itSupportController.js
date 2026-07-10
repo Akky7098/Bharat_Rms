@@ -17,9 +17,25 @@ const sendCreated = (res, data, message = "Created successfully") => {
 };
 
 const handleError = (res, error) => {
-  console.error("IT Support Error:", error);
+  console.error("IT SUPPORT ERROR =>", error);
 
-  res.status(error.statusCode || 500).json({
+  if (error.name === "ValidationError") {
+    return res.status(400).json({
+      success: false,
+      message: Object.values(error.errors)
+        .map((e) => e.message)
+        .join(", "),
+    });
+  }
+
+  if (error.code === 11000) {
+    return res.status(409).json({
+      success: false,
+      message: "Duplicate record already exists.",
+    });
+  }
+
+  return res.status(error.statusCode || 500).json({
     success: false,
     message: error.message || "Internal server error",
   });
