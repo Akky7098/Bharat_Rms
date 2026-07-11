@@ -1561,37 +1561,70 @@ const getMisScoring = async (query, user) => {
     },
   };
 
-  const visitFilter = {
-  date: {
-    $gte: startDate,
-    $lte: endDate,
-  },
+ const visitFilter = {
+  $and: [
+    /*
+     * New records use the activity date.
+     * Older records may only contain createdAt.
+     */
+    {
+      $or: [
+        {
+          date: {
+            $gte: startDate,
+            $lte: endDate,
+          },
+        },
+        {
+          date: {
+            $exists: false,
+          },
+          createdAt: {
+            $gte: startDate,
+            $lte: endDate,
+          },
+        },
+        {
+          date: null,
+          createdAt: {
+            $gte: startDate,
+            $lte: endDate,
+          },
+        },
+      ],
+    },
 
-  $or: [
+    /*
+     * Count only visits or meetings.
+     */
     {
-      activityType: {
-        $in: ["visit", "meeting"],
-      },
-    },
-    {
-      callType: {
-        $in: ["visit", "meeting"],
-      },
-    },
-    {
-      type: {
-        $in: ["visit", "meeting"],
-      },
-    },
-    {
-      visitType: {
-        $exists: true,
-      },
-    },
-    {
-      meetingType: {
-        $exists: true,
-      },
+      $or: [
+        {
+          activityType: {
+            $in: ["visit", "meeting"],
+          },
+        },
+        {
+          callType: {
+            $in: ["visit", "meeting"],
+          },
+        },
+        {
+          type: {
+            $in: ["visit", "meeting"],
+          },
+        },
+        {
+          visitType: {
+            $exists: true,
+          },
+        },
+        {
+          meetingType: {
+            $exists: true,
+          },
+        },
+      ],
     },
   ],
 };
