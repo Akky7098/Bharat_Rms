@@ -1341,15 +1341,15 @@ const getMisScoring = async (query, user) => {
       orders: 0,
     };
 
-  const makeObjectId = (id) => {
-    if (!id) return id;
+  // const makeObjectId = (id) => {
+  //   if (!id) return id;
 
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      return new mongoose.Types.ObjectId(id);
-    }
+  //   if (mongoose.Types.ObjectId.isValid(id)) {
+  //     return new mongoose.Types.ObjectId(id);
+  //   }
 
-    return id;
-  };
+  //   return id;
+  // };
 
   const formatCurrency = (amount = 0) =>
     `₹${Number(amount || 0).toLocaleString("en-IN")}`;
@@ -1411,31 +1411,100 @@ const getMisScoring = async (query, user) => {
     };
   };
 
-  const getFourMonthWeeks = (startDate, endDate) => {
-    const year = startDate.getFullYear();
-    const month = startDate.getMonth();
-    const lastDay = endDate.getDate();
+ const getFourMonthWeeks = (
+  startDate,
+  endDate
+) => {
+  /*
+   * Read the selected month in IST.
+   *
+   * Do not use startDate.getMonth() directly
+   * because the production server may run in UTC.
+   * Example:
+   * 01 July 00:00 IST becomes
+   * 30 June 18:30 UTC.
+   */
+  const istStart = new Date(
+    startDate.toLocaleString(
+      "en-US",
+      {
+        timeZone: "Asia/Kolkata",
+      }
+    )
+  );
 
-    const ranges = [
-      [1, 7],
-      [8, 14],
-      [15, 23],
-      [24, lastDay],
-    ];
+  const year =
+    istStart.getFullYear();
 
-    return ranges.map(([startDay, endDay], index) => {
-      const weekStart = new Date(year, month, startDay, 0, 0, 0, 0);
-      const weekEnd = new Date(year, month, endDay, 23, 59, 59, 999);
+  const monthIndex =
+    istStart.getMonth();
 
-      return {
-        weekNo: index + 1,
-        label: `Week ${index + 1}`,
-        displayRange: `${startDay}-${endDay}`,
-        startDate: weekStart,
-        endDate: weekEnd,
-      };
-    });
+  const monthNumber =
+    String(
+      monthIndex + 1
+    ).padStart(2, "0");
+
+  const lastDay =
+    new Date(
+      year,
+      monthIndex + 1,
+      0
+    ).getDate();
+
+  const ranges = [
+    [1, 7],
+    [8, 14],
+    [15, 23],
+    [24, lastDay],
+  ];
+
+  const createIstBoundary = (
+    day,
+    isEnd = false
+  ) => {
+    const dayText =
+      String(day).padStart(
+        2,
+        "0"
+      );
+
+    const timeText =
+      isEnd
+        ? "23:59:59.999"
+        : "00:00:00.000";
+
+    return new Date(
+      `${year}-${monthNumber}-${dayText}T${timeText}+05:30`
+    );
   };
+
+  return ranges.map(
+    (
+      [weekStartDay, weekEndDay],
+      index
+    ) => ({
+      weekNo: index + 1,
+
+      label:
+        `Week ${index + 1}`,
+
+      displayRange:
+        `${weekStartDay}-${weekEndDay}`,
+
+      startDate:
+        createIstBoundary(
+          weekStartDay,
+          false
+        ),
+
+      endDate:
+        createIstBoundary(
+          weekEndDay,
+          true
+        ),
+    })
+  );
+};
 
   const findWeekIndex = (weeks, date) => {
     if (!date) return -1;
@@ -1493,31 +1562,52 @@ const getMisScoring = async (query, user) => {
   };
 
   const visitFilter = {
-    createdAt: {
-      $gte: startDate,
-      $lte: endDate,
+  date: {
+    $gte: startDate,
+    $lte: endDate,
+  },
+
+  $or: [
+    {
+      activityType: {
+        $in: ["visit", "meeting"],
+      },
     },
-    $or: [
-      { activityType: { $in: ["visit", "meeting"] } },
-      { callType: { $in: ["visit", "meeting"] } },
-      { type: { $in: ["visit", "meeting"] } },
-      { visitType: { $exists: true } },
-      { meetingType: { $exists: true } },
-    ],
-  };
+    {
+      callType: {
+        $in: ["visit", "meeting"],
+      },
+    },
+    {
+      type: {
+        $in: ["visit", "meeting"],
+      },
+    },
+    {
+      visitType: {
+        $exists: true,
+      },
+    },
+    {
+      meetingType: {
+        $exists: true,
+      },
+    },
+  ],
+};
 
-  if (user.role !== "admin" && user.role !== "super_admin") {
-    const userId = makeObjectId(user.id || user._id);
+  // if (user.role !== "admin" && user.role !== "super_admin") {
+  //   const userId = makeObjectId(user.id || user._id);
 
-    enquiryFilter.salesPersonId = userId;
+  //   enquiryFilter.salesPersonId = userId;
 
-    salesOrderFilter.$or = [
-      { salesPersonId: userId },
-      { salesPersonId: String(user.id || user._id) },
-    ];
+  //   salesOrderFilter.$or = [
+  //     { salesPersonId: userId },
+  //     { salesPersonId: String(user.id || user._id) },
+  //   ];
 
-    visitFilter.salesPersonId = userId;
-  }
+  //   visitFilter.salesPersonId = userId;
+  // }
 
   const enquiries = await Enquiry.find(enquiryFilter)
     .populate("salesPersonId", "name email")
@@ -1529,9 +1619,13 @@ const getMisScoring = async (query, user) => {
     )
     .lean();
 
-  const visits = await ColdCall.find(visitFilter)
-    .select("salesPersonId salesPersonName salesPersonEmail createdAt")
-    .lean();
+const visits = await ColdCall.find(
+  visitFilter
+)
+  .select(
+    "salesPersonId salesPersonName salesPersonEmail date createdAt"
+  )
+  .lean();
 
   const salesMap = {};
 
@@ -1635,15 +1729,88 @@ const getMisScoring = async (query, user) => {
 
     person.visitsDone += 1;
 
-    const weekIndex = findWeekIndex(weeks, visit.createdAt);
+const visitActivityDate =
+  visit.date ||
+  visit.createdAt;
 
+const weekIndex = findWeekIndex(
+  weeks,
+  visitActivityDate
+);
     if (weekIndex >= 0) {
       person.weeklyReport[weekIndex].visits += 1;
     }
   });
 
-  let currentWeekIndex = findWeekIndex(weeks, new Date());
-  if (currentWeekIndex < 0) currentWeekIndex = 0;
+const now = new Date();
+
+const istNow = new Date(
+  now.toLocaleString(
+    "en-US",
+    {
+      timeZone: "Asia/Kolkata",
+    }
+  )
+);
+
+/*
+ * Convert the IST wall-clock value back into
+ * an IST-offset Date so it can be compared with
+ * the IST week boundaries.
+ */
+const currentIstDate =
+  new Date(
+    `${istNow.getFullYear()}-${String(
+      istNow.getMonth() + 1
+    ).padStart(2, "0")}-${String(
+      istNow.getDate()
+    ).padStart(2, "0")}T${String(
+      istNow.getHours()
+    ).padStart(2, "0")}:${String(
+      istNow.getMinutes()
+    ).padStart(2, "0")}:${String(
+      istNow.getSeconds()
+    ).padStart(2, "0")}+05:30`
+  );
+
+let currentWeekIndex =
+  findWeekIndex(
+    weeks,
+    currentIstDate
+  );
+
+if (currentWeekIndex < 0) {
+  const firstWeekStart =
+    new Date(
+      weeks[0]?.startDate
+    );
+
+  const lastWeekEnd =
+    new Date(
+      weeks[
+        weeks.length - 1
+      ]?.endDate
+    );
+
+  /*
+   * Past selected month:
+   * display its final week.
+   *
+   * Future selected month:
+   * display its first week.
+   */
+  if (currentIstDate > lastWeekEnd) {
+    currentWeekIndex =
+      weeks.length - 1;
+  } else if (
+    currentIstDate <
+    firstWeekStart
+  ) {
+    currentWeekIndex = 0;
+  } else {
+    currentWeekIndex = 0;
+  }
+}
 
   const salesPersonScores = Object.values(salesMap)
     .map((person) => {

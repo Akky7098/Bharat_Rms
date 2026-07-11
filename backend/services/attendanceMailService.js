@@ -20,7 +20,7 @@ const COMPANY = {
 const EMAILS = {
   admin:
     process.env.ATTENDANCE_ADMIN_EMAIL ||
-    "sonia@bharatspecialsteels.com",
+    "sales@bharatspecialsteels.com",
 
   superAdmin:
     process.env.SUPER_ADMIN_EMAIL ||
