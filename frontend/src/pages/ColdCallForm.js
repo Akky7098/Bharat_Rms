@@ -31,41 +31,98 @@ const ColdCallForm = ({ onClose, refresh }) => {
   const [error, setError] = useState("");
 
   const updateField = (name, value) => {
-    let finalValue = value;
+  let finalValue = value;
 
-    if (name === "contactPersonNumber") {
-      finalValue = value.replace(/\D/g, "").slice(0, 10);
+  if (name === "contactPersonNumber") {
+    finalValue = value
+      .replace(/\D/g, "")
+      .slice(0, 10);
+  }
+
+  setForm((prev) => {
+    /*
+     * Back-date entry is allowed only for Visit.
+     * Calling and Email always use today's date.
+     */
+    if (name === "activityType") {
+      return {
+        ...prev,
+        activityType: finalValue,
+        date:
+          finalValue === "visit"
+            ? prev.date || todayDate
+            : todayDate,
+      };
     }
 
-    setForm((prev) => ({
+    return {
       ...prev,
       [name]: finalValue,
-    }));
+    };
+  });
 
-    if (name === "contactPersonNumber") {
-      if (finalValue.length === 0) setError("");
-      else if (!/^[6-9]/.test(finalValue)) setError("Number must start from 6-9");
-      else if (finalValue.length < 10) setError("Enter exactly 10 digits");
-      else setError("");
+  if (name === "contactPersonNumber") {
+    if (finalValue.length === 0) {
+      setError("");
+    } else if (!/^[6-9]/.test(finalValue)) {
+      setError(
+        "Number must start from 6-9"
+      );
+    } else if (finalValue.length < 10) {
+      setError(
+        "Enter exactly 10 digits"
+      );
+    } else {
+      setError("");
     }
-  };
+  }
+};
 
   const handleChange = (e) => {
     updateField(e.target.name, e.target.value);
   };
 
   const validate = () => {
-    if (!form.activityType) return "Select activity type";
-    if (!form.companyName.trim()) return "Enter company name";
-    if (!form.contactPersonName.trim()) return "Enter contact person";
+  if (!form.activityType) {
+    return "Select activity type";
+  }
 
-    if (!/^[6-9]\d{9}$/.test(form.contactPersonNumber)) {
-      setError("Enter valid 10 digit mobile number");
-      return "Invalid phone";
-    }
+  if (
+    form.activityType === "visit" &&
+    !form.date
+  ) {
+    return "Select visit date";
+  }
 
-    return null;
-  };
+  if (
+    form.activityType === "visit" &&
+    form.date > todayDate
+  ) {
+    return "Future visit date is not allowed";
+  }
+
+  if (!form.companyName.trim()) {
+    return "Enter company name";
+  }
+
+  if (!form.contactPersonName.trim()) {
+    return "Enter contact person";
+  }
+
+  if (
+    !/^[6-9]\d{9}$/.test(
+      form.contactPersonNumber
+    )
+  ) {
+    setError(
+      "Enter valid 10 digit mobile number"
+    );
+
+    return "Invalid phone";
+  }
+
+  return null;
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,9 +134,17 @@ const ColdCallForm = ({ onClose, refresh }) => {
       setLoading(true);
 
       await createColdCall({
-        ...form,
-        date: todayDate,
-      });
+  ...form,
+
+  /*
+   * Visit may use a previous date.
+   * Calling and email always use today.
+   */
+  date:
+    form.activityType === "visit"
+      ? form.date
+      : todayDate,
+});
 
       alert("Saved successfully");
       refresh();
@@ -147,18 +212,46 @@ const ColdCallForm = ({ onClose, refresh }) => {
               </select>
             </div>
 
-            <div className="form-group cold-date-disabled-group">
-              <label>Date</label>
-              <input
-                type="date"
-                name="date"
-                value={todayDate}
-                disabled
-                readOnly
-                className="cold-disabled-date"
-              />
-              <small>Auto-filled with today’s date</small>
-            </div>
+            <div
+  className={`form-group ${
+    form.activityType === "visit"
+      ? "cold-date-editable-group"
+      : "cold-date-disabled-group"
+  }`}
+>
+  <label>
+    Date
+    {form.activityType === "visit"
+      ? " *"
+      : ""}
+  </label>
+
+  <input
+    type="date"
+    name="date"
+    value={form.date}
+    onChange={handleChange}
+    max={todayDate}
+    disabled={
+      loading ||
+      form.activityType !== "visit"
+    }
+    readOnly={
+      form.activityType !== "visit"
+    }
+    className={
+      form.activityType === "visit"
+        ? "cold-editable-date"
+        : "cold-disabled-date"
+    }
+  />
+
+  <small>
+    {form.activityType === "visit"
+      ? "You can select today or a previous date for visit activity."
+      : "Calling and email use today’s date automatically."}
+  </small>
+</div>
 
             <div className="form-group full-width">
               <label>Company Name *</label>

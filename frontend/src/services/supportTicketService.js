@@ -1,9 +1,7 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/support-tickets";
 
-// Production later:
-// const API_URL = "https://bharatspecialsteels.bharatspecialsteels.com/api/support-tickets";
+const API_URL = "https://bharatspecialsteels.bharatspecialsteels.com/api/support-tickets";
 
 const getToken = () => localStorage.getItem("token");
 

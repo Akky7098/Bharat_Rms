@@ -2201,3 +2201,61 @@ transform:none;
 .dispatch-insight-card.active small {
   color: #ffffff !important;
 }
+.dispatch-doc-list,
+.ios-dispatch-doc-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dispatch-doc-link,
+.ios-dispatch-doc-btn {
+  white-space: nowrap;
+}
+
+.dispatch-doc-link.payment-doc,
+.ios-dispatch-doc-btn.payment-doc {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+/* =====================================================
+   DISPATCH MTC DOCUMENT STATUS
+   Desktop and PWA safe
+===================================================== */
+
+.dispatch-doc-list,
+.ios-dispatch-doc-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.dispatch-mtc-na {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 28px;
+  padding: 0 9px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+
+  background: #f8fafc;
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+
+  white-space: nowrap;
+}
+
+.dispatch-doc-link.mtc-doc,
+.ios-dispatch-doc-btn.mtc-doc {
+  border-color: #86efac !important;
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+}

@@ -2765,3 +2765,984 @@ body.sales-order-browser-scroll-page .sales-pagination {
     min-width: 120px;
   }
 }
+/* =====================================================
+   SALES ORDER PWA COMPACT HEADER + COMPANY SEARCH
+   Mobile/PWA only
+===================================================== */
+
+@media (max-width: 900px) {
+  /* ---------------------------------------------
+     Short premium header
+  --------------------------------------------- */
+
+  .ios-sales-header.ios-sales-header-compact {
+    flex: 0 0 auto !important;
+    min-height: auto !important;
+
+    padding:
+      calc(
+        12px +
+        env(safe-area-inset-top)
+      )
+      14px
+      13px !important;
+
+    border-radius:
+      0 0 23px 23px !important;
+  }
+
+  .ios-sales-header-compact
+    .ios-sales-header-row {
+    display: grid !important;
+    grid-template-columns:
+      42px minmax(0, 1fr) auto !important;
+
+    align-items: center !important;
+    gap: 10px !important;
+
+    margin: 0 !important;
+  }
+
+  .ios-sales-header-copy {
+    min-width: 0;
+  }
+
+  .ios-sales-header-copy > span {
+    display: block;
+
+    margin-bottom: 2px;
+
+    color: #86efac;
+
+    font-size: 8px;
+    font-weight: 900;
+
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .ios-sales-header-copy h2 {
+    margin: 0 !important;
+
+    color: #ffffff !important;
+
+    font-size: 20px !important;
+    font-weight: 900 !important;
+    line-height: 1.1 !important;
+
+    white-space: nowrap;
+  }
+
+  .ios-sales-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .ios-sales-search-btn,
+  .ios-sales-header-compact
+    .ios-sales-refresh {
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border:
+      1px solid
+      rgba(255, 255, 255, 0.17) !important;
+
+    border-radius: 13px !important;
+
+    background:
+      rgba(255, 255, 255, 0.13) !important;
+
+    color: #ffffff !important;
+
+    display: grid !important;
+    place-items: center !important;
+
+    font-size: 21px !important;
+    font-weight: 900 !important;
+
+    cursor: pointer;
+  }
+
+  .ios-sales-search-btn.active {
+    background:
+      rgba(255, 255, 255, 0.25) !important;
+  }
+
+  /* ---------------------------------------------
+     Company search inside header
+  --------------------------------------------- */
+
+  .ios-sales-company-search {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+
+    margin-top: 11px;
+  }
+
+  .ios-sales-company-search input {
+    width: 100%;
+    height: 43px;
+
+    padding:
+      0 40px
+      0 38px;
+
+    border:
+      1px solid
+      rgba(255, 255, 255, 0.24);
+
+    border-radius: 14px;
+
+    background:
+      rgba(255, 255, 255, 0.96);
+
+    color: #0f172a;
+
+    font-size: 12px;
+    font-weight: 750;
+
+    outline: none;
+
+    box-shadow:
+      0 8px 22px
+      rgba(15, 23, 42, 0.15);
+  }
+
+  .ios-sales-company-search input::placeholder {
+    color: #94a3b8;
+  }
+
+  .ios-sales-company-search input:focus {
+    border-color: #4ade80;
+
+    box-shadow:
+      0 0 0 3px
+      rgba(74, 222, 128, 0.16);
+  }
+
+  .ios-sales-search-icon {
+    position: absolute;
+    left: 13px;
+    z-index: 2;
+
+    color: #64748b;
+
+    font-size: 17px;
+    pointer-events: none;
+  }
+
+  .ios-sales-search-clear {
+    position: absolute;
+    right: 7px;
+
+    width: 30px;
+    height: 30px;
+
+    padding: 0;
+
+    border: 0;
+    border-radius: 9px;
+
+    background: #f1f5f9;
+    color: #475569;
+
+    font-size: 19px;
+    line-height: 1;
+
+    display: grid;
+    place-items: center;
+
+    cursor: pointer;
+  }
+
+  /* ---------------------------------------------
+     Scroll content spacing
+  --------------------------------------------- */
+
+  .ios-sales-content {
+    padding-top: 12px !important;
+  }
+
+  /* ---------------------------------------------
+     Four premium insight cards
+  --------------------------------------------- */
+
+  .ios-sales-insight-grid {
+    display: grid;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+    margin-bottom: 11px;
+  }
+
+  .ios-sales-insight-card {
+    position: relative;
+    overflow: hidden;
+
+    min-width: 0;
+    min-height: 94px;
+
+    padding: 13px;
+
+    border:
+      1px solid
+      #e2e8f0;
+
+    border-radius: 17px;
+
+    background: #ffffff;
+
+    text-align: left;
+
+    box-shadow:
+      0 8px 22px
+      rgba(15, 23, 42, 0.06);
+
+    cursor: pointer;
+  }
+
+  .ios-sales-insight-card::after {
+    content: "";
+
+    position: absolute;
+    top: -24px;
+    right: -24px;
+
+    width: 66px;
+    height: 66px;
+
+    border-radius: 50%;
+
+    background:
+      rgba(34, 197, 94, 0.07);
+  }
+
+  .ios-sales-insight-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .ios-sales-insight-card span,
+  .ios-sales-insight-card strong,
+  .ios-sales-insight-card small {
+    display: block;
+  }
+
+  .ios-sales-insight-card span {
+    color: #64748b;
+
+    font-size: 8px;
+    font-weight: 900;
+
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .ios-sales-insight-card strong {
+    margin-top: 7px;
+
+    color: #0f172a;
+
+    font-size: 18px;
+    font-weight: 950;
+
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .ios-sales-insight-card small {
+    margin-top: 7px;
+
+    color: #94a3b8;
+
+    font-size: 8px;
+    font-weight: 750;
+  }
+
+  .ios-sales-insight-card.today-orders {
+    border-left:
+      4px solid #16a34a;
+  }
+
+  .ios-sales-insight-card.today-revenue {
+    border-left:
+      4px solid #2563eb;
+  }
+
+  .ios-sales-insight-card.month-orders {
+    border-left:
+      4px solid #d97706;
+  }
+
+  .ios-sales-insight-card.month-revenue {
+    border-left:
+      4px solid #7c3aed;
+  }
+
+  /* ---------------------------------------------
+     New-sales button outside header
+  --------------------------------------------- */
+
+  .ios-sales-new-btn-content {
+    width: 100% !important;
+    min-height: 45px !important;
+
+    margin:
+      0 0 11px !important;
+
+    border-radius: 14px !important;
+
+    box-shadow:
+      0 8px 20px
+      rgba(234, 179, 8, 0.18);
+  }
+
+  /* ---------------------------------------------
+     Filter toolbar
+  --------------------------------------------- */
+
+  .ios-sales-toolbar {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    margin-bottom: 12px;
+  }
+
+  .ios-sales-toolbar
+    .ios-sales-filter-open {
+    flex: 0 0 auto;
+
+    min-height: 40px;
+
+    margin: 0 !important;
+
+    padding: 0 13px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 6px;
+  }
+
+  .ios-sales-active-search {
+    min-width: 0;
+    flex: 1;
+
+    min-height: 40px;
+
+    padding:
+      6px 7px
+      6px 11px;
+
+    border:
+      1px solid
+      #bfdbfe;
+
+    border-radius: 12px;
+
+    background: #eff6ff;
+
+    display: grid;
+    grid-template-columns:
+      auto minmax(0, 1fr) 28px;
+
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ios-sales-active-search span {
+    color: #64748b;
+
+    font-size: 8px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+  }
+
+  .ios-sales-active-search strong {
+    min-width: 0;
+
+    color: #1e3a8a;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ios-sales-active-search button {
+    width: 28px;
+    height: 28px;
+
+    padding: 0;
+
+    border: 0;
+    border-radius: 8px;
+
+    background: #dbeafe;
+    color: #1d4ed8;
+
+    display: grid;
+    place-items: center;
+
+    font-size: 17px;
+  }
+}
+/* =====================================================
+   FINAL SALES ORDER PWA
+   SEARCH + FILTER + PAGINATION VISIBILITY FIX
+   Keep this at the absolute end of SalesOrderList.css
+===================================================== */
+
+@media (max-width: 900px) {
+  /* ===================================================
+     PAGE FRAME
+  =================================================== */
+
+  body.sales-order-browser-scroll-page,
+  body.sales-order-browser-scroll-page #root,
+  body.sales-order-browser-scroll-page
+    .dashboard-layout,
+  body.sales-order-browser-scroll-page
+    .main,
+  body.sales-order-browser-scroll-page
+    .sales-order-page-root,
+  body.sales-order-browser-scroll-page
+    .sales-order-pwa-shell,
+  body.sales-order-browser-scroll-page
+    .ios-sales-page {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-page {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  /* ===================================================
+     COMPACT HEADER
+  =================================================== */
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-header.ios-sales-header-compact {
+    position: relative !important;
+    flex: 0 0 auto !important;
+    z-index: 100 !important;
+
+    width: 100% !important;
+    min-height: auto !important;
+
+    margin: 0 !important;
+
+    padding:
+      calc(
+        11px +
+        env(safe-area-inset-top)
+      )
+      12px
+      12px !important;
+
+    border-radius:
+      0 0 22px 22px !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-header-compact
+    .ios-sales-header-row {
+    display: grid !important;
+    grid-template-columns:
+      40px minmax(0, 1fr) auto !important;
+
+    align-items: center !important;
+    gap: 9px !important;
+
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-header-copy {
+    min-width: 0 !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-header-copy h2 {
+    margin: 0 !important;
+    font-size: 19px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-search-btn,
+  body.sales-order-browser-scroll-page
+    .ios-sales-header-compact
+    .ios-sales-refresh {
+    display: grid !important;
+    place-items: center !important;
+
+    visibility: visible !important;
+    opacity: 1 !important;
+
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border:
+      1px solid
+      rgba(255, 255, 255, 0.18) !important;
+
+    border-radius: 13px !important;
+
+    background:
+      rgba(255, 255, 255, 0.14) !important;
+
+    color: #ffffff !important;
+
+    font-size: 20px !important;
+    line-height: 1 !important;
+
+    cursor: pointer !important;
+  }
+
+  /* ===================================================
+     COMPANY SEARCH
+  =================================================== */
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-company-search {
+    position: relative !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    width: 100% !important;
+
+    margin:
+      10px 0 0 !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-company-search input {
+    display: block !important;
+
+    width: 100% !important;
+    height: 44px !important;
+
+    padding:
+      0 40px
+      0 39px !important;
+
+    border:
+      1px solid
+      rgba(255, 255, 255, 0.28) !important;
+
+    border-radius: 14px !important;
+
+    background: #ffffff !important;
+    color: #0f172a !important;
+
+    font-size: 13px !important;
+    font-weight: 750 !important;
+
+    outline: none !important;
+
+    appearance: none !important;
+    -webkit-appearance: none !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-company-search
+    input:focus {
+    border-color: #4ade80 !important;
+
+    box-shadow:
+      0 0 0 3px
+      rgba(74, 222, 128, 0.16) !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-search-icon {
+    position: absolute !important;
+    left: 13px !important;
+    z-index: 2 !important;
+
+    color: #64748b !important;
+
+    pointer-events: none !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-search-clear {
+    position: absolute !important;
+    right: 7px !important;
+
+    display: grid !important;
+    place-items: center !important;
+
+    width: 30px !important;
+    height: 30px !important;
+
+    padding: 0 !important;
+
+    border: 0 !important;
+    border-radius: 9px !important;
+
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+
+    font-size: 18px !important;
+  }
+
+  /* ===================================================
+     ONLY CONTENT SCROLLS
+  =================================================== */
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-content {
+    position: relative !important;
+
+    display: block !important;
+
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+
+    width: 100% !important;
+
+    margin: 0 !important;
+
+    padding:
+      12px
+      12px
+      calc(
+        44px +
+        env(safe-area-inset-bottom)
+      ) !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    -webkit-overflow-scrolling:
+      touch !important;
+
+    overscroll-behavior-y:
+      contain !important;
+
+    scrollbar-width: none !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-content::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* ===================================================
+     INSIGHTS + NEW ORDER
+  =================================================== */
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-insight-grid {
+    display: grid !important;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+
+    gap: 9px !important;
+
+    margin:
+      0 0 10px !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-new-btn-content {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 100% !important;
+    min-height: 45px !important;
+
+    margin:
+      0 0 11px !important;
+  }
+
+  /* ===================================================
+     FILTER TOOLBAR VISIBILITY
+  =================================================== */
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-toolbar {
+    position: relative !important;
+    z-index: 5 !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    width: 100% !important;
+    min-height: 44px !important;
+
+    gap: 8px !important;
+
+    margin:
+      0 0 12px !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-toolbar
+    .ios-sales-filter-open {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    visibility: visible !important;
+    opacity: 1 !important;
+
+    flex:
+      0 0 auto !important;
+
+    width: auto !important;
+    min-width: 126px !important;
+    min-height: 42px !important;
+
+    margin: 0 !important;
+    padding:
+      0 14px !important;
+
+    border:
+      1px solid
+      #dbe3ed !important;
+
+    border-radius: 13px !important;
+
+    background: #ffffff !important;
+    color: #14532d !important;
+
+    box-shadow:
+      0 7px 18px
+      rgba(15, 23, 42, 0.07) !important;
+
+    font-size: 12px !important;
+    font-weight: 900 !important;
+
+    gap: 6px !important;
+
+    cursor: pointer !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-toolbar
+    .ios-sales-filter-open
+    span {
+    font-size: 16px !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-active-search {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  /* When no company search is active,
+     make More Filters full width. */
+  body.sales-order-browser-scroll-page
+    .ios-sales-toolbar
+    .ios-sales-filter-open:only-child {
+    width: 100% !important;
+  }
+
+  /* ===================================================
+     FILTER BOTTOM SHEET
+  =================================================== */
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-filter-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+
+    z-index: 999999 !important;
+
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+
+    padding: 0 !important;
+
+    background:
+      rgba(15, 23, 42, 0.58) !important;
+
+    backdrop-filter:
+      blur(7px) !important;
+    -webkit-backdrop-filter:
+      blur(7px) !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-filter-card {
+    width: 100% !important;
+    max-width: 430px !important;
+
+    max-height: 82dvh !important;
+
+    margin: 0 !important;
+
+    padding:
+      18px
+      18px
+      calc(
+        18px +
+        env(safe-area-inset-bottom)
+      ) !important;
+
+    border-radius:
+      27px 27px 0 0 !important;
+
+    overflow-y: auto !important;
+
+    background: #ffffff !important;
+  }
+
+  /* ===================================================
+     PWA PAGINATION
+  =================================================== */
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-pagination {
+    position: relative !important;
+
+    display: grid !important;
+    grid-template-columns:
+      minmax(84px, 1fr)
+      auto
+      minmax(84px, 1fr) !important;
+
+    align-items: center !important;
+
+    width: 100% !important;
+    min-height: 60px !important;
+
+    gap: 8px !important;
+
+    margin:
+      20px 0 20px !important;
+
+    padding:
+      9px !important;
+
+    border:
+      1px solid
+      #e2e8f0 !important;
+
+    border-radius: 17px !important;
+
+    background: #ffffff !important;
+
+    box-shadow:
+      0 8px 22px
+      rgba(15, 23, 42, 0.08) !important;
+
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-pagination
+    button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+
+    margin: 0 !important;
+    padding:
+      0 12px !important;
+
+    border: 0 !important;
+    border-radius: 12px !important;
+
+    background: #14532d !important;
+    color: #ffffff !important;
+
+    font-size: 12px !important;
+    font-weight: 900 !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-pagination
+    button:disabled {
+    background: #e2e8f0 !important;
+    color: #94a3b8 !important;
+
+    opacity: 1 !important;
+  }
+
+  body.sales-order-browser-scroll-page
+    .ios-sales-pagination
+    span {
+    min-width: 80px !important;
+
+    color: #475569 !important;
+
+    font-size: 10px !important;
+    font-weight: 900 !important;
+
+    text-align: center !important;
+    white-space: nowrap !important;
+  }
+
+  /*
+   * Ensures the final Next button is not hidden
+   * behind the phone safe area.
+   */
+  body.sales-order-browser-scroll-page
+    .ios-sales-pagination::after {
+    content: "";
+
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -20px;
+
+    height: 20px;
+  }
+}

@@ -43,24 +43,87 @@ const FULL_MONTHS = [
 
 const YEARS = [2026, 2025, 2024];
 
+const SALES_MIS_USERS = [
+  "deepak yadav",
+  "renu",
+  "deepika",
+  "shalu",
+  "saloni",
+  "kailash",
+];
+
+/* =================================================
+   MIS SCORING WEIGHTAGE
+================================================= */
+
+const MIS_WEIGHTAGE_RULES = [
+  {
+    key: "enquiry",
+    title: "Enquiries",
+    shortTitle: "Enquiry",
+    weightage: 15,
+    icon: "📝",
+    tone: "blue",
+    description:
+      "Measures the number of qualified enquiries created during the selected period.",
+  },
+  {
+    key: "meeting",
+    title: "Customer Meetings",
+    shortTitle: "Meeting",
+    weightage: 25,
+    icon: "🤝",
+    tone: "purple",
+    description:
+      "Measures customer visits, meetings and meaningful sales interactions.",
+  },
+  {
+    key: "sales_volume",
+    title: "Sales Volume",
+    shortTitle: "Sales Volume",
+    weightage: 20,
+    icon: "₹",
+    tone: "green",
+    description:
+      "Measures the approved sales value achieved against the assigned target.",
+  },
+  {
+    key: "orders",
+    title: "Number of Orders",
+    shortTitle: "Orders",
+    weightage: 40,
+    icon: "📦",
+    tone: "orange",
+    description:
+      "Measures the number of approved sales orders successfully converted.",
+  },
+];
+
+const normalizeSalesName = (name = "") =>
+  String(name).toLowerCase().trim().replace(/\s+/g, " ");
+
+const isSalesMisUser = (item) =>
+  SALES_MIS_USERS.includes(normalizeSalesName(item?.name));
+
 const DashboardHome = () => {
   const [data, setData] = useState(null);
   const [cashflow, setCashflow] = useState(null);
   const [misScoring, setMisScoring] = useState({
-    hotLeads: 0,
-    warmLeads: 0,
-    coldLeads: 0,
-    totalLeads: 0,
-    salesPersonScores: [],
-  });
+  summary: {},
+  businessInsight: null,
+  salesPersonScores: [],
+});
 
   const [notifications, setNotifications] = useState(null);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [loading, setLoading] = useState(true);
+const [showNotifications, setShowNotifications] = useState(false);
+const [loading, setLoading] = useState(true);
 
-  const [chartWidth, setChartWidth] = useState(
-    window.innerWidth <= 480 ? window.innerWidth - 80 : 420
-  );
+/* MIS tab is shared between desktop and PWA */
+const [activeMisTab, setActiveMisTab] = useState("scorecard");
+
+const [chartWidth, setChartWidth] = useState(
+  window.innerWidth <= 480 ? window.innerWidth - 80 : 420
+);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const today = new Date();
@@ -182,14 +245,12 @@ const DashboardHome = () => {
         setCashflow(cashflowResponse.data);
 
         setMisScoring(
-          misScoringResponse.data || {
-            hotLeads: 0,
-            warmLeads: 0,
-            coldLeads: 0,
-            totalLeads: 0,
-            salesPersonScores: [],
-          }
-        );
+  misScoringResponse.data || {
+    summary: {},
+    businessInsight: null,
+    salesPersonScores: [],
+  }
+);
       } catch (error) {
         console.log(error);
       } finally {
@@ -284,22 +345,81 @@ const DashboardHome = () => {
     return Number(item?.monthlyScore ?? item?.score ?? 0);
   };
 
-  const getWeeklyScore = (item) => {
-    const currentWeek = getFrontendCurrentWeek(item);
-    return Number(currentWeek?.weekScore || 0);
-  };
+  // const getWeeklyScore = (item) => {
+  //   const currentWeek = getFrontendCurrentWeek(item);
+  //   return Number(currentWeek?.weekScore || 0);
+  // };
 
   const getWeekLabel = (item) => {
     return item?.currentWeek?.label || "Current Week";
   };
 
   const getMisChartData = (items = []) => {
-    return items.map((item) => ({
-      ...item,
-      weeklyScore: getWeeklyScore(item),
-      monthlyScoreValue: getMonthlyScore(item),
-    }));
-  };
+  return items
+    .map((item) => {
+      const currentWeek =
+        getFrontendCurrentWeek(item);
+
+      return {
+        ...item,
+
+        name:
+          item?.name ||
+          "Unknown",
+
+        weeklyScore:
+          Number(
+            currentWeek?.weekScore ||
+              0
+          ),
+
+        monthlyScoreValue:
+          Number(
+            item?.monthlyScore ??
+              item?.score ??
+              0
+          ),
+
+        currentWeekLabel:
+          currentWeek?.label ||
+          "Current Week",
+
+        weeklyOrders:
+          Number(
+            currentWeek?.approvedOrders ||
+              0
+          ),
+
+        weeklySalesValue:
+          Number(
+            currentWeek
+              ?.approvedSalesValue ||
+              0
+          ),
+
+        weeklyEnquiries:
+          Number(
+            currentWeek?.enquiries ||
+              0
+          ),
+
+        weeklyVisits:
+          Number(
+            currentWeek?.visits ||
+              0
+          ),
+      };
+    })
+    .sort(
+      (a, b) =>
+        Number(
+          b.weeklyScore || 0
+        ) -
+        Number(
+          a.weeklyScore || 0
+        )
+    );
+};
 
   if (loading) {
     return (
@@ -316,8 +436,34 @@ const DashboardHome = () => {
 
   if (!data) return <div>Loading...</div>;
 
-  const misChartData = misScoring?.salesPersonScores || [];
-  const weeklyMisChartData = getMisChartData(misChartData);
+  const misChartData = (misScoring?.salesPersonScores || []).filter(isSalesMisUser);
+const weeklyMisChartData = getMisChartData(misChartData);
+
+const sortedSalesUsers = [...misChartData].sort((a, b) => {
+  if (Number(b.monthlyScore || 0) !== Number(a.monthlyScore || 0)) {
+    return Number(b.monthlyScore || 0) - Number(a.monthlyScore || 0);
+  }
+
+  if (Number(b.approvedOrders || 0) !== Number(a.approvedOrders || 0)) {
+    return Number(b.approvedOrders || 0) - Number(a.approvedOrders || 0);
+  }
+
+  return Number(b.approvedSalesValue || 0) - Number(a.approvedSalesValue || 0);
+});
+
+const topPerformer = sortedSalesUsers[0] || null;
+const worstPerformer =
+  sortedSalesUsers.length > 1 ? sortedSalesUsers[sortedSalesUsers.length - 1] : null;
+
+const orderWonChartData = [...misChartData]
+  .map((item) => ({
+    name: item.name || "Unknown",
+    salesPersonId: item.salesPersonId,
+    approvedOrders: Number(item.approvedOrders || 0),
+  }))
+  .sort((a, b) => b.approvedOrders - a.approvedOrders);
+
+
   const revenueShare = data?.salesPersonRevenue || [];
   const grades = data?.gradeWiseQuantity || [];
 
@@ -384,133 +530,408 @@ const DashboardHome = () => {
             <MobileKpi title="Lost" value={data?.lostEnquiries || 0} icon="❌" onClick={() => openEnquiries({ status: "lost" })} />
             <MobileKpi title="Delayed" value={data?.delayedEnquiries || 0} icon="⏳" onClick={() => openEnquiries({ status: "delayed" })} />
             <MobileKpi title="Active" value={data?.activeEnquiries || 0} icon="🔥" onClick={() => openEnquiries({ status: "active" })} />
-            <MobileKpi title="Hot Leads" value={misScoring?.hotLeads || 0} icon="🚨" onClick={() => openEnquiries({ leadType: "hot" })} />
-            <MobileKpi title="Warm Leads" value={misScoring?.warmLeads || 0} icon="⚠️" onClick={() => openEnquiries({ leadType: "warm" })} />
-          </div>
+            <MobileKpi
+  title="Top Performer"
+  value={topPerformer?.name || "No data"}
+  icon="🏆"
+  onClick={() =>
+    topPerformer?.salesPersonId &&
+    openSalesOrders({
+      salesPersonId: topPerformer.salesPersonId,
+      salesPersonName: topPerformer.name,
+    })
+  }
+/>
+<MobileKpi
+  title="Needs Focus"
+  value={worstPerformer?.name || "No data"}
+  icon="📌"
+  onClick={() =>
+    worstPerformer?.salesPersonId &&
+    openSalesOrders({
+      salesPersonId: worstPerformer.salesPersonId,
+      salesPersonName: worstPerformer.name,
+    })
+  }
+/>
+</div>
 
-          <MobileSection title="Business Insights">
-            <MobileInsight
-              tone="green"
-              label="Top Performer"
-              title={data?.topWonEmployee?.name || "No data"}
-              desc={data?.topWonEmployee ? `${data.topWonEmployee.wonCount} won enquiries` : "No won enquiry found"}
-              onClick={() =>
-                openEnquiries({
-                  status: "won",
-                  salesPersonId: data?.topWonEmployee?.salesPersonId || data?.topWonEmployee?._id,
-                  salesPersonName: data?.topWonEmployee?.name,
-                })
+<MobileSection title="Orders Won by Salesperson">
+  {!orderWonChartData.length ? (
+    <p className="ios-empty">
+      No order won data available
+    </p>
+  ) : (
+    <ResponsiveContainer
+      width="100%"
+      height={280}
+    >
+      <BarChart
+        data={orderWonChartData}
+        margin={{
+          top: 15,
+          right: 15,
+          left: 0,
+          bottom: 30,
+        }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+          opacity={0.15}
+        />
+
+        <XAxis
+          dataKey="name"
+          interval={0}
+          tick={{
+            fontSize: 10,
+            fontWeight: 700,
+          }}
+        />
+
+        <YAxis
+          allowDecimals={false}
+        />
+
+        <Tooltip
+          formatter={(value) => [
+            `${value} order(s)`,
+            "Orders Won",
+          ]}
+        />
+
+        <Bar
+          dataKey="approvedOrders"
+          radius={[10, 10, 0, 0]}
+          label={{
+            position: "top",
+            fontWeight: 700,
+            fontSize: 11,
+            fill: "#111827",
+          }}
+        >
+          {orderWonChartData.map(
+            (entry, index) => (
+              <Cell
+                key={
+                  entry.salesPersonId ||
+                  index
+                }
+                fill={
+                  COLORS[
+                    index %
+                      COLORS.length
+                  ]
+                }
+              />
+            )
+          )}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )}
+</MobileSection>
+
+{/* =================================================
+    MOBILE WEEKLY MIS COMPARISON
+================================================= */}
+
+<MobileSection title="Weekly MIS Score Comparison">
+  {!weeklyMisChartData.length ? (
+    <p className="ios-empty">
+      No weekly MIS data available
+    </p>
+  ) : (
+    <>
+      <p className="ios-weekly-mis-subtitle">
+        Team-wide current-week performance
+      </p>
+
+      <ResponsiveContainer
+        width="100%"
+        height={Math.max(
+          300,
+          weeklyMisChartData.length *
+            52
+        )}
+      >
+        <BarChart
+          data={weeklyMisChartData}
+          layout="vertical"
+          margin={{
+            top: 10,
+            right: 45,
+            left: 5,
+            bottom: 10,
+          }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            opacity={0.15}
+          />
+
+          <XAxis
+            type="number"
+            domain={[0, 100]}
+            allowDecimals={false}
+            tick={{
+              fontSize: 10,
+            }}
+          />
+
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={88}
+            interval={0}
+            tick={{
+              fontSize: 10,
+              fontWeight: 800,
+            }}
+          />
+
+          <Tooltip
+            formatter={(
+              value,
+              name,
+              props
+            ) => {
+              if (
+                name ===
+                "weeklyScore"
+              ) {
+                return [
+                  `${Number(
+                    value || 0
+                  )}/100`,
+                  `${
+                    props?.payload
+                      ?.currentWeekLabel ||
+                    "Current Week"
+                  } Score`,
+                ];
               }
-            />
 
-            <MobileInsight
-              tone="orange"
-              label="Highest Delayed"
-              title={data?.topDelayedEmployee?.name || "No delay"}
-              desc={data?.topDelayedEmployee ? `${data.topDelayedEmployee.delayedCount} delayed enquiries` : "No delayed enquiry found"}
-              onClick={() =>
-                openEnquiries({
-                  status: "delayed",
-                  salesPersonId: data?.topDelayedEmployee?.salesPersonId || data?.topDelayedEmployee?._id,
-                  salesPersonName: data?.topDelayedEmployee?.name,
-                })
-              }
-            />
+              return [
+                value,
+                name,
+              ];
+            }}
+            labelFormatter={(
+              label
+            ) =>
+              `Sales Person: ${label}`
+            }
+          />
 
-            <MobileInsight
-              tone="red"
-              label="Highest Order Lost"
-              title={data?.topLostEmployee?.name || "No lost order"}
-              desc={data?.topLostEmployee ? `${data.topLostEmployee.lostCount} lost enquiries` : "No lost enquiry found"}
-              onClick={() =>
-                openEnquiries({
-                  status: "lost",
-                  salesPersonId: data?.topLostEmployee?.salesPersonId || data?.topLostEmployee?._id,
-                  salesPersonName: data?.topLostEmployee?.name,
-                })
-              }
-            />
+          <Bar
+            dataKey="weeklyScore"
+            radius={[
+              0,
+              10,
+              10,
+              0,
+            ]}
+            label={{
+              position: "right",
+              formatter: (
+                value
+              ) =>
+                `${Number(
+                  value || 0
+                )}`,
+              fontSize: 10,
+              fontWeight: 800,
+              fill: "#334155",
+            }}
+            onClick={(entry) =>
+              openEnquiries({
+                salesPersonId:
+                  entry
+                    ?.salesPersonId,
 
-            <button
-              type="button"
-              className="ios-reason-text drill-link"
-              onClick={() =>
-                openEnquiries({
-                  status: "lost",
-                  lostReason: data?.topLostReason?.reason || data?.topLostReason?.rawReason,
-                })
-              }
-            >
-              <b>Top Lost Reason:</b>{" "}
-              {data?.topLostReason
-                ? `${data.topLostReason.reason || data.topLostReason.rawReason} (${data.topLostReason.count})`
-                : "No reason found"}
-            </button>
-          </MobileSection>
+                salesPersonName:
+                  entry?.name,
 
-          <MobileSection title="Sales Person Revenue Share">
-            {!revenueShare.length ? (
-              <p className="ios-empty">No revenue share data available</p>
-            ) : (
-              <div className="ios-pie-wrap">
-                <PieChart width={chartWidth} height={250}>
-                  <Pie
-                    data={revenueShare}
-                    dataKey="revenue"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={78}
-                    label={({ percentage }) => `${percentage}%`}
-                    onClick={(entry) =>
-                      openSalesOrders({
-                        salesPersonId: entry?.salesPersonId,
-                        salesPersonName: entry?.name,
-                      })
-                    }
-                  >
-                    {revenueShare.map((entry, index) => (
-                      <Cell key={entry.salesPersonId || index} fill={COLORS[index % COLORS.length]} className="drill-chart-cell" />
-                    ))}
-                  </Pie>
-
-                  <Tooltip formatter={(value) => `₹ ${Number(value).toLocaleString("en-IN")}`} />
-                </PieChart>
-
-                <div className="ios-revenue-list">
-                  {revenueShare.map((sp, index) => (
-                    <MobileProgress
-                      key={sp.salesPersonId || index}
-                      title={sp.name || "Unknown"}
-                      subtitle={`${formatCurrency(sp.revenue)} · ${sp.percentage || 0}%`}
-                      value={Number(sp.percentage || 0)}
-                      color={COLORS[index % COLORS.length]}
-                      onClick={() =>
-                        openSalesOrders({
-                          salesPersonId: sp.salesPersonId,
-                          salesPersonName: sp.name,
-                        })
-                      }
-                    />
-                  ))}
-                </div>
-              </div>
+                sourceType:
+                  "weeklyMis",
+              })
+            }
+          >
+            {weeklyMisChartData.map(
+              (
+                entry,
+                index
+              ) => (
+                <Cell
+                  key={
+                    entry
+                      .salesPersonId ||
+                    index
+                  }
+                  fill={getMisBarColor(
+                    entry
+                      .weeklyScore
+                  )}
+                  className="drill-chart-cell"
+                />
+              )
             )}
-          </MobileSection>
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </>
+  )}
+</MobileSection>
 
-          <MobileSection title="MIS Scoring">
-            <button
-              type="button"
-              className="ios-total-pill drill-pill"
-              onClick={() => openEnquiries({ leadSource: "mis" })}
-            >
-              Total Leads: {misScoring?.totalLeads || 0}
-            </button>
+<MobileSection title="Sales Person Revenue Share">
+  {!revenueShare.length ? (
+    <p className="ios-empty">No revenue share data available</p>
+  ) : (
+    <div className="ios-pie-wrap">
+      <PieChart width={chartWidth} height={250}>
+        <Pie
+          data={revenueShare}
+          dataKey="revenue"
+          nameKey="name"
+          cx="50%"
+          cy="50%"
+          outerRadius={78}
+          label={({ percentage }) => `${percentage}%`}
+          onClick={(entry) =>
+            openSalesOrders({
+              salesPersonId: entry?.salesPersonId,
+              salesPersonName: entry?.name,
+            })
+          }
+        >
+          {revenueShare.map((entry, index) => (
+            <Cell
+              key={entry.salesPersonId || index}
+              fill={COLORS[index % COLORS.length]}
+              className="drill-chart-cell"
+            />
+          ))}
+        </Pie>
 
-            {!misChartData.length ? (
-              <p className="ios-empty">No MIS scoring data available</p>
-            ) : (
-              misChartData.map((item, index) => {
+        <Tooltip formatter={(value) => `₹ ${Number(value).toLocaleString("en-IN")}`} />
+      </PieChart>
+
+      <div className="ios-revenue-list">
+        {revenueShare.map((sp, index) => (
+          <MobileProgress
+            key={sp.salesPersonId || index}
+            title={sp.name || "Unknown"}
+            subtitle={`${formatCurrency(sp.revenue)} · ${sp.percentage || 0}%`}
+            value={Number(sp.percentage || 0)}
+            color={COLORS[index % COLORS.length]}
+            onClick={() =>
+              openSalesOrders({
+                salesPersonId: sp.salesPersonId,
+                salesPersonName: sp.name,
+              })
+            }
+          />
+        ))}
+      </div>
+    </div>
+  )}
+</MobileSection>
+          
+            <MobileSection title="MIS Scoring">
+  <div className="ios-mis-tabs">
+    <button
+      type="button"
+      className={activeMisTab === "scorecard" ? "active" : ""}
+      onClick={() => setActiveMisTab("scorecard")}
+    >
+      <span>Performance</span>
+      <strong>Scorecard</strong>
+    </button>
+
+    <button
+      type="button"
+      className={activeMisTab === "weightage" ? "active" : ""}
+      onClick={() => setActiveMisTab("weightage")}
+    >
+      <span>Scoring Rule</span>
+      <strong>Weightage</strong>
+    </button>
+  </div>
+
+  {activeMisTab === "weightage" ? (
+    <div className="ios-mis-weightage-panel">
+      <div className="ios-mis-weightage-hero">
+        <div>
+          <span>MIS SCORING FRAMEWORK</span>
+          <h4>Performance Weightage</h4>
+          <p>
+            The final MIS score is calculated out of 100 using these four
+            performance parameters.
+          </p>
+        </div>
+
+        <strong>100</strong>
+      </div>
+
+      <div className="ios-mis-weightage-list">
+        {MIS_WEIGHTAGE_RULES.map((rule, index) => (
+          <div
+            key={rule.key}
+            className={`ios-mis-weightage-item ${rule.tone}`}
+          >
+            <div className="ios-mis-weightage-icon">
+              {rule.icon}
+            </div>
+
+            <div className="ios-mis-weightage-content">
+              <div className="ios-mis-weightage-title">
+                <div>
+                  <span>Parameter {index + 1}</span>
+                  <h5>{rule.title}</h5>
+                </div>
+
+                <strong>{rule.weightage}%</strong>
+              </div>
+
+              <p>{rule.description}</p>
+
+              <div className="ios-mis-weightage-track">
+                <span
+                  style={{
+                    width: `${rule.weightage}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="ios-mis-weightage-total">
+        <span>Total MIS Score</span>
+        <strong>100%</strong>
+      </div>
+
+      <p className="ios-mis-weightage-note">
+        The number of approved orders carries the highest weightage because
+        successful conversion is the strongest final sales outcome.
+      </p>
+    </div>
+  ) : (
+    <>
+      <button
+        type="button"
+        className="ios-total-pill drill-pill"
+        onClick={() => openEnquiries({ leadSource: "mis" })}
+      >
+        Total Leads: {misScoring?.totalLeads || 0}
+      </button>
+
+      {!misChartData.length ? (
+        <p className="ios-empty">No MIS scoring data available</p>
+      ) : (
+        misChartData.map((item, index) => {
                 const monthlyScore = getMonthlyScore(item);
                 const currentWeek = getFrontendCurrentWeek(item);
                 const weekLabel = currentWeek?.label || getWeekLabel(item);
@@ -579,9 +1000,11 @@ const DashboardHome = () => {
                     </div>
                   </div>
                 );
-              })
-            )}
-          </MobileSection>
+                      })
+      )}
+    </>
+  )}
+</MobileSection>
 
           {cashflow && (
             <MobileSection title="Cashflow Overview">
@@ -658,9 +1081,46 @@ const DashboardHome = () => {
           <DashboardCard title="Lost" value={data.lostEnquiries} className="lost" onClick={() => openEnquiries({ status: "lost" })} />
           <DashboardCard title="Delayed" value={data.delayedEnquiries} className="delayed" onClick={() => openEnquiries({ status: "delayed" })} />
           <DashboardCard title="Active Enquiries" value={data.activeEnquiries || 0} className="active" onClick={() => openEnquiries({ status: "active" })} />
-          <DashboardCard title="Hot Leads" value={misScoring.hotLeads || 0} className="hot" onClick={() => openEnquiries({ leadType: "hot" })} />
-          <DashboardCard title="Warm Leads" value={misScoring.warmLeads || 0} className="warm" onClick={() => openEnquiries({ leadType: "warm" })} />
-          <DashboardCard title="Cold Leads" value={misScoring.coldLeads || 0} className="cold" onClick={() => openEnquiries({ leadType: "cold" })} />
+
+          <PerformerCard
+  title="Top Performer"
+  name={topPerformer?.name || "No data"}
+  desc={
+    topPerformer
+      ? `${topPerformer.approvedOrders || 0} orders · ${formatCurrency(
+          topPerformer.approvedSalesValue || 0
+        )} · ${topPerformer.monthlyScore || 0}/100`
+      : "No sales data available"
+  }
+  className="top-performer-card"
+  onClick={() =>
+    topPerformer?.salesPersonId &&
+    openSalesOrders({
+      salesPersonId: topPerformer.salesPersonId,
+      salesPersonName: topPerformer.name,
+    })
+  }
+/>
+
+<PerformerCard
+  title="Needs Focus"
+  name={worstPerformer?.name || "No data"}
+  desc={
+    worstPerformer
+      ? `${worstPerformer.approvedOrders || 0} orders · ${formatCurrency(
+          worstPerformer.approvedSalesValue || 0
+        )} · ${worstPerformer.monthlyScore || 0}/100`
+      : "No sales data available"
+  }
+  className="focus-performer-card"
+  onClick={() =>
+    worstPerformer?.salesPersonId &&
+    openSalesOrders({
+      salesPersonId: worstPerformer.salesPersonId,
+      salesPersonName: worstPerformer.name,
+    })
+  }
+/>
         </div>
 
         <div className="dashboard-row">
@@ -719,81 +1179,217 @@ const DashboardHome = () => {
           </div>
 
           <div className="insight-card">
-            <h3>Business Insights</h3>
+  <h3>Total Orders Won by Salesperson</h3>
 
-            <InsightBox
-              tone="green"
-              label="Top Performer (Won)"
-              title={data.topWonEmployee?.name || "No data"}
-              desc={data.topWonEmployee ? `${data.topWonEmployee.wonCount} won enquiries` : "No won enquiry"}
-              onClick={() =>
-                openEnquiries({
-                  status: "won",
-                  salesPersonId: data?.topWonEmployee?.salesPersonId || data?.topWonEmployee?._id,
-                  salesPersonName: data?.topWonEmployee?.name,
-                })
-              }
-            />
+  {!orderWonChartData.length ? (
+    <p className="cashflow-empty">No order won data available</p>
+  ) : (
+   <ResponsiveContainer width="100%" height={340}>
+  <BarChart
+    data={orderWonChartData}
+    margin={{
+      top: 35,
+      right: 20,
+      left: 0,
+      bottom: 55,
+    }}
+  >
+    <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
 
-            <InsightBox
-              tone="orange"
-              label="Highest Delayed"
-              title={data.topDelayedEmployee?.name || "No delay"}
-              desc={data.topDelayedEmployee ? `${data.topDelayedEmployee.delayedCount} delayed enquiries` : "No delayed enquiry found"}
-              onClick={() =>
-                openEnquiries({
-                  status: "delayed",
-                  salesPersonId: data?.topDelayedEmployee?.salesPersonId || data?.topDelayedEmployee?._id,
-                  salesPersonName: data?.topDelayedEmployee?.name,
-                })
-              }
-            />
+    <XAxis
+      dataKey="name"
+      interval={0}
+      angle={-18}
+      textAnchor="end"
+      height={55}
+      tick={{
+        fontSize: 12,
+        fontWeight: 700,
+      }}
+    />
 
-            <InsightBox
-              tone="red"
-              label="Highest Order Lost"
-              title={data.topLostEmployee?.name || "No lost order"}
-              desc={data.topLostEmployee ? `${data.topLostEmployee.lostCount} lost enquiries` : "No lost enquiry found"}
-              onClick={() =>
-                openEnquiries({
-                  status: "lost",
-                  salesPersonId: data?.topLostEmployee?.salesPersonId || data?.topLostEmployee?._id,
-                  salesPersonName: data?.topLostEmployee?.name,
-                })
-              }
-            />
+    <YAxis allowDecimals={false} />
 
-            <button
-              type="button"
-              className="lost-reason-mini drill-link"
-              onClick={() =>
-                openEnquiries({
-                  status: "lost",
-                  lostReason: data?.topLostReason?.reason || data?.topLostReason?.rawReason,
-                })
-              }
-            >
-              <b>Top Reason:</b>{" "}
-              {data.topLostReason
-                ? `${data.topLostReason.reason || data.topLostReason.rawReason} (${data.topLostReason.count})`
-                : "No reason found"}
-            </button>
-          </div>
+    <Tooltip
+      formatter={(value) => [`${value} Orders`, "Orders Won"]}
+    />
+
+    <Bar
+      dataKey="approvedOrders"
+      radius={[12,12,0,0]}
+      label={{
+        position: "top",
+        fontSize: 13,
+        fontWeight: 700,
+        fill: "#111827",
+      }}
+      onClick={(entry)=>
+        openSalesOrders({
+          salesPersonId:entry?.salesPersonId,
+          salesPersonName:entry?.name,
+        })
+      }
+    >
+      {orderWonChartData.map((entry,index)=>(
+        <Cell
+          key={entry.salesPersonId || index}
+          fill={COLORS[index % COLORS.length]}
+        />
+      ))}
+    </Bar>
+
+  </BarChart>
+</ResponsiveContainer>
+  )}
+</div>
         </div>
 
         <div className="chart-card mis-card">
-          <div className="mis-header">
-            <div>
-              <h3>MIS Scoring Overview</h3>
-              <p>Monthly score, current week target and action insight</p>
+  <div className="mis-header">
+    <div>
+      <span className="mis-header-eyebrow">
+        PERFORMANCE INTELLIGENCE
+      </span>
+
+      <h3>MIS Scoring Overview</h3>
+
+      <p>
+        Monthly performance, weekly targets and transparent scoring rules
+      </p>
+    </div>
+
+    <button
+      type="button"
+      className="mis-total-pill drill-pill"
+      onClick={() => openSalesOrders({ view: "ordersWon" })}
+    >
+      Orders Won: {misScoring?.summary?.totalMonthlyOrdersWon || 0}
+    </button>
+  </div>
+
+  <div className="mis-tab-navigation">
+    <button
+      type="button"
+      className={activeMisTab === "scorecard" ? "active" : ""}
+      onClick={() => setActiveMisTab("scorecard")}
+    >
+      <span className="mis-tab-icon">▦</span>
+
+      <span>
+        <small>Employee performance</small>
+        <strong>Scorecard</strong>
+      </span>
+    </button>
+
+    <button
+      type="button"
+      className={activeMisTab === "weightage" ? "active" : ""}
+      onClick={() => setActiveMisTab("weightage")}
+    >
+      <span className="mis-tab-icon">%</span>
+
+      <span>
+        <small>Scoring framework</small>
+        <strong>Weightage</strong>
+      </span>
+    </button>
+  </div>
+
+  {activeMisTab === "weightage" ? (
+    <div className="mis-weightage-panel">
+      <div className="mis-weightage-hero">
+        <div className="mis-weightage-hero-content">
+          <span>MIS PERFORMANCE FORMULA</span>
+
+          <h4>How the final score is calculated</h4>
+
+          <p>
+            Every salesperson receives a score out of 100. The score combines
+            lead generation, customer engagement, sales value and successful
+            order conversion.
+          </p>
+
+          <div className="mis-weightage-formula">
+            {MIS_WEIGHTAGE_RULES.map((rule, index) => (
+              <React.Fragment key={rule.key}>
+                <span>{rule.shortTitle}</span>
+                <strong>{rule.weightage}%</strong>
+
+                {index < MIS_WEIGHTAGE_RULES.length - 1 && (
+                  <b>+</b>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        <div className="mis-weightage-score-ring">
+          <div>
+            <strong>100</strong>
+            <span>Total Score</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mis-weightage-grid">
+        {MIS_WEIGHTAGE_RULES.map((rule, index) => (
+          <div
+            key={rule.key}
+            className={`mis-weightage-card ${rule.tone}`}
+          >
+            <div className="mis-weightage-card-top">
+              <span className="mis-weightage-number">
+                0{index + 1}
+              </span>
+
+              <span className="mis-weightage-card-icon">
+                {rule.icon}
+              </span>
             </div>
 
-            <button type="button" className="mis-total-pill drill-pill" onClick={() => openEnquiries({ leadSource: "mis" })}>
-              Total Leads: {misScoring.totalLeads || 0}
-            </button>
-          </div>
+            <span className="mis-weightage-label">
+              Performance Parameter
+            </span>
 
-          {!misChartData.length ? (
+            <h4>{rule.title}</h4>
+
+            <p>{rule.description}</p>
+
+            <div className="mis-weightage-value-row">
+              <span>Score contribution</span>
+              <strong>{rule.weightage}%</strong>
+            </div>
+
+            <div className="mis-weightage-progress">
+              <span
+                style={{
+                  width: `${rule.weightage}%`,
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mis-weightage-footer">
+        <div>
+          <span>Highest Weightage</span>
+          <strong>Number of Orders — 40%</strong>
+        </div>
+
+        <p>
+          Approved order conversion carries the highest contribution to ensure
+          that MIS scoring remains directly connected with actual business
+          results.
+        </p>
+
+        <div className="mis-weightage-total-badge">
+          <span>Combined</span>
+          <strong>100%</strong>
+        </div>
+      </div>
+    </div>
+  ) : !misChartData.length ? (
             <div className="cashflow-empty">No MIS scoring data available</div>
           ) : (
             <>
@@ -899,39 +1495,162 @@ const DashboardHome = () => {
               </div>
 
               <div className="mis-chart-compact">
-                <h4>Salesperson Weekly MIS Score Comparison</h4>
+  <div className="mis-weekly-chart-head">
+    <div>
+      <span>
+        TEAM COMPETITION
+      </span>
 
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={weeklyMisChartData} layout="vertical" margin={{ top: 10, right: 25, left: 35, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} />
-                    <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12, fontWeight: 700 }} />
-                    <Tooltip
-                      formatter={(value, name) => {
-                        if (name === "weeklyScore") return [`${value}/100`, "Weekly MIS Score"];
-                        if (name === "monthlyScoreValue") return [`${value}/100`, "Monthly MIS Score"];
-                        return [value, name];
-                      }}
-                      labelFormatter={(label) => `Sales Person: ${label}`}
-                    />
-                    <Bar
-                      dataKey="weeklyScore"
-                      radius={[0, 12, 12, 0]}
-                      onClick={(entry) =>
-                        openEnquiries({
-                          salesPersonId: entry?.salesPersonId,
-                          salesPersonName: entry?.name,
-                          sourceType: "weeklyMis",
-                        })
-                      }
-                    >
-                      {weeklyMisChartData.map((entry, index) => (
-                        <Cell key={index} fill={getMisBarColor(entry.weeklyScore)} className="drill-chart-cell" />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+      <h4>
+        Salesperson Weekly MIS Score Comparison
+      </h4>
+
+      <p>
+        Current-week score for every sales
+        employee
+      </p>
+    </div>
+  </div>
+
+  {!weeklyMisChartData.length ? (
+    <div className="cashflow-empty">
+      No weekly MIS data available
+    </div>
+  ) : (
+    <ResponsiveContainer
+      width="100%"
+      height={Math.max(
+        300,
+        weeklyMisChartData.length *
+          55
+      )}
+    >
+      <BarChart
+        data={weeklyMisChartData}
+        layout="vertical"
+        margin={{
+          top: 18,
+          right: 55,
+          left: 35,
+          bottom: 10,
+        }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+          opacity={0.15}
+        />
+
+        <XAxis
+          type="number"
+          domain={[0, 100]}
+          allowDecimals={false}
+          tick={{
+            fontSize: 12,
+          }}
+        />
+
+        <YAxis
+          type="category"
+          dataKey="name"
+          width={120}
+          interval={0}
+          tick={{
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        />
+
+        <Tooltip
+          formatter={(
+            value,
+            name,
+            props
+          ) => {
+            if (
+              name ===
+                "weeklyScore"
+            ) {
+              return [
+                `${Number(
+                  value || 0
+                )}/100`,
+                `${
+                  props?.payload
+                    ?.currentWeekLabel ||
+                  "Current Week"
+                } MIS Score`,
+              ];
+            }
+
+            return [
+              value,
+              name,
+            ];
+          }}
+          labelFormatter={(
+            label
+          ) =>
+            `Sales Person: ${label}`
+          }
+        />
+
+        <Bar
+          dataKey="weeklyScore"
+          radius={[
+            0,
+            12,
+            12,
+            0,
+          ]}
+          label={{
+            position: "right",
+            formatter: (
+              value
+            ) =>
+              `${Number(
+                value || 0
+              )}/100`,
+            fontSize: 11,
+            fontWeight: 800,
+            fill: "#334155",
+          }}
+          onClick={(entry) =>
+            openEnquiries({
+              salesPersonId:
+                entry
+                  ?.salesPersonId,
+
+              salesPersonName:
+                entry?.name,
+
+              sourceType:
+                "weeklyMis",
+            })
+          }
+        >
+          {weeklyMisChartData.map(
+            (
+              entry,
+              index
+            ) => (
+              <Cell
+                key={
+                  entry
+                    .salesPersonId ||
+                  index
+                }
+                fill={getMisBarColor(
+                  entry.weeklyScore
+                )}
+                className="drill-chart-cell"
+              />
+            )
+          )}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )}
+</div>
             </>
           )}
         </div>
@@ -1051,6 +1770,7 @@ const DashboardHome = () => {
   );
 };
 
+
 function DashboardCard({ title, value, className, onClick }) {
   return (
     <button type="button" className={`card ${className} drill-card`} onClick={onClick}>
@@ -1060,6 +1780,19 @@ function DashboardCard({ title, value, className, onClick }) {
     </button>
   );
 }
+
+function PerformerCard({ title, name, desc, className, onClick }) {
+  return (
+    <button type="button" className={`performer-card ${className}`} onClick={onClick}>
+      <span>{title}</span>
+      <strong>{name}</strong>
+      <p>{desc}</p>
+      <small>View details →</small>
+    </button>
+  );
+}
+ 
+
 
 function MobileKpi({ title, value, icon, onClick }) {
   return (
@@ -1080,25 +1813,25 @@ function MobileSection({ title, children }) {
   );
 }
 
-function MobileInsight({ label, title, desc, tone, onClick }) {
-  return (
-    <button type="button" className={`ios-insight-card ${tone} drill-card`} onClick={onClick}>
-      <span>{label}</span>
-      <strong>{title}</strong>
-      <p>{desc}</p>
-    </button>
-  );
-}
+// function MobileInsight({ label, title, desc, tone, onClick }) {
+//   return (
+//     <button type="button" className={`ios-insight-card ${tone} drill-card`} onClick={onClick}>
+//       <span>{label}</span>
+//       <strong>{title}</strong>
+//       <p>{desc}</p>
+//     </button>
+//   );
+// }
 
-function InsightBox({ tone, label, title, desc, onClick }) {
-  return (
-    <button type="button" className={`insight-box ${tone} drill-card`} onClick={onClick}>
-      <span>{label}</span>
-      <h4>{title}</h4>
-      <p>{desc}</p>
-    </button>
-  );
-}
+// function InsightBox({ tone, label, title, desc, onClick }) {
+//   return (
+//     <button type="button" className={`insight-box ${tone} drill-card`} onClick={onClick}>
+//       <span>{label}</span>
+//       <h4>{title}</h4>
+//       <p>{desc}</p>
+//     </button>
+//   );
+// }
 
 function MobileProgress({ title, subtitle, value, color, onClick }) {
   return (

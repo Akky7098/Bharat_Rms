@@ -24,12 +24,12 @@ const ColdCallList = ({ dashboardFilters, goDashboardHome }) => {
     currentPage: 1,
     totalPages: 1,
     totalRecords: 0,
-    limit: 10,
+    limit: 50,
   });
 
     const [filters, setFilters] = useState(() => ({
     page: 1,
-    limit: 10,
+    limit: 50,
     salesPersonId: dashboardFilters?.salesPersonId || "",
     fromDate: dashboardFilters?.fromDate || "",
     toDate: dashboardFilters?.toDate || "",
@@ -60,7 +60,7 @@ const ColdCallList = ({ dashboardFilters, goDashboardHome }) => {
           currentPage: 1,
           totalPages: 1,
           totalRecords: 0,
-          limit: 10,
+          limit: 50,
         }
       );
     } catch (error) {
@@ -109,7 +109,7 @@ const ColdCallList = ({ dashboardFilters, goDashboardHome }) => {
   const clearFilters = () => {
     setFilters({
       page: 1,
-      limit: 10,
+      limit: 50,
       salesPersonId: "",
       fromDate: "",
       toDate: "",

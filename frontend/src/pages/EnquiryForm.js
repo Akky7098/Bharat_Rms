@@ -22,7 +22,30 @@ const supplyConditionOptions = [
   { value: "as_rolled_qt", label: "As Rolled + Q&T" },
   { value: "as_forged_qt", label: "As Forged + Q&T" },
   { value: "as_rolled_or_as_forged_qt", label: "As Rolled / As Forged + Q&T" },
-  { value: "other", label: "Others" },
+
+  { value: "hot_rolled", label: "Hot Rolled" },
+  { value: "hot_rolled_annealed", label: "Hot Rolled + Annealed" },
+  { value: "hot_rolled_normalized", label: "Hot Rolled + Normalized" },
+  { value: "hot_rolled_qt_ht", label: "Hot Rolled + Q&T / HT" },
+  { value: "hot_rolled_annealed_cold_drawn", label: "Hot Rolled + Annealed + Cold Drawn" },
+  { value: "hot_rolled_annealed_peeled", label: "Hot Rolled + Annealed + Peeled" },
+  { value: "hot_rolled_normalized_peeled", label: "Hot Rolled + Normalized + Peeled" },
+  { value: "hot_rolled_normalized_cold_drawn", label: "Hot Rolled + Normalized + Cold Drawn" },
+  { value: "hot_rolled_annealed_qt_ht", label: "Hot Rolled + Annealed + Q&T / HT" },
+  { value: "hot_rolled_normalized_qt_ht", label: "Hot Rolled + Normalized + Q&T / HT" },
+  { value: "hot_rolled_qt_peeled", label: "Hot Rolled + Q&T + Peeled" },
+  { value: "double_rolled_condition", label: "Double Rolled Condition" },
+
+  { value: "hot_forged", label: "Hot Forged" },
+  { value: "hot_forged_annealed", label: "Hot Forged + Annealed" },
+  { value: "hot_forged_normalized", label: "Hot Forged + Normalized" },
+  { value: "hot_forged_annealed_machined", label: "Hot Forged + Annealed + Machined" },
+  { value: "hot_forged_normalized_machined", label: "Hot Forged + Normalized + Machined" },
+  { value: "hot_forged_qt_ht", label: "Hot Forged + Q&T / HT" },
+  { value: "hot_forged_qt_ht_machined", label: "Hot Forged + Q&T / HT + Machined" },
+  { value: "hot_forged_rolled", label: "Hot Forged + Rolled" },
+
+  { value: "other", label: "Other / Manual" },
 ];
 
 const modeOfEnquiryOptions = [
@@ -52,6 +75,7 @@ const EnquiryForm = ({ onClose, refresh }) => {
     size: "",
     quantityInKg: "",
     supplyCondition: "",
+    otherSupplyConditions: "",
     modeOfEnquiry: "",
   });
 
@@ -96,6 +120,16 @@ const EnquiryForm = ({ onClose, refresh }) => {
       setForm((prev) => ({
         ...prev,
         customerContactNo: onlyNumbers.slice(0, 10),
+      }));
+      return;
+    }
+
+    if (name === "supplyCondition") {
+      setForm((prev) => ({
+        ...prev,
+        supplyCondition: value,
+        otherSupplyConditions:
+          value === "other" ? prev.otherSupplyConditions : "",
       }));
       return;
     }
@@ -201,6 +235,14 @@ if (Number(form.quantityInKg) <= 0) {
 
 if (!form.supplyCondition) {
   alert("Please select supply condition");
+  return false;
+}
+
+if (
+  form.supplyCondition === "other" &&
+  !form.otherSupplyConditions.trim()
+) {
+  alert("Please enter other supply condition");
   return false;
 }
 
@@ -362,6 +404,19 @@ return true;
               </select>
             </div>
 
+            {form.supplyCondition === "other" && (
+              <div className="form-group full-width other-supply-condition-box">
+                <label>Other Supply Condition <RequiredStar /></label>
+                <textarea
+                  name="otherSupplyConditions"
+                  value={form.otherSupplyConditions}
+                  onChange={handleChange}
+                  placeholder="Write manual supply condition"
+                  required
+                />
+              </div>
+            )}
+
             <div className="form-group">
               <label>Mode Of Enquiry <RequiredStar /></label>
               <select name="modeOfEnquiry" value={form.modeOfEnquiry} onChange={handleChange} required>
@@ -482,6 +537,16 @@ return true;
               value={form.supplyCondition}
               onSelect={(v) => updateField("supplyCondition", v)}
             />
+
+            {form.supplyCondition === "other" && (
+              <IosInput
+                label="Other Supply Condition *"
+                value={form.otherSupplyConditions}
+                onChange={(v) => updateField("otherSupplyConditions", v)}
+                placeholder="Write manual supply condition"
+                textarea
+              />
+            )}
 
             <IosOptionGroup
               label="Mode Of Enquiry *"

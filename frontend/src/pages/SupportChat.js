@@ -18,7 +18,7 @@ import {
   updateSupportTicketStatus,
 } from "../services/supportTicketService";
 
-const API_ORIGIN = "http://localhost:5000";
+const API_ORIGIN = "https://bharatspecialsteels.bharatspecialsteels.com";
 
 function SupportChat({ ticket, onClose, onUpdated }) {
   const user = JSON.parse(localStorage.getItem("user") || "{}");

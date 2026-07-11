@@ -1277,3 +1277,53 @@ textarea[name="sizeGradeQuantityRate"] {
   color: #dc2626;
   font-weight: 900;
 }
+.enquiry-lookup-box {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.enquiry-lookup-box strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 13px;
+}
+
+.enquiry-lookup-box p {
+  margin: 0 0 8px;
+}
+
+.enquiry-lookup-box.checking {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.enquiry-lookup-box.success {
+  background: #ecfdf5;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+.enquiry-lookup-box.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.enquiry-lookup-mini-grid {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 4px 10px;
+}
+
+.enquiry-lookup-mini-grid span {
+  opacity: 0.75;
+}
+
+.enquiry-lookup-mini-grid b {
+  font-weight: 700;
+  word-break: break-word;
+}

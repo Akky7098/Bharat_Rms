@@ -43,8 +43,16 @@ const isSalesPerson = userRole === "user";
   );
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [iosRefreshing, setIosRefreshing] = useState(false);
-    const [showIosFilters, setShowIosFilters] = useState(false);
-  const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
+   const [showIosFilters, setShowIosFilters] =
+  useState(false);
+
+const [
+  showIosCompanySearch,
+  setShowIosCompanySearch,
+] = useState(false);
+
+const [selectedOrderDetail, setSelectedOrderDetail] =
+  useState(null);
   useLayoutEffect(() => {
   document.body.classList.add("sales-order-browser-scroll-page");
 
@@ -91,17 +99,39 @@ const isSalesPerson = userRole === "user";
   },
 });
     const [filters, setFilters] = useState(() => ({
-    page: 1,
-    limit: 30,
-    fromDate: dashboardFilters?.fromDate || "",
-    toDate: dashboardFilters?.toDate || "",
-    salesPersonId: dashboardFilters?.salesPersonId || "",
-    approvalTab: dashboardFilters?.approvalTab || "approved",
-    grade: dashboardFilters?.grade || "",
-    status: dashboardFilters?.status || "",
-    view: dashboardFilters?.view || "",
-    weekNo: dashboardFilters?.weekNo || "",
-  }));
+  page: 1,
+  limit: 30,
+
+  companyName:
+    dashboardFilters?.companyName ||
+    "",
+
+  fromDate:
+    dashboardFilters?.fromDate || "",
+
+  toDate:
+    dashboardFilters?.toDate || "",
+
+  salesPersonId:
+    dashboardFilters?.salesPersonId ||
+    "",
+
+  approvalTab:
+    dashboardFilters?.approvalTab ||
+    "approved",
+
+  grade:
+    dashboardFilters?.grade || "",
+
+  status:
+    dashboardFilters?.status || "",
+
+  view:
+    dashboardFilters?.view || "",
+
+  weekNo:
+    dashboardFilters?.weekNo || "",
+}));
 
   
 
@@ -698,59 +728,202 @@ const renderOrderActions = (order, mode = "desktop") => {
     <div className={`sales-order-page-root ${canViewSalesPersonFilter ? "admin-view" : "user-view"}`}>
       <div className="sales-order-pwa-shell">
         <div className="ios-sales-page">
-          <div className="ios-sales-header">
-            <div className="ios-sales-header-row">
-              <button type="button" className="ios-sales-back" onClick={goDashboardModules}>
-                ‹
-              </button>
+          <div className="ios-sales-header ios-sales-header-compact">
+  <div className="ios-sales-header-row">
+    <button
+      type="button"
+      className="ios-sales-back"
+      onClick={goDashboardModules}
+      aria-label="Back to dashboard"
+    >
+      ‹
+    </button>
 
-              <div>
-                <h2>Sales Orders</h2>
-                <p>Approved, pending and hold sales orders</p>
-              </div>
+    <div className="ios-sales-header-copy">
+      <span>
+        BHARAT RMS
+      </span>
 
-              <button
-                type="button"
-                className={`ios-sales-refresh ${iosRefreshing ? "spinning" : ""}`}
-                onClick={iosRefreshAll}
-              >
-                ↻
-              </button>
-            </div>
+      <h2>
+        Sales Orders
+      </h2>
+    </div>
 
-            <div className="ios-sales-stats-card ios-sales-stats-card-four">
-  <IosStat
-    label="Today Orders"
-    value={salesSummary.todayApproved.totalApprovedOrders || 0}
-  />
+    <div className="ios-sales-header-actions">
+      <button
+        type="button"
+        className={`ios-sales-search-btn ${
+          showIosCompanySearch
+            ? "active"
+            : ""
+        }`}
+        onClick={() =>
+          setShowIosCompanySearch(
+            (previous) => !previous
+          )
+        }
+        aria-label="Search company"
+        title="Search company"
+      >
+        ⌕
+      </button>
 
-  <IosStat
-    label="Today Revenue"
-    value={formatSummaryCurrency(
-      salesSummary.todayApproved.totalApprovedValue
-    )}
-  />
+      <button
+        type="button"
+        className={`ios-sales-refresh ${
+          iosRefreshing
+            ? "spinning"
+            : ""
+        }`}
+        onClick={iosRefreshAll}
+        disabled={iosRefreshing}
+        aria-label="Refresh sales orders"
+      >
+        ↻
+      </button>
+    </div>
+  </div>
 
-  <IosStat
-    label="Monthly Orders"
-    value={salesSummary.filteredApproved.totalApprovedOrders || 0}
-  />
+  {showIosCompanySearch && (
+    <div className="ios-sales-company-search">
+      <span className="ios-sales-search-icon">
+        ⌕
+      </span>
 
-  <IosStat
-    label="Monthly Revenue"
-    value={formatSummaryCurrency(
-      salesSummary.filteredApproved.totalApprovedValue
-    )}
-  />
+      <input
+        type="search"
+        name="companyName"
+        value={
+          filters.companyName || ""
+        }
+        onChange={handleFilterChange}
+        placeholder="Search company name..."
+        autoFocus
+        disabled={actionSubmitting}
+      />
+
+      {filters.companyName && (
+        <button
+          type="button"
+          className="ios-sales-search-clear"
+          onClick={() =>
+            setFilters((previous) => ({
+              ...previous,
+              companyName: "",
+              page: 1,
+            }))
+          }
+          aria-label="Clear company search"
+        >
+          ×
+        </button>
+      )}
+    </div>
+  )}
 </div>
 
-            <button type="button" className="ios-sales-new-btn" onClick={openNewForm}>
-              + New Sales Order
-            </button>
-          </div>
+         <div className="ios-sales-content">
+  {/* ============================================
+      PWA SALES INSIGHTS
+  ============================================ */}
 
-          <div className="ios-sales-content">
-            <div className="ios-sales-tab-card">
+  <div className="ios-sales-insight-grid">
+    <button
+      type="button"
+      className="ios-sales-insight-card today-orders"
+      onClick={filterTodayOrders}
+    >
+      <span>
+        Today Orders
+      </span>
+
+      <strong>
+        {salesSummary.todayApproved
+          .totalApprovedOrders || 0}
+      </strong>
+
+      <small>
+        Approved today
+      </small>
+    </button>
+
+    <button
+      type="button"
+      className="ios-sales-insight-card today-revenue"
+      onClick={filterTodayOrders}
+    >
+      <span>
+        Today Revenue
+      </span>
+
+      <strong>
+        {formatSummaryCurrency(
+          salesSummary.todayApproved
+            .totalApprovedValue
+        )}
+      </strong>
+
+      <small>
+        Approved value
+      </small>
+    </button>
+
+    <button
+      type="button"
+      className="ios-sales-insight-card month-orders"
+      onClick={filterCurrentMonthOrders}
+    >
+      <span>
+        {filters.fromDate ||
+        filters.toDate
+          ? "Filtered Orders"
+          : "Monthly Orders"}
+      </span>
+
+      <strong>
+        {salesSummary.filteredApproved
+          .totalApprovedOrders || 0}
+      </strong>
+
+      <small>
+        Current period
+      </small>
+    </button>
+
+    <button
+      type="button"
+      className="ios-sales-insight-card month-revenue"
+      onClick={filterCurrentMonthOrders}
+    >
+      <span>
+        {filters.fromDate ||
+        filters.toDate
+          ? "Filtered Revenue"
+          : "Monthly Revenue"}
+      </span>
+
+      <strong>
+        {formatSummaryCurrency(
+          salesSummary.filteredApproved
+            .totalApprovedValue
+        )}
+      </strong>
+
+      <small>
+        Current period
+      </small>
+    </button>
+  </div>
+
+  <button
+    type="button"
+    className="ios-sales-new-btn ios-sales-new-btn-content"
+    onClick={openNewForm}
+  >
+    + New Sales Order
+  </button>
+
+  <div className="ios-sales-tab-card">
               <button
                 type="button"
                 className={activeTab === "approved" ? "active" : ""}
@@ -784,13 +957,44 @@ const renderOrderActions = (order, mode = "desktop") => {
               </button>
             </div>
 
-            <button
-              type="button"
-              className="ios-sales-filter-open"
-              onClick={() => setShowIosFilters(true)}
-            >
-              Filters
-            </button>
+            <div className="ios-sales-toolbar">
+  <button
+    type="button"
+    className="ios-sales-filter-open"
+    onClick={() =>
+      setShowIosFilters(true)
+    }
+  >
+    <span>☷</span>
+    More Filters
+  </button>
+
+  {filters.companyName && (
+    <div className="ios-sales-active-search">
+      <span>
+        Company
+      </span>
+
+      <strong>
+        {filters.companyName}
+      </strong>
+
+      <button
+        type="button"
+        onClick={() =>
+          setFilters((previous) => ({
+            ...previous,
+            companyName: "",
+            page: 1,
+          }))
+        }
+        aria-label="Remove company search"
+      >
+        ×
+      </button>
+    </div>
+  )}
+</div>
 
             {showIosFilters && (
               <div className="ios-sales-filter-overlay">
@@ -1442,10 +1646,11 @@ function SalesOrderDetailModal({
     : "-";
 
   const rows = [
-    ["Company", order.companyName],
-    ["Address", order.companyAddress],
-    ["GSTIN", order.gstinNumber],
-    ["PO Number", order.poNumber],
+  ["Company", order.companyName],
+  ["Address", order.companyAddress],
+  ["GSTIN", order.gstinNumber],
+  ["Enquiry Number", order.enquiryNumber],
+  ["PO Number", order.poNumber],
     ["Checklist No", order.checklistNumber],
     ["Order Type", order.orderType],
     ["Supply / Finish", order.supplyFinish],
@@ -1469,7 +1674,9 @@ function SalesOrderDetailModal({
           <div>
             <span>Sales Order Detail</span>
             <h3>{order.companyName || "-"}</h3>
-            <p>PO: {order.poNumber || "-"}</p>
+            <p>
+  PO: {order.poNumber || "-"} · Enquiry: {order.enquiryNumber || "-"}
+</p>
           </div>
 
           <button type="button" onClick={onClose}>
@@ -1510,14 +1717,14 @@ function SalesOrderDetailModal({
   );
 }
 
-function IosStat({ label, value }) {
-  return (
-    <div className="ios-sales-stat-box">
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </div>
-  );
-}
+// function IosStat({ label, value }) {
+//   return (
+//     <div className="ios-sales-stat-box">
+//       <strong>{value}</strong>
+//       <span>{label}</span>
+//     </div>
+//   );
+// }
 
 function IosInfo({ label, value, full }) {
   return (

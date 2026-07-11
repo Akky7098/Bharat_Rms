@@ -1849,3 +1849,1409 @@
     min-height: auto;
   }
 }
+/* =========================================================
+   MIS SCORING PREMIUM KPI UPGRADE
+   Add at last of DashboardHome.css
+========================================================= */
+
+.mis-card {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 28%),
+    #ffffff !important;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+}
+
+.mis-header {
+  padding: 4px 2px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.mis-header h3 {
+  font-size: 24px !important;
+}
+
+.mis-total-pill {
+  background: linear-gradient(135deg, #ecfdf5, #dcfce7) !important;
+  color: #14532d !important;
+  border: 1px solid #86efac !important;
+  box-shadow: 0 10px 22px rgba(22, 163, 74, 0.14);
+}
+
+.mis-employee-grid-premium {
+  margin-top: 22px;
+  gap: 24px !important;
+}
+
+.mis-employee-card {
+  border-radius: 30px !important;
+  padding: 24px !important;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 1px solid #dbe3ee !important;
+  box-shadow:
+    0 22px 48px rgba(15, 23, 42, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mis-employee-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 28px 64px rgba(15, 23, 42, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.mis-employee-card.excellent::before {
+  height: 7px !important;
+  background: linear-gradient(90deg, #047857, #22c55e, #86efac) !important;
+}
+
+.mis-employee-card.average::before {
+  height: 7px !important;
+  background: linear-gradient(90deg, #ea580c, #f97316, #fde047) !important;
+}
+
+.mis-employee-card.poor::before {
+  height: 7px !important;
+  background: linear-gradient(90deg, #b91c1c, #ef4444, #fb7185) !important;
+}
+
+.mis-rank {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe) !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe;
+}
+
+.mis-employee-top strong {
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.mis-employee-card.excellent .mis-employee-top strong {
+  color: #047857 !important;
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+}
+
+.mis-employee-card.average .mis-employee-top strong {
+  color: #c2410c !important;
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.mis-employee-card.poor .mis-employee-top strong {
+  color: #b91c1c !important;
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.mis-progress {
+  height: 11px !important;
+  background: #e2e8f0 !important;
+  box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.mis-employee-card.excellent .mis-progress span {
+  background: linear-gradient(90deg, #059669, #22c55e) !important;
+}
+
+.mis-employee-card.average .mis-progress span {
+  background: linear-gradient(90deg, #f97316, #facc15) !important;
+}
+
+.mis-employee-card.poor .mis-progress span {
+  background: linear-gradient(90deg, #dc2626, #fb7185) !important;
+}
+
+.mis-employee-stats {
+  gap: 10px !important;
+}
+
+.mis-stat-drill {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+.mis-stat-drill b {
+  font-size: 18px !important;
+}
+
+.mis-stat-drill span {
+  color: #64748b !important;
+}
+
+.mis-month-target-box,
+.mis-week-premium {
+  border-radius: 24px !important;
+  background:
+    linear-gradient(180deg, #ffffff, #f8fafc) !important;
+  border: 1px solid #dbe3ee !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.mis-target-title span {
+  font-size: 14px !important;
+  color: #0f172a !important;
+}
+
+.mis-target-grid div,
+.mis-week-target-grid div,
+.mis-metric-drill {
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  border: 1px solid #dbe3ee !important;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
+}
+
+.mis-target-grid span,
+.mis-week-target-grid span,
+.mis-metric-drill span {
+  color: #64748b !important;
+  font-size: 10px !important;
+  letter-spacing: 0.03em;
+}
+
+.mis-target-grid b,
+.mis-week-target-grid b,
+.mis-metric-drill b {
+  color: #0f172a !important;
+  font-size: 13px !important;
+}
+
+.mis-week-title > b {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe) !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe;
+}
+
+.mis-week-title strong {
+  color: #0f172a !important;
+}
+
+.mis-week-progress {
+  height: 10px !important;
+  background: #e2e8f0 !important;
+}
+
+.mis-chart-compact {
+  background:
+    linear-gradient(180deg, #f8fafc, #ffffff) !important;
+  border: 1px solid #dbe3ee !important;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.07);
+}
+
+/* Person-wise soft color variation */
+.mis-employee-grid-premium .mis-employee-card:nth-child(1) {
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.10), transparent 34%),
+    linear-gradient(180deg, #ffffff, #f8fafc) !important;
+}
+
+.mis-employee-grid-premium .mis-employee-card:nth-child(2) {
+  background:
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.10), transparent 34%),
+    linear-gradient(180deg, #ffffff, #f8fafc) !important;
+}
+
+.mis-employee-grid-premium .mis-employee-card:nth-child(3) {
+  background:
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.10), transparent 34%),
+    linear-gradient(180deg, #ffffff, #f8fafc) !important;
+}
+
+.mis-employee-grid-premium .mis-employee-card:nth-child(4) {
+  background:
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.10), transparent 34%),
+    linear-gradient(180deg, #ffffff, #f8fafc) !important;
+}
+
+.mis-employee-grid-premium .mis-employee-card:nth-child(5) {
+  background:
+    radial-gradient(circle at top right, rgba(236, 72, 153, 0.10), transparent 34%),
+    linear-gradient(180deg, #ffffff, #f8fafc) !important;
+}
+
+.mis-employee-grid-premium .mis-employee-card:nth-child(6) {
+  background:
+    radial-gradient(circle at top right, rgba(22, 163, 74, 0.10), transparent 34%),
+    linear-gradient(180deg, #ffffff, #f8fafc) !important;
+}
+
+/* Mobile MIS polish */
+@media (max-width: 900px) {
+  .ios-score-card {
+    border-radius: 26px !important;
+    background:
+      linear-gradient(180deg, #ffffff, #f8fafc) !important;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.10) !important;
+  }
+
+  .ios-score-card.excellent::before {
+    background: linear-gradient(90deg, #059669, #22c55e) !important;
+  }
+
+  .ios-score-card.average::before {
+    background: linear-gradient(90deg, #f97316, #facc15) !important;
+  }
+
+  .ios-score-card.poor::before {
+    background: linear-gradient(90deg, #dc2626, #fb7185) !important;
+  }
+
+  .ios-score-top b {
+    padding: 6px 10px;
+    border-radius: 14px;
+    background: #f1f5f9;
+  }
+
+  .ios-score-card.excellent .ios-score-top b {
+    color: #047857;
+    background: #ecfdf5;
+  }
+
+  .ios-score-card.average .ios-score-top b {
+    color: #c2410c;
+    background: #fff7ed;
+  }
+
+  .ios-score-card.poor .ios-score-top b {
+    color: #b91c1c;
+    background: #fff1f2;
+  }
+
+  .ios-mini-stat,
+  .ios-mis-month-card,
+  .ios-mis-week-card {
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+  }
+}
+/* DASHBOARD TOP / FOCUS PERFORMER CARDS */
+.performer-card {
+  min-height: 132px;
+  padding: 18px;
+  border-radius: 24px;
+  color: #ffffff;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--dh-shadow);
+}
+
+.performer-card::before {
+  content: "";
+  position: absolute;
+  inset: -45px -45px auto auto;
+  width: 135px;
+  height: 135px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.performer-card span {
+  display: block;
+  font-size: 13px;
+  font-weight: 950;
+  opacity: 0.95;
+}
+
+.performer-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 950;
+}
+
+.performer-card p {
+  margin: 8px 0 0;
+  max-width: 92%;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 850;
+  opacity: 0.95;
+}
+
+.performer-card small {
+  position: absolute;
+  left: 18px;
+  bottom: 14px;
+  font-size: 11px;
+  font-weight: 950;
+  opacity: 0.8;
+}
+
+.top-performer-card {
+  background: linear-gradient(135deg, #be123c, #f43f5e);
+}
+
+.focus-performer-card {
+  background: linear-gradient(135deg, #334155, #64748b);
+}
+
+.performer-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--dh-shadow-hover);
+}
+
+/* Make final performer cards look balanced */
+@media (min-width: 901px) {
+  .card-grid {
+    grid-template-columns: repeat(5, minmax(170px, 1fr)) !important;
+  }
+}
+.insight-card{
+    min-width:430px;
+}
+
+.insight-card .recharts-wrapper{
+    overflow:visible;
+}
+
+.recharts-cartesian-axis-tick-value{
+    font-weight:700;
+}
+
+.recharts-label-list text{
+    font-weight:700;
+}
+/* =========================================================
+   MIS WEIGHTAGE TAB + STRICT PWA/DESKTOP VISIBILITY
+   ADD AT ABSOLUTE END OF DashboardHome.css
+========================================================= */
+
+/* =========================================================
+   FINAL RESPONSIVE VISIBILITY GUARD
+========================================================= */
+
+/*
+  Desktop is the only version visible above 900px.
+  !important prevents later generic display rules from
+  showing the PWA version unexpectedly.
+*/
+@media screen and (min-width: 901px) {
+  .dashboard-home > .ios-dashboardhome,
+  .dashboard-home > .ios-dashboardhome-loading {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .dashboard-home > .desktop-dashboardhome,
+  .dashboard-home > .desktop-dashboardhome-loading {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    pointer-events: auto !important;
+  }
+}
+
+/*
+  PWA is the only version visible at 900px and below.
+  This fixes desktop dashboard data appearing after PWA data.
+*/
+@media screen and (max-width: 900px) {
+  .dashboard-home > .desktop-dashboardhome,
+  .dashboard-home > .desktop-dashboardhome-loading {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .dashboard-home > .ios-dashboardhome {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100dvh !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .dashboard-home > .ios-dashboardhome-loading {
+    display: flex !important;
+    visibility: visible !important;
+    width: 100% !important;
+    opacity: 1 !important;
+  }
+}
+
+/* =========================================================
+   SHARED MIS TAB NAVIGATION
+========================================================= */
+
+.mis-header-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: #2563eb;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+}
+
+.mis-tab-navigation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 240px));
+  gap: 10px;
+  margin: 18px 0 22px;
+  padding: 6px;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #f1f5f9;
+}
+
+.mis-tab-navigation button {
+  min-width: 210px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 15px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  background: transparent;
+  color: #64748b;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.mis-tab-navigation button:hover {
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.mis-tab-navigation button.active {
+  color: #0f172a;
+  background: #ffffff;
+  border-color: #dbeafe;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.09);
+}
+
+.mis-tab-icon {
+  width: 37px;
+  height: 37px;
+  flex: 0 0 37px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.mis-tab-navigation button.active .mis-tab-icon {
+  color: #ffffff;
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  box-shadow: 0 7px 15px rgba(37, 99, 235, 0.24);
+}
+
+.mis-tab-navigation button > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mis-tab-navigation small {
+  color: inherit;
+  font-size: 9px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mis-tab-navigation strong {
+  color: inherit;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+/* =========================================================
+   DESKTOP WEIGHTAGE PANEL
+========================================================= */
+
+.mis-weightage-panel {
+  display: grid;
+  gap: 20px;
+  animation: misWeightageFade 0.25s ease both;
+}
+
+.mis-weightage-hero {
+  min-height: 230px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 30px;
+  align-items: center;
+  padding: 30px;
+  border-radius: 28px;
+  color: #ffffff;
+  background:
+    radial-gradient(
+      circle at 88% 12%,
+      rgba(96, 165, 250, 0.4),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 12% 90%,
+      rgba(34, 197, 94, 0.22),
+      transparent 30%
+    ),
+    linear-gradient(135deg, #07111f, #0f172a 48%, #173e68);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
+  position: relative;
+}
+
+.mis-weightage-hero::after {
+  content: "";
+  position: absolute;
+  right: -100px;
+  bottom: -170px;
+  width: 350px;
+  height: 350px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+}
+
+.mis-weightage-hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.mis-weightage-hero-content > span {
+  display: block;
+  color: #93c5fd;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.13em;
+}
+
+.mis-weightage-hero-content h4 {
+  margin: 8px 0 0;
+  color: #ffffff;
+  font-size: clamp(24px, 2vw, 34px);
+  line-height: 1.13;
+  font-weight: 950;
+  letter-spacing: -0.7px;
+}
+
+.mis-weightage-hero-content > p {
+  max-width: 720px;
+  margin: 10px 0 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.65;
+  font-weight: 750;
+}
+
+.mis-weightage-formula {
+  margin-top: 21px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mis-weightage-formula span {
+  color: #dbeafe;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.mis-weightage-formula strong {
+  padding: 7px 10px;
+  border: 1px solid rgba(147, 197, 253, 0.25);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(59, 130, 246, 0.18);
+  font-size: 11px;
+  font-weight: 950;
+  backdrop-filter: blur(10px);
+}
+
+.mis-weightage-formula b {
+  color: #60a5fa;
+  font-size: 15px;
+}
+
+.mis-weightage-score-ring {
+  position: relative;
+  z-index: 2;
+  width: 170px;
+  height: 170px;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #0f172a 53%, transparent 55%),
+    conic-gradient(
+      #60a5fa 0 15%,
+      #a78bfa 15% 40%,
+      #4ade80 40% 60%,
+      #fb923c 60% 100%
+    );
+  box-shadow:
+    0 22px 45px rgba(0, 0, 0, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.mis-weightage-score-ring::before {
+  content: "";
+  position: absolute;
+  inset: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 50%;
+}
+
+.mis-weightage-score-ring > div {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.mis-weightage-score-ring strong {
+  display: block;
+  color: #ffffff;
+  font-size: 47px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.mis-weightage-score-ring span {
+  display: block;
+  margin-top: 6px;
+  color: #93c5fd;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mis-weightage-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.mis-weightage-card {
+  min-width: 0;
+  min-height: 255px;
+  display: flex;
+  flex-direction: column;
+  padding: 19px;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  box-shadow: 0 13px 28px rgba(15, 23, 42, 0.07);
+  position: relative;
+  overflow: hidden;
+}
+
+.mis-weightage-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+}
+
+.mis-weightage-card.blue::before {
+  background: linear-gradient(90deg, #1d4ed8, #60a5fa);
+}
+
+.mis-weightage-card.purple::before {
+  background: linear-gradient(90deg, #6d28d9, #a78bfa);
+}
+
+.mis-weightage-card.green::before {
+  background: linear-gradient(90deg, #15803d, #4ade80);
+}
+
+.mis-weightage-card.orange::before {
+  background: linear-gradient(90deg, #c2410c, #fb923c);
+}
+
+.mis-weightage-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mis-weightage-number {
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.09em;
+}
+
+.mis-weightage-card-icon {
+  width: 43px;
+  height: 43px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  color: #0f172a;
+  background: #f1f5f9;
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.mis-weightage-card.blue .mis-weightage-card-icon {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.mis-weightage-card.purple .mis-weightage-card-icon {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.mis-weightage-card.green .mis-weightage-card-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.mis-weightage-card.orange .mis-weightage-card-icon {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.mis-weightage-label {
+  display: block;
+  margin-top: 19px;
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mis-weightage-card h4 {
+  margin: 5px 0 0;
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 950;
+}
+
+.mis-weightage-card > p {
+  flex: 1;
+  margin: 9px 0 16px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.55;
+  font-weight: 750;
+}
+
+.mis-weightage-value-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mis-weightage-value-row span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.mis-weightage-value-row strong {
+  color: #0f172a;
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.mis-weightage-progress {
+  height: 8px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.mis-weightage-progress span {
+  display: block;
+  height: 100%;
+  min-width: 8px;
+  border-radius: inherit;
+}
+
+.mis-weightage-card.blue .mis-weightage-progress span {
+  background: linear-gradient(90deg, #1d4ed8, #60a5fa);
+}
+
+.mis-weightage-card.purple .mis-weightage-progress span {
+  background: linear-gradient(90deg, #6d28d9, #a78bfa);
+}
+
+.mis-weightage-card.green .mis-weightage-progress span {
+  background: linear-gradient(90deg, #15803d, #4ade80);
+}
+
+.mis-weightage-card.orange .mis-weightage-progress span {
+  background: linear-gradient(90deg, #c2410c, #fb923c);
+}
+
+.mis-weightage-footer {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.75fr) minmax(0, 1.7fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding: 18px 20px;
+  border: 1px solid #fed7aa;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fff7ed, #ffffff);
+}
+
+.mis-weightage-footer > div:first-child span {
+  display: block;
+  color: #9a3412;
+  font-size: 9px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.mis-weightage-footer > div:first-child strong {
+  display: block;
+  margin-top: 4px;
+  color: #7c2d12;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.mis-weightage-footer p {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.55;
+  font-weight: 750;
+}
+
+.mis-weightage-total-badge {
+  min-width: 105px;
+  padding: 11px 16px;
+  border-radius: 17px;
+  color: #ffffff;
+  text-align: center;
+  background: linear-gradient(135deg, #c2410c, #f97316);
+  box-shadow: 0 10px 20px rgba(249, 115, 22, 0.2);
+}
+
+.mis-weightage-total-badge span {
+  display: block;
+  font-size: 9px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.mis-weightage-total-badge strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 21px;
+  font-weight: 950;
+}
+
+/* =========================================================
+   PWA MIS TAB AND WEIGHTAGE
+========================================================= */
+
+@media screen and (max-width: 900px) {
+  .ios-mis-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin-bottom: 14px;
+    padding: 5px;
+    border-radius: 18px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ios-mis-tabs button {
+    min-width: 0;
+    padding: 10px 8px;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    color: #64748b;
+    background: transparent;
+    text-align: left;
+    font-family: inherit;
+  }
+
+  .ios-mis-tabs button.active {
+    color: #0f172a;
+    background: #ffffff;
+    border-color: #dbeafe;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.09);
+  }
+
+  .ios-mis-tabs span {
+    display: block;
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .ios-mis-tabs strong {
+    display: block;
+    margin-top: 2px;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .ios-mis-weightage-panel {
+    animation: misWeightageFade 0.22s ease both;
+  }
+
+  .ios-mis-weightage-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 17px;
+    border-radius: 23px;
+    color: #ffffff;
+    background:
+      radial-gradient(
+        circle at 92% 10%,
+        rgba(96, 165, 250, 0.35),
+        transparent 30%
+      ),
+      linear-gradient(135deg, #07111f, #0f172a 55%, #173e68);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.2);
+  }
+
+  .ios-mis-weightage-hero > div {
+    min-width: 0;
+  }
+
+  .ios-mis-weightage-hero span {
+    display: block;
+    color: #93c5fd;
+    font-size: 8px;
+    font-weight: 950;
+    letter-spacing: 0.09em;
+  }
+
+  .ios-mis-weightage-hero h4 {
+    margin: 6px 0 0;
+    color: #ffffff;
+    font-size: 19px;
+    line-height: 1.15;
+    font-weight: 950;
+  }
+
+  .ios-mis-weightage-hero p {
+    margin: 7px 0 0;
+    color: #cbd5e1;
+    font-size: 10px;
+    line-height: 1.5;
+    font-weight: 750;
+  }
+
+  .ios-mis-weightage-hero > strong {
+    width: 60px;
+    height: 60px;
+    flex: 0 0 60px;
+    display: grid;
+    place-items: center;
+    border: 4px solid rgba(96, 165, 250, 0.75);
+    border-radius: 50%;
+    color: #ffffff;
+    background: rgba(15, 23, 42, 0.52);
+    font-size: 20px;
+    font-weight: 950;
+  }
+
+  .ios-mis-weightage-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 11px;
+  }
+
+  .ios-mis-weightage-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 13px;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.055);
+  }
+
+  .ios-mis-weightage-icon {
+    width: 41px;
+    height: 41px;
+    flex: 0 0 41px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    font-size: 18px;
+    font-weight: 950;
+  }
+
+  .ios-mis-weightage-item.blue .ios-mis-weightage-icon {
+    color: #1d4ed8;
+    background: #dbeafe;
+  }
+
+  .ios-mis-weightage-item.purple .ios-mis-weightage-icon {
+    color: #6d28d9;
+    background: #ede9fe;
+  }
+
+  .ios-mis-weightage-item.green .ios-mis-weightage-icon {
+    color: #15803d;
+    background: #dcfce7;
+  }
+
+  .ios-mis-weightage-item.orange .ios-mis-weightage-icon {
+    color: #c2410c;
+    background: #ffedd5;
+  }
+
+  .ios-mis-weightage-content {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .ios-mis-weightage-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .ios-mis-weightage-title span {
+    display: block;
+    color: #94a3b8;
+    font-size: 8px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .ios-mis-weightage-title h5 {
+    margin: 3px 0 0;
+    color: #0f172a;
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 950;
+  }
+
+  .ios-mis-weightage-title > strong {
+    color: #0f172a;
+    font-size: 18px;
+    line-height: 1;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .ios-mis-weightage-content > p {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 9px;
+    line-height: 1.45;
+    font-weight: 750;
+  }
+
+  .ios-mis-weightage-track {
+    height: 6px;
+    margin-top: 8px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+  }
+
+  .ios-mis-weightage-track span {
+    display: block;
+    height: 100%;
+    min-width: 7px;
+    border-radius: inherit;
+  }
+
+  .ios-mis-weightage-item.blue .ios-mis-weightage-track span {
+    background: linear-gradient(90deg, #1d4ed8, #60a5fa);
+  }
+
+  .ios-mis-weightage-item.purple .ios-mis-weightage-track span {
+    background: linear-gradient(90deg, #6d28d9, #a78bfa);
+  }
+
+  .ios-mis-weightage-item.green .ios-mis-weightage-track span {
+    background: linear-gradient(90deg, #15803d, #4ade80);
+  }
+
+  .ios-mis-weightage-item.orange .ios-mis-weightage-track span {
+    background: linear-gradient(90deg, #c2410c, #fb923c);
+  }
+
+  .ios-mis-weightage-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 11px;
+    padding: 13px 15px;
+    border-radius: 18px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+  }
+
+  .ios-mis-weightage-total span {
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .ios-mis-weightage-total strong {
+    font-size: 19px;
+    font-weight: 950;
+  }
+
+  .ios-mis-weightage-note {
+    margin: 9px 1px 0;
+    padding: 10px 11px;
+    border: 1px solid #fed7aa;
+    border-radius: 15px;
+    color: #9a3412;
+    background: #fff7ed;
+    font-size: 9px;
+    line-height: 1.5;
+    font-weight: 800;
+  }
+
+  .mis-tab-navigation,
+  .mis-weightage-panel {
+    max-width: 100%;
+  }
+}
+
+@media screen and (max-width: 1250px) and (min-width: 901px) {
+  .mis-weightage-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 1050px) and (min-width: 901px) {
+  .mis-weightage-hero {
+    grid-template-columns: minmax(0, 1fr) 170px;
+  }
+
+  .mis-weightage-score-ring {
+    width: 145px;
+    height: 145px;
+  }
+
+  .mis-weightage-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .mis-weightage-total-badge {
+    width: fit-content;
+  }
+}
+
+@keyframes misWeightageFade {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   FINAL DESKTOP SECTION SPACING FIX
+   MUST REMAIN AT ABSOLUTE END OF FILE
+========================================================= */
+
+@media screen and (min-width: 901px) {
+  /*
+    Important:
+    The earlier visibility rule uses display:block !important.
+    Override it here with flex so row-gap actually works.
+  */
+  .dashboard-home > .desktop-dashboardhome {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+
+    width: 100% !important;
+
+    gap: 0 !important;
+    row-gap: 26px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    visibility: visible !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+  }
+
+  /*
+    Every direct dashboard section receives a fixed,
+    clean separation from the section before it.
+  */
+  .dashboard-home > .desktop-dashboardhome > .dashboard-topbar,
+  .dashboard-home > .desktop-dashboardhome > .card-grid,
+  .dashboard-home > .desktop-dashboardhome > .dashboard-row,
+  .dashboard-home > .desktop-dashboardhome > .mis-card,
+  .dashboard-home > .desktop-dashboardhome > .cashflow-section,
+  .dashboard-home > .desktop-dashboardhome > .top-grade-card {
+    width: 100% !important;
+
+    margin-top: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+    margin-left: 0 !important;
+
+    box-sizing: border-box !important;
+    flex: 0 0 auto !important;
+  }
+
+  /*
+    Extra breathing room after Welcome section.
+  */
+  .dashboard-home
+    > .desktop-dashboardhome
+    > .dashboard-topbar {
+    margin-bottom: 4px !important;
+  }
+
+  /*
+    KPI section internal card spacing.
+  */
+  .dashboard-home
+    > .desktop-dashboardhome
+    > .card-grid {
+    column-gap: 18px !important;
+    row-gap: 18px !important;
+  }
+
+  /*
+    Revenue share and orders chart spacing.
+  */
+  .dashboard-home
+    > .desktop-dashboardhome
+    > .dashboard-row {
+    column-gap: 24px !important;
+    row-gap: 24px !important;
+  }
+
+  /*
+    Ensure the two chart cards do not touch their row edges.
+  */
+  .dashboard-home
+    > .desktop-dashboardhome
+    > .dashboard-row
+    > .chart-card,
+  .dashboard-home
+    > .desktop-dashboardhome
+    > .dashboard-row
+    > .insight-card {
+    margin: 0 !important;
+    height: auto !important;
+  }
+
+  /*
+    Remove older 4px section margins because the parent
+    now controls all spacing consistently.
+  */
+  .dashboard-home .mis-card,
+  .dashboard-home .cashflow-section,
+  .dashboard-home .top-grade-card {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+}
+/* =====================================================
+   WEEKLY MIS COMPARISON
+   Desktop and PWA
+===================================================== */
+
+.mis-weekly-chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.mis-weekly-chart-head span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #16a34a;
+
+  font-size: 9px;
+  font-weight: 900;
+
+  letter-spacing: 0.12em;
+}
+
+.mis-weekly-chart-head h4 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.mis-weekly-chart-head p {
+  margin: 5px 0 0;
+
+  color: #64748b;
+
+  font-size: 11px;
+  font-weight: 650;
+}
+
+@media (max-width: 900px) {
+  .ios-weekly-mis-subtitle {
+    margin:
+      -4px 0 10px;
+
+    color: #64748b;
+
+    font-size: 10px;
+    font-weight: 700;
+  }
+}

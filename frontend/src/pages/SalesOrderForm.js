@@ -3,6 +3,8 @@ import {
   createSalesOrder,
   updateSalesOrder,
 } from "../services/salesOrderService";
+
+import { lookupEnquiryForSalesOrder } from "../services/enquiryLookupService";
 import "./SalesOrderForm.css";
 
 const paymentTermOptions = [
@@ -345,6 +347,14 @@ const SalesOrderForm = ({ onClose, refresh, editOrder = null }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState("");
+
+const [enquiryLookup, setEnquiryLookup] = useState({
+  loading: false,
+  checkedNumber: "",
+  valid: false,
+  message: "",
+  data: null,
+});
 
   const fieldRefs = useRef({});
 
@@ -703,6 +713,65 @@ supplyFinish: getFirstFromOrder(
     }
   };
 
+const checkEnquiryNumber = async (numberValue = form.enquiryNumber) => {
+  const enquiryNumber = String(numberValue || "").trim();
+
+  if (!enquiryNumber || form.enquiryFormFilled !== "yes" || isEditMode) {
+    setEnquiryLookup({
+      loading: false,
+      checkedNumber: "",
+      valid: false,
+      message: "",
+      data: null,
+    });
+    return null;
+  }
+
+  try {
+    setEnquiryLookup((prev) => ({
+      ...prev,
+      loading: true,
+      checkedNumber: enquiryNumber,
+      message: "Checking enquiry...",
+    }));
+
+    const result = await lookupEnquiryForSalesOrder(enquiryNumber);
+
+    const valid = Boolean(result?.found && result?.validForSalesOrder);
+
+    setEnquiryLookup({
+      loading: false,
+      checkedNumber: enquiryNumber,
+      valid,
+      message: result?.message || "",
+      data: result?.data || null,
+    });
+
+    return {
+      valid,
+      message: result?.message || "",
+      data: result?.data || null,
+    };
+  } catch (error) {
+    const message =
+      error.response?.data?.message || "Failed to verify enquiry number.";
+
+    setEnquiryLookup({
+      loading: false,
+      checkedNumber: enquiryNumber,
+      valid: false,
+      message,
+      data: null,
+    });
+
+    return {
+      valid: false,
+      message,
+      data: null,
+    };
+  }
+};
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -917,6 +986,24 @@ if (
       }
       if (name === "enquiryFormFilled" && value === "no") {
   updated.enquiryNumber = "";
+
+  setEnquiryLookup({
+    loading: false,
+    checkedNumber: "",
+    valid: false,
+    message: "",
+    data: null,
+  });
+}
+
+if (name === "enquiryNumber") {
+  setEnquiryLookup({
+    loading: false,
+    checkedNumber: "",
+    valid: false,
+    message: "",
+    data: null,
+  });
 }
       if (name === "freight" && value !== "extra") {
         updated.freightExtraCharges = "";
@@ -1061,10 +1148,23 @@ if (form.feasibilityReportFile instanceof File) {
   const handleSubmit = async (e) => {
   e.preventDefault();
 
-  if (isSubmitting) return;
-  if (!validateForm()) return;
+ if (isSubmitting) return;
+if (!validateForm()) return;
 
-  setIsSubmitting(true);
+if (!isEditMode && form.enquiryFormFilled === "yes") {
+  const lookupResult =
+    enquiryLookup.checkedNumber === form.enquiryNumber.trim()
+      ? enquiryLookup
+      : await checkEnquiryNumber();
+
+  if (!lookupResult?.valid) {
+    alert(lookupResult?.message || "Please enter a valid won enquiry number.");
+    scrollToField("enquiryNumber");
+    return;
+  }
+}
+
+setIsSubmitting(true);
   setPdfGenerating(true);
   setPdfUrl("");
 
@@ -1633,12 +1733,47 @@ if (form.feasibilityReportFile instanceof File) {
             >
               <label>{mandatoryLabel("Enquiry Number")}</label>
               <input
-                name="enquiryNumber"
-                value={form.enquiryNumber}
-                onChange={handleChange}
-                placeholder="Example: Deepika-1"
-              />
-              {errorText("enquiryNumber")}
+  name="enquiryNumber"
+  value={form.enquiryNumber}
+  onChange={handleChange}
+  onBlur={() => checkEnquiryNumber()}
+  placeholder="Example: Deepika-1"
+/>
+
+{errorText("enquiryNumber")}
+
+{enquiryLookup.loading && (
+  <div className="enquiry-lookup-box checking">
+    Checking enquiry number...
+  </div>
+)}
+
+{!enquiryLookup.loading && enquiryLookup.message && (
+  <div
+    className={`enquiry-lookup-box ${
+      enquiryLookup.valid ? "success" : "error"
+    }`}
+  >
+    <strong>{enquiryLookup.valid ? "Valid Enquiry" : "Enquiry Issue"}</strong>
+    <p>{enquiryLookup.message}</p>
+
+    {enquiryLookup.data && (
+      <div className="enquiry-lookup-mini-grid">
+        <span>Company</span>
+        <b>{enquiryLookup.data.companyName || "-"}</b>
+
+        <span>Contact</span>
+        <b>{enquiryLookup.data.customerName || "-"}</b>
+
+        <span>Status</span>
+        <b>{enquiryLookup.data.closureStatus || "-"}</b>
+
+        <span>Sales</span>
+        <b>{enquiryLookup.data.salesPersonName || "-"}</b>
+      </div>
+    )}
+  </div>
+)}
             </div>
           )}
         </div>

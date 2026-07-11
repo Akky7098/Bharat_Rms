@@ -571,7 +571,7 @@ function SupportPage() {
       <div className="support-desktop-page">
         <div className="support-hero">
           <div>
-            <span className="support-kicker">Support Desk</span>
+            <span className="support-kicker">Task Assign Desk</span>
             <h1>Tasks & Delegation</h1>
             <p>Premium ticket tracking, comments, attachments and SLA visibility.</p>
           </div>

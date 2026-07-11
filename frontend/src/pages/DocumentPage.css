@@ -1267,3 +1267,32 @@
   border-radius:999px;
 }
 }
+/* Click full document card to open file */
+.doc-file-clickable {
+  cursor: pointer;
+}
+
+.document-card.doc-file-clickable:hover,
+.doc-pwa-document.doc-file-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+  border-color: #93c5fd;
+}
+
+.document-card.doc-file-clickable:active,
+.doc-pwa-document.doc-file-clickable:active {
+  transform: scale(0.99);
+}
+
+.document-card.doc-file-clickable .document-main h3,
+.doc-pwa-document.doc-file-clickable h3 {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+}
+
+.document-card.doc-file-clickable:hover .document-main h3,
+.doc-pwa-document.doc-file-clickable:hover h3 {
+  color: #2563eb;
+  text-decoration-color: #2563eb;
+}

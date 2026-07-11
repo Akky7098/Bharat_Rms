@@ -47,11 +47,11 @@ const [selectedDispatchDetail, setSelectedDispatchDetail] = useState(null);
     internalRemark: "",
   });
 
- const [filters, setFilters] = useState({
+const [filters, setFilters] = useState({
   fromDate: "",
   toDate: "",
   paymentStatus: "",
-  dispatchStatus: "",
+  salesPersonId: "",
   companyName: "",
   invoiceNumber: "",
   cardFilter: "",
@@ -75,9 +75,16 @@ const [selectedDispatchDetail, setSelectedDispatchDetail] = useState(null);
   }, []);
 
   const formatDate = (date) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString("en-IN");
-  };
+  if (!date) return "-";
+
+  const d = new Date(date);
+
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+
+  return `${day}-${month}-${year}`;
+};
 
   const formatCurrency = (value) => {
     return `₹ ${Number(value || 0).toLocaleString("en-IN")}`;
@@ -168,7 +175,7 @@ const [selectedDispatchDetail, setSelectedDispatchDetail] = useState(null);
   fromDate: "",
   toDate: "",
   paymentStatus: "",
-  dispatchStatus: "",
+  salesPersonId: "",
   companyName: "",
   invoiceNumber: "",
   cardFilter: "",
@@ -406,54 +413,249 @@ const openPaymentModal = (dispatch) => {
     }));
   };
 
-  const renderDocuments = (item, mode = "desktop") => {
-    const billUrl = item.billPdf?.fileUrl;
-    const lrUrl = item.lrCopyPdf?.fileUrl;
-    const paymentBills =
-      item.paymentHistory?.filter((p) => p.paymentBillPdf?.fileUrl) || [];
+ const getFileUrl = (...files) => {
+  for (const file of files) {
+    if (!file) continue;
 
-    return (
-      <div className={mode === "pwa" ? "ios-dispatch-doc-list" : "dispatch-doc-list"}>
-        {billUrl && (
+    if (typeof file === "string") return file;
+
+    if (file.fileUrl) return file.fileUrl;
+    if (file.url) return file.url;
+    if (file.path) return file.path;
+    if (file.filePath) return file.filePath;
+  }
+
+  return "";
+};
+
+const renderDocuments = (
+  item,
+  mode = "desktop"
+) => {
+  const docClass =
+    mode === "pwa"
+      ? "ios-dispatch-doc-btn"
+      : "dispatch-doc-link";
+
+  /*
+   * BILL
+   */
+  const billUrl = getFileUrl(
+    item.billPdf,
+    item.bill,
+    item.invoicePdf,
+
+    item.documents?.billPdf,
+    item.documents?.bill,
+
+    item.attachments?.billPdf,
+    item.attachments?.bill
+  );
+
+  /*
+   * MTC / TC
+   *
+   * Current production Dispatch model stores
+   * the uploaded certificate in:
+   *
+   * tcCertificatePdf
+   *
+   * Old fallback fields are retained so older
+   * records continue to work.
+   */
+  const mtcTcUrl = getFileUrl(
+    item.tcCertificatePdf,
+
+    item.mtcPdf,
+    item.mtcFile,
+    item.mtc,
+    item.mtcCopy,
+    item.mtcDocument,
+    item.mtcFileUrl,
+
+    item.tcPdf,
+    item.tcFile,
+    item.tc,
+    item.tcCopy,
+
+    item.documents?.tcCertificatePdf,
+    item.documents?.mtcPdf,
+    item.documents?.mtcFile,
+    item.documents?.mtc,
+    item.documents?.tcPdf,
+    item.documents?.tcFile,
+    item.documents?.tc,
+
+    item.attachments?.tcCertificatePdf,
+    item.attachments?.mtcPdf,
+    item.attachments?.mtcFile,
+    item.attachments?.mtc,
+    item.attachments?.tcPdf,
+    item.attachments?.tcFile,
+    item.attachments?.tc
+  );
+
+  /*
+   * LR
+   */
+  const lrUrl = getFileUrl(
+    item.lrCopyPdf,
+    item.lrPdf,
+    item.lrCopy,
+    item.lr,
+
+    item.documents?.lrCopyPdf,
+    item.documents?.lrPdf,
+    item.documents?.lrCopy,
+    item.documents?.lr,
+
+    item.attachments?.lrCopyPdf,
+    item.attachments?.lrPdf,
+    item.attachments?.lrCopy,
+    item.attachments?.lr
+  );
+
+  /*
+   * Any separate TC field from old records.
+   *
+   * This is shown only when it is different
+   * from the main MTC / TC certificate URL.
+   */
+  const separateTcUrl = getFileUrl(
+    item.separateTcPdf,
+    item.separateTcFile,
+    item.tcReportPdf,
+    item.tcReportFile,
+
+    item.documents?.separateTcPdf,
+    item.documents?.tcReportPdf,
+
+    item.attachments?.separateTcPdf,
+    item.attachments?.tcReportPdf
+  );
+
+  /*
+   * PAYMENT RECEIPTS
+   */
+  const paymentBills =
+    item.paymentHistory?.filter(
+      (payment) =>
+        getFileUrl(
+          payment.paymentBillPdf,
+          payment.receiptPdf,
+          payment.billPdf
+        )
+    ) || [];
+
+  return (
+    <div
+      className={
+        mode === "pwa"
+          ? "ios-dispatch-doc-list"
+          : "dispatch-doc-list"
+      }
+    >
+      {/* BILL */}
+      {billUrl ? (
+        <a
+          href={getFullFileUrl(
+            billUrl
+          )}
+          target="_blank"
+          rel="noreferrer"
+          className={docClass}
+        >
+          Bill
+        </a>
+      ) : (
+        <span className="dispatch-doc-disabled">
+          Bill: NA
+        </span>
+      )}
+
+      {/* MTC / TC */}
+      {mtcTcUrl ? (
+        <a
+          href={getFullFileUrl(
+            mtcTcUrl
+          )}
+          target="_blank"
+          rel="noreferrer"
+          className={`${docClass} mtc-doc`}
+        >
+          MTC / TC
+        </a>
+      ) : (
+        <span className="dispatch-mtc-na">
+          MTC: NA
+        </span>
+      )}
+
+      {/* LR */}
+      {lrUrl ? (
+        <a
+          href={getFullFileUrl(
+            lrUrl
+          )}
+          target="_blank"
+          rel="noreferrer"
+          className={`${docClass} lr-doc`}
+        >
+          LR
+        </a>
+      ) : (
+        <span className="dispatch-doc-disabled">
+          LR: NA
+        </span>
+      )}
+
+      {/* SEPARATE OLD TC FILE, IF PRESENT */}
+      {separateTcUrl &&
+        separateTcUrl !== mtcTcUrl && (
           <a
-            href={getFullFileUrl(billUrl)}
+            href={getFullFileUrl(
+              separateTcUrl
+            )}
             target="_blank"
             rel="noreferrer"
-            className={mode === "pwa" ? "ios-dispatch-doc-btn" : "dispatch-doc-link"}
+            className={`${docClass} tc-doc`}
           >
-            Bill
+            TC
           </a>
         )}
 
-        {lrUrl && (
-          <a
-            href={getFullFileUrl(lrUrl)}
-            target="_blank"
-            rel="noreferrer"
-            className={mode === "pwa" ? "ios-dispatch-doc-btn" : "dispatch-doc-link"}
-          >
-            LR
-          </a>
-        )}
+      {/* PAYMENT RECEIPTS */}
+      {paymentBills.map(
+        (payment, index) => {
+          const paymentUrl =
+            getFileUrl(
+              payment.paymentBillPdf,
+              payment.receiptPdf,
+              payment.billPdf
+            );
 
-        {paymentBills.map((payment, index) => (
-          <a
-            key={index}
-            href={getFullFileUrl(payment.paymentBillPdf.fileUrl)}
-            target="_blank"
-            rel="noreferrer"
-            className={mode === "pwa" ? "ios-dispatch-doc-btn" : "dispatch-doc-link payment-doc"}
-          >
-            Payment {index + 1}
-          </a>
-        ))}
+          if (!paymentUrl) {
+            return null;
+          }
 
-        {!billUrl && !lrUrl && paymentBills.length === 0 && (
-          <span className="dispatch-doc-disabled">No Docs</span>
-        )}
-      </div>
-    );
-  };
+          return (
+            <a
+              key={`payment-${index}`}
+              href={getFullFileUrl(
+                paymentUrl
+              )}
+              target="_blank"
+              rel="noreferrer"
+              className={`${docClass} payment-doc`}
+            >
+              Payment {index + 1}
+            </a>
+          );
+        }
+      )}
+    </div>
+  );
+};
 
   const renderPaymentHistory = (item) => {
     if (!item.paymentHistory || item.paymentHistory.length === 0) return null;
@@ -552,18 +754,32 @@ const openPaymentModal = (dispatch) => {
             </div>
 
             <div className="ios-dispatch-field">
-              <label>Dispatch</label>
-              <select
-                name="dispatchStatus"
-                value={filters.dispatchStatus}
-                onChange={handleFilterChange}
-              >
-                <option value="">All Dispatch</option>
-                <option value="dispatched">Dispatched</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
+  <label>Sales Person</label>
+
+  <select
+    name="salesPersonId"
+    value={filters.salesPersonId || ""}
+    onChange={handleFilterChange}
+  >
+    <option value="">All Sales Person</option>
+
+    {[...new Map(
+      dispatches
+        .filter((d) => d.salesPersonId)
+        .map((d) => [
+          String(d.salesPersonId?._id || d.salesPersonId || d.salesPerson),
+          {
+            id: String(d.salesPersonId?._id || d.salesPersonId || d.salesPerson),
+            name: d.salesPersonName || d.salesPersonId?.name || "-",
+          },
+        ])
+    ).values()].map((person) => (
+      <option key={person.id} value={person.id}>
+        {person.name}
+      </option>
+    ))}
+  </select>
+</div>
           </div>
 
           <div className="ios-dispatch-filter-actions">
@@ -845,19 +1061,44 @@ const openPaymentModal = (dispatch) => {
               </select>
             </div>
 
-            <div className="dispatch-filter-field">
-              <label>Dispatch Status</label>
-              <select
-                name="dispatchStatus"
-                value={filters.dispatchStatus}
-                onChange={handleFilterChange}
-              >
-                <option value="">All Dispatch</option>
-                <option value="dispatched">Dispatched</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
+           <div className="dispatch-filter-field">
+  <label>Sales Person</label>
+
+  <select
+    name="salesPersonId"
+    value={filters.salesPersonId || ""}
+    onChange={handleFilterChange}
+  >
+    <option value="">All Sales Person</option>
+
+    {[...new Map(
+      dispatches
+        .filter(d => d.salesPersonId)
+        .map(d => [
+          String(
+            d.salesPersonId?._id ||
+            d.salesPersonId ||
+            d.salesPerson
+          ),
+          {
+            id: String(
+              d.salesPersonId?._id ||
+              d.salesPersonId ||
+              d.salesPerson
+            ),
+            name:
+              d.salesPersonName ||
+              d.salesPersonId?.name ||
+              "-"
+          }
+        ])
+    ).values()].map(person => (
+      <option key={person.id} value={person.id}>
+        {person.name}
+      </option>
+    ))}
+  </select>
+</div>
 
             <div className="dispatch-filter-actions">
               <button type="button" onClick={clearFilters}>

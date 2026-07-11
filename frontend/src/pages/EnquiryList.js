@@ -10,6 +10,30 @@ const API_BASE_URL =
   "https://bharatspecialsteels.bharatspecialsteels.com";
 
 
+const formatDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const getDefaultThreeMonthRange = () => {
+  const today = new Date();
+
+  // Includes the current month plus the previous two full months.
+  const fromDate = new Date(
+    today.getFullYear(),
+    today.getMonth() - 2,
+    1
+  );
+
+  return {
+    fromDate: formatDateInputValue(fromDate),
+    toDate: formatDateInputValue(today),
+  };
+};
+
 const EnquiryList = ({ dashboardFilters }) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
@@ -39,22 +63,33 @@ const EnquiryList = ({ dashboardFilters }) => {
     limit: 30,
   });
 
-const [filters, setFilters] = useState(() => ({
-  page: 1,
-  limit: 30,
-  salesPersonId: dashboardFilters?.salesPersonId || "",
-  fromDate: dashboardFilters?.fromDate || "",
-  toDate: dashboardFilters?.toDate || "",
-  companyName: dashboardFilters?.companyName || "",
-  enquiryNumber: dashboardFilters?.enquiryNumber || "",
-  status: dashboardFilters?.status || "all",
-  grade: dashboardFilters?.grade || "",
-  leadType: dashboardFilters?.leadType || "",
-  lostReason: dashboardFilters?.lostReason || "",
-  reason: dashboardFilters?.reason || "",
-  view: dashboardFilters?.view || "",
-  weekNo: dashboardFilters?.weekNo || "",
-}));
+const [filters, setFilters] = useState(() => {
+  const defaultRange = getDefaultThreeMonthRange();
+
+  return {
+    page: 1,
+    limit: 30,
+    salesPersonId: dashboardFilters?.salesPersonId || "",
+
+    // Dashboard drill-down dates get priority.
+    // Otherwise, show the latest 3 months by default.
+    fromDate:
+      dashboardFilters?.fromDate || defaultRange.fromDate,
+
+    toDate:
+      dashboardFilters?.toDate || defaultRange.toDate,
+
+    companyName: dashboardFilters?.companyName || "",
+    enquiryNumber: dashboardFilters?.enquiryNumber || "",
+    status: dashboardFilters?.status || "all",
+    grade: dashboardFilters?.grade || "",
+    leadType: dashboardFilters?.leadType || "",
+    lostReason: dashboardFilters?.lostReason || "",
+    reason: dashboardFilters?.reason || "",
+    view: dashboardFilters?.view || "",
+    weekNo: dashboardFilters?.weekNo || "",
+  };
+});
 
   const fetchEnquiries = useCallback(async () => {
     try {
@@ -138,16 +173,24 @@ setSummary(response.summary || {});
     }));
   };
 
-  const clearFilters = () => {
+ const clearFilters = () => {
+  const defaultRange = getDefaultThreeMonthRange();
+
   setFilters({
     page: 1,
     limit: 30,
     salesPersonId: "",
-    fromDate: "",
-    toDate: "",
+    fromDate: defaultRange.fromDate,
+    toDate: defaultRange.toDate,
     companyName: "",
     enquiryNumber: "",
     status: "all",
+    grade: "",
+    leadType: "",
+    lostReason: "",
+    reason: "",
+    view: "",
+    weekNo: "",
   });
 };
 

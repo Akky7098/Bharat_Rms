@@ -6,6 +6,25 @@ import {
 import "./Dispatch.css";
 
 const DispatchForm = ({ onClose, refresh }) => {
+  const getTodayLocalDateInputValue = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const parseLocalDateOnly = (dateValue) => {
+    if (!dateValue) return null;
+
+    const [year, month, day] = String(dateValue).split("-").map(Number);
+
+    if (!year || !month || !day) return null;
+
+    return new Date(year, month - 1, day, 12, 0, 0, 0);
+  };
+
   const [search, setSearch] = useState("");
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -27,7 +46,7 @@ const DispatchForm = ({ onClose, refresh }) => {
     salesOrderId: "",
     invoiceNumber: "",
     invoiceDate: "",
-    dispatchDate: new Date().toISOString().split("T")[0],
+    dispatchDate: getTodayLocalDateInputValue(),
     dispatchQty: "",
     invoiceValue: "",
     paymentDueDays: "",
@@ -36,20 +55,11 @@ const DispatchForm = ({ onClose, refresh }) => {
     dispatchStatus: "dispatched",
     internalRemark: "",
     paymentRemark: "",
+    tcApplicable: "not_applicable",
     billPdf: null,
     lrCopyPdf: null,
     tcCertificatePdf: null,
   });
-
-  const parseLocalDateOnly = (dateValue) => {
-    if (!dateValue) return null;
-
-    const [year, month, day] = String(dateValue).split("-").map(Number);
-
-    if (!year || !month || !day) return null;
-
-    return new Date(year, month - 1, day, 12, 0, 0, 0);
-  };
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -96,7 +106,6 @@ const DispatchForm = ({ onClose, refresh }) => {
     if (!dueDate) return "-";
 
     dueDate.setDate(dueDate.getDate() + Number(form.paymentDueDays || 0));
-
     return formatDate(dueDate);
   };
 
@@ -185,18 +194,18 @@ const DispatchForm = ({ onClose, refresh }) => {
     if (files) {
       setForm((prev) => ({
         ...prev,
-        [name]: files[0],
+        [name]: files[0] || null,
       }));
       return;
     }
 
     setForm((prev) => ({
-  ...prev,
-  [name]: value,
-  ...(name === "tcApplicable" && value === "not_applicable"
-    ? { tcCertificatePdf: null }
-    : {}),
-}));
+      ...prev,
+      [name]: value,
+      ...(name === "tcApplicable" && value === "not_applicable"
+        ? { tcCertificatePdf: null }
+        : {}),
+    }));
   };
 
   const getAdditionalCcEmails = () => {
@@ -290,21 +299,21 @@ const DispatchForm = ({ onClose, refresh }) => {
     }
 
     if (form.tcApplicable === "applicable" && !form.tcCertificatePdf) {
-  alert("MTC / TC PDF is required when TC is applicable.");
-  return false;
-}
+      alert("MTC / TC PDF is required when TC is applicable.");
+      return false;
+    }
 
-if (form.tcCertificatePdf) {
-  if (form.tcCertificatePdf.type !== "application/pdf") {
-    alert("MTC / TC file must be PDF");
-    return false;
-  }
+    if (form.tcCertificatePdf) {
+      if (form.tcCertificatePdf.type !== "application/pdf") {
+        alert("MTC / TC file must be PDF");
+        return false;
+      }
 
-  if (form.tcCertificatePdf.size > 30 * 1024 * 1024) {
-    alert("MTC / TC PDF must be under 30MB");
-    return false;
-  }
-}
+      if (form.tcCertificatePdf.size > 30 * 1024 * 1024) {
+        alert("MTC / TC PDF must be under 30MB");
+        return false;
+      }
+    }
 
     return true;
   };
@@ -322,7 +331,7 @@ if (form.tcCertificatePdf) {
     dispatchStatus: form.dispatchStatus,
     internalRemark: form.internalRemark,
     paymentRemark: form.paymentRemark,
-tcApplicable: form.tcApplicable,
+    tcApplicable: form.tcApplicable,
   });
 
   const resetUploadProgress = () => {
@@ -345,13 +354,13 @@ tcApplicable: form.tcApplicable,
       setSubmitting(true);
 
       const totalSize =
-  Number(form.billPdf?.size || 0) +
-  Number(form.lrCopyPdf?.size || 0) +
-  Number(
-    form.tcApplicable === "applicable"
-      ? form.tcCertificatePdf?.size || 0
-      : 0
-  );
+        Number(form.billPdf?.size || 0) +
+        Number(form.lrCopyPdf?.size || 0) +
+        Number(
+          form.tcApplicable === "applicable"
+            ? form.tcCertificatePdf?.size || 0
+            : 0
+        );
 
       setUploadProgress({
         show: true,
@@ -365,11 +374,11 @@ tcApplicable: form.tcApplicable,
         buildPayload(),
         form.billPdf,
         form.lrCopyPdf,
-        form.tcCertificatePdf,
+        form.tcApplicable === "applicable" ? form.tcCertificatePdf : null,
         (progressEvent) => {
           const loaded = progressEvent.loaded || 0;
           const total = progressEvent.total || totalSize;
-          const percent = Math.round((loaded * 100) / total);
+          const percent = total ? Math.round((loaded * 100) / total) : 0;
 
           setUploadProgress({
             show: true,
@@ -543,7 +552,9 @@ tcApplicable: form.tcApplicable,
                       <div>
                         <label>Dispatch Status</label>
                         <p>
-                          {formatDispatchStatus(order.dispatchAvailabilityStatus)}
+                          {formatDispatchStatus(
+                            order.dispatchAvailabilityStatus
+                          )}
                         </p>
                       </div>
 
@@ -788,7 +799,11 @@ tcApplicable: form.tcApplicable,
 
             <div className="dispatch-field">
               <label>Pending Amount ₹</label>
-              <input value={formatCurrency(calculatePendingAmount())} disabled readOnly />
+              <input
+                value={formatCurrency(calculatePendingAmount())}
+                disabled
+                readOnly
+              />
             </div>
 
             <div className="dispatch-field dispatch-full">
@@ -847,41 +862,40 @@ tcApplicable: form.tcApplicable,
             </div>
 
             <div className="dispatch-field">
-  <label>TC Applicable</label>
+              <label>TC Applicable</label>
+              <select
+                name="tcApplicable"
+                value={form.tcApplicable}
+                onChange={handleChange}
+                disabled={submitting}
+              >
+                <option value="not_applicable">Not Applicable</option>
+                <option value="applicable">Applicable</option>
+              </select>
+            </div>
 
-  <select
-    name="tcApplicable"
-    value={form.tcApplicable}
-    onChange={handleChange}
-    disabled={submitting}
-  >
-    <option value="not_applicable">Not Applicable</option>
-    <option value="applicable">Applicable</option>
-  </select>
-</div>
+            {form.tcApplicable === "applicable" && (
+              <div className="dispatch-field dispatch-file-field dispatch-mtc-upload">
+                <label>
+                  MTC / TC PDF <span className="dispatch-required">*</span>
+                </label>
 
-{form.tcApplicable === "applicable" && (
-  <div className="dispatch-field dispatch-file-field dispatch-mtc-upload">
-    <label>
-      MTC / TC PDF <span className="dispatch-required">*</span>
-    </label>
+                <input
+                  type="file"
+                  name="tcCertificatePdf"
+                  accept="application/pdf"
+                  onChange={handleChange}
+                  disabled={submitting}
+                />
 
-    <input
-      type="file"
-      name="tcCertificatePdf"
-      accept="application/pdf"
-      onChange={handleChange}
-      disabled={submitting}
-    />
-
-    {form.tcCertificatePdf && (
-      <small>
-        {form.tcCertificatePdf.name} ·{" "}
-        {formatFileSize(form.tcCertificatePdf.size)}
-      </small>
-    )}
-  </div>
-)}
+                {form.tcCertificatePdf && (
+                  <small>
+                    {form.tcCertificatePdf.name} ·{" "}
+                    {formatFileSize(form.tcCertificatePdf.size)}
+                  </small>
+                )}
+              </div>
+            )}
 
             <div className="dispatch-field dispatch-full">
               <label>Additional CC Emails</label>

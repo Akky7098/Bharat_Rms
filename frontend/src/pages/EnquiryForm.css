@@ -794,3 +794,25 @@
     opacity: .6;
   }
 }
+
+
+/* ================================
+   SUPPLY CONDITION - OTHER FIELD
+   Safe add-on: paste at end only
+================================ */
+
+.other-supply-condition-box textarea {
+  min-height: 86px;
+  resize: vertical;
+  background: #fffdf5;
+  border-color: #facc15;
+}
+
+.other-supply-condition-box textarea:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
+}
+
+.ios-enquiry-form-field textarea {
+  min-height: 96px;
+}

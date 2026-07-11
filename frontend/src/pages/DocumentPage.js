@@ -291,6 +291,11 @@ function DocumentPage() {
     }
   };
 
+   const openDocumentFile = (doc) => {
+  if (!doc?.fileUrl) return;
+  window.open(getFullFileUrl(doc.fileUrl), "_blank", "noopener,noreferrer");
+};
+
   const formatFileSize = (size) => {
     if (!size) return "-";
     const mb = size / (1024 * 1024);
@@ -448,7 +453,13 @@ function DocumentPage() {
                     isAdmin || String(doc.uploadedBy?.userId) === String(user?._id);
 
                   return (
-                    <div className="doc-pwa-document" key={doc._id}>
+                    <div
+  className="doc-pwa-document doc-file-clickable"
+  key={doc._id}
+  onClick={() => openDocumentFile(doc)}
+  role="button"
+  tabIndex={0}
+>
                       <div className="doc-pwa-document-top">
                         <div className="doc-pwa-file-icon">📄</div>
 
@@ -473,19 +484,23 @@ function DocumentPage() {
 
                       <div className="doc-pwa-actions">
                         <a
-                          href={getFullFileUrl(doc.fileUrl)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="doc-pwa-download"
-                        >
-                          Download / View
-                        </a>
+  href={getFullFileUrl(doc.fileUrl)}
+  target="_blank"
+  rel="noreferrer"
+  className="doc-pwa-download"
+  onClick={(e) => e.stopPropagation()}
+>
+  Download / View
+</a>
 
                         {canDelete && (
                           <button
                             type="button"
                             className="doc-pwa-delete"
-                            onClick={() => handleDeleteDocument(doc._id)}
+                            onClick={(e) => {
+  e.stopPropagation();
+  handleDeleteDocument(doc._id);
+}}
                           >
                             Delete
                           </button>
@@ -635,7 +650,13 @@ function DocumentPage() {
                 </div>
               ) : (
                 filteredDocuments.map((doc) => (
-                  <div className="document-card" key={doc._id}>
+                  <div
+  className="document-card doc-file-clickable"
+  key={doc._id}
+  onClick={() => openDocumentFile(doc)}
+  role="button"
+  tabIndex={0}
+>
                     <div className="document-file-icon">
                       <FileText size={28} />
                     </div>
@@ -656,13 +677,14 @@ function DocumentPage() {
                     </div>
 
                     <div className="document-actions">
-                      <a
-                        href={getFullFileUrl(doc.fileUrl)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="doc-icon-btn download"
-                        title="Download / View"
-                      >
+                     <a
+  href={getFullFileUrl(doc.fileUrl)}
+  target="_blank"
+  rel="noreferrer"
+  className="doc-icon-btn download"
+  title="Download / View"
+  onClick={(e) => e.stopPropagation()}
+>
                         <Download size={18} />
                       </a>
 
@@ -670,7 +692,10 @@ function DocumentPage() {
                         String(doc.uploadedBy?.userId) === String(user?._id)) && (
                         <button
                           className="doc-icon-btn delete"
-                          onClick={() => handleDeleteDocument(doc._id)}
+                          onClick={(e) => {
+  e.stopPropagation();
+  handleDeleteDocument(doc._id);
+}}
                           type="button"
                           title="Delete"
                         >

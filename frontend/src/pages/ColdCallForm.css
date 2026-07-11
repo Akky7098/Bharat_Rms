@@ -352,3 +352,29 @@ form {
     width: 100%;
   }
 }
+/* ==========================================
+   Visit Back-Date Field
+========================================== */
+
+.cold-date-editable-group
+  .cold-editable-date {
+  background: #ffffff;
+  border-color: #93c5fd;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.cold-date-editable-group
+  .cold-editable-date:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 4px
+    rgba(37, 99, 235, 0.12);
+}
+
+.cold-date-editable-group
+  small {
+  color: #1d4ed8;
+  font-weight: 700;
+}

@@ -1320,3 +1320,73 @@
     position: relative !important;
   }
 }
+@media (max-width: 900px) {
+  .dashboard.pwa-module-itSupport .mobile-topbar {
+    display: none !important;
+  }
+
+  .dashboard.pwa-module-itSupport .main {
+    padding: 0 !important;
+    overflow: hidden !important;
+    height: 100dvh !important;
+    background: #f4f7f5 !important;
+  }
+}
+/* =====================================================
+   ATTENDANCE PWA DASHBOARD SHELL
+   Mobile only - desktop remains unchanged
+===================================================== */
+
+/* =====================================================
+   FINAL ATTENDANCE PWA VIEWPORT
+   Keep at the absolute end of Dashboard.css
+===================================================== */
+
+
+/* =====================================================
+   ATTENDANCE PWA DASHBOARD VIEWPORT
+   Add at the end of Dashboard.css
+===================================================== */
+
+@media (max-width: 900px) {
+  .dashboard.pwa-module-attendance,
+  .dashboard.pwa-module-attendance
+    .dashboard-layout,
+  .dashboard.pwa-module-attendance
+    .main {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+    background: #f4f7f5 !important;
+  }
+
+  .dashboard.pwa-module-attendance
+    .main {
+    width: 100% !important;
+    position: relative !important;
+  }
+
+  .dashboard.pwa-module-attendance
+    .mobile-topbar,
+  .dashboard.pwa-module-attendance
+    .mobile-menu-panel,
+  .dashboard.pwa-module-attendance
+    .mobile-menu-overlay,
+  .dashboard.pwa-module-attendance
+    .sidebar {
+    display: none !important;
+  }
+
+  /*
+   * The global bell overlaps the PWA refresh button.
+   */
+  .dashboard.pwa-module-attendance
+    .notification-widget {
+    display: none !important;
+  }
+}

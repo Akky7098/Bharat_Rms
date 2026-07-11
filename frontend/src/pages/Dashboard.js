@@ -14,6 +14,7 @@ import DocumentPage from "./DocumentPage";
 import NotificationBell from "../components/NotificationBell";
 import MtcPage from "./MtcPage";
 import SupportPage from "./SupportPage";
+import ITSupportPage from "./ITSupportPage";
 
 import { disablePushNotifications } from "../services/pushNotificationService";
 
@@ -35,6 +36,7 @@ function Dashboard() {
     if (hash === "cold-call") return "coldCall";
     if (hash === "documents") return "documents";
     if (hash === "mtc") return "mtc";
+    if (hash === "it-support") return "itSupport";
 if (hash === "support") return "support";
 
     return "dashboard";
@@ -110,9 +112,15 @@ if (hash === "support") return "support";
 },
 {
   key: "support",
-  label: "Support",
+  label: "Task&Delegation",
   icon: "🎫",
   desc: "Tasks & delegation",
+},
+{
+  key: "itSupport",
+  label: "IT Support",
+  icon: "🛠️",
+  desc: "FAQ & issue tickets",
 },
   ];
 
@@ -138,6 +146,7 @@ useEffect(() => {
     documents: "documents",
     mtc: "mtc",
     support: "support",
+    itSupport: "it-support",
   };
 
   const targetHash = hashMap[active] || "dashboard";
@@ -540,6 +549,7 @@ const handleLogout = () => {
           {active === "documents" && <DocumentPage />}
           {active === "mtc" && <MtcPage />}
 {active === "support" && <SupportPage />}
+{active === "itSupport" && <ITSupportPage />}
         </main>
       </div>
     </div>
