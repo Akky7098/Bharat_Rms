@@ -44,7 +44,7 @@ const createDispatch = async (req, res) => {
 
     const dispatch = await dispatchService.createDispatch(
       body,
-      req.files,
+      req.files || {},
       req.user
     );
 
@@ -54,9 +54,11 @@ const createDispatch = async (req, res) => {
       data: dispatch,
     });
   } catch (error) {
+    console.error("CREATE DISPATCH ERROR =>", error);
+
     return res.status(400).json({
       success: false,
-      message: error.message,
+      message: error.message || "Failed to create dispatch.",
     });
   }
 };

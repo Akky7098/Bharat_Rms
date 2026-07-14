@@ -21,6 +21,7 @@ const formatCurrency = (amount) => {
 
 const formatDate = (date) => {
   if (!date) return "-";
+
   return new Date(date).toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -39,13 +40,24 @@ const cleanEmails = (emails = []) => {
   ];
 };
 
+const isExistingFile = (fileObject) => {
+  return Boolean(
+    fileObject?.filePath &&
+      fs.existsSync(fileObject.filePath)
+  );
+};
+
 const getPaymentAttachments = (dispatch, paymentBillPdf) => {
   const attachments = [];
 
-  if (paymentBillPdf?.filePath && fs.existsSync(paymentBillPdf.filePath)) {
+  if (isExistingFile(paymentBillPdf)) {
     attachments.push({
-      filename: paymentBillPdf.originalName || paymentBillPdf.fileName,
+      filename:
+        paymentBillPdf.originalName ||
+        paymentBillPdf.fileName ||
+        "payment-receipt.pdf",
       path: paymentBillPdf.filePath,
+      contentType: paymentBillPdf.mimeType || "application/pdf",
     });
   }
 
@@ -55,35 +67,91 @@ const getPaymentAttachments = (dispatch, paymentBillPdf) => {
 const getDispatchAttachments = (dispatch) => {
   const attachments = [];
 
-  if (dispatch.billPdf?.filePath && fs.existsSync(dispatch.billPdf.filePath)) {
+  if (isExistingFile(dispatch.billPdf)) {
     attachments.push({
-      filename: dispatch.billPdf.originalName || dispatch.billPdf.fileName,
+      filename:
+        dispatch.billPdf.originalName ||
+        dispatch.billPdf.fileName ||
+        "bill.pdf",
       path: dispatch.billPdf.filePath,
+      contentType: dispatch.billPdf.mimeType || "application/pdf",
     });
   }
 
+  if (isExistingFile(dispatch.lrCopyPdf)) {
+    attachments.push({
+      filename:
+        dispatch.lrCopyPdf.originalName ||
+        dispatch.lrCopyPdf.fileName ||
+        "lr-copy.pdf",
+      path: dispatch.lrCopyPdf.filePath,
+      contentType: dispatch.lrCopyPdf.mimeType || "application/pdf",
+    });
+  }
+
+  /*
+   * Attach MTC / TC only when:
+   * 1. TC is marked applicable, and
+   * 2. The actual file exists on the server.
+   */
   if (
-    dispatch.lrCopyPdf?.filePath &&
-    fs.existsSync(dispatch.lrCopyPdf.filePath)
+    dispatch.tcApplicable === "applicable" &&
+    isExistingFile(dispatch.tcCertificatePdf)
   ) {
     attachments.push({
-      filename: dispatch.lrCopyPdf.originalName || dispatch.lrCopyPdf.fileName,
-      path: dispatch.lrCopyPdf.filePath,
+      filename:
+        dispatch.tcCertificatePdf.originalName ||
+        dispatch.tcCertificatePdf.fileName ||
+        "mtc-tc-certificate.pdf",
+      path: dispatch.tcCertificatePdf.filePath,
+      contentType:
+        dispatch.tcCertificatePdf.mimeType || "application/pdf",
     });
   }
-  if (
-  dispatch.tcCertificatePdf?.filePath &&
-  fs.existsSync(dispatch.tcCertificatePdf.filePath)
-) {
-  attachments.push({
-    filename:
-      dispatch.tcCertificatePdf.originalName ||
-      dispatch.tcCertificatePdf.fileName,
-    path: dispatch.tcCertificatePdf.filePath,
-  });
-}
 
   return attachments;
+};
+
+const getDispatchAttachmentNames = (dispatch) => {
+  const names = [];
+
+  if (isExistingFile(dispatch.billPdf)) {
+    names.push("Bill PDF");
+  }
+
+  if (isExistingFile(dispatch.lrCopyPdf)) {
+    names.push("LR Copy");
+  }
+
+  if (
+    dispatch.tcApplicable === "applicable" &&
+    isExistingFile(dispatch.tcCertificatePdf)
+  ) {
+    names.push("MTC / TC Certificate");
+  }
+
+  return names;
+};
+
+const getReadableAttachmentText = (dispatch) => {
+  const names = getDispatchAttachmentNames(dispatch);
+
+  if (names.length === 0) {
+    return "No document attachment is available with this email.";
+  }
+
+  if (names.length === 1) {
+    return `${names[0]} is attached with this email.`;
+  }
+
+  if (names.length === 2) {
+    return `${names[0]} and ${names[1]} are attached with this email.`;
+  }
+
+  const lastName = names[names.length - 1];
+  const firstNames = names.slice(0, -1).join(", ");
+
+  return `${firstNames}, and ${lastName} are attached with this email.`;
 };
 
 const getPaymentBadge = (status) => {
@@ -95,25 +163,57 @@ const getPaymentBadge = (status) => {
 
 const getDispatchStatusText = (status) => {
   if (status === "delivered") return "Delivered";
+  if (status === "cancelled") return "Cancelled";
   return "Dispatched";
+};
+
+const getTcStatusText = (dispatch) => {
+  if (
+    dispatch.tcApplicable === "applicable" &&
+    isExistingFile(dispatch.tcCertificatePdf)
+  ) {
+    return "Applicable — Certificate Attached";
+  }
+
+  if (dispatch.tcApplicable === "applicable") {
+    return "Applicable — Certificate Unavailable";
+  }
+
+  return "Not Applicable";
 };
 
 const getBadgeTheme = (badge) => {
   const value = String(badge || "").toLowerCase();
 
   if (value.includes("partial")) {
-    return { bg: "#fff7ed", border: "#fed7aa", color: "#9a3412" };
+    return {
+      bg: "#fff7ed",
+      border: "#fed7aa",
+      color: "#9a3412",
+    };
   }
 
   if (value.includes("paid") || value.includes("complete")) {
-    return { bg: "#ecfdf5", border: "#bbf7d0", color: "#166534" };
+    return {
+      bg: "#ecfdf5",
+      border: "#bbf7d0",
+      color: "#166534",
+    };
   }
 
-  if (value.includes("overdue")) {
-    return { bg: "#fef2f2", border: "#fecaca", color: "#991b1b" };
+  if (value.includes("overdue") || value.includes("cancelled")) {
+    return {
+      bg: "#fef2f2",
+      border: "#fecaca",
+      color: "#991b1b",
+    };
   }
 
-  return { bg: "#ecfeff", border: "#99f6e4", color: "#0f766e" };
+  return {
+    bg: "#ecfeff",
+    border: "#99f6e4",
+    color: "#0f766e",
+  };
 };
 
 const baseEmailTemplate = ({
@@ -262,7 +362,13 @@ const baseEmailTemplate = ({
                     <table width="40" height="40" cellpadding="0" cellspacing="0" border="0" class="brand-logo-box" style="width:40px;height:40px;background:#ffffff;border-radius:10px;border:1px solid #334155;">
                       <tr>
                         <td align="center" valign="middle">
-                          <img class="brand-logo-img" src="${COMPANY.logoUrl}" width="32" alt="${COMPANY.shortName}" style="display:block;width:32px;max-width:32px;height:auto;border:0;outline:none;text-decoration:none;" />
+                          <img
+                            class="brand-logo-img"
+                            src="${COMPANY.logoUrl}"
+                            width="32"
+                            alt="${COMPANY.shortName}"
+                            style="display:block;width:32px;max-width:32px;height:auto;border:0;outline:none;text-decoration:none;"
+                          />
                         </td>
                       </tr>
                     </table>
@@ -272,6 +378,7 @@ const baseEmailTemplate = ({
                     <div class="brand-name" style="font-size:18px;line-height:22px;font-weight:900;color:#ffffff;white-space:nowrap;">
                       ${COMPANY.shortName}
                     </div>
+
                     <div class="brand-subtitle" style="font-size:11px;line-height:15px;color:#cbd5e1;margin-top:1px;">
                       Automated Customer Notification
                     </div>
@@ -279,24 +386,28 @@ const baseEmailTemplate = ({
 
                   ${
                     badge
-                      ? `<td class="desktop-badge-cell" align="right" style="vertical-align:middle;width:1%;white-space:nowrap;">
+                      ? `
+                        <td class="desktop-badge-cell" align="right" style="vertical-align:middle;width:1%;white-space:nowrap;">
                           <span class="badge-pill" style="display:inline-block;background:${badgeTheme.bg};border:1px solid ${badgeTheme.border};color:${badgeTheme.color};border-radius:999px;padding:7px 10px;font-size:10px;line-height:13px;font-weight:900;white-space:nowrap;">
                             ${badge}
                           </span>
-                        </td>`
+                        </td>
+                      `
                       : ""
                   }
                 </tr>
 
                 ${
                   badge
-                    ? `<tr class="mobile-badge-row" style="display:none;">
+                    ? `
+                      <tr class="mobile-badge-row" style="display:none;">
                         <td class="mobile-badge-cell" colspan="3" style="display:none;">
                           <span class="badge-pill" style="display:inline-block;background:${badgeTheme.bg};border:1px solid ${badgeTheme.border};color:${badgeTheme.color};border-radius:999px;padding:7px 10px;font-size:10px;line-height:13px;font-weight:900;white-space:nowrap;">
                             ${badge}
                           </span>
                         </td>
-                      </tr>`
+                      </tr>
+                    `
                     : ""
                 }
               </table>
@@ -308,6 +419,7 @@ const baseEmailTemplate = ({
               <div class="email-title" style="font-size:28px;line-height:34px;font-weight:900;color:#0f172a;letter-spacing:-0.4px;">
                 ${title}
               </div>
+
               <div class="email-subtitle" style="margin-top:5px;font-size:14px;line-height:20px;color:#64748b;">
                 ${subtitle}
               </div>
@@ -325,9 +437,11 @@ const baseEmailTemplate = ({
               <div style="font-size:14px;line-height:19px;font-weight:900;color:#0f172a;">
                 ${COMPANY.name}
               </div>
+
               <div style="margin-top:4px;font-size:12px;line-height:17px;color:#64748b;">
                 ${COMPANY.address}
               </div>
+
               <div style="margin-top:9px;font-size:11px;line-height:15px;color:#94a3b8;">
                 This is an automated notification from Bharat RMS. Please do not reply directly to this email.
               </div>
@@ -359,6 +473,7 @@ const infoCard = (label, value, color = "#111827") => {
     <div style="font-size:9px;line-height:12px;letter-spacing:.4px;text-transform:uppercase;font-weight:900;color:#64748b;">
       ${label}
     </div>
+
     <div style="margin-top:5px;font-size:13px;line-height:18px;font-weight:900;color:${color};word-break:break-word;">
       ${value || "-"}
     </div>
@@ -374,6 +489,7 @@ const amountCard = (label, value, bg, border, color) => {
     <div style="font-size:9px;line-height:12px;letter-spacing:.4px;text-transform:uppercase;font-weight:900;color:${color};">
       ${label}
     </div>
+
     <div class="amount-value" style="margin-top:6px;font-size:20px;line-height:25px;font-weight:900;color:${color};word-break:break-word;">
       ${value}
     </div>
@@ -398,12 +514,14 @@ const messageBox = (
 const attachmentBox = (text) => {
   return `
 <div style="margin-top:13px;background:#ffffff;border:1px solid #e5e7eb;border-radius:13px;padding:11px 13px;font-size:12px;line-height:19px;color:#475569;">
-  <strong style="color:#0f172a;">Attachment:</strong> ${text}
+  <strong style="color:#0f172a;">Attachments:</strong> ${text}
 </div>
 `;
 };
 
 const buildDispatchCreatedTemplate = (dispatch) => {
+  const attachmentText = getReadableAttachmentText(dispatch);
+
   return baseEmailTemplate({
     preHeader: `Material dispatched. Invoice ${dispatch.invoiceNumber}.`,
     title: "Material Dispatched",
@@ -411,11 +529,15 @@ const buildDispatchCreatedTemplate = (dispatch) => {
       dispatch.companyName || "-"
     }`,
     badge: getDispatchStatusText(dispatch.dispatchStatus),
+
     bodyContent: `
       ${messageBox(
-        `Dear <strong>${dispatch.contactPersonName || "Customer"}</strong>,<br/><br/>
-        Your order has been dispatched from <strong>Bharat Special Steels Pvt. Ltd.</strong>.
-        The bill PDF and LR copy are attached with this email for your records.`,
+        `Dear <strong>${
+          dispatch.contactPersonName || "Customer"
+        }</strong>,<br/><br/>
+        Your order has been dispatched from
+        <strong>Bharat Special Steels Pvt. Ltd.</strong>.
+        ${attachmentText}`,
         "#ecfdf5",
         "#bbf7d0",
         "#166534"
@@ -428,6 +550,7 @@ const buildDispatchCreatedTemplate = (dispatch) => {
           ${infoCard("Company", dispatch.companyName)}
           ${infoCard("PO Number", dispatch.poNumber || "-")}
         </tr>
+
         <tr>
           ${infoCard("Sales Order", dispatch.salesOrderNo || "-")}
           ${infoCard(
@@ -436,20 +559,39 @@ const buildDispatchCreatedTemplate = (dispatch) => {
             "#0f766e"
           )}
         </tr>
+
         <tr>
           ${infoCard("Invoice Number", dispatch.invoiceNumber || "-")}
           ${infoCard("Invoice Date", formatDate(dispatch.invoiceDate))}
         </tr>
+
         <tr>
           ${infoCard(
             "Dispatch Quantity",
             `${dispatch.dispatchQty || 0} Kg`,
             "#0f766e"
           )}
+
           ${infoCard(
             "Payment Due Date",
             formatDate(dispatch.paymentDueDate),
             "#b45309"
+          )}
+        </tr>
+
+        <tr>
+          ${infoCard(
+            "TC / MTC Status",
+            getTcStatusText(dispatch),
+            dispatch.tcApplicable === "applicable"
+              ? "#166534"
+              : "#64748b"
+          )}
+
+          ${infoCard(
+            "Dispatch Status",
+            getDispatchStatusText(dispatch.dispatchStatus),
+            "#0f766e"
           )}
         </tr>
       </table>
@@ -465,6 +607,7 @@ const buildDispatchCreatedTemplate = (dispatch) => {
             "#bfdbfe",
             "#1d4ed8"
           )}
+
           ${amountCard(
             "Paid Amount",
             formatCurrency(dispatch.paidAmount),
@@ -473,6 +616,7 @@ const buildDispatchCreatedTemplate = (dispatch) => {
             "#15803d"
           )}
         </tr>
+
         <tr>
           ${amountCard(
             "Pending Amount",
@@ -481,6 +625,7 @@ const buildDispatchCreatedTemplate = (dispatch) => {
             "#fed7aa",
             "#c2410c"
           )}
+
           ${amountCard(
             "Payment Status",
             getPaymentBadge(dispatch.paymentStatus),
@@ -491,7 +636,7 @@ const buildDispatchCreatedTemplate = (dispatch) => {
         </tr>
       </table>
 
-      ${attachmentBox("Bill PDF and LR copy are attached with this email.")}
+      ${attachmentBox(attachmentText)}
     `,
   });
 };
@@ -506,11 +651,15 @@ const buildPaymentUpdateTemplate = (dispatch, payment) => {
       dispatch.companyName || "-"
     }`,
     badge: isFullyPaid ? "Paid" : "Partial Payment",
+
     bodyContent: `
       ${messageBox(
-        `Dear <strong>${dispatch.contactPersonName || "Customer"}</strong>,<br/><br/>
+        `Dear <strong>${
+          dispatch.contactPersonName || "Customer"
+        }</strong>,<br/><br/>
         Thank you. We have recorded your payment against invoice
-        <strong>${dispatch.invoiceNumber || "-"}</strong>. Please find the updated payment summary below.`,
+        <strong>${dispatch.invoiceNumber || "-"}</strong>.
+        Please find the updated payment summary below.`,
         "#ecfdf5",
         "#bbf7d0",
         "#166534"
@@ -527,6 +676,7 @@ const buildPaymentUpdateTemplate = (dispatch, payment) => {
             "#e2e8f0",
             "#334155"
           )}
+
           ${amountCard(
             "Payment Received Now",
             formatCurrency(payment.amount),
@@ -535,6 +685,7 @@ const buildPaymentUpdateTemplate = (dispatch, payment) => {
             "#15803d"
           )}
         </tr>
+
         <tr>
           ${amountCard(
             "Total Paid Amount",
@@ -543,6 +694,7 @@ const buildPaymentUpdateTemplate = (dispatch, payment) => {
             "#bbf7d0",
             "#166534"
           )}
+
           ${amountCard(
             "Pending Amount",
             formatCurrency(dispatch.pendingAmount),
@@ -560,8 +712,10 @@ const buildPaymentUpdateTemplate = (dispatch, payment) => {
           ${infoCard("Company", dispatch.companyName)}
           ${infoCard("Invoice Number", dispatch.invoiceNumber || "-")}
         </tr>
+
         <tr>
           ${infoCard("Invoice Date", formatDate(dispatch.invoiceDate))}
+
           ${infoCard(
             "Payment Due Date",
             formatDate(dispatch.paymentDueDate),
@@ -572,14 +726,16 @@ const buildPaymentUpdateTemplate = (dispatch, payment) => {
 
       ${
         payment.remark
-          ? `<div style="margin-top:13px;">
+          ? `
+            <div style="margin-top:13px;">
               ${messageBox(
                 `<strong>Remark:</strong> ${payment.remark}`,
                 "#ffffff",
                 "#e5e7eb",
                 "#475569"
               )}
-            </div>`
+            </div>
+          `
           : ""
       }
 
@@ -606,7 +762,9 @@ const sendDispatchCreatedEmail = async (dispatch) => {
     from: `"${COMPANY.name}" <${process.env.ADMIN_EMAIL}>`,
     to,
     cc,
-    subject: `Dispatch Confirmation | Invoice ${dispatch.invoiceNumber} | ${dispatch.companyName}`,
+    subject: `Dispatch Confirmation | Invoice ${
+      dispatch.invoiceNumber
+    } | ${dispatch.companyName}`,
     html: buildDispatchCreatedTemplate(dispatch),
     attachments,
   });
@@ -626,11 +784,18 @@ const sendPaymentUpdateEmail = async (dispatch, payment) => {
     from: `"${COMPANY.name}" <${process.env.ADMIN_EMAIL}>`,
     to,
     cc,
-    subject: `Re: Payment Update | Invoice ${dispatch.invoiceNumber} | ${dispatch.companyName}`,
+    subject: `Re: Payment Update | Invoice ${
+      dispatch.invoiceNumber
+    } | ${dispatch.companyName}`,
     html: buildPaymentUpdateTemplate(dispatch, payment),
-    attachments: getPaymentAttachments(dispatch, payment.paymentBillPdf),
-    inReplyTo: dispatch.notificationEmail?.messageId || undefined,
-    references: dispatch.notificationEmail?.messageId || undefined,
+    attachments: getPaymentAttachments(
+      dispatch,
+      payment.paymentBillPdf
+    ),
+    inReplyTo:
+      dispatch.notificationEmail?.messageId || undefined,
+    references:
+      dispatch.notificationEmail?.messageId || undefined,
   });
 
   return mail;

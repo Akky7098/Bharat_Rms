@@ -382,27 +382,61 @@ const createDispatch = async (body, files, user) => {
       dispatchStatus = "dispatched",
       internalRemark = "",
       paymentRemark = "",
+      tcApplicable = "not_applicable",
     } = body;
 
-    if (!salesOrderId) throw new Error("Sales order is required.");
+    const normalizedTcApplicable =
+      String(tcApplicable).trim() === "applicable"
+        ? "applicable"
+        : "not_applicable";
+
+    if (!salesOrderId) {
+      throw new Error("Sales order is required.");
+    }
+
     if (!invoiceNumber || !String(invoiceNumber).trim()) {
       throw new Error("Invoice number is required.");
     }
-    if (!invoiceDate) throw new Error("Invoice date is required.");
-    if (!files?.billPdf?.[0]) throw new Error("Bill PDF is required.");
 
-    const salesOrder = await SalesOrder.findById(salesOrderId).session(session);
+    if (!invoiceDate) {
+      throw new Error("Invoice date is required.");
+    }
 
-    if (!salesOrder) throw new Error("Sales order not found.");
+    if (!files?.billPdf?.[0]) {
+      throw new Error("Bill PDF is required.");
+    }
+
+    if (
+      normalizedTcApplicable === "applicable" &&
+      !files?.tcCertificatePdf?.[0]
+    ) {
+      throw new Error(
+        "MTC / TC PDF is required when TC is applicable."
+      );
+    }
+
+    const salesOrder = await SalesOrder.findById(
+      salesOrderId
+    ).session(session);
+
+    if (!salesOrder) {
+      throw new Error("Sales order not found.");
+    }
+
     if (salesOrder.approvalStatus !== "approved") {
-      throw new Error("Dispatch can be created only for approved sales orders.");
+      throw new Error(
+        "Dispatch can be created only for approved sales orders."
+      );
     }
 
     if (
       !isAdminOrSuperAdmin(user) &&
-      String(salesOrder.salesPersonId) !== String(getUserId(user))
+      String(salesOrder.salesPersonId) !==
+        String(getUserId(user))
     ) {
-      throw new Error("You are not allowed to create dispatch for this sales order.");
+      throw new Error(
+        "You are not allowed to create dispatch for this sales order."
+      );
     }
 
     const existingInvoice = await Dispatch.findOne({
@@ -411,7 +445,9 @@ const createDispatch = async (body, files, user) => {
     }).session(session);
 
     if (existingInvoice) {
-      throw new Error("Dispatch with this invoice number already exists.");
+      throw new Error(
+        "Dispatch with this invoice number already exists."
+      );
     }
 
     const qty = Number(dispatchQty);
@@ -419,28 +455,73 @@ const createDispatch = async (body, files, user) => {
     const days = Number(paymentDueDays);
     const paid = Number(paidAmount || 0);
 
-    if (!qty || qty <= 0) throw new Error("Dispatch quantity must be greater than 0.");
-    if (!value || value <= 0) throw new Error("Invoice value must be greater than 0.");
-    if (paymentDueDays === "" || paymentDueDays === undefined || days < 0) {
+    if (!qty || qty <= 0) {
+      throw new Error(
+        "Dispatch quantity must be greater than 0."
+      );
+    }
+
+    if (!value || value <= 0) {
+      throw new Error(
+        "Invoice value must be greater than 0."
+      );
+    }
+
+    if (
+      paymentDueDays === "" ||
+      paymentDueDays === undefined ||
+      days < 0
+    ) {
       throw new Error("Payment due days is required.");
     }
-    if (paid < 0) throw new Error("Paid amount cannot be negative.");
-    if (paid > value) throw new Error("Paid amount cannot be greater than invoice value.");
 
-    const salesOrderTotalQty = getSalesOrderTotalQty(salesOrder);
-    const dispatchSummary = await getSalesOrderDispatchSummary(salesOrder._id, session);
-    const previousDispatchedQty = dispatchSummary.totalDispatchedQty;
+    if (paid < 0) {
+      throw new Error(
+        "Paid amount cannot be negative."
+      );
+    }
+
+    if (paid > value) {
+      throw new Error(
+        "Paid amount cannot be greater than invoice value."
+      );
+    }
+
+    const salesOrderTotalQty =
+      getSalesOrderTotalQty(salesOrder);
+
+    const dispatchSummary =
+      await getSalesOrderDispatchSummary(
+        salesOrder._id,
+        session
+      );
+
+    const previousDispatchedQty =
+      dispatchSummary.totalDispatchedQty;
 
     const remainingBeforeDispatch =
       salesOrderTotalQty > 0
-        ? Number((salesOrderTotalQty - previousDispatchedQty).toFixed(3))
+        ? Number(
+            (
+              salesOrderTotalQty -
+              previousDispatchedQty
+            ).toFixed(3)
+          )
         : 0;
 
-    if (salesOrderTotalQty > 0 && remainingBeforeDispatch <= 0) {
-      throw new Error("This sales order is already fully dispatched.");
+    if (
+      salesOrderTotalQty > 0 &&
+      remainingBeforeDispatch <= 0
+    ) {
+      throw new Error(
+        "This sales order is already fully dispatched."
+      );
     }
 
-    if (salesOrderTotalQty > 0 && qty > remainingBeforeDispatch) {
+    if (
+      salesOrderTotalQty > 0 &&
+      qty > remainingBeforeDispatch
+    ) {
       throw new Error(
         `Dispatch quantity cannot be greater than remaining quantity ${remainingBeforeDispatch} Kg.`
       );
@@ -448,35 +529,69 @@ const createDispatch = async (body, files, user) => {
 
     const remainingQtyAfterDispatch =
       salesOrderTotalQty > 0
-        ? Math.max(Number((remainingBeforeDispatch - qty).toFixed(3)), 0)
+        ? Math.max(
+            Number(
+              (
+                remainingBeforeDispatch -
+                qty
+              ).toFixed(3)
+            ),
+            0
+          )
         : 0;
 
-   const finalDispatchDate = parseLocalDateOnly(dispatchDate);
+    const finalDispatchDate =
+      parseLocalDateOnly(dispatchDate);
 
-const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
-    const pendingAmount = Number((value - paid).toFixed(2));
-    const paymentStatus = calculatePaymentStatus(pendingAmount, paymentDueDate, paid);
+    if (!finalDispatchDate) {
+      throw new Error("Invalid dispatch date.");
+    }
 
-    const renamedBillFile = moveUploadedFileToPersistentDir(
-      files.billPdf[0],
-      `bill-${invoiceNumber}-${salesOrder.companyName}`
+    const paymentDueDate =
+      calculatePaymentDueDate(
+        finalDispatchDate,
+        days
+      );
+
+    const pendingAmount = Number(
+      (value - paid).toFixed(2)
     );
 
-    const renamedLrFile = files?.lrCopyPdf?.[0]
-      ? moveUploadedFileToPersistentDir(
-          files.lrCopyPdf[0],
-          `lr-${invoiceNumber}-${salesOrder.companyName}`
-        )
-      : null;
+    const paymentStatus =
+      calculatePaymentStatus(
+        pendingAmount,
+        paymentDueDate,
+        paid
+      );
 
-    const renamedTcCertificateFile = files?.tcCertificatePdf?.[0]
-      ? moveUploadedFileToPersistentDir(
-          files.tcCertificatePdf[0],
-          `tc-certificate-${invoiceNumber}-${salesOrder.companyName}`
-        )
-      : null;
+    const renamedBillFile =
+      moveUploadedFileToPersistentDir(
+        files.billPdf[0],
+        `bill-${invoiceNumber}-${salesOrder.companyName}`
+      );
 
-    const ccEmails = buildDispatchCcEmails(salesOrder, additionalCcEmails, user);
+    const renamedLrFile =
+      files?.lrCopyPdf?.[0]
+        ? moveUploadedFileToPersistentDir(
+            files.lrCopyPdf[0],
+            `lr-${invoiceNumber}-${salesOrder.companyName}`
+          )
+        : null;
+
+    const renamedTcCertificateFile =
+      normalizedTcApplicable === "applicable" &&
+      files?.tcCertificatePdf?.[0]
+        ? moveUploadedFileToPersistentDir(
+            files.tcCertificatePdf[0],
+            `tc-certificate-${invoiceNumber}-${salesOrder.companyName}`
+          )
+        : null;
+
+    const ccEmails = buildDispatchCcEmails(
+      salesOrder,
+      additionalCcEmails,
+      user
+    );
 
     const dispatch = await Dispatch.create(
       [
@@ -487,14 +602,21 @@ const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
           companyName: salesOrder.companyName,
 
           salesPersonId: salesOrder.salesPersonId,
-          salesPersonName: salesOrder.salesPersonName,
-          salesPersonEmail: salesOrder.salesPersonEmail,
-          salesPersonMobile: salesOrder.salesPersonMobile,
+          salesPersonName:
+            salesOrder.salesPersonName,
+          salesPersonEmail:
+            salesOrder.salesPersonEmail,
+          salesPersonMobile:
+            salesOrder.salesPersonMobile,
 
-          contactPersonName: salesOrder.contactPersonName,
-          contactPersonEmail: salesOrder.contactPersonEmail,
-          contactPersonNumber: salesOrder.contactPersonNumber,
-          shippingAddress: getShippingAddress(salesOrder),
+          contactPersonName:
+            salesOrder.contactPersonName,
+          contactPersonEmail:
+            salesOrder.contactPersonEmail,
+          contactPersonNumber:
+            salesOrder.contactPersonNumber,
+          shippingAddress:
+            getShippingAddress(salesOrder),
 
           dispatchCreatedBy: {
             userId: getUserId(user),
@@ -503,28 +625,48 @@ const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
             role: user.role,
           },
 
-          invoiceNumber: String(invoiceNumber).trim(),
+          invoiceNumber:
+            String(invoiceNumber).trim(),
           invoiceDate,
           dispatchDate: finalDispatchDate,
           dispatchQty: qty,
           invoiceValue: value,
-          materialDescription: salesOrder.sizeGradeQuantityRate || "As per sales order",
+          materialDescription:
+            salesOrder.sizeGradeQuantityRate ||
+            "As per sales order",
 
-          salesOrderTotalQtySnapshot: salesOrderTotalQty,
+          salesOrderTotalQtySnapshot:
+            salesOrderTotalQty,
           previousDispatchedQty,
           remainingQtyAfterDispatch,
+
           dispatchCompletionStatus:
-            salesOrderTotalQty > 0 && remainingQtyAfterDispatch <= 0
+            salesOrderTotalQty > 0 &&
+            remainingQtyAfterDispatch <= 0
               ? "fully_dispatched"
               : "partial_dispatched",
 
-          billPdf: buildFileObject(renamedBillFile),
-          lrCopyPdf: renamedLrFile ? buildFileObject(renamedLrFile) : undefined,
-          tcCertificatePdf: renamedTcCertificateFile
-            ? buildFileObject(renamedTcCertificateFile)
+          billPdf:
+            buildFileObject(renamedBillFile),
+
+          lrCopyPdf: renamedLrFile
+            ? buildFileObject(renamedLrFile)
             : undefined,
 
-          paymentTerms: salesOrder.paymentTerms || "",
+          tcApplicable:
+            normalizedTcApplicable,
+
+          tcCertificatePdf:
+            normalizedTcApplicable ===
+              "applicable" &&
+            renamedTcCertificateFile
+              ? buildFileObject(
+                  renamedTcCertificateFile
+                )
+              : undefined,
+
+          paymentTerms:
+            salesOrder.paymentTerms || "",
           paymentDueDays: days,
           paymentDueDate,
           paymentStatus,
@@ -532,17 +674,20 @@ const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
           pendingAmount,
           paymentRemark,
 
-          additionalCcEmails: cleanEmails(additionalCcEmails),
+          additionalCcEmails:
+            cleanEmails(additionalCcEmails),
 
           notificationEmail: {
             sent: false,
-            sentTo: salesOrder.contactPersonEmail,
+            sentTo:
+              salesOrder.contactPersonEmail,
             cc: ccEmails,
           },
 
           mobileNotification: {
             sent: false,
-            sentTo: salesOrder.contactPersonNumber,
+            sentTo:
+              salesOrder.contactPersonNumber,
           },
 
           dispatchStatus,
@@ -555,7 +700,9 @@ const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
     await session.commitTransaction();
 
     const createdDispatch = dispatch[0];
-    const dispatchCreatedByAdmin = isAdminOrSuperAdmin(user);
+
+    const dispatchCreatedByAdmin =
+      isAdminOrSuperAdmin(user);
 
     await safeCreateNotification({
       module: "dispatch",
@@ -563,47 +710,80 @@ const paymentDueDate = calculatePaymentDueDate(finalDispatchDate, days);
       title: "Dispatch Created",
       message: `Dispatch created for ${createdDispatch.companyName} | Invoice ${createdDispatch.invoiceNumber}`,
       priority: "high",
-      targetUserIds: dispatchCreatedByAdmin ? [createdDispatch.salesPersonId] : [],
-      targetRoles: dispatchCreatedByAdmin ? ["super_admin"] : ["admin", "super_admin"],
+
+      targetUserIds:
+        dispatchCreatedByAdmin
+          ? [createdDispatch.salesPersonId]
+          : [],
+
+      targetRoles:
+        dispatchCreatedByAdmin
+          ? ["super_admin"]
+          : ["admin", "super_admin"],
+
       createdBy: getUserId(user),
       referenceId: createdDispatch._id,
       referenceModel: "Dispatch",
       actionUrl: "/dashboard#dispatch",
+
       meta: {
-        companyName: createdDispatch.companyName,
-        invoiceNumber: createdDispatch.invoiceNumber,
-        invoiceValue: createdDispatch.invoiceValue,
-        dispatchQty: createdDispatch.dispatchQty,
-        remainingQtyAfterDispatch: createdDispatch.remainingQtyAfterDispatch,
-        dispatchCompletionStatus: createdDispatch.dispatchCompletionStatus,
-        salesPersonName: createdDispatch.salesPersonName,
+        companyName:
+          createdDispatch.companyName,
+        invoiceNumber:
+          createdDispatch.invoiceNumber,
+        invoiceValue:
+          createdDispatch.invoiceValue,
+        dispatchQty:
+          createdDispatch.dispatchQty,
+        remainingQtyAfterDispatch:
+          createdDispatch.remainingQtyAfterDispatch,
+        dispatchCompletionStatus:
+          createdDispatch.dispatchCompletionStatus,
+        tcApplicable:
+          createdDispatch.tcApplicable,
+        salesPersonName:
+          createdDispatch.salesPersonName,
         createdByName: user.name,
         createdByRole: user.role,
       },
     });
 
     try {
-      const mailInfo = await sendDispatchCreatedEmail(createdDispatch);
+      const mailInfo =
+        await sendDispatchCreatedEmail(
+          createdDispatch
+        );
 
-      createdDispatch.notificationEmail.sent = true;
-      createdDispatch.notificationEmail.sentAt = new Date();
-      createdDispatch.notificationEmail.messageId = mailInfo.messageId || "";
+      createdDispatch.notificationEmail.sent =
+        true;
+
+      createdDispatch.notificationEmail.sentAt =
+        new Date();
+
+      createdDispatch.notificationEmail.messageId =
+        mailInfo.messageId || "";
 
       await createdDispatch.save();
     } catch (mailError) {
-      createdDispatch.notificationEmail.sent = false;
-      createdDispatch.notificationEmail.errorMessage = mailError.message;
+      createdDispatch.notificationEmail.sent =
+        false;
+
+      createdDispatch.notificationEmail.errorMessage =
+        mailError.message;
 
       await createdDispatch.save();
     }
 
     return createdDispatch;
   } catch (error) {
-    await session.abortTransaction();
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+
     deleteUploadedFiles(uploadedFiles);
     throw error;
   } finally {
-    session.endSession();
+    await session.endSession();
   }
 };
 
