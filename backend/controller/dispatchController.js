@@ -77,13 +77,54 @@ const getAllDispatches = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Dispatches fetched successfully.",
-      data: result.dispatches,
-      pagination: result.pagination,
+
+      data: result.dispatches || [],
+
+      pagination: result.pagination || {
+        totalRecords: 0,
+        currentPage: 1,
+        totalPages: 1,
+        limit: 30,
+      },
+
+      insights: result.insights || {
+        monthlyDispatch: {
+          amount: 0,
+          count: 0,
+        },
+        monthlyPaid: {
+          amount: 0,
+          count: 0,
+        },
+        totalDue: {
+          amount: 0,
+          count: 0,
+        },
+        overdueThisMonth: {
+          amount: 0,
+          count: 0,
+        },
+      },
+
+      appliedFilter: result.appliedFilter || {
+        cardFilter: "",
+        paymentStatus: "",
+        salesPersonId: "",
+        fromDate: "",
+        toDate: "",
+      },
     });
   } catch (error) {
+    console.error(
+      "GET ALL DISPATCHES ERROR =>",
+      error
+    );
+
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message:
+        error.message ||
+        "Failed to fetch dispatches.",
     });
   }
 };

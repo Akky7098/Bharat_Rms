@@ -1323,12 +1323,14 @@ const getMisScoring = async (query, user) => {
     },
   };
 
-  const MIS_WEIGHTAGE = {
-    enquiry: 15,
-    visits: 25,
-    salesVolume: 20,
-    ordersWon: 40,
-  };
+ const MIS_WEIGHTAGE = {
+  enquiry: 15,
+  visits: 25,
+
+  // Updated as per new management decision
+  salesVolume: 40,
+  ordersWon: 20,
+};
 
   const normalizeName = (name = "") =>
     String(name).toLowerCase().trim().replace(/\s+/g, " ");

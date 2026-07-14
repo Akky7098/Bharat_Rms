@@ -787,6 +787,38 @@ const createDispatch = async (body, files, user) => {
   }
 };
 
+const getCurrentISTMonthRange = () => {
+  const now = new Date();
+
+  const istNow = new Date(
+    now.toLocaleString("en-US", {
+      timeZone: "Asia/Kolkata",
+    })
+  );
+
+  const year = istNow.getFullYear();
+  const month = String(istNow.getMonth() + 1).padStart(2, "0");
+
+  const lastDay = new Date(
+    year,
+    istNow.getMonth() + 1,
+    0
+  ).getDate();
+
+  return {
+    monthStart: new Date(
+      `${year}-${month}-01T00:00:00.000+05:30`
+    ),
+
+    monthEnd: new Date(
+      `${year}-${month}-${String(lastDay).padStart(
+        2,
+        "0"
+      )}T23:59:59.999+05:30`
+    ),
+  };
+};
+
 /* GET ALL DISPATCHES */
 const getAllDispatches = async (query, user) => {
   const {
@@ -802,121 +834,538 @@ const getAllDispatches = async (query, user) => {
     cardFilter,
   } = query;
 
-  const safePage = Math.max(Number(page) || 1, 1);
-  const safeLimit = Math.min(Number(limit) || 30, 100);
+  const safePage = Math.max(
+    Number(page) || 1,
+    1
+  );
 
-  const match = { isActive: true };
+  const safeLimit = Math.min(
+    Number(limit) || 30,
+    100
+  );
+
+  const currentUserId = getUserId(user);
+
+  /*
+   * =====================================================
+   * ACCESS MATCH
+   * Used by both table records and insight calculations.
+   * =====================================================
+   */
+
+  const accessMatch = {
+    isActive: true,
+  };
+
+  if (!canViewAllDispatches(user)) {
+    if (
+      !currentUserId ||
+      !mongoose.Types.ObjectId.isValid(currentUserId)
+    ) {
+      throw new Error(
+        "Invalid logged-in user."
+      );
+    }
+
+    accessMatch.salesPersonId =
+      new mongoose.Types.ObjectId(
+        currentUserId
+      );
+  }
+
+  /*
+   * =====================================================
+   * COMMON FILTER MATCH
+   * Search and salesperson filters are allowed to affect
+   * both table records and insight cards.
+   * cardFilter must never affect insight values.
+   * =====================================================
+   */
+
+  const commonMatch = {
+    ...accessMatch,
+  };
 
   if (salesOrderId) {
-    match.salesOrderId = new mongoose.Types.ObjectId(salesOrderId);
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        salesOrderId
+      )
+    ) {
+      throw new Error(
+        "Invalid sales order ID."
+      );
+    }
+
+    commonMatch.salesOrderId =
+      new mongoose.Types.ObjectId(
+        salesOrderId
+      );
   }
 
-  if (paymentStatus) {
-    match.paymentStatus = paymentStatus;
-  }
+  if (
+    salesPersonId &&
+    canViewAllDispatches(user)
+  ) {
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        salesPersonId
+      )
+    ) {
+      throw new Error(
+        "Invalid sales person ID."
+      );
+    }
 
-  if (salesPersonId && canViewAllDispatches(user)) {
-    match.salesPersonId = new mongoose.Types.ObjectId(salesPersonId);
+    commonMatch.salesPersonId =
+      new mongoose.Types.ObjectId(
+        salesPersonId
+      );
   }
 
   if (companyName) {
-    match.companyName = { $regex: escapeRegex(companyName), $options: "i" };
+    commonMatch.companyName = {
+      $regex: escapeRegex(
+        String(companyName).trim()
+      ),
+      $options: "i",
+    };
   }
 
   if (invoiceNumber) {
-    match.invoiceNumber = { $regex: escapeRegex(invoiceNumber), $options: "i" };
+    commonMatch.invoiceNumber = {
+      $regex: escapeRegex(
+        String(invoiceNumber).trim()
+      ),
+      $options: "i",
+    };
   }
 
-  const today = new Date();
-  const monthStart = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    1,
-    0,
-    0,
-    0,
-    0
-  );
+  /*
+   * =====================================================
+   * TABLE MATCH
+   * This match controls only the displayed dispatch list.
+   * =====================================================
+   */
 
-  const monthEnd = new Date(
-    today.getFullYear(),
-    today.getMonth() + 1,
-    0,
-    23,
-    59,
-    59,
-    999
-  );
+  const listMatch = {
+    ...commonMatch,
+  };
 
-  if (cardFilter === "monthly_dispatch") {
-    match.dispatchDate = {
+  if (
+    paymentStatus &&
+    paymentStatus !== "all"
+  ) {
+    listMatch.paymentStatus =
+      paymentStatus;
+  }
+
+  const {
+    monthStart,
+    monthEnd,
+  } = getCurrentISTMonthRange();
+
+  /*
+   * CARD FILTERS
+   */
+
+  if (
+    cardFilter ===
+    "monthly_dispatch"
+  ) {
+    listMatch.dispatchDate = {
       $gte: monthStart,
       $lte: monthEnd,
     };
   }
 
-  if (cardFilter === "monthly_paid") {
-    match.dispatchDate = {
+  if (
+    cardFilter ===
+    "monthly_paid"
+  ) {
+    listMatch.dispatchDate = {
       $gte: monthStart,
       $lte: monthEnd,
     };
-    match.paymentStatus = "paid";
-  }
 
-  if (cardFilter === "total_due") {
-    match.pendingAmount = { $gt: 0 };
-    match.paymentStatus = { $in: ["pending", "partial", "overdue"] };
-  }
-
-  if (cardFilter === "overdue_this_month") {
-    match.pendingAmount = { $gt: 0 };
-    match.paymentStatus = "overdue";
-    match.paymentDueDate = {
-      $gte: monthStart,
-      $lte: monthEnd,
+    /*
+     * Include both fully and partially paid
+     * dispatches because both have received
+     * payment.
+     */
+    listMatch.paidAmount = {
+      $gt: 0,
     };
   }
 
-  if (!cardFilter && (fromDate || toDate)) {
-    match.dispatchDate = {};
+  if (
+    cardFilter ===
+    "total_due"
+  ) {
+    listMatch.pendingAmount = {
+      $gt: 0,
+    };
+
+    listMatch.paymentStatus = {
+      $in: [
+        "pending",
+        "partial",
+        "overdue",
+      ],
+    };
+  }
+
+  if (
+    cardFilter ===
+    "overdue_this_month"
+  ) {
+    listMatch.pendingAmount = {
+      $gt: 0,
+    };
+
+    /*
+     * Do not depend only on saved paymentStatus.
+     * A dispatch can become overdue after it was
+     * originally stored as pending.
+     */
+    listMatch.paymentDueDate = {
+      $gte: monthStart,
+      $lte: monthEnd,
+      $lt: new Date(),
+    };
+  }
+
+  /*
+   * Manual date filters are used only when
+   * no insight card is selected.
+   */
+  if (
+    !cardFilter &&
+    (fromDate || toDate)
+  ) {
+    listMatch.dispatchDate = {};
 
     if (fromDate) {
-      const startDate = parseLocalDateOnly(fromDate);
-      startDate.setHours(0, 0, 0, 0);
-      match.dispatchDate.$gte = startDate;
+      const startDate =
+        parseLocalDateOnly(fromDate);
+
+      if (!startDate) {
+        throw new Error(
+          "Invalid from dispatch date."
+        );
+      }
+
+      startDate.setHours(
+        0,
+        0,
+        0,
+        0
+      );
+
+      listMatch.dispatchDate.$gte =
+        startDate;
     }
 
     if (toDate) {
-      const endDate = parseLocalDateOnly(toDate);
-      endDate.setHours(23, 59, 59, 999);
-      match.dispatchDate.$lte = endDate;
+      const endDate =
+        parseLocalDateOnly(toDate);
+
+      if (!endDate) {
+        throw new Error(
+          "Invalid to dispatch date."
+        );
+      }
+
+      endDate.setHours(
+        23,
+        59,
+        59,
+        999
+      );
+
+      listMatch.dispatchDate.$lte =
+        endDate;
     }
   }
 
-  if (!canViewAllDispatches(user)) {
-    match.salesPersonId = new mongoose.Types.ObjectId(getUserId(user));
-  }
+  /*
+   * =====================================================
+   * INSIGHT CALCULATIONS
+   *
+   * These calculations use commonMatch, not listMatch.
+   * Therefore clicking a card does not alter the other
+   * card values.
+   * =====================================================
+   */
 
-  const [totalRecords, dispatches] = await Promise.all([
-    Dispatch.countDocuments(match),
-    Dispatch.find(match)
-      .sort({ dispatchDate: -1, createdAt: -1 })
-      .skip((safePage - 1) * safeLimit)
+  const [
+    monthlyDispatchResult,
+    monthlyPaidResult,
+    totalDueResult,
+    overdueThisMonthResult,
+    totalRecords,
+    dispatches,
+  ] = await Promise.all([
+    /*
+     * Monthly Dispatch:
+     * Total invoice value dispatched during current month.
+     */
+    Dispatch.aggregate([
+      {
+        $match: {
+          ...commonMatch,
+          dispatchDate: {
+            $gte: monthStart,
+            $lte: monthEnd,
+          },
+          dispatchStatus: {
+            $ne: "cancelled",
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          amount: {
+            $sum: {
+              $ifNull: [
+                "$invoiceValue",
+                0,
+              ],
+            },
+          },
+          count: {
+            $sum: 1,
+          },
+        },
+      },
+    ]),
+
+    /*
+     * Monthly Paid:
+     * Paid amount on dispatches created in current month.
+     *
+     * This keeps the same business meaning as your
+     * existing card implementation while including
+     * both partial and fully paid records.
+     */
+    Dispatch.aggregate([
+      {
+        $match: {
+          ...commonMatch,
+          dispatchDate: {
+            $gte: monthStart,
+            $lte: monthEnd,
+          },
+          dispatchStatus: {
+            $ne: "cancelled",
+          },
+          paidAmount: {
+            $gt: 0,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          amount: {
+            $sum: {
+              $ifNull: [
+                "$paidAmount",
+                0,
+              ],
+            },
+          },
+          count: {
+            $sum: 1,
+          },
+        },
+      },
+    ]),
+
+    /*
+     * Total Due:
+     * All current pending amounts, regardless of month.
+     */
+    Dispatch.aggregate([
+      {
+        $match: {
+          ...commonMatch,
+          dispatchStatus: {
+            $ne: "cancelled",
+          },
+          pendingAmount: {
+            $gt: 0,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          amount: {
+            $sum: {
+              $ifNull: [
+                "$pendingAmount",
+                0,
+              ],
+            },
+          },
+          count: {
+            $sum: 1,
+          },
+        },
+      },
+    ]),
+
+    /*
+     * Overdue This Month:
+     * Amount whose due date belongs to current month
+     * and has already passed.
+     */
+    Dispatch.aggregate([
+      {
+        $match: {
+          ...commonMatch,
+          dispatchStatus: {
+            $ne: "cancelled",
+          },
+          pendingAmount: {
+            $gt: 0,
+          },
+          paymentDueDate: {
+            $gte: monthStart,
+            $lte: monthEnd,
+            $lt: new Date(),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          amount: {
+            $sum: {
+              $ifNull: [
+                "$pendingAmount",
+                0,
+              ],
+            },
+          },
+          count: {
+            $sum: 1,
+          },
+        },
+      },
+    ]),
+
+    Dispatch.countDocuments(
+      listMatch
+    ),
+
+    Dispatch.find(listMatch)
+      .sort({
+        dispatchDate: -1,
+        createdAt: -1,
+      })
+      .skip(
+        (safePage - 1) *
+          safeLimit
+      )
       .limit(safeLimit)
       .lean(),
   ]);
 
+  const monthlyDispatch =
+    monthlyDispatchResult[0] || {
+      amount: 0,
+      count: 0,
+    };
+
+  const monthlyPaid =
+    monthlyPaidResult[0] || {
+      amount: 0,
+      count: 0,
+    };
+
+  const totalDue =
+    totalDueResult[0] || {
+      amount: 0,
+      count: 0,
+    };
+
+  const overdueThisMonth =
+    overdueThisMonthResult[0] || {
+      amount: 0,
+      count: 0,
+    };
+
   return {
     dispatches,
+
     pagination: {
       totalRecords,
       currentPage: safePage,
-      totalPages: Math.ceil(totalRecords / safeLimit) || 1,
+      totalPages:
+        Math.ceil(
+          totalRecords / safeLimit
+        ) || 1,
       limit: safeLimit,
+    },
+
+    /*
+     * Values remain unchanged when a card is selected.
+     */
+    insights: {
+      monthlyDispatch: {
+        amount: Number(
+          monthlyDispatch.amount || 0
+        ),
+        count: Number(
+          monthlyDispatch.count || 0
+        ),
+      },
+
+      monthlyPaid: {
+        amount: Number(
+          monthlyPaid.amount || 0
+        ),
+        count: Number(
+          monthlyPaid.count || 0
+        ),
+      },
+
+      totalDue: {
+        amount: Number(
+          totalDue.amount || 0
+        ),
+        count: Number(
+          totalDue.count || 0
+        ),
+      },
+
+      overdueThisMonth: {
+        amount: Number(
+          overdueThisMonth.amount || 0
+        ),
+        count: Number(
+          overdueThisMonth.count || 0
+        ),
+      },
+    },
+
+    appliedFilter: {
+      cardFilter:
+        cardFilter || "",
+      paymentStatus:
+        paymentStatus || "",
+      salesPersonId:
+        salesPersonId || "",
+      fromDate:
+        fromDate || "",
+      toDate:
+        toDate || "",
     },
   };
 };
-
 const getDispatchById = async (dispatchId, user) => {
   const dispatch = await Dispatch.findOne({
     _id: dispatchId,
