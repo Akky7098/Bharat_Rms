@@ -1452,13 +1452,12 @@ const getMisScoring = async (query, user) => {
       monthIndex + 1,
       0
     ).getDate();
-
-  const ranges = [
-    [1, 7],
-    [8, 14],
-    [15, 23],
-    [24, lastDay],
-  ];
+const ranges = [
+  [1, 8],
+  [9, 15],
+  [16, 23],
+  [24, lastDay],
+];
 
   const createIstBoundary = (
     day,
@@ -1859,162 +1858,397 @@ if (currentWeekIndex < 0) {
       };
 
       let cumulativeTarget = {
-        enquiries: 0,
-        salesValue: 0,
-        visits: 0,
-        orders: 0,
-      };
+  enquiries: 0,
+  salesValue: 0,
+  visits: 0,
+  orders: 0,
+};
 
-      let cumulativeActual = {
-        enquiries: 0,
-        salesValue: 0,
-        visits: 0,
-        orders: 0,
-      };
+let cumulativeActual = {
+  enquiries: 0,
+  salesValue: 0,
+  visits: 0,
+  orders: 0,
+};
 
-      const weeklyReport = person.weeklyReport.map((week) => {
-        cumulativeTarget.enquiries += weeklyBaseTarget.enquiries;
-        cumulativeTarget.salesValue += weeklyBaseTarget.salesValue;
-        cumulativeTarget.visits += weeklyBaseTarget.visits;
-        cumulativeTarget.orders += weeklyBaseTarget.orders;
+/*
+ * Previous week's pending target.
+ *
+ * Week 1 starts with zero carry-forward.
+ * Every following week receives only the
+ * immediately previous week's shortfall.
+ */
+let carryForward = {
+  enquiries: 0,
+  salesValue: 0,
+  visits: 0,
+  orders: 0,
+};
 
-        cumulativeActual.enquiries += Number(week.enquiries || 0);
-        cumulativeActual.salesValue += Number(week.approvedSalesValue || 0);
-        cumulativeActual.visits += Number(week.visits || 0);
-        cumulativeActual.orders += Number(week.approvedOrders || 0);
+const weeklyReport = person.weeklyReport.map((week) => {
+  /*
+   * Base weekly target = monthly target / 4.
+   *
+   * Current week's effective target =
+   * base weekly target + previous week's shortfall.
+   */
+  const targetWithCarryForward = {
+    enquiries:
+      Number(weeklyBaseTarget.enquiries || 0) +
+      Number(carryForward.enquiries || 0),
 
-        const weekAchievement = {
-          enquiryPercent: getPercent(week.enquiries, weeklyBaseTarget.enquiries),
-          salesPercent: getPercent(
-            week.approvedSalesValue,
-            weeklyBaseTarget.salesValue
-          ),
-          visitPercent: getPercent(week.visits, weeklyBaseTarget.visits),
-          orderPercent: getPercent(week.approvedOrders, weeklyBaseTarget.orders),
-        };
+    salesValue:
+      Number(weeklyBaseTarget.salesValue || 0) +
+      Number(carryForward.salesValue || 0),
 
-        const cumulativeAchievement = {
-          enquiryPercent: getPercent(
-            cumulativeActual.enquiries,
-            cumulativeTarget.enquiries
-          ),
-          salesPercent: getPercent(
-            cumulativeActual.salesValue,
-            cumulativeTarget.salesValue
-          ),
-          visitPercent: getPercent(
-            cumulativeActual.visits,
-            cumulativeTarget.visits
-          ),
-          orderPercent: getPercent(
-            cumulativeActual.orders,
-            cumulativeTarget.orders
-          ),
-        };
+    visits:
+      Number(weeklyBaseTarget.visits || 0) +
+      Number(carryForward.visits || 0),
 
-        const shortBy = {
-          enquiries: getShortBy(week.enquiries, weeklyBaseTarget.enquiries),
-          salesValue: getShortBy(
-            week.approvedSalesValue,
-            weeklyBaseTarget.salesValue
-          ),
-          visits: getShortBy(week.visits, weeklyBaseTarget.visits),
-          orders: getShortBy(week.approvedOrders, weeklyBaseTarget.orders),
-        };
+    orders:
+      Number(weeklyBaseTarget.orders || 0) +
+      Number(carryForward.orders || 0),
+  };
 
-        const cumulativeShortBy = {
-          enquiries: getShortBy(
-            cumulativeActual.enquiries,
-            cumulativeTarget.enquiries
-          ),
-          salesValue: getShortBy(
-            cumulativeActual.salesValue,
-            cumulativeTarget.salesValue
-          ),
-          visits: getShortBy(cumulativeActual.visits, cumulativeTarget.visits),
-          orders: getShortBy(cumulativeActual.orders, cumulativeTarget.orders),
-        };
+  cumulativeTarget.enquiries +=
+    Number(weeklyBaseTarget.enquiries || 0);
 
-        const weekScore = calculateWeightedScore({
-          enquiryPercent: weekAchievement.enquiryPercent,
-          visitPercent: weekAchievement.visitPercent,
-          salesPercent: weekAchievement.salesPercent,
-          orderPercent: weekAchievement.orderPercent,
-        });
+  cumulativeTarget.salesValue +=
+    Number(weeklyBaseTarget.salesValue || 0);
 
-        return {
-          ...week,
+  cumulativeTarget.visits +=
+    Number(weeklyBaseTarget.visits || 0);
 
-          baseTarget: {
-            enquiries: Number(weeklyBaseTarget.enquiries.toFixed(1)),
-            salesValue: Number(weeklyBaseTarget.salesValue.toFixed(0)),
-            visits: Number(weeklyBaseTarget.visits.toFixed(1)),
-            orders: Number(weeklyBaseTarget.orders.toFixed(1)),
-          },
+  cumulativeTarget.orders +=
+    Number(weeklyBaseTarget.orders || 0);
 
-          cumulativeTarget: {
-            enquiries: Number(cumulativeTarget.enquiries.toFixed(1)),
-            salesValue: Number(cumulativeTarget.salesValue.toFixed(0)),
-            visits: Number(cumulativeTarget.visits.toFixed(1)),
-            orders: Number(cumulativeTarget.orders.toFixed(1)),
-          },
+  cumulativeActual.enquiries +=
+    Number(week.enquiries || 0);
 
-          cumulativeActual: {
-            enquiries: Number(cumulativeActual.enquiries.toFixed(1)),
-            salesValue: Number(cumulativeActual.salesValue.toFixed(0)),
-            visits: Number(cumulativeActual.visits.toFixed(1)),
-            orders: Number(cumulativeActual.orders.toFixed(1)),
-          },
+  cumulativeActual.salesValue +=
+    Number(week.approvedSalesValue || 0);
 
-          shortBy: {
-            enquiries: Math.ceil(shortBy.enquiries),
-            salesValue: Number(shortBy.salesValue.toFixed(0)),
-            visits: Math.ceil(shortBy.visits),
-            orders: Math.ceil(shortBy.orders),
-          },
+  cumulativeActual.visits +=
+    Number(week.visits || 0);
 
-          cumulativeShortBy: {
-            enquiries: Math.ceil(cumulativeShortBy.enquiries),
-            salesValue: Number(cumulativeShortBy.salesValue.toFixed(0)),
-            visits: Math.ceil(cumulativeShortBy.visits),
-            orders: Math.ceil(cumulativeShortBy.orders),
-          },
+  cumulativeActual.orders +=
+    Number(week.approvedOrders || 0);
 
-          achievement: cumulativeAchievement,
-          weekAchievement,
-          weekScore,
+  /*
+   * Weekly achievement must be calculated
+   * against the effective target, including
+   * the previous week's carry-forward.
+   */
+  const weekAchievement = {
+    enquiryPercent: getPercent(
+      week.enquiries,
+      targetWithCarryForward.enquiries
+    ),
 
-          insight: {
-            orders:
-              shortBy.orders > 0
-                ? `Need ${Math.ceil(
-                    shortBy.orders
-                  )} more approved order(s) in ${week.label}.`
-                : `Order target is on track in ${week.label}.`,
+    salesPercent: getPercent(
+      week.approvedSalesValue,
+      targetWithCarryForward.salesValue
+    ),
 
-            sales:
-              shortBy.salesValue > 0
-                ? `Need ${formatCurrency(
-                    shortBy.salesValue
-                  )} more sales volume in ${week.label}.`
-                : `Sales volume target is on track in ${week.label}.`,
+    visitPercent: getPercent(
+      week.visits,
+      targetWithCarryForward.visits
+    ),
 
-            enquiries:
-              shortBy.enquiries > 0
-                ? `Need ${Math.ceil(
-                    shortBy.enquiries
-                  )} more enquiries in ${week.label}.`
-                : `Enquiry target is on track in ${week.label}.`,
+    orderPercent: getPercent(
+      week.approvedOrders,
+      targetWithCarryForward.orders
+    ),
+  };
 
-            visits:
-              shortBy.visits > 0
-                ? `Need ${Math.ceil(
-                    shortBy.visits
-                  )} more meeting/visit(s) in ${week.label}.`
-                : `Meeting/visit target is on track in ${week.label}.`,
-          },
-        };
-      });
+  const cumulativeAchievement = {
+    enquiryPercent: getPercent(
+      cumulativeActual.enquiries,
+      cumulativeTarget.enquiries
+    ),
+
+    salesPercent: getPercent(
+      cumulativeActual.salesValue,
+      cumulativeTarget.salesValue
+    ),
+
+    visitPercent: getPercent(
+      cumulativeActual.visits,
+      cumulativeTarget.visits
+    ),
+
+    orderPercent: getPercent(
+      cumulativeActual.orders,
+      cumulativeTarget.orders
+    ),
+  };
+
+  /*
+   * Current week's shortage after applying
+   * the carry-forward target.
+   */
+  const shortBy = {
+    enquiries: getShortBy(
+      week.enquiries,
+      targetWithCarryForward.enquiries
+    ),
+
+    salesValue: getShortBy(
+      week.approvedSalesValue,
+      targetWithCarryForward.salesValue
+    ),
+
+    visits: getShortBy(
+      week.visits,
+      targetWithCarryForward.visits
+    ),
+
+    orders: getShortBy(
+      week.approvedOrders,
+      targetWithCarryForward.orders
+    ),
+  };
+
+  const cumulativeShortBy = {
+    enquiries: getShortBy(
+      cumulativeActual.enquiries,
+      cumulativeTarget.enquiries
+    ),
+
+    salesValue: getShortBy(
+      cumulativeActual.salesValue,
+      cumulativeTarget.salesValue
+    ),
+
+    visits: getShortBy(
+      cumulativeActual.visits,
+      cumulativeTarget.visits
+    ),
+
+    orders: getShortBy(
+      cumulativeActual.orders,
+      cumulativeTarget.orders
+    ),
+  };
+
+  const weekScore = calculateWeightedScore({
+    enquiryPercent:
+      weekAchievement.enquiryPercent,
+
+    visitPercent:
+      weekAchievement.visitPercent,
+
+    salesPercent:
+      weekAchievement.salesPercent,
+
+    orderPercent:
+      weekAchievement.orderPercent,
+  });
+
+  /*
+   * Save this week's shortage so that it
+   * becomes next week's carry-forward.
+   *
+   * Excess work does not produce a negative
+   * carry-forward because getShortBy() always
+   * returns a minimum value of zero.
+   */
+  const nextCarryForward = {
+    enquiries: Number(shortBy.enquiries || 0),
+    salesValue: Number(shortBy.salesValue || 0),
+    visits: Number(shortBy.visits || 0),
+    orders: Number(shortBy.orders || 0),
+  };
+
+  const weekResult = {
+    ...week,
+
+    baseTarget: {
+      enquiries: Number(
+        Number(
+          weeklyBaseTarget.enquiries || 0
+        ).toFixed(1)
+      ),
+
+      salesValue: Number(
+        Number(
+          weeklyBaseTarget.salesValue || 0
+        ).toFixed(0)
+      ),
+
+      visits: Number(
+        Number(
+          weeklyBaseTarget.visits || 0
+        ).toFixed(1)
+      ),
+
+      orders: Number(
+        Number(
+          weeklyBaseTarget.orders || 0
+        ).toFixed(1)
+      ),
+    },
+
+    /*
+     * This is the value used by your frontend.
+     */
+    targetWithCarryForward: {
+      enquiries: Number(
+        targetWithCarryForward.enquiries.toFixed(1)
+      ),
+
+      salesValue: Number(
+        targetWithCarryForward.salesValue.toFixed(0)
+      ),
+
+      visits: Number(
+        targetWithCarryForward.visits.toFixed(1)
+      ),
+
+      orders: Number(
+        targetWithCarryForward.orders.toFixed(1)
+      ),
+    },
+
+    /*
+     * Shows exactly what came from the
+     * immediately previous week.
+     */
+    carryForwardFromPreviousWeek: {
+      enquiries: Number(
+        Number(carryForward.enquiries || 0).toFixed(1)
+      ),
+
+      salesValue: Number(
+        Number(carryForward.salesValue || 0).toFixed(0)
+      ),
+
+      visits: Number(
+        Number(carryForward.visits || 0).toFixed(1)
+      ),
+
+      orders: Number(
+        Number(carryForward.orders || 0).toFixed(1)
+      ),
+    },
+
+    cumulativeTarget: {
+      enquiries: Number(
+        cumulativeTarget.enquiries.toFixed(1)
+      ),
+
+      salesValue: Number(
+        cumulativeTarget.salesValue.toFixed(0)
+      ),
+
+      visits: Number(
+        cumulativeTarget.visits.toFixed(1)
+      ),
+
+      orders: Number(
+        cumulativeTarget.orders.toFixed(1)
+      ),
+    },
+
+    cumulativeActual: {
+      enquiries: Number(
+        cumulativeActual.enquiries.toFixed(1)
+      ),
+
+      salesValue: Number(
+        cumulativeActual.salesValue.toFixed(0)
+      ),
+
+      visits: Number(
+        cumulativeActual.visits.toFixed(1)
+      ),
+
+      orders: Number(
+        cumulativeActual.orders.toFixed(1)
+      ),
+    },
+
+    shortBy: {
+      enquiries: Math.ceil(
+        shortBy.enquiries
+      ),
+
+      salesValue: Number(
+        shortBy.salesValue.toFixed(0)
+      ),
+
+      visits: Math.ceil(
+        shortBy.visits
+      ),
+
+      orders: Math.ceil(
+        shortBy.orders
+      ),
+    },
+
+    cumulativeShortBy: {
+      enquiries: Math.ceil(
+        cumulativeShortBy.enquiries
+      ),
+
+      salesValue: Number(
+        cumulativeShortBy.salesValue.toFixed(0)
+      ),
+
+      visits: Math.ceil(
+        cumulativeShortBy.visits
+      ),
+
+      orders: Math.ceil(
+        cumulativeShortBy.orders
+      ),
+    },
+
+    achievement: cumulativeAchievement,
+    weekAchievement,
+    weekScore,
+
+    insight: {
+      orders:
+        shortBy.orders > 0
+          ? `Need ${Math.ceil(
+              shortBy.orders
+            )} more approved order(s) in ${week.label}. The pending target will carry forward to the next week.`
+          : `Order target is on track in ${week.label}.`,
+
+      sales:
+        shortBy.salesValue > 0
+          ? `Need ${formatCurrency(
+              shortBy.salesValue
+            )} more sales value in ${week.label}. The pending value will carry forward to the next week.`
+          : `Sales value target is on track in ${week.label}.`,
+
+      enquiries:
+        shortBy.enquiries > 0
+          ? `Need ${Math.ceil(
+              shortBy.enquiries
+            )} more enquiries in ${week.label}. The pending target will carry forward to the next week.`
+          : `Enquiry target is on track in ${week.label}.`,
+
+      visits:
+        shortBy.visits > 0
+          ? `Need ${Math.ceil(
+              shortBy.visits
+            )} more meeting/visit(s) in ${week.label}. The pending target will carry forward to the next week.`
+          : `Meeting/visit target is on track in ${week.label}.`,
+    },
+  };
+
+  /*
+   * Update only after building the current
+   * week's response. This ensures Week 1 has
+   * zero carry-forward and Week 2 receives
+   * Week 1's shortage.
+   */
+  carryForward = nextCarryForward;
+
+  return weekResult;
+});
 
       const currentWeek =
         weeklyReport[currentWeekIndex] || weeklyReport[weeklyReport.length - 1];

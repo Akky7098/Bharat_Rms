@@ -546,55 +546,54 @@ const buildDispatchCreatedTemplate = (dispatch) => {
       ${sectionTitle("Dispatch Summary")}
 
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          ${infoCard("Company", dispatch.companyName)}
-          ${infoCard("PO Number", dispatch.poNumber || "-")}
-        </tr>
+        
+      <tr>
+  ${infoCard("Company", dispatch.companyName)}
+  ${infoCard("PO Number", dispatch.poNumber || "-")}
+</tr>
 
-        <tr>
-          ${infoCard("Sales Order", dispatch.salesOrderNo || "-")}
-          ${infoCard(
-            "Dispatch Date",
-            formatDate(dispatch.dispatchDate),
-            "#0f766e"
-          )}
-        </tr>
+<tr>
+  ${infoCard(
+    "Dispatch Date",
+    formatDate(dispatch.dispatchDate),
+    "#0f766e"
+  )}
 
-        <tr>
-          ${infoCard("Invoice Number", dispatch.invoiceNumber || "-")}
-          ${infoCard("Invoice Date", formatDate(dispatch.invoiceDate))}
-        </tr>
+  ${infoCard(
+    "Invoice Number",
+    dispatch.invoiceNumber || "-"
+  )}
+</tr>
 
-        <tr>
-          ${infoCard(
-            "Dispatch Quantity",
-            `${dispatch.dispatchQty || 0} Kg`,
-            "#0f766e"
-          )}
+<tr>
+  ${infoCard(
+    "Invoice Date",
+    formatDate(dispatch.invoiceDate)
+  )}
 
-          ${infoCard(
-            "Payment Due Date",
-            formatDate(dispatch.paymentDueDate),
-            "#b45309"
-          )}
-        </tr>
+  ${infoCard(
+    "Payment Due Date",
+    formatDate(dispatch.paymentDueDate),
+    "#b45309"
+  )}
+</tr>
 
-        <tr>
-          ${infoCard(
-            "TC / MTC Status",
-            getTcStatusText(dispatch),
-            dispatch.tcApplicable === "applicable"
-              ? "#166534"
-              : "#64748b"
-          )}
+<tr>
+  ${infoCard(
+    "TC / MTC Status",
+    getTcStatusText(dispatch),
+    dispatch.tcApplicable === "applicable"
+      ? "#166534"
+      : "#64748b"
+  )}
 
-          ${infoCard(
-            "Dispatch Status",
-            getDispatchStatusText(dispatch.dispatchStatus),
-            "#0f766e"
-          )}
-        </tr>
-      </table>
+  ${infoCard(
+    "Dispatch Status",
+    getDispatchStatusText(dispatch.dispatchStatus),
+    "#0f766e"
+  )}
+</tr>
+
 
       ${sectionTitle("Payment Snapshot")}
 

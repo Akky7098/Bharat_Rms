@@ -255,10 +255,19 @@ const getSalesOrderDispatchSummary = async (salesOrderId, session = null) => {
 
 /* SEARCH APPROVED SALES ORDERS AVAILABLE FOR DISPATCH */
 const searchPendingDispatchSalesOrders = async (query, user) => {
-  const { search = "", limit = 6 } = query;
+  const {
+    search = "",
+    limit = 10,
+  } = query;
 
-  const keyword = String(search || "").trim().replace(/\s+/g, " ");
-  const safeLimit = Math.min(Number(limit) || 6, 20);
+  const keyword = String(search || "")
+    .trim()
+    .replace(/\s+/g, " ");
+
+  const safeLimit = Math.min(
+    Math.max(Number(limit) || 10, 1),
+    50
+  );
 
   const filter = {
     approvalStatus: "approved",
@@ -271,89 +280,241 @@ const searchPendingDispatchSalesOrders = async (query, user) => {
 
   if (keyword) {
     filter.$or = [
-      { companyName: { $regex: escapeRegex(keyword), $options: "i" } },
-      { poNumber: { $regex: escapeRegex(keyword), $options: "i" } },
-      { salesOrderNo: { $regex: escapeRegex(keyword), $options: "i" } },
-      { contactPersonName: { $regex: escapeRegex(keyword), $options: "i" } },
+      {
+        companyName: {
+          $regex: escapeRegex(keyword),
+          $options: "i",
+        },
+      },
+      {
+        poNumber: {
+          $regex: escapeRegex(keyword),
+          $options: "i",
+        },
+      },
+      {
+        salesOrderNo: {
+          $regex: escapeRegex(keyword),
+          $options: "i",
+        },
+      },
+      {
+        contactPersonName: {
+          $regex: escapeRegex(keyword),
+          $options: "i",
+        },
+      },
     ];
   }
 
+  /*
+   * Fetch extra records first because fully dispatched
+   * sales orders will be removed after quantity calculation.
+   */
+  const fetchLimit = Math.min(
+    Math.max(safeLimit * 5, 50),
+    200
+  );
+
   const salesOrders = await SalesOrder.find(filter)
-    .sort({ createdAt: -1 })
-    .limit(safeLimit)
+    .sort({
+      "managerApproval.approvedAt": -1,
+      createdAt: -1,
+    })
+    .limit(fetchLimit)
     .select(`
-      orderDate salesOrderNo companyName companyAddress poNumber checklistNumber
-      contactPersonName contactPersonNumber contactPersonEmail salesPersonId
-      salesPersonName salesPersonEmail salesPersonMobile paymentTerms orderValue
-      sizeGradeQuantityRate supplyCondition deliveryTime billingAddress
-      shippingAddress approvalStatus createdAt updatedAt
+      orderDate
+      salesOrderNo
+      companyName
+      companyAddress
+      poNumber
+      checklistNumber
+      contactPersonName
+      contactPersonNumber
+      contactPersonEmail
+      salesPersonId
+      salesPersonName
+      salesPersonEmail
+      salesPersonMobile
+      paymentTerms
+      orderValue
+      sizeGradeQuantityRate
+      supplyCondition
+      deliveryTime
+      billingAddress
+      shippingAddress
+      approvalStatus
+      managerApproval.approvedAt
+      createdAt
+      updatedAt
     `)
     .lean();
 
-  const salesOrderIds = salesOrders.map((item) => item._id);
+  if (!salesOrders.length) {
+    return [];
+  }
 
-  const dispatchSummary = await Dispatch.aggregate([
-    {
-      $match: {
-        salesOrderId: { $in: salesOrderIds },
-        isActive: true,
-        dispatchStatus: { $ne: "cancelled" },
+  const salesOrderIds = salesOrders.map(
+    (item) => item._id
+  );
+
+  const dispatchSummary =
+    await Dispatch.aggregate([
+      {
+        $match: {
+          salesOrderId: {
+            $in: salesOrderIds,
+          },
+          isActive: true,
+          dispatchStatus: {
+            $ne: "cancelled",
+          },
+        },
       },
-    },
-    {
-      $group: {
-        _id: "$salesOrderId",
-        totalDispatchedQty: { $sum: "$dispatchQty" },
-        dispatchCount: { $sum: 1 },
+      {
+        $group: {
+          _id: "$salesOrderId",
+
+          totalDispatchedQty: {
+            $sum: {
+              $ifNull: [
+                "$dispatchQty",
+                0,
+              ],
+            },
+          },
+
+          dispatchCount: {
+            $sum: 1,
+          },
+        },
       },
-    },
-  ]);
+    ]);
 
   const summaryMap = new Map(
     dispatchSummary.map((item) => [
       String(item._id),
       {
-        totalDispatchedQty: Number(item.totalDispatchedQty || 0),
-        dispatchCount: Number(item.dispatchCount || 0),
+        totalDispatchedQty: Number(
+          item.totalDispatchedQty || 0
+        ),
+        dispatchCount: Number(
+          item.dispatchCount || 0
+        ),
       },
     ])
   );
 
-  return salesOrders
-    .map((salesOrder) => {
-      const totalOrderQty = getSalesOrderTotalQty(salesOrder);
-      const summary = summaryMap.get(String(salesOrder._id)) || {
-        totalDispatchedQty: 0,
-        dispatchCount: 0,
-      };
+  const availableSalesOrders =
+    salesOrders
+      .map((salesOrder) => {
+        const totalOrderQty = Number(
+          getSalesOrderTotalQty(
+            salesOrder
+          ) || 0
+        );
 
-      const remainingDispatchQty =
-        totalOrderQty > 0
-          ? Math.max(
-              Number((totalOrderQty - summary.totalDispatchedQty).toFixed(3)),
-              0
-            )
-          : 0;
+        const summary =
+          summaryMap.get(
+            String(salesOrder._id)
+          ) || {
+            totalDispatchedQty: 0,
+            dispatchCount: 0,
+          };
 
-      return {
-        ...salesOrder,
-        totalOrderQty,
-        totalDispatchedQty: summary.totalDispatchedQty,
-        remainingDispatchQty,
-        dispatchCount: summary.dispatchCount,
-        alreadyDispatched: summary.dispatchCount > 0,
-        dispatchAvailabilityStatus:
-          totalOrderQty > 0 && remainingDispatchQty <= 0
-            ? "fully_dispatched"
-            : summary.dispatchCount > 0
-            ? "partial_dispatched"
-            : "pending_dispatch",
-      };
-    })
-    .filter((salesOrder) => {
-      if (salesOrder.totalOrderQty <= 0) return true;
-      return salesOrder.remainingDispatchQty > 0;
-    });
+        const totalDispatchedQty =
+          Number(
+            summary.totalDispatchedQty || 0
+          );
+
+        const dispatchCount =
+          Number(
+            summary.dispatchCount || 0
+          );
+
+        const remainingDispatchQty =
+          totalOrderQty > 0
+            ? Math.max(
+                Number(
+                  (
+                    totalOrderQty -
+                    totalDispatchedQty
+                  ).toFixed(3)
+                ),
+                0
+              )
+            : 0;
+
+        let dispatchAvailabilityStatus =
+          "pending_dispatch";
+
+        if (
+          totalOrderQty > 0 &&
+          remainingDispatchQty <= 0
+        ) {
+          dispatchAvailabilityStatus =
+            "fully_dispatched";
+        } else if (
+          dispatchCount > 0 ||
+          totalDispatchedQty > 0
+        ) {
+          dispatchAvailabilityStatus =
+            "partial_dispatched";
+        }
+
+        return {
+          ...salesOrder,
+
+          totalOrderQty,
+          totalDispatchedQty,
+          remainingDispatchQty,
+          dispatchCount,
+
+          alreadyDispatched:
+            dispatchCount > 0,
+
+          dispatchAvailabilityStatus,
+        };
+      })
+      .filter((salesOrder) => {
+        /*
+         * Never show fully dispatched orders.
+         */
+        if (
+          salesOrder
+            .dispatchAvailabilityStatus ===
+          "fully_dispatched"
+        ) {
+          return false;
+        }
+
+        /*
+         * If a valid order quantity exists,
+         * only show records with remaining quantity.
+         */
+        if (
+          Number(
+            salesOrder.totalOrderQty || 0
+          ) > 0
+        ) {
+          return (
+            Number(
+              salesOrder
+                .remainingDispatchQty || 0
+            ) > 0
+          );
+        }
+
+        /*
+         * Retain older sales orders where total quantity
+         * cannot be parsed, unless they were already marked
+         * fully dispatched.
+         */
+        return true;
+      })
+      .slice(0, safeLimit);
+
+  return availableSalesOrders;
 };
 
 /* CREATE DISPATCH */
