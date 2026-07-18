@@ -5,148 +5,239 @@ const chemicalResultSchema = new mongoose.Schema(
     element: {
       type: String,
       required: true,
-      trim: true, // C, Si, Mn, P, S, Cr, Mo, V, Ni+Cu
+      trim: true,
     },
+
     min: {
       type: Number,
       default: null,
     },
+
     max: {
       type: Number,
       default: null,
     },
+
     result: {
-      type: mongoose.Schema.Types.Mixed, // number or "X"
+      type: mongoose.Schema.Types.Mixed,
       required: true,
     },
   },
-  { _id: false }
+  {
+    _id: false,
+  }
 );
 
 const mtcCertificateSchema = new mongoose.Schema(
   {
+    /*
+     * Mongoose discriminator key.
+     *
+     * MongoDB will automatically store:
+     * mtcProvider: "gloria"
+     * mtcProvider: "bharat"
+     */
     mtcProvider: {
-  type: String,
-  enum: ["gloria"],
-  default: "gloria",
-  required: true,
-},
+      type: String,
+      required: true,
+      enum: ["gloria", "bharat"],
+      index: true,
+    },
 
-messers: {
-  type: String,
-  default: "",
-  trim: true,
-},
+    /*
+     * Fields common to every TC provider.
+     */
+    companyName: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
 
-companyName: {
-  type: String,
-  default: "",
-  trim: true,
-},
+    customerName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
 
-orderNo: {
-  type: String,
-  required: true,
-  trim: true,
-},
+    customerAddress: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    orderNo: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+
     poNo: {
       type: String,
       default: "",
       trim: true,
     },
-    fileNo: {
+
+    invoiceNo: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
+      index: true,
     },
+
     mtcDate: {
       type: Date,
       required: true,
+      index: true,
     },
+
     grade: {
       type: String,
       required: true,
       trim: true,
+      index: true,
     },
-    weight: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    size: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    pcs: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+
     heatLotNo: {
       type: String,
       required: true,
       trim: true,
+      index: true,
     },
+
+    size: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    weight: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    pcs: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     condition: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
 
     chemicalComposition: {
       type: [chemicalResultSchema],
-      required: true,
+      default: [],
     },
 
-    hardness: {
-      halfR1: {
-        specMin: String,
-        specMax: String,
-        result: String,
-      },
-      halfR2: {
-        specMin: String,
-        specMax: String,
-        result: String,
-      },
-    },
+   pdf: {
+  fileName: {
+    type: String,
+    default: "",
+    trim: true,
+  },
 
-    hardenability: {
-      halfR1: {
-        specMin: String,
-        specMax: String,
-        result: String,
-      },
-      halfR2: {
-        specMin: String,
-        specMax: String,
-        result: String,
-      },
-    },
+  filePath: {
+    type: String,
+    default: "",
+    trim: true,
+  },
 
-    seat: {
-      at: String,
-      ah: String,
-      bt: String,
-      bh: String,
-      ct: String,
-      ch: String,
-      dt: String,
-      dh: String,
-    },
+  fileUrl: {
+    type: String,
+    default: "",
+    trim: true,
+  },
 
-    pdfUrl: {
-      type: String,
-      default: "",
-    },
+  generatedAt: {
+    type: Date,
+    default: null,
+  },
+},
+
+/*
+ * Retained for frontend and old record compatibility.
+ */
+pdfUrl: {
+  type: String,
+  default: "",
+  trim: true,
+},
+
+pdfFileName: {
+  type: String,
+  default: "",
+  trim: true,
+},
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
+      index: true,
+    },
+
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+
+    /*
+     * This tells Mongoose to use mtcProvider
+     * for selecting the provider-specific schema.
+     */
+    discriminatorKey: "mtcProvider",
+
+    /*
+     * Prevent Mongoose from creating a separate
+     * collection for every provider.
+     */
+    collection: "mtccertificates",
+
+    toJSON: {
+      virtuals: true,
+    },
+
+    toObject: {
+      virtuals: true,
+    },
+  }
 );
 
-module.exports = mongoose.model("MtcCertificate", mtcCertificateSchema);
+mtcCertificateSchema.index({
+  mtcProvider: 1,
+  mtcDate: -1,
+});
+
+mtcCertificateSchema.index({
+  companyName: 1,
+  grade: 1,
+  heatLotNo: 1,
+});
+
+const MtcCertificate =
+  mongoose.models.MtcCertificate ||
+  mongoose.model(
+    "MtcCertificate",
+    mtcCertificateSchema
+  );
+
+module.exports = {
+  MtcCertificate,
+  chemicalResultSchema,
+};

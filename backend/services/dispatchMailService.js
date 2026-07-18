@@ -593,7 +593,7 @@ const buildDispatchCreatedTemplate = (dispatch) => {
     "#0f766e"
   )}
 </tr>
-
+</table>
 
       ${sectionTitle("Payment Snapshot")}
 
