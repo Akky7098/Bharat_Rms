@@ -1,402 +1,430 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import {
   ArrowLeft,
   Building2,
-  Calendar,
-  FlaskConical,
+  ChevronRight,
   Loader2,
-  Save,
+  RefreshCcw,
 } from "lucide-react";
+
 import "./MtcForm.css";
+
 import {
-  createMtcCertificate,
-  getMtcChemicalSpecs,
+  getMtcProviders,
 } from "../services/mtcService";
 
-const initialForm = {
-  mtcProvider: "gloria",
-  messers: "",
-  orderNo: "",
-  poNo: "",
-  fileNo: "",
-  mtcDate: "",
-  grade: "",
-  weight: "",
-  size: "",
-  pcs: "",
-  heatLotNo: "",
-  condition: "HF-Spheroidized Annealed",
-  chemicalComposition: {},
+import {
+  MTC_FORM_REGISTRY,
+} from "./mtcForms";
+
+/* =========================================================
+   DEVELOPMENT FALLBACK PROVIDERS
+========================================================= */
+
+const DEFAULT_PROVIDERS = [
+  {
+    value: "gloria",
+    label: "Gloria",
+    description:
+      "Generate Gloria Material Test Certificate",
+  },
+  {
+    value: "bharat",
+    label: "Bharat Special Steel",
+    description:
+      "Generate Bharat Special Steel Test Certificate",
+  },
+];
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+const normalizeProvider = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase();
+
+const formatProviderLabel = (value) => {
+  return String(value || "")
+    .trim()
+    .split(/[_-]/)
+    .filter(Boolean)
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() +
+        word.slice(1)
+    )
+    .join(" ");
 };
 
-function MtcForm({ onBack, onCreated }) {
-  const [form, setForm] = useState(initialForm);
-  const [chemicalSpecs, setChemicalSpecs] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [specLoading, setSpecLoading] = useState(true);
-  const [error, setError] = useState("");
+const normalizeProviderResponse = (
+  response
+) => {
+  const data = Array.isArray(response?.data)
+    ? response.data
+    : [];
 
-  const gradeOptions = useMemo(() => Object.keys(chemicalSpecs), [chemicalSpecs]);
+  return data
+    .map((provider) => {
+      if (typeof provider === "string") {
+        return {
+          value:
+            normalizeProvider(provider),
+          label:
+            formatProviderLabel(provider),
+          description: `Generate ${formatProviderLabel(
+            provider
+          )} test certificate`,
+        };
+      }
 
-  const selectedSpec = useMemo(() => {
-    if (!form.grade) return null;
-    return chemicalSpecs[form.grade]?.elements || null;
-  }, [chemicalSpecs, form.grade]);
+      const value = normalizeProvider(
+        provider?.value ||
+          provider?.provider ||
+          provider?.key
+      );
 
-  const chemicalElements = useMemo(() => {
-    if (!selectedSpec) return [];
-    return Object.keys(selectedSpec);
-  }, [selectedSpec]);
+      if (!value) {
+        return null;
+      }
 
-  const buildChemicalCompositionFromSpecs = (specs, grade) => {
-    const elements = specs[grade]?.elements || {};
-    const composition = {};
+      return {
+        value,
+        label:
+          provider?.label ||
+          provider?.name ||
+          formatProviderLabel(value),
 
-    Object.keys(elements).forEach((element) => {
-      const spec = elements[element];
-      composition[element] =
-        spec.min === null && spec.max === null ? "X" : "";
-    });
+        description:
+          provider?.description ||
+          `Generate ${
+            provider?.label ||
+            provider?.name ||
+            formatProviderLabel(value)
+          } test certificate`,
+      };
+    })
+    .filter(Boolean);
+};
 
-    return composition;
-  };
+/* =========================================================
+   MAIN MTC FORM WRAPPER
+========================================================= */
+
+function MtcForm({
+  onBack,
+  onCreated,
+}) {
+  const [
+    selectedProvider,
+    setSelectedProvider,
+  ] = useState("");
+
+  const [
+    providers,
+    setProviders,
+  ] = useState(DEFAULT_PROVIDERS);
+
+  const [
+    loadingProviders,
+    setLoadingProviders,
+  ] = useState(true);
+
+  const [
+    providerError,
+    setProviderError,
+  ] = useState("");
+
+  /* =======================================================
+     LOAD AVAILABLE PROVIDERS
+  ======================================================= */
+
+  const loadProviders =
+    useCallback(async () => {
+      try {
+        setLoadingProviders(true);
+        setProviderError("");
+
+        const response =
+          await getMtcProviders();
+
+        const normalizedProviders =
+          normalizeProviderResponse(
+            response
+          );
+
+        if (
+          normalizedProviders.length > 0
+        ) {
+          setProviders(
+            normalizedProviders
+          );
+        } else {
+          setProviders(
+            DEFAULT_PROVIDERS
+          );
+        }
+      } catch (error) {
+        console.log(
+          "GET MTC PROVIDERS ERROR =>",
+          error
+        );
+
+        /*
+         * Development fallback keeps the page
+         * usable even when provider API fails.
+         */
+        setProviders(
+          DEFAULT_PROVIDERS
+        );
+
+        setProviderError(
+          "Unable to load providers from server. Showing configured providers."
+        );
+      } finally {
+        setLoadingProviders(false);
+      }
+    }, []);
 
   useEffect(() => {
-    const loadSpecs = async () => {
-      try {
-        setSpecLoading(true);
-        setError("");
+    loadProviders();
+  }, [loadProviders]);
 
-        const response = await getMtcChemicalSpecs();
-        const specs = response?.data || {};
-        const firstGrade = Object.keys(specs)[0] || "";
+  /* =======================================================
+     AVAILABLE PROVIDERS WITH FRONTEND FORMS
+  ======================================================= */
 
-        setChemicalSpecs(specs);
+  const availableProviders =
+    useMemo(() => {
+      return providers.map(
+        (provider) => ({
+          ...provider,
 
-        if (firstGrade) {
-          setForm((prev) => ({
-            ...prev,
-            grade: firstGrade,
-            chemicalComposition: buildChemicalCompositionFromSpecs(
-              specs,
-              firstGrade
-            ),
-          }));
-        }
-      } catch (err) {
-        setError("Unable to load MTC chemical specs.");
-      } finally {
-        setSpecLoading(false);
+          hasForm: Boolean(
+            MTC_FORM_REGISTRY[
+              normalizeProvider(
+                provider.value
+              )
+            ]
+          ),
+        })
+      );
+    }, [providers]);
+
+  /* =======================================================
+     SELECTED FORM COMPONENT
+  ======================================================= */
+
+  const SelectedProviderForm =
+    useMemo(() => {
+      if (!selectedProvider) {
+        return null;
       }
-    };
 
-    loadSpecs();
-  }, []);
+      return (
+        MTC_FORM_REGISTRY[
+          normalizeProvider(
+            selectedProvider
+          )
+        ] || null
+      );
+    }, [selectedProvider]);
 
-  const requiredFilled = useMemo(() => {
-    return (
-      form.orderNo &&
-      form.fileNo &&
-      form.mtcDate &&
-      form.grade &&
-      form.weight &&
-      form.size &&
-      form.pcs &&
-      form.heatLotNo &&
-      form.condition
-    );
-  }, [form]);
+  const handleProviderSelect = (
+    provider
+  ) => {
+    const providerValue =
+      normalizeProvider(
+        provider?.value
+      );
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+    if (
+      !providerValue ||
+      !MTC_FORM_REGISTRY[
+        providerValue
+      ]
+    ) {
+      setProviderError(
+        `${
+          provider?.label ||
+          formatProviderLabel(
+            providerValue
+          )
+        } form has not been configured yet.`
+      );
 
-    if (name === "grade") {
-      setForm((prev) => ({
-        ...prev,
-        grade: value,
-        chemicalComposition: buildChemicalCompositionFromSpecs(
-          chemicalSpecs,
-          value
-        ),
-      }));
       return;
     }
 
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setProviderError("");
+    setSelectedProvider(
+      providerValue
+    );
   };
 
-  const handleChemicalChange = (element, value) => {
-    const spec = selectedSpec?.[element];
-    const locked = spec?.min === null && spec?.max === null;
+  const handleBackFromProviderForm =
+    () => {
+      setSelectedProvider("");
+      setProviderError("");
+    };
 
-    setForm((prev) => ({
-      ...prev,
-      chemicalComposition: {
-        ...prev.chemicalComposition,
-        [element]: locked ? "X" : value,
-      },
-    }));
-  };
+  /* =======================================================
+     RENDER PROVIDER FORM
+  ======================================================= */
 
-  const buildPayload = () => ({
-    ...form,
-    chemicalComposition: chemicalElements.map((element) => ({
-      element,
-      result: form.chemicalComposition[element],
-    })),
-  });
+  if (
+    selectedProvider &&
+    SelectedProviderForm
+  ) {
+    return (
+      <SelectedProviderForm
+        onBack={
+          handleBackFromProviderForm
+        }
+        onCancel={onBack}
+        onCreated={onCreated}
+        mtcProvider={
+          selectedProvider
+        }
+      />
+    );
+  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      setError("");
-
-      if (!requiredFilled) {
-        setError("Please fill all required MTC details.");
-        return;
-      }
-
-      setSaving(true);
-
-      const response = await createMtcCertificate(buildPayload());
-
-      if (onCreated) {
-        onCreated(response?.data);
-      }
-    } catch (err) {
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Failed to generate MTC certificate."
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
+  /* =======================================================
+     PROVIDER SELECTION SCREEN
+  ======================================================= */
 
   return (
     <div className="mtc-form-page">
       <div className="mtc-form-topbar">
-        <button type="button" className="mtc-form-back" onClick={onBack}>
+        <button
+          type="button"
+          className="mtc-form-back"
+          onClick={onBack}
+        >
           <ArrowLeft size={18} />
           Back
         </button>
 
         <div>
-          <span>Create Certificate</span>
-          <h2>New MTC Certificate</h2>
+          <span>
+            Create Certificate
+          </span>
+
+          <h2>
+            Select TC Provider
+          </h2>
         </div>
       </div>
 
-      {error && <div className="mtc-form-error">{error}</div>}
+      {providerError && (
+        <div className="mtc-form-error">
+          {providerError}
+        </div>
+      )}
 
-      {specLoading ? (
-        <div className="mtc-form-card">Loading chemical specs...</div>
-      ) : (
-        <form onSubmit={handleSubmit} className="mtc-premium-form">
-          <section className="mtc-form-card">
-            <div className="mtc-card-title">
-              <div>
-                <Building2 size={20} />
-              </div>
-              <span>
-                <h3>Basic Details</h3>
-                <p>Fill manual certificate details</p>
-              </span>
-            </div>
+      <section className="mtc-form-card">
+        <div className="mtc-card-title">
+          <div>
+            <Building2 size={20} />
+          </div>
 
-            <div className="mtc-form-grid">
-              <div className="mtc-field">
-                <label>MTC Provider *</label>
-                <select
-                  name="mtcProvider"
-                  value={form.mtcProvider}
-                  onChange={handleChange}
+          <span>
+            <h3>
+              Test Certificate Provider
+            </h3>
+
+            <p>
+              Select the provider whose
+              certificate you want to
+              generate.
+            </p>
+          </span>
+        </div>
+
+        {loadingProviders ? (
+          <div className="mtc-provider-loading">
+            <Loader2
+              className="mtc-spin"
+              size={20}
+            />
+
+            <span>
+              Loading TC providers...
+            </span>
+          </div>
+        ) : (
+          <div className="mtc-provider-selection-grid">
+            {availableProviders.map(
+              (provider) => (
+                <button
+                  type="button"
+                  key={provider.value}
+                  className={`mtc-provider-selection-card ${
+                    !provider.hasForm
+                      ? "disabled"
+                      : ""
+                  }`}
+                  onClick={() =>
+                    handleProviderSelect(
+                      provider
+                    )
+                  }
+                  disabled={
+                    !provider.hasForm
+                  }
                 >
-                  <option value="gloria">Gloria</option>
-                </select>
-              </div>
-
-              <div className="mtc-field">
-                <label>Grade *</label>
-                <select name="grade" value={form.grade} onChange={handleChange}>
-                  {gradeOptions.map((grade) => (
-                    <option key={grade} value={grade}>
-                      {chemicalSpecs[grade]?.label || grade}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mtc-field">
-                <label>Messers / Company</label>
-                <input
-                  name="messers"
-                  value={form.messers}
-                  onChange={handleChange}
-                  placeholder="Customer name"
-                />
-              </div>
-
-              <div className="mtc-field">
-                <label>Order No. *</label>
-                <input
-                  name="orderNo"
-                  value={form.orderNo}
-                  onChange={handleChange}
-                  placeholder="Order number"
-                />
-              </div>
-
-              <div className="mtc-field">
-                <label>P.O.No.</label>
-                <input
-                  name="poNo"
-                  value={form.poNo}
-                  onChange={handleChange}
-                  placeholder="PO number"
-                />
-              </div>
-
-              <div className="mtc-field">
-                <label>File No. *</label>
-                <input
-                  name="fileNo"
-                  value={form.fileNo}
-                  onChange={handleChange}
-                  placeholder="File number"
-                />
-              </div>
-
-              <div className="mtc-field">
-                <label>Date *</label>
-                <div className="mtc-input-icon">
-                  <Calendar size={16} />
-                  <input
-                    type="date"
-                    name="mtcDate"
-                    value={form.mtcDate}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <div className="mtc-field">
-                <label>Weight *</label>
-                <input
-                  name="weight"
-                  value={form.weight}
-                  onChange={handleChange}
-                  placeholder="4527 Kgs"
-                />
-              </div>
-
-              <div className="mtc-field">
-                <label>Size *</label>
-                <input
-                  name="size"
-                  value={form.size}
-                  onChange={handleChange}
-                  placeholder="100x100MM"
-                />
-              </div>
-
-              <div className="mtc-field">
-                <label>Pcs *</label>
-                <input
-                  name="pcs"
-                  value={form.pcs}
-                  onChange={handleChange}
-                  placeholder="12"
-                />
-              </div>
-
-              <div className="mtc-field">
-                <label>Heat-Lot No. *</label>
-                <input
-                  name="heatLotNo"
-                  value={form.heatLotNo}
-                  onChange={handleChange}
-                  placeholder="SD6239M4-18"
-                />
-              </div>
-
-              <div className="mtc-field">
-                <label>Condition *</label>
-                <input
-                  name="condition"
-                  value={form.condition}
-                  onChange={handleChange}
-                  placeholder="HF-Spheroidized Annealed"
-                />
-              </div>
-            </div>
-          </section>
-
-          <section className="mtc-form-card">
-            <div className="mtc-card-title">
-              <div>
-                <FlaskConical size={20} />
-              </div>
-              <span>
-                <h3>Chemical Composition</h3>
-                <p>Min/max auto-loaded. Fill only result.</p>
-              </span>
-            </div>
-
-            <div className="mtc-chem-spec-grid">
-              {chemicalElements.map((element) => {
-                const spec = selectedSpec[element];
-                const locked = spec.min === null && spec.max === null;
-
-                return (
-                  <div className="mtc-chem-spec-card" key={element}>
-                    <div className="mtc-chem-symbol">{element}</div>
-
-                    <div className="mtc-chem-range">
-                      <span>Min: {locked ? "X" : spec.min ?? ""}</span>
-                      <span>Max: {locked ? "X" : spec.max ?? ""}</span>
-                    </div>
-
-                    <input
-                      value={form.chemicalComposition[element] || ""}
-                      disabled={locked}
-                      onChange={(e) =>
-                        handleChemicalChange(element, e.target.value)
-                      }
-                      placeholder={locked ? "X" : "Result"}
+                  <div className="mtc-provider-selection-icon">
+                    <Building2
+                      size={21}
                     />
                   </div>
-                );
-              })}
-            </div>
 
-            <div className="mtc-note">
-              Hardness, Hardenability, and Seat values are auto-filled from the
-              selected grade in backend.
-            </div>
-          </section>
+                  <div className="mtc-provider-selection-content">
+                    <strong>
+                      {provider.label}
+                    </strong>
 
-          <div className="mtc-form-actions">
-            <button type="button" className="mtc-cancel-btn" onClick={onBack}>
-              Cancel
-            </button>
+                    <span>
+                      {provider.description}
+                    </span>
 
-            <button type="submit" className="mtc-save-btn" disabled={saving}>
-              {saving ? (
-                <Loader2 className="mtc-spin" size={18} />
-              ) : (
-                <Save size={18} />
-              )}
-              {saving ? "Generating..." : "Generate MTC PDF"}
-            </button>
+                    {!provider.hasForm && (
+                      <small>
+                        Form configuration
+                        pending
+                      </small>
+                    )}
+                  </div>
+
+                  <ChevronRight
+                    size={19}
+                    className="mtc-provider-selection-arrow"
+                  />
+                </button>
+              )
+            )}
           </div>
-        </form>
-      )}
+        )}
+
+        {!loadingProviders && (
+          <button
+            type="button"
+            className="mtc-provider-refresh-btn"
+            onClick={loadProviders}
+          >
+            <RefreshCcw size={15} />
+            Refresh Providers
+          </button>
+        )}
+      </section>
     </div>
   );
 }

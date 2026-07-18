@@ -506,3 +506,706 @@
     grid-template-columns: 1fr;
   }
 }
+/* =========================================================
+   PROVIDER SELECTION
+========================================================= */
+
+.mtc-provider-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mtc-provider-selection-card {
+  width: 100%;
+  min-height: 104px;
+  border: 1px solid #dbe4f0;
+  border-radius: 18px;
+  padding: 16px;
+  background: #fff;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.mtc-provider-selection-card:hover {
+  transform: translateY(-2px);
+  border-color: #0b67d1;
+  box-shadow: 0 12px 28px rgba(6, 66, 156, 0.12);
+}
+
+.mtc-provider-selection-card.disabled {
+  background: #f8fafc;
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.mtc-provider-selection-card.disabled:hover {
+  transform: none;
+  border-color: #dbe4f0;
+  box-shadow: none;
+}
+
+.mtc-provider-selection-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  background: #e8f1ff;
+  color: #06429c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mtc-provider-selection-content {
+  min-width: 0;
+}
+
+.mtc-provider-selection-content strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #101828;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.mtc-provider-selection-content span {
+  display: block;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.mtc-provider-selection-content small {
+  display: block;
+  margin-top: 6px;
+  color: #b54708;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mtc-provider-selection-arrow {
+  color: #98a2b3;
+}
+
+.mtc-provider-loading {
+  min-height: 120px;
+  border: 1px dashed #d0d5dd;
+  border-radius: 18px;
+  color: #667085;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mtc-provider-refresh-btn {
+  margin-top: 14px;
+  height: 39px;
+  border: none;
+  border-radius: 12px;
+  padding: 0 14px;
+  background: #f2f4f7;
+  color: #344054;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* =========================================================
+   BHARAT TC FORM
+========================================================= */
+
+.bharat-mtc-items {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bharat-mtc-item-card {
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.bharat-mtc-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 13px;
+}
+
+.bharat-mtc-item-head strong {
+  color: #06429c;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.bharat-mtc-item-head button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 11px;
+  background: #fee4e2;
+  color: #b42318;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.bharat-mtc-item-head button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.bharat-mtc-add-item {
+  margin-top: 14px;
+  height: 42px;
+  border: 1px dashed #0b67d1;
+  border-radius: 13px;
+  padding: 0 15px;
+  background: #f4f8ff;
+  color: #06429c;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.bharat-mtc-test-card {
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.bharat-mtc-test-card > strong {
+  display: block;
+  margin-bottom: 12px;
+  color: #06429c;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.bharat-mtc-test-card .mtc-form-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .mtc-provider-selection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mtc-provider-selection-card {
+    min-height: 96px;
+    padding: 13px;
+    grid-template-columns: 42px minmax(0, 1fr) 20px;
+    border-radius: 17px;
+  }
+
+  .mtc-provider-selection-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+  }
+
+  .bharat-mtc-item-card,
+  .bharat-mtc-test-card {
+    border-radius: 18px;
+    padding: 12px;
+  }
+
+  .bharat-mtc-test-card .mtc-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bharat-mtc-add-item {
+    width: 100%;
+    justify-content: center;
+  }
+}
+x/* =========================================================
+   BHARAT COMPLETE TC FORM
+========================================================= */
+
+.mtc-field-full {
+  grid-column: 1 / -1;
+}
+
+.mtc-field textarea {
+  width: 100%;
+  min-height: 86px;
+  border: 1px solid #d0d5dd;
+  border-radius: 13px;
+  padding: 11px 12px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #101828;
+  background: #fff;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+.mtc-field textarea:focus {
+  border-color: #0b67d1;
+  box-shadow:
+    0 0 0 4px
+    rgba(11, 103, 209, 0.12);
+}
+
+.mtc-field input:disabled,
+.mtc-field textarea:disabled {
+  background: #f2f4f7;
+  color: #667085;
+  cursor: not-allowed;
+}
+
+.bharat-mtc-subsection {
+  padding: 14px;
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  background: #f8fafc;
+  margin-bottom: 14px;
+}
+
+.bharat-mtc-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.bharat-mtc-subsection h4 {
+  margin: 0 0 14px;
+  color: #06429c;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.bharat-property-grid,
+.bharat-gas-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.bharat-mtc-test-card {
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.bharat-mtc-test-card > strong {
+  display: block;
+  margin-bottom: 12px;
+  color: #06429c;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.bharat-mtc-test-card
+  .mtc-form-grid {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+/* =========================================================
+   SHARED TABLE WRAPPERS
+========================================================= */
+
+.bharat-chemistry-table-wrap,
+.bharat-hardenability-table-wrap,
+.bharat-inclusion-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e4e7ec;
+  border-radius: 16px;
+  background: #fff;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bharat-chemistry-table,
+.bharat-hardenability-table,
+.bharat-inclusion-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bharat-chemistry-table {
+  min-width: 1200px;
+}
+
+.bharat-hardenability-table {
+  min-width: 720px;
+}
+
+.bharat-inclusion-table {
+  min-width: 600px;
+}
+
+.bharat-chemistry-table th,
+.bharat-chemistry-table td,
+.bharat-hardenability-table th,
+.bharat-hardenability-table td,
+.bharat-inclusion-table th,
+.bharat-inclusion-table td {
+  border-right: 1px solid #e4e7ec;
+  border-bottom: 1px solid #e4e7ec;
+  padding: 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.bharat-chemistry-table th:last-child,
+.bharat-chemistry-table td:last-child,
+.bharat-hardenability-table th:last-child,
+.bharat-hardenability-table td:last-child,
+.bharat-inclusion-table th:last-child,
+.bharat-inclusion-table td:last-child {
+  border-right: none;
+}
+
+.bharat-chemistry-table tr:last-child td,
+.bharat-chemistry-table tr:last-child th,
+.bharat-hardenability-table tr:last-child td,
+.bharat-hardenability-table tr:last-child th,
+.bharat-inclusion-table tr:last-child td,
+.bharat-inclusion-table tr:last-child th {
+  border-bottom: none;
+}
+
+.bharat-chemistry-table thead th,
+.bharat-hardenability-table thead th,
+.bharat-inclusion-table thead th {
+  background: #eef4ff;
+  color: #06429c;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.bharat-chemistry-table tbody th,
+.bharat-inclusion-table tbody th {
+  background: #f8fafc;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.bharat-chemistry-table input,
+.bharat-hardenability-table input,
+.bharat-inclusion-table input {
+  width: 100%;
+  min-width: 70px;
+  height: 39px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  padding: 0 8px;
+  background: #fff;
+  color: #101828;
+  text-align: center;
+  font-size: 13px;
+  outline: none;
+}
+
+.bharat-chemistry-table input:focus,
+.bharat-hardenability-table input:focus,
+.bharat-inclusion-table input:focus {
+  border-color: #0b67d1;
+  box-shadow:
+    0 0 0 3px
+    rgba(11, 103, 209, 0.1);
+}
+
+.bharat-inline-delete-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: #fee4e2;
+  color: #b42318;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* =========================================================
+   TABLE SCROLLBAR
+========================================================= */
+
+.bharat-chemistry-table-wrap::-webkit-scrollbar,
+.bharat-hardenability-table-wrap::-webkit-scrollbar,
+.bharat-inclusion-table-wrap::-webkit-scrollbar {
+  height: 8px;
+}
+
+.bharat-chemistry-table-wrap::-webkit-scrollbar-thumb,
+.bharat-hardenability-table-wrap::-webkit-scrollbar-thumb,
+.bharat-inclusion-table-wrap::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+  .bharat-property-grid,
+  .bharat-gas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   PWA / MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+  .mtc-field textarea {
+    min-height: 94px;
+    border-radius: 16px;
+    background: #f9fafb;
+  }
+
+  .bharat-mtc-subsection {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .bharat-property-grid,
+  .bharat-gas-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .bharat-mtc-test-card {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .bharat-mtc-test-card
+    .mtc-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bharat-chemistry-table-wrap,
+  .bharat-hardenability-table-wrap,
+  .bharat-inclusion-table-wrap {
+    border-radius: 14px;
+  }
+
+  .bharat-chemistry-table input,
+  .bharat-hardenability-table input,
+  .bharat-inclusion-table input {
+    height: 42px;
+    border-radius: 11px;
+  }
+}
+/* =========================================================
+   HEAT-WISE CHEMICAL COMPOSITION
+========================================================= */
+
+.bharat-chemistry-table {
+  min-width: 1300px;
+}
+
+.bharat-chemistry-table
+  thead
+  th:first-child {
+  min-width: 135px;
+}
+
+.bharat-chemistry-table
+  thead
+  th:nth-child(2) {
+  min-width: 100px;
+}
+
+.bharat-chemistry-table
+  tbody
+  th:first-child {
+  min-width: 135px;
+}
+
+.bharat-chemistry-table
+  tbody
+  th:nth-child(2) {
+  min-width: 100px;
+}
+
+.bharat-chemistry-heat-input {
+  min-width: 118px !important;
+  background: #eef4ff !important;
+  color: #06429c !important;
+  font-weight: 900 !important;
+  cursor: not-allowed;
+}
+
+.bharat-chemistry-achieved-label {
+  min-height: 39px;
+  border-radius: 10px;
+  background: #f2f4f7;
+  color: #344054;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+}
+/* =========================================================
+   HEAT-WISE MECHANICAL PROPERTIES
+========================================================= */
+
+.bharat-mechanical-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e4e7ec;
+  border-radius: 16px;
+  background: #fff;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bharat-mechanical-table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+}
+
+.bharat-mechanical-table th,
+.bharat-mechanical-table td {
+  border-right: 1px solid #e4e7ec;
+  border-bottom: 1px solid #e4e7ec;
+  padding: 9px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.bharat-mechanical-table th:last-child,
+.bharat-mechanical-table td:last-child {
+  border-right: none;
+}
+
+.bharat-mechanical-table tr:last-child th,
+.bharat-mechanical-table tr:last-child td {
+  border-bottom: none;
+}
+
+.bharat-mechanical-table thead th {
+  background: #eef4ff;
+  color: #06429c;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.bharat-mechanical-table thead th small {
+  display: block;
+  margin-top: 3px;
+  color: #475467;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.bharat-mechanical-table tbody th {
+  min-width: 135px;
+  background: #f8fafc;
+  color: #344054;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.bharat-mechanical-table tbody td {
+  min-width: 135px;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.bharat-mechanical-table input {
+  width: 100%;
+  min-width: 105px;
+  height: 40px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  padding: 0 9px;
+  background: #fff;
+  color: #101828;
+  text-align: center;
+  font-size: 13px;
+  outline: none;
+}
+
+.bharat-mechanical-table input:focus {
+  border-color: #0b67d1;
+  box-shadow:
+    0 0 0 3px
+    rgba(11, 103, 209, 0.1);
+}
+
+.bharat-fixed-value {
+  display: block;
+  padding: 8px;
+  border-radius: 9px;
+  background: #f2f4f7;
+  color: #344054;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.bharat-mechanical-result-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bharat-mechanical-result-label strong {
+  color: #06429c;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.bharat-mechanical-result-label small {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.bharat-mechanical-table-wrap::-webkit-scrollbar {
+  height: 8px;
+}
+
+.bharat-mechanical-table-wrap::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+@media (max-width: 768px) {
+  .bharat-mechanical-table-wrap {
+    border-radius: 14px;
+  }
+
+  .bharat-mechanical-table input {
+    height: 42px;
+    border-radius: 11px;
+  }
+}

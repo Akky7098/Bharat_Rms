@@ -2259,3 +2259,41 @@ transform:none;
   background: #f0fdf4 !important;
   color: #166534 !important;
 }
+/* =====================================================
+   DISPATCH SALES ORDER SEARCH — SHOW UP TO 10 RESULTS
+===================================================== */
+
+.dispatch-search-results {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+
+  width: 100% !important;
+
+  /*
+   * Enough height for approximately 10 compact records.
+   * If records are larger, the dropdown remains scrollable.
+   */
+  max-height: 680px !important;
+
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  padding: 8px !important;
+
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.dispatch-search-results .dispatch-order-card {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+}
+
+/* Mobile/PWA keeps a usable viewport but supports all 10 via scrolling */
+@media (max-width: 900px) {
+  .dispatch-search-results {
+    max-height: min(68dvh, 680px) !important;
+    overscroll-behavior: contain !important;
+  }
+}

@@ -629,3 +629,159 @@
     padding-bottom: 28px;
   }
 }
+/* =========================================================
+   MTC PROVIDER FILTER AND BADGES
+========================================================= */
+
+.mtc-filter-field select {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #101828;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.mtc-filter-field select:disabled {
+  cursor: not-allowed;
+  color: #98a2b3;
+}
+
+.mtc-provider-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #344054;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.mtc-provider-badge-gloria {
+  background: #e8f1ff;
+  color: #0756a8;
+}
+
+.mtc-provider-badge-bharat {
+  background: #e7f8ef;
+  color: #067647;
+}
+
+@media (min-width: 901px) {
+  .mtc-filter-card {
+    grid-template-columns:
+      minmax(190px, 1.3fr)
+      minmax(170px, 1fr)
+      minmax(145px, 0.85fr)
+      minmax(145px, 0.85fr)
+      auto;
+  }
+
+  .mtc-table-card {
+    overflow-x: auto;
+  }
+
+  .mtc-table-card table {
+    min-width: 1050px;
+  }
+}
+
+@media (max-width: 900px) {
+  .ios-mtc-field select {
+    width: 100%;
+    height: 43px;
+    border: 1px solid #d0d5dd;
+    border-radius: 13px;
+    padding: 0 12px;
+    outline: none;
+    background: #fff;
+    color: #101828;
+    font-size: 12px;
+  }
+
+  .ios-mtc-field select:disabled {
+    background: #f2f4f7;
+    color: #98a2b3;
+  }
+
+  .ios-mtc-filter-open {
+    position: relative;
+  }
+
+  .ios-mtc-filter-count {
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #006250;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 950;
+  }
+
+  .ios-mtc-active-provider {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 10px;
+    padding: 9px 10px;
+    border: 1px solid #b7e4d5;
+    border-radius: 13px;
+    background: #ecfdf3;
+    color: #067647;
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .ios-mtc-active-provider span {
+    flex: 1;
+  }
+
+  .ios-mtc-active-provider button {
+    width: 25px;
+    height: 25px;
+    flex: 0 0 25px;
+    border: none;
+    border-radius: 50%;
+    background: #d1fadf;
+    color: #067647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ios-mtc-status {
+    max-width: 130px;
+    min-height: 31px;
+    padding: 7px 9px;
+    line-height: 1.2;
+  }
+
+  .ios-mtc-status-gloria {
+    background: #e8f1ff;
+    color: #0756a8;
+  }
+
+  .ios-mtc-status-bharat {
+    background: #e7f8ef;
+    color: #067647;
+  }
+
+  .ios-mtc-card-provider-gloria {
+    border-left-color: #0756a8;
+  }
+
+  .ios-mtc-card-provider-bharat {
+    border-left-color: #067647;
+  }
+}

@@ -46,7 +46,7 @@ const YEARS = [2026, 2025, 2024];
 const SALES_MIS_USERS = [
   "deepak yadav",
   "renu",
-  "deepika",
+  "deepesh",
   "shalu",
   "saloni",
   "kailash",
@@ -60,42 +60,30 @@ const MIS_WEIGHTAGE_RULES = [
   {
     key: "enquiry",
     title: "Enquiries",
-    shortTitle: "Enquiry",
+    shortTitle: "Enquiries",
     weightage: 15,
-    icon: "📝",
     tone: "blue",
-    description:
-      "Measures the number of qualified enquiries created during the selected period.",
   },
   {
     key: "meeting",
     title: "Customer Meetings",
-    shortTitle: "Meeting",
+    shortTitle: "Customer Meetings",
     weightage: 25,
-    icon: "🤝",
     tone: "purple",
-    description:
-      "Measures customer visits, meetings and meaningful sales interactions.",
   },
   {
     key: "sales_volume",
-    title: "Sales Volume",
-    shortTitle: "Sales Volume",
-    weightage: 20,
-    icon: "₹",
+    title: "Sales Value",
+    shortTitle: "Sales Value",
+    weightage: 40,
     tone: "green",
-    description:
-      "Measures the approved sales value achieved against the assigned target.",
   },
   {
     key: "orders",
-    title: "Number of Orders",
-    shortTitle: "Orders",
-    weightage: 40,
-    icon: "📦",
+    title: "Sales Orders",
+    shortTitle: "Sales Orders",
+    weightage: 20,
     tone: "orange",
-    description:
-      "Measures the number of approved sales orders successfully converted.",
   },
 ];
 
@@ -119,7 +107,6 @@ const [showNotifications, setShowNotifications] = useState(false);
 const [loading, setLoading] = useState(true);
 
 /* MIS tab is shared between desktop and PWA */
-const [activeMisTab, setActiveMisTab] = useState("scorecard");
 
 const [chartWidth, setChartWidth] = useState(
   window.innerWidth <= 480 ? window.innerWidth - 80 : 420
@@ -839,170 +826,229 @@ const orderWonChartData = [...misChartData]
 </MobileSection>
           
             <MobileSection title="MIS Scoring">
-  <div className="ios-mis-tabs">
-    <button
-      type="button"
-      className={activeMisTab === "scorecard" ? "active" : ""}
-      onClick={() => setActiveMisTab("scorecard")}
-    >
-      <span>Performance</span>
-      <strong>Scorecard</strong>
-    </button>
+  <div className="ios-mis-weightage-summary">
+    <div className="ios-mis-weightage-summary-head">
+      <div>
+        <span>MIS WEIGHTAGE</span>
+        <strong>Scoring Formula</strong>
+      </div>
 
-    <button
-      type="button"
-      className={activeMisTab === "weightage" ? "active" : ""}
-      onClick={() => setActiveMisTab("weightage")}
-    >
-      <span>Scoring Rule</span>
-      <strong>Weightage</strong>
-    </button>
+      <b>100%</b>
+    </div>
+
+    <div className="ios-mis-weightage-summary-grid">
+      {MIS_WEIGHTAGE_RULES.map((rule) => (
+        <div
+          key={rule.key}
+          className={`ios-mis-weightage-summary-item ${rule.tone}`}
+        >
+          <span>{rule.shortTitle}</span>
+          <strong>{rule.weightage}%</strong>
+        </div>
+      ))}
+    </div>
   </div>
 
-  {activeMisTab === "weightage" ? (
-    <div className="ios-mis-weightage-panel">
-      <div className="ios-mis-weightage-hero">
-        <div>
-          <span>MIS SCORING FRAMEWORK</span>
-          <h4>Performance Weightage</h4>
-          <p>
-            The final MIS score is calculated out of 100 using these four
-            performance parameters.
-          </p>
-        </div>
+  <div
+    className="ios-total-pill"
+  >
+    Total Leads: {misScoring?.totalLeads || 0}
+  </div>
 
-        <strong>100</strong>
-      </div>
+  {!misChartData.length ? (
+    <p className="ios-empty">
+      No MIS scoring data available
+    </p>
+  ) : (
+    misChartData.map((item, index) => {
+      const monthlyScore = getMonthlyScore(item);
+      const currentWeek = getFrontendCurrentWeek(item);
+      const weekLabel =
+        currentWeek?.label || getWeekLabel(item);
+      const weeklyScore = Number(
+        currentWeek?.weekScore || 0
+      );
+      const scoreClass = getScoreClass(monthlyScore);
 
-      <div className="ios-mis-weightage-list">
-        {MIS_WEIGHTAGE_RULES.map((rule, index) => (
-          <div
-            key={rule.key}
-            className={`ios-mis-weightage-item ${rule.tone}`}
-          >
-            <div className="ios-mis-weightage-icon">
-              {rule.icon}
+      return (
+        <div
+          key={item.salesPersonId || index}
+          className={`ios-score-card ${scoreClass}`}
+        >
+          <div className="ios-score-top">
+            <button
+              type="button"
+              className="mis-person-drill"
+              onClick={() =>
+                openEnquiries({
+                  salesPersonId: item.salesPersonId,
+                  salesPersonName: item.name,
+                })
+              }
+            >
+              <span>#{index + 1}</span>
+              <strong>{item.name}</strong>
+            </button>
+
+            <b>{monthlyScore}/100</b>
+          </div>
+
+          <div className="ios-score-track">
+            <div
+              style={{
+                width: `${Math.min(monthlyScore, 100)}%`,
+                background: getMisBarColor(monthlyScore),
+              }}
+            />
+          </div>
+
+          <div className="ios-score-stats">
+            <MiniStat
+              label="Enq"
+              value={item.totalEnquiries || 0}
+              onClick={() =>
+                openEnquiries({
+                  salesPersonId: item.salesPersonId,
+                })
+              }
+            />
+
+            <MiniStat
+              label="Won"
+              value={item.wonEnquiries || 0}
+              onClick={() =>
+                openEnquiries({
+                  status: "won",
+                  salesPersonId: item.salesPersonId,
+                })
+              }
+            />
+
+            <MiniStat
+              label="Orders"
+              value={item.approvedOrders || 0}
+              onClick={() =>
+                openSalesOrders({
+                  salesPersonId: item.salesPersonId,
+                })
+              }
+            />
+
+            <MiniStat
+              label="Visits"
+              value={item.visitsDone || 0}
+              onClick={() =>
+                drillTo("coldCall", {
+                  activityType: "visit",
+                  salesPersonId: item.salesPersonId,
+                })
+              }
+            />
+          </div>
+
+          <div className="ios-mis-month-card">
+            <div className="ios-mis-month-head">
+              <span>Monthly Target</span>
+
+              <b>
+                {formatCurrency(
+                  item?.target?.monthly?.salesValue || 0
+                )}
+              </b>
             </div>
 
-            <div className="ios-mis-weightage-content">
-              <div className="ios-mis-weightage-title">
-                <div>
-                  <span>Parameter {index + 1}</span>
-                  <h5>{rule.title}</h5>
-                </div>
+            <div className="ios-mis-month-grid">
+              <MisMetric
+                label="Sales Done"
+                value={formatCurrency(
+                  item?.approvedSalesValue || 0
+                )}
+                onClick={() =>
+                  openSalesOrders({
+                    salesPersonId: item.salesPersonId,
+                  })
+                }
+              />
 
-                <strong>{rule.weightage}%</strong>
-              </div>
+              <MisMetric
+                label="Enq Done"
+                value={item?.totalEnquiries || 0}
+                onClick={() =>
+                  openEnquiries({
+                    salesPersonId: item.salesPersonId,
+                  })
+                }
+              />
 
-              <p>{rule.description}</p>
-
-              <div className="ios-mis-weightage-track">
-                <span
-                  style={{
-                    width: `${rule.weightage}%`,
-                  }}
-                />
-              </div>
+              <MisMetric
+                label="Visit Done"
+                value={item?.visitsDone || 0}
+                onClick={() =>
+                  drillTo("attendance", {
+                    type: "visits",
+                    salesPersonId: item.salesPersonId,
+                  })
+                }
+              />
             </div>
           </div>
-        ))}
-      </div>
 
-      <div className="ios-mis-weightage-total">
-        <span>Total MIS Score</span>
-        <strong>100%</strong>
-      </div>
+          <div className="ios-mis-week-card">
+            <div className="ios-mis-week-head">
+              <span>{weekLabel} Target</span>
+              <strong>{weeklyScore}/100</strong>
+            </div>
 
-      <p className="ios-mis-weightage-note">
-        The number of approved orders carries the highest weightage because
-        successful conversion is the strongest final sales outcome.
-      </p>
-    </div>
-  ) : (
-    <>
-      <button
-        type="button"
-        className="ios-total-pill drill-pill"
-        onClick={() => openEnquiries({ leadSource: "mis" })}
-      >
-        Total Leads: {misScoring?.totalLeads || 0}
-      </button>
+            <div className="ios-mis-week-score-track">
+              <div
+                style={{
+                  width: `${Math.min(weeklyScore, 100)}%`,
+                  background: getMisBarColor(weeklyScore),
+                }}
+              />
+            </div>
 
-      {!misChartData.length ? (
-        <p className="ios-empty">No MIS scoring data available</p>
-      ) : (
-        misChartData.map((item, index) => {
-                const monthlyScore = getMonthlyScore(item);
-                const currentWeek = getFrontendCurrentWeek(item);
-                const weekLabel = currentWeek?.label || getWeekLabel(item);
-                const weeklyScore = Number(currentWeek?.weekScore || 0);
-                const scoreClass = getScoreClass(monthlyScore);
+            <div className="ios-mis-week-grid">
+              <MiniStat
+                label="Sales Done"
+                value={formatCurrency(
+                  currentWeek?.approvedSalesValue || 0
+                )}
+                onClick={() =>
+                  openSalesOrders({
+                    salesPersonId: item.salesPersonId,
+                    weekNo: currentWeek?.weekNo,
+                  })
+                }
+              />
 
-                return (
-                  <div key={item.salesPersonId || index} className={`ios-score-card ${scoreClass}`}>
-                    <div className="ios-score-top">
-                      <button
-                        type="button"
-                        className="mis-person-drill"
-                        onClick={() =>
-                          openEnquiries({
-                            salesPersonId: item.salesPersonId,
-                            salesPersonName: item.name,
-                          })
-                        }
-                      >
-                        <span>#{index + 1}</span>
-                        <strong>{item.name}</strong>
-                      </button>
+              <MiniStat
+                label="Enq Done"
+                value={currentWeek?.enquiries || 0}
+                onClick={() =>
+                  openEnquiries({
+                    salesPersonId: item.salesPersonId,
+                    weekNo: currentWeek?.weekNo,
+                  })
+                }
+              />
 
-                      <b>{monthlyScore}/100</b>
-                    </div>
-
-                    <div className="ios-score-track">
-                      <div style={{ width: `${Math.min(monthlyScore, 100)}%`, background: getMisBarColor(monthlyScore) }}></div>
-                    </div>
-
-                    <div className="ios-score-stats">
-                      <MiniStat label="Enq" value={item.totalEnquiries || 0} onClick={() => openEnquiries({ salesPersonId: item.salesPersonId })} />
-                      <MiniStat label="Won" value={item.wonEnquiries || 0} onClick={() => openEnquiries({ status: "won", salesPersonId: item.salesPersonId })} />
-                      <MiniStat label="Orders" value={item.approvedOrders || 0} onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId })} />
-                      <MiniStat label="Visits" value={item.visitsDone || 0} onClick={() => drillTo("coldCall", { activityType: "visit", salesPersonId: item.salesPersonId })} />
-                    </div>
-
-                    <div className="ios-mis-month-card">
-                      <div className="ios-mis-month-head">
-                        <span>Monthly Target</span>
-                        <b>{formatCurrency(item?.target?.monthly?.salesValue || 0)}</b>
-                      </div>
-
-                      <div className="ios-mis-month-grid">
-                        <MisMetric label="Sales Done" value={formatCurrency(item?.approvedSalesValue || 0)} onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId })} />
-                        <MisMetric label="Enq Done" value={item?.totalEnquiries || 0} onClick={() => openEnquiries({ salesPersonId: item.salesPersonId })} />
-                        <MisMetric label="Visit Done" value={item?.visitsDone || 0} onClick={() => drillTo("attendance", { type: "visits", salesPersonId: item.salesPersonId })} />
-                      </div>
-                    </div>
-
-                    <div className="ios-mis-week-card">
-                      <div className="ios-mis-week-head">
-                        <span>{weekLabel} Target</span>
-                        <strong>{weeklyScore}/100</strong>
-                      </div>
-
-                      <div className="ios-mis-week-score-track">
-                        <div style={{ width: `${Math.min(weeklyScore, 100)}%`, background: getMisBarColor(weeklyScore) }}></div>
-                      </div>
-
-                      <div className="ios-mis-week-grid">
-                        <MiniStat label="Sales Done" value={formatCurrency(currentWeek?.approvedSalesValue || 0)} onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
-                        <MiniStat label="Enq Done" value={currentWeek?.enquiries || 0} onClick={() => openEnquiries({ salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
-                        <MiniStat label="Visit Done" value={currentWeek?.visits || 0} onClick={() => drillTo("coldCall", { activityType: "visit", salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
-                      </div>
-                    </div>
-                  </div>
-                );
-                      })
-      )}
-    </>
+              <MiniStat
+                label="Visit Done"
+                value={currentWeek?.visits || 0}
+                onClick={() =>
+                  drillTo("coldCall", {
+                    activityType: "visit",
+                    salesPersonId: item.salesPersonId,
+                    weekNo: currentWeek?.weekNo,
+                  })
+                }
+              />
+            </div>
+          </div>
+        </div>
+      );
+    })
   )}
 </MobileSection>
 
@@ -1267,392 +1313,421 @@ const orderWonChartData = [...misChartData]
     </button>
   </div>
 
-  <div className="mis-tab-navigation">
-    <button
-      type="button"
-      className={activeMisTab === "scorecard" ? "active" : ""}
-      onClick={() => setActiveMisTab("scorecard")}
-    >
-      <span className="mis-tab-icon">▦</span>
-
-      <span>
-        <small>Employee performance</small>
-        <strong>Scorecard</strong>
-      </span>
-    </button>
-
-    <button
-      type="button"
-      className={activeMisTab === "weightage" ? "active" : ""}
-      onClick={() => setActiveMisTab("weightage")}
-    >
-      <span className="mis-tab-icon">%</span>
-
-      <span>
-        <small>Scoring framework</small>
-        <strong>Weightage</strong>
-      </span>
-    </button>
+ <div className="mis-weightage-summary">
+  <div className="mis-weightage-summary-title">
+    <span>MIS WEIGHTAGE</span>
+    <strong>Performance Scoring Formula</strong>
   </div>
 
-  {activeMisTab === "weightage" ? (
-    <div className="mis-weightage-panel">
-      <div className="mis-weightage-hero">
-        <div className="mis-weightage-hero-content">
-          <span>MIS PERFORMANCE FORMULA</span>
-
-          <h4>How the final score is calculated</h4>
-
-          <p>
-            Every salesperson receives a score out of 100. The score combines
-            lead generation, customer engagement, sales value and successful
-            order conversion.
-          </p>
-
-          <div className="mis-weightage-formula">
-            {MIS_WEIGHTAGE_RULES.map((rule, index) => (
-              <React.Fragment key={rule.key}>
-                <span>{rule.shortTitle}</span>
-                <strong>{rule.weightage}%</strong>
-
-                {index < MIS_WEIGHTAGE_RULES.length - 1 && (
-                  <b>+</b>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        <div className="mis-weightage-score-ring">
-          <div>
-            <strong>100</strong>
-            <span>Total Score</span>
-          </div>
-        </div>
+  <div className="mis-weightage-summary-items">
+    {MIS_WEIGHTAGE_RULES.map((rule) => (
+      <div
+        key={rule.key}
+        className={`mis-weightage-summary-item ${rule.tone}`}
+      >
+        <span>{rule.shortTitle}</span>
+        <strong>{rule.weightage}%</strong>
       </div>
+    ))}
+  </div>
+</div>
 
-      <div className="mis-weightage-grid">
-        {MIS_WEIGHTAGE_RULES.map((rule, index) => (
+  {!misChartData.length ? (
+  <div className="cashflow-empty">
+    No MIS scoring data available
+  </div>
+) : (
+  <>
+    <div className="mis-employee-grid mis-employee-grid-premium">
+      {misChartData.map((item, index) => {
+        const monthlyScore = getMonthlyScore(item);
+        const currentWeek = getFrontendCurrentWeek(item);
+        const weekLabel =
+          currentWeek?.label || getWeekLabel(item);
+        const weeklyScore = Number(
+          currentWeek?.weekScore || 0
+        );
+        const scoreClass = getScoreClass(monthlyScore);
+        const monthlyTarget = item?.target?.monthly || {};
+        
+
+        return (
           <div
-            key={rule.key}
-            className={`mis-weightage-card ${rule.tone}`}
+            key={item.salesPersonId || index}
+            className={`mis-employee-card ${scoreClass}`}
           >
-            <div className="mis-weightage-card-top">
-              <span className="mis-weightage-number">
-                0{index + 1}
-              </span>
+            <div className="mis-employee-top">
+              <button
+                type="button"
+                className="mis-person-drill"
+                onClick={() =>
+                  openEnquiries({
+                    salesPersonId: item.salesPersonId,
+                    salesPersonName: item.name,
+                  })
+                }
+              >
+                <span className="mis-rank">
+                  #{index + 1}
+                </span>
 
-              <span className="mis-weightage-card-icon">
-                {rule.icon}
-              </span>
+                <h4>{item.name}</h4>
+              </button>
+
+              <strong>{monthlyScore}/100</strong>
             </div>
 
-            <span className="mis-weightage-label">
-              Performance Parameter
-            </span>
+            <p className="mis-monthly-label">
+              Monthly MIS Score
+            </p>
 
-            <h4>{rule.title}</h4>
-
-            <p>{rule.description}</p>
-
-            <div className="mis-weightage-value-row">
-              <span>Score contribution</span>
-              <strong>{rule.weightage}%</strong>
-            </div>
-
-            <div className="mis-weightage-progress">
+            <div className="mis-progress">
               <span
                 style={{
-                  width: `${rule.weightage}%`,
+                  width: `${Math.min(monthlyScore, 100)}%`,
                 }}
               />
             </div>
-          </div>
-        ))}
-      </div>
 
-      <div className="mis-weightage-footer">
-        <div>
-          <span>Highest Weightage</span>
-          <strong>Number of Orders — 40%</strong>
-        </div>
+            <div className="mis-employee-stats">
+              <MisStat
+                value={item.totalEnquiries || 0}
+                label="Enquiries"
+                onClick={() =>
+                  openEnquiries({
+                    salesPersonId: item.salesPersonId,
+                  })
+                }
+              />
 
-        <p>
-          Approved order conversion carries the highest contribution to ensure
-          that MIS scoring remains directly connected with actual business
-          results.
-        </p>
+              <MisStat
+                value={item.wonEnquiries || 0}
+                label="Won"
+                onClick={() =>
+                  openEnquiries({
+                    status: "won",
+                    salesPersonId: item.salesPersonId,
+                  })
+                }
+              />
 
-        <div className="mis-weightage-total-badge">
-          <span>Combined</span>
-          <strong>100%</strong>
-        </div>
-      </div>
-    </div>
-  ) : !misChartData.length ? (
-            <div className="cashflow-empty">No MIS scoring data available</div>
-          ) : (
-            <>
-              <div className="mis-employee-grid mis-employee-grid-premium">
-                {misChartData.map((item, index) => {
-                  const monthlyScore = getMonthlyScore(item);
-                  const currentWeek = getFrontendCurrentWeek(item);
-                  const weekLabel = currentWeek?.label || getWeekLabel(item);
-                  const weeklyScore = Number(currentWeek?.weekScore || 0);
-                  const scoreClass = getScoreClass(monthlyScore);
-                  const monthlyTarget = item?.target?.monthly || {};
-                  const monthlyShortBy = item?.shortBy || {};
+              <MisStat
+                value={item.approvedOrders || 0}
+                label="Orders"
+                onClick={() =>
+                  openSalesOrders({
+                    salesPersonId: item.salesPersonId,
+                  })
+                }
+              />
 
-                  return (
-                    <div key={item.salesPersonId || index} className={`mis-employee-card ${scoreClass}`}>
-                      <div className="mis-employee-top">
-                        <button
-                          type="button"
-                          className="mis-person-drill"
-                          onClick={() =>
-                            openEnquiries({
-                              salesPersonId: item.salesPersonId,
-                              salesPersonName: item.name,
-                            })
-                          }
-                        >
-                          <span className="mis-rank">#{index + 1}</span>
-                          <h4>{item.name}</h4>
-                        </button>
+              <MisStat
+                value={item.visitsDone || 0}
+                label="Visits"
+                onClick={() =>
+                  drillTo("attendance", {
+                    type: "visits",
+                    salesPersonId: item.salesPersonId,
+                  })
+                }
+              />
+            </div>
 
-                        <strong>{monthlyScore}/100</strong>
-                      </div>
-
-                      <p className="mis-monthly-label">Monthly MIS Score</p>
-
-                      <div className="mis-progress">
-                        <span style={{ width: `${Math.min(monthlyScore, 100)}%` }}></span>
-                      </div>
-
-                      <div className="mis-employee-stats">
-                        <MisStat value={item.totalEnquiries || 0} label="Enquiries" onClick={() => openEnquiries({ salesPersonId: item.salesPersonId })} />
-                        <MisStat value={item.wonEnquiries || 0} label="Won" onClick={() => openEnquiries({ status: "won", salesPersonId: item.salesPersonId })} />
-                        <MisStat value={item.approvedOrders || 0} label="Orders" onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId })} />
-                        <MisStat value={item.visitsDone || 0} label="Visits" onClick={() => drillTo("attendance", { type: "visits", salesPersonId: item.salesPersonId })} />
-                      </div>
-
-                      <div className="mis-month-target-box">
-                        <div className="mis-target-title">
-                          <span>Monthly Target</span>
-                        </div>
-
-                        <div className="mis-target-grid">
-                          <div><span>Sales Target</span><b>{formatCurrency(monthlyTarget.salesValue || 0)}</b></div>
-                          <MisMetric label="Sales Done" value={formatCurrency(item.approvedSalesValue || 0)} onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId })} />
-                          <div><span>Sales Missing</span><b>{formatCurrency(monthlyShortBy.salesValue || 0)}</b></div>
-
-                          <div><span>Enquiry Target</span><b>{monthlyTarget.enquiries || 0}</b></div>
-                          <MisMetric label="Enquiry Done" value={item.totalEnquiries || 0} onClick={() => openEnquiries({ salesPersonId: item.salesPersonId })} />
-                          <div><span>Enquiry Missing</span><b>{monthlyShortBy.enquiries || 0}</b></div>
-
-                          <div><span>Visit Target</span><b>{monthlyTarget.visits || 0}</b></div>
-                          <MisMetric label="Visit Done" value={item.visitsDone || 0} onClick={() => drillTo("attendance", { type: "visits", salesPersonId: item.salesPersonId })} />
-                          <div><span>Visit Missing</span><b>{monthlyShortBy.visits || 0}</b></div>
-                        </div>
-                      </div>
-
-                      <div className="mis-week-premium">
-                        <div className="mis-week-title">
-                          <div>
-                            <span>{currentWeek?.label || weekLabel}</span>
-                            <strong>{Number(currentWeek?.weekScore || weeklyScore || 0)}/100</strong>
-                          </div>
-
-                          <b>Weekly Score</b>
-                        </div>
-
-                        <div className="mis-week-progress">
-                          <span
-                            style={{
-                              width: `${Math.min(Number(currentWeek?.weekScore || weeklyScore || 0), 100)}%`,
-                              background: getMisBarColor(Number(currentWeek?.weekScore || weeklyScore || 0)),
-                            }}
-                          ></span>
-                        </div>
-
-                        <div className="mis-week-target-grid">
-                          <div><span>Sales Target</span><b>{formatCurrency(currentWeek?.targetWithCarryForward?.salesValue || 0)}</b></div>
-                          <MisMetric label="Sales Done" value={formatCurrency(currentWeek?.approvedSalesValue || 0)} onClick={() => openSalesOrders({ salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
-                          <div><span>Sales Missing</span><b>{formatCurrency(currentWeek?.shortBy?.salesValue || 0)}</b></div>
-
-                          <div><span>Enq Target</span><b>{Math.ceil(currentWeek?.targetWithCarryForward?.enquiries || 0)}</b></div>
-                          <MisMetric label="Enq Done" value={currentWeek?.enquiries || 0} onClick={() => openEnquiries({ salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
-                          <div><span>Enq Missing</span><b>{Math.ceil(currentWeek?.shortBy?.enquiries || 0)}</b></div>
-
-                          <div><span>Visit Target</span><b>{Math.ceil(currentWeek?.targetWithCarryForward?.visits || 0)}</b></div>
-                          <MisMetric label="Visit Done" value={currentWeek?.visits || 0} onClick={() => drillTo("attendance", { type: "visits", salesPersonId: item.salesPersonId, weekNo: currentWeek?.weekNo })} />
-                          <div><span>Visit Missing</span><b>{Math.ceil(currentWeek?.shortBy?.visits || 0)}</b></div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+            <div className="mis-month-target-box">
+              <div className="mis-target-title">
+                <span>Monthly Target</span>
               </div>
 
-              <div className="mis-chart-compact">
-  <div className="mis-weekly-chart-head">
-    <div>
-      <span>
-        TEAM COMPETITION
-      </span>
-
-      <h4>
-        Salesperson Weekly MIS Score Comparison
-      </h4>
-
-      <p>
-        Current-week score for every sales
-        employee
-      </p>
-    </div>
+              <div className="mis-target-grid mis-target-grid-two-column">
+  <div>
+    <span>Sales Target</span>
+    <b>
+      {formatCurrency(
+        monthlyTarget.salesValue || 0
+      )}
+    </b>
   </div>
 
-  {!weeklyMisChartData.length ? (
-    <div className="cashflow-empty">
-      No weekly MIS data available
-    </div>
-  ) : (
-    <ResponsiveContainer
-      width="100%"
-      height={Math.max(
-        300,
-        weeklyMisChartData.length *
-          55
-      )}
-    >
-      <BarChart
-        data={weeklyMisChartData}
-        layout="vertical"
-        margin={{
-          top: 18,
-          right: 55,
-          left: 35,
-          bottom: 10,
-        }}
-      >
-        <CartesianGrid
-          strokeDasharray="3 3"
-          opacity={0.15}
-        />
+  <MisMetric
+    label="Sales Done"
+    value={formatCurrency(
+      item.approvedSalesValue || 0
+    )}
+    onClick={() =>
+      openSalesOrders({
+        salesPersonId: item.salesPersonId,
+      })
+    }
+  />
 
-        <XAxis
-          type="number"
-          domain={[0, 100]}
-          allowDecimals={false}
-          tick={{
-            fontSize: 12,
-          }}
-        />
+  <div>
+    <span>Enquiry Target</span>
+    <b>{monthlyTarget.enquiries || 0}</b>
+  </div>
 
-        <YAxis
-          type="category"
-          dataKey="name"
-          width={120}
-          interval={0}
-          tick={{
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        />
+  <MisMetric
+    label="Enquiry Done"
+    value={item.totalEnquiries || 0}
+    onClick={() =>
+      openEnquiries({
+        salesPersonId: item.salesPersonId,
+      })
+    }
+  />
 
-        <Tooltip
-          formatter={(
-            value,
-            name,
-            props
-          ) => {
-            if (
-              name ===
-                "weeklyScore"
-            ) {
-              return [
-                `${Number(
-                  value || 0
-                )}/100`,
-                `${
-                  props?.payload
-                    ?.currentWeekLabel ||
-                  "Current Week"
-                } MIS Score`,
-              ];
-            }
+  <div>
+    <span>Visit Target</span>
+    <b>{monthlyTarget.visits || 0}</b>
+  </div>
 
-            return [
-              value,
-              name,
-            ];
-          }}
-          labelFormatter={(
-            label
-          ) =>
-            `Sales Person: ${label}`
-          }
-        />
-
-        <Bar
-          dataKey="weeklyScore"
-          radius={[
-            0,
-            12,
-            12,
-            0,
-          ]}
-          label={{
-            position: "right",
-            formatter: (
-              value
-            ) =>
-              `${Number(
-                value || 0
-              )}/100`,
-            fontSize: 11,
-            fontWeight: 800,
-            fill: "#334155",
-          }}
-          onClick={(entry) =>
-            openEnquiries({
-              salesPersonId:
-                entry
-                  ?.salesPersonId,
-
-              salesPersonName:
-                entry?.name,
-
-              sourceType:
-                "weeklyMis",
-            })
-          }
-        >
-          {weeklyMisChartData.map(
-            (
-              entry,
-              index
-            ) => (
-              <Cell
-                key={
-                  entry
-                    .salesPersonId ||
-                  index
-                }
-                fill={getMisBarColor(
-                  entry.weeklyScore
-                )}
-                className="drill-chart-cell"
-              />
-            )
-          )}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  )}
+  <MisMetric
+    label="Visit Done"
+    value={item.visitsDone || 0}
+    onClick={() =>
+      drillTo("attendance", {
+        type: "visits",
+        salesPersonId: item.salesPersonId,
+      })
+    }
+  />
 </div>
-            </>
+            </div>
+
+            <div className="mis-week-premium">
+              <div className="mis-week-title">
+                <div>
+                  <span>
+                    {currentWeek?.label || weekLabel}
+                  </span>
+
+                  <strong>
+                    {Number(
+                      currentWeek?.weekScore ||
+                        weeklyScore ||
+                        0
+                    )}
+                    /100
+                  </strong>
+                </div>
+
+                <b>Weekly Score</b>
+              </div>
+
+              <div className="mis-week-progress">
+                <span
+                  style={{
+                    width: `${Math.min(
+                      Number(
+                        currentWeek?.weekScore ||
+                          weeklyScore ||
+                          0
+                      ),
+                      100
+                    )}%`,
+                    background: getMisBarColor(
+                      Number(
+                        currentWeek?.weekScore ||
+                          weeklyScore ||
+                          0
+                      )
+                    ),
+                  }}
+                />
+              </div>
+
+             <div className="mis-week-target-grid mis-week-target-grid-two-column">
+  <div>
+    <span>Sales Target</span>
+    <b>
+      {formatCurrency(
+        currentWeek?.targetWithCarryForward
+          ?.salesValue || 0
+      )}
+    </b>
+  </div>
+
+  <MisMetric
+    label="Sales Done"
+    value={formatCurrency(
+      currentWeek?.approvedSalesValue || 0
+    )}
+    onClick={() =>
+      openSalesOrders({
+        salesPersonId: item.salesPersonId,
+        weekNo: currentWeek?.weekNo,
+      })
+    }
+  />
+
+  <div>
+    <span>Enq Target</span>
+    <b>
+      {Math.ceil(
+        currentWeek?.targetWithCarryForward
+          ?.enquiries || 0
+      )}
+    </b>
+  </div>
+
+  <MisMetric
+    label="Enq Done"
+    value={currentWeek?.enquiries || 0}
+    onClick={() =>
+      openEnquiries({
+        salesPersonId: item.salesPersonId,
+        weekNo: currentWeek?.weekNo,
+      })
+    }
+  />
+
+  <div>
+    <span>Visit Target</span>
+    <b>
+      {Math.ceil(
+        currentWeek?.targetWithCarryForward
+          ?.visits || 0
+      )}
+    </b>
+  </div>
+
+  <MisMetric
+    label="Visit Done"
+    value={currentWeek?.visits || 0}
+    onClick={() =>
+      drillTo("attendance", {
+        type: "visits",
+        salesPersonId: item.salesPersonId,
+        weekNo: currentWeek?.weekNo,
+      })
+    }
+  />
+</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <div className="mis-chart-compact">
+      <div className="mis-weekly-chart-head">
+        <div>
+          <span>TEAM COMPETITION</span>
+
+          <h4>
+            Salesperson Weekly MIS Score Comparison
+          </h4>
+
+          <p>
+            Current-week score for every sales employee
+          </p>
+        </div>
+      </div>
+
+      {!weeklyMisChartData.length ? (
+        <div className="cashflow-empty">
+          No weekly MIS data available
+        </div>
+      ) : (
+        <ResponsiveContainer
+          width="100%"
+          height={Math.max(
+            300,
+            weeklyMisChartData.length * 55
           )}
+        >
+          <BarChart
+            data={weeklyMisChartData}
+            layout="vertical"
+            margin={{
+              top: 18,
+              right: 55,
+              left: 35,
+              bottom: 10,
+            }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              opacity={0.15}
+            />
+
+            <XAxis
+              type="number"
+              domain={[0, 100]}
+              allowDecimals={false}
+              tick={{
+                fontSize: 12,
+              }}
+            />
+
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={120}
+              interval={0}
+              tick={{
+                fontSize: 12,
+                fontWeight: 700,
+              }}
+            />
+
+            <Tooltip
+              formatter={(value, name, props) => {
+                if (name === "weeklyScore") {
+                  return [
+                    `${Number(value || 0)}/100`,
+                    `${
+                      props?.payload?.currentWeekLabel ||
+                      "Current Week"
+                    } MIS Score`,
+                  ];
+                }
+
+                return [value, name];
+              }}
+              labelFormatter={(label) =>
+                `Sales Person: ${label}`
+              }
+            />
+
+            <Bar
+              dataKey="weeklyScore"
+              radius={[0, 12, 12, 0]}
+              label={{
+                position: "right",
+                formatter: (value) =>
+                  `${Number(value || 0)}/100`,
+                fontSize: 11,
+                fontWeight: 800,
+                fill: "#334155",
+              }}
+              onClick={(entry) =>
+                openEnquiries({
+                  salesPersonId: entry?.salesPersonId,
+                  salesPersonName: entry?.name,
+                  sourceType: "weeklyMis",
+                })
+              }
+            >
+              {weeklyMisChartData.map(
+                (entry, index) => (
+                  <Cell
+                    key={
+                      entry.salesPersonId || index
+                    }
+                    fill={getMisBarColor(
+                      entry.weeklyScore
+                    )}
+                    className="drill-chart-cell"
+                  />
+                )
+              )}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  </>
+)}
         </div>
 
         {cashflow && (

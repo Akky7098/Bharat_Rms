@@ -109,22 +109,55 @@ const DispatchForm = ({ onClose, refresh }) => {
     return formatDate(dueDate);
   };
 
-  const loadOrders = async (searchValue = "") => {
-    try {
-      setLoadingOrders(true);
+ const loadOrders = async (searchValue = "") => {
+  try {
+    setLoadingOrders(true);
 
-      const response = await searchDispatchSalesOrders({
-        search: searchValue,
-        limit: 6,
-      });
+    const response = await searchDispatchSalesOrders({
+      search: searchValue.trim(),
+      limit: 10,
+    });
 
-      setOrders(response.data || []);
-    } catch (error) {
-      alert(error.response?.data?.message || "Failed to search sales orders");
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
+    /*
+     * Backend should already remove fully dispatched orders.
+     * This frontend check is an additional safety layer.
+     */
+    const availableOrders = (response?.data || [])
+      .filter((order) => {
+        const totalQty = Number(order?.totalOrderQty || 0);
+        const remainingQty = Number(
+          order?.remainingDispatchQty || 0
+        );
+
+        /*
+         * If quantity cannot be calculated, retain the order
+         * for compatibility with older sales orders.
+         */
+        if (totalQty <= 0) {
+          return (
+            order?.dispatchAvailabilityStatus !==
+            "fully_dispatched"
+          );
+        }
+
+        return (
+          remainingQty > 0 &&
+          order?.dispatchAvailabilityStatus !==
+            "fully_dispatched"
+        );
+      })
+      .slice(0, 10);
+
+    setOrders(availableOrders);
+  } catch (error) {
+    alert(
+      error.response?.data?.message ||
+        "Failed to search sales orders"
+    );
+  } finally {
+    setLoadingOrders(false);
+  }
+};
 
   useEffect(() => {
     if (!hasFocusedSearch || selectedOrder) return;

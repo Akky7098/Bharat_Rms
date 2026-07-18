@@ -2,7 +2,6 @@ import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useState,
 } from "react";
 import "./Dispatch.css";
@@ -26,11 +25,31 @@ const DispatchPage = () => {
     if (canManageAll) return true;
     return String(item.salesPersonId) === String(user?._id || user?.id);
   };
+const [dispatches, setDispatches] = useState([]);
 
-  const [dispatches, setDispatches] = useState([]);
-  const [pagination, setPagination] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+const [pagination, setPagination] = useState(null);
+
+const [dispatchInsights, setDispatchInsights] = useState({
+  monthlyDispatch: {
+    amount: 0,
+    count: 0,
+  },
+  monthlyPaid: {
+    amount: 0,
+    count: 0,
+  },
+  totalDue: {
+    amount: 0,
+    count: 0,
+  },
+  overdueThisMonth: {
+    amount: 0,
+    count: 0,
+  },
+});
+
+const [loading, setLoading] = useState(false);
+const [refreshing, setRefreshing] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [paymentModal, setPaymentModal] = useState(null);
@@ -130,46 +149,46 @@ const [filters, setFilters] = useState({
   //   };
   // };
 
-  const isThisMonth = (date) => {
-    if (!date) return false;
-    const value = new Date(date);
-    const now = new Date();
+  // const isThisMonth = (date) => {
+  //   if (!date) return false;
+  //   const value = new Date(date);
+  //   const now = new Date();
 
-    return (
-      value.getMonth() === now.getMonth() &&
-      value.getFullYear() === now.getFullYear()
-    );
-  };
+  //   return (
+  //     value.getMonth() === now.getMonth() &&
+  //     value.getFullYear() === now.getFullYear()
+  //   );
+  // };
 
-  const dispatchSummary = useMemo(() => {
-    return dispatches.reduce(
-      (summary, item) => {
-        const invoiceValue = Number(item.invoiceValue || 0);
-        const pendingAmount = Number(item.pendingAmount || 0);
-        const paidAmount = Number(item.paidAmount || 0);
-        const paymentStatus = item.paymentStatus || "pending";
+  // const dispatchSummary = useMemo(() => {
+  //   return dispatches.reduce(
+  //     (summary, item) => {
+  //       const invoiceValue = Number(item.invoiceValue || 0);
+  //       const pendingAmount = Number(item.pendingAmount || 0);
+  //       const paidAmount = Number(item.paidAmount || 0);
+  //       const paymentStatus = item.paymentStatus || "pending";
 
-        if (isThisMonth(item.dispatchDate || item.invoiceDate || item.createdAt)) {
-          summary.monthlyDispatch += invoiceValue;
-          summary.monthlyPaid += paidAmount;
-        }
+  //       if (isThisMonth(item.dispatchDate || item.invoiceDate || item.createdAt)) {
+  //         summary.monthlyDispatch += invoiceValue;
+  //         summary.monthlyPaid += paidAmount;
+  //       }
 
-        summary.totalDue += pendingAmount;
+  //       summary.totalDue += pendingAmount;
 
-        if (paymentStatus === "overdue") {
-          summary.overdueThisMonth += pendingAmount;
-        }
+  //       if (paymentStatus === "overdue") {
+  //         summary.overdueThisMonth += pendingAmount;
+  //       }
 
-        return summary;
-      },
-      {
-        monthlyDispatch: 0,
-        monthlyPaid: 0,
-        totalDue: 0,
-        overdueThisMonth: 0,
-      }
-    );
-  }, [dispatches]);
+  //       return summary;
+  //     },
+  //     {
+  //       monthlyDispatch: 0,
+  //       monthlyPaid: 0,
+  //       totalDue: 0,
+  //       overdueThisMonth: 0,
+  //     }
+  //   );
+  // }, [dispatches]);
 
   const getBaseFilters = () => ({
   fromDate: "",
@@ -208,30 +227,64 @@ const [filters, setFilters] = useState({
 };
 
 
-  const loadDispatches = useCallback(async () => {
-    try {
-      setLoading(true);
+const loadDispatches = useCallback(async () => {
+  try {
+    setLoading(true);
 
-      const cleanFilters = {};
-      Object.keys(filters).forEach((key) => {
-        if (
-          filters[key] !== "" &&
-          filters[key] !== null &&
-          filters[key] !== undefined
-        ) {
-          cleanFilters[key] = filters[key];
-        }
-      });
+    const cleanFilters = {};
 
-      const response = await getDispatches(cleanFilters);
-      setDispatches(response.data || []);
-      setPagination(response.pagination || null);
-    } catch (error) {
-      alert(error.response?.data?.message || "Failed to load dispatch data");
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
+    Object.keys(filters).forEach((key) => {
+      if (
+        filters[key] !== "" &&
+        filters[key] !== null &&
+        filters[key] !== undefined
+      ) {
+        cleanFilters[key] = filters[key];
+      }
+    });
+
+    const response = await getDispatches(cleanFilters);
+
+    setDispatches(response?.data || []);
+
+    setPagination(
+      response?.pagination || {
+        totalRecords: 0,
+        currentPage: 1,
+        totalPages: 1,
+        limit: 30,
+      }
+    );
+
+    setDispatchInsights(
+      response?.insights || {
+        monthlyDispatch: {
+          amount: 0,
+          count: 0,
+        },
+        monthlyPaid: {
+          amount: 0,
+          count: 0,
+        },
+        totalDue: {
+          amount: 0,
+          count: 0,
+        },
+        overdueThisMonth: {
+          amount: 0,
+          count: 0,
+        },
+      }
+    );
+  } catch (error) {
+    alert(
+      error.response?.data?.message ||
+        "Failed to load dispatch data"
+    );
+  } finally {
+    setLoading(false);
+  }
+}, [filters]);
 
   useEffect(() => {
     loadDispatches();
@@ -796,41 +849,68 @@ const renderDocuments = (
     </div>
   );
 
-  const renderInsights = (mode = "desktop") => {
-    const InsightComponent = mode === "pwa" ? PwaInsight : DispatchInsight;
+const renderInsights = (mode = "desktop") => {
+  const InsightComponent =
+    mode === "pwa"
+      ? PwaInsight
+      : DispatchInsight;
 
-    return (
-      <>
-        <InsightComponent
-          label="Monthly Dispatch"
-          value={formatCurrency(dispatchSummary.monthlyDispatch)}
-          active={activeInsight === "monthlyDispatch"}
-          onClick={() => applyInsightFilter("monthlyDispatch")}
-        />
+  return (
+    <>
+      <InsightComponent
+        label="Monthly Dispatch"
+        value={formatCurrency(
+          dispatchInsights?.monthlyDispatch?.amount || 0
+        )}
+        active={
+          activeInsight === "monthlyDispatch"
+        }
+        onClick={() =>
+          applyInsightFilter("monthlyDispatch")
+        }
+      />
 
-        <InsightComponent
-          label="Monthly Paid"
-          value={formatCurrency(dispatchSummary.monthlyPaid)}
-          active={activeInsight === "monthlyPaid"}
-          onClick={() => applyInsightFilter("monthlyPaid")}
-        />
+      <InsightComponent
+        label="Monthly Paid"
+        value={formatCurrency(
+          dispatchInsights?.monthlyPaid?.amount || 0
+        )}
+        active={
+          activeInsight === "monthlyPaid"
+        }
+        onClick={() =>
+          applyInsightFilter("monthlyPaid")
+        }
+      />
 
-        <InsightComponent
-          label="Total Due"
-          value={formatCurrency(dispatchSummary.totalDue)}
-          active={activeInsight === "totalDue"}
-          onClick={() => applyInsightFilter("totalDue")}
-        />
+      <InsightComponent
+        label="Total Due"
+        value={formatCurrency(
+          dispatchInsights?.totalDue?.amount || 0
+        )}
+        active={
+          activeInsight === "totalDue"
+        }
+        onClick={() =>
+          applyInsightFilter("totalDue")
+        }
+      />
 
-        <InsightComponent
-          label="Overdue This Month"
-          value={formatCurrency(dispatchSummary.overdueThisMonth)}
-          active={activeInsight === "overdueThisMonth"}
-          onClick={() => applyInsightFilter("overdueThisMonth")}
-        />
-      </>
-    );
-  };
+      <InsightComponent
+        label="Overdue This Month"
+        value={formatCurrency(
+          dispatchInsights?.overdueThisMonth?.amount || 0
+        )}
+        active={
+          activeInsight === "overdueThisMonth"
+        }
+        onClick={() =>
+          applyInsightFilter("overdueThisMonth")
+        }
+      />
+    </>
+  );
+};
 
   return (
     <div className="dispatch-container">
