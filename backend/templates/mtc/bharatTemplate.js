@@ -132,14 +132,27 @@ const fileToBase64Url = (
 
 const getLogoBase64 = () => {
   const candidatePaths = [
+    /*
+     * Same path pattern used by the working
+     * Sales Order PDF template.
+     */
     path.join(
       __dirname,
       "..",
+      "public",
+      "logo.png"
+    ),
+
+    path.join(
+      __dirname,
       "..",
       "public",
       "bharat-logo.png"
     ),
 
+    /*
+     * Additional fallback paths.
+     */
     path.join(
       __dirname,
       "..",
@@ -151,7 +164,8 @@ const getLogoBase64 = () => {
     path.join(
       __dirname,
       "..",
-      "asset",
+      "..",
+      "public",
       "bharat-logo.png"
     ),
 
@@ -160,6 +174,13 @@ const getLogoBase64 = () => {
       "..",
       "asset",
       "logo.png"
+    ),
+
+    path.join(
+      __dirname,
+      "..",
+      "asset",
+      "bharat-logo.png"
     ),
   ];
 
@@ -182,6 +203,50 @@ const getLogoBase64 = () => {
   return fileToBase64Url(
     existingPath
   );
+};
+
+/*
+ * Embed the same Roboto font that is already
+ * working correctly in the Sales Order PDF.
+ */
+const getFontBase64 = (
+  fileName
+) => {
+  try {
+    const fontPath = path.join(
+  __dirname,
+  "..",
+  "..",
+  "node_modules",
+  "@fontsource",
+  "roboto",
+  "files",
+  fileName
+);
+
+    if (!fs.existsSync(fontPath)) {
+      console.error(
+        "BHARAT TC FONT NOT FOUND =>",
+        fontPath
+      );
+
+      return "";
+    }
+
+    const fontBuffer =
+      fs.readFileSync(fontPath);
+
+    return fontBuffer.toString(
+      "base64"
+    );
+  } catch (error) {
+    console.error(
+      "BHARAT TC FONT LOAD ERROR =>",
+      error.message
+    );
+
+    return "";
+  }
 };
 
 /* =========================================================
@@ -711,6 +776,21 @@ const bharatTemplate = (
   const logoBase64 =
     getLogoBase64();
 
+  const robotoRegular =
+    getFontBase64(
+      "roboto-latin-400-normal.woff2"
+    );
+
+  const robotoMedium =
+    getFontBase64(
+      "roboto-latin-500-normal.woff2"
+    );
+
+  const robotoBold =
+    getFontBase64(
+      "roboto-latin-700-normal.woff2"
+    );
+
   const mechanical =
     mtc.mechanicalProperties ||
     {};
@@ -754,9 +834,44 @@ const bharatTemplate = (
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
+  <meta
+    http-equiv="Content-Type"
+    content="text/html; charset=UTF-8"
+  />
 
+  <meta charset="UTF-8" />
   <style>
+
+    @font-face {
+      font-family: "RobotoEmbedded";
+
+      src: url("data:font/woff2;base64,${robotoRegular}")
+        format("woff2");
+
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: "RobotoEmbedded";
+
+      src: url("data:font/woff2;base64,${robotoMedium}")
+        format("woff2");
+
+      font-weight: 500;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: "RobotoEmbedded";
+
+      src: url("data:font/woff2;base64,${robotoBold}")
+        format("woff2");
+
+      font-weight: 700;
+      font-style: normal;
+    }
+
     @page {
       size: A4 portrait;
       margin: 5mm;
@@ -774,22 +889,57 @@ const bharatTemplate = (
     }
 
     body {
-      color: #000;
-      background: #fff;
-      font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-      font-size: 6.2px;
-      line-height: 1.08;
-      -webkit-print-color-adjust:
-        exact;
-      print-color-adjust: exact;
-    }
+  color: #000;
+  background: #fff;
 
-    .certificate-page {
-      width: 100%;
-    }
+  font-family:
+    "RobotoEmbedded",
+    Arial,
+    sans-serif;
+
+  font-size: 6.2px;
+  line-height: 1.08;
+
+  font-weight: 400;
+
+  -webkit-font-smoothing:
+    antialiased;
+
+  text-rendering:
+    geometricPrecision;
+
+  -webkit-print-color-adjust:
+    exact;
+
+  print-color-adjust:
+    exact;
+}
+    .certificate-page,
+.certificate-page * {
+  font-family:
+    "RobotoEmbedded",
+    Arial,
+    sans-serif;
+}
+
+.bold,
+th,
+.section-title,
+.meta-label,
+.meta-right-label,
+.final-label {
+  font-weight: 700;
+}
+
+input,
+button,
+textarea,
+select {
+  font-family:
+    "RobotoEmbedded",
+    Arial,
+    sans-serif;
+}
 
     table {
       width: 100%;
@@ -798,13 +948,26 @@ const bharatTemplate = (
     }
 
     th,
-    td {
-      border: 0.65px solid #000;
-      padding: 1px 1.4px;
-      vertical-align: middle;
-      text-align: center;
-      overflow-wrap: anywhere;
-    }
+td {
+  border: 0.65px solid #000;
+  padding: 1px 1.4px;
+
+  vertical-align: middle;
+  text-align: center;
+
+  font-family:
+    "RobotoEmbedded",
+    Arial,
+    sans-serif;
+
+  font-weight: 400;
+
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: normal;
+
+  unicode-bidi: normal;
+}
 
     .center {
       text-align: center;
@@ -1109,13 +1272,15 @@ const bharatTemplate = (
 
         </div>
 
-        <div class="company-contact">
-          🌐 www.bharatspecialsteel.com
-          <br/>
-          ✉ info@bharatspecialsteels.com
-          <br/>
-          ☎ 8448119291
-        </div>
+       <div class="company-contact">
+  Web: www.bharatspecialsteels.com
+  <br/>
+
+  Email: info@bharatspecialsteels.com
+  <br/>
+
+  Phone: 8448119291
+</div>
 
       </div>
     </div>
