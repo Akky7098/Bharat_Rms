@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 /* =========================================================
-   BASIC HELPERS
+   HELPERS
 ========================================================= */
 
 const dash = (value) => {
@@ -44,11 +44,7 @@ const formatDate = (value) => {
 
   const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return escapeHtml(value);
   }
 
@@ -70,22 +66,24 @@ const formatWeight = (value) => {
     return text.toUpperCase();
   }
 
-  const numericValue =
-    Number(
-      String(text).replace(
-        /,/g,
-        ""
-      )
-    );
+  const numericValue = Number(
+    String(text).replace(/,/g, "")
+  );
 
-  return Number.isFinite(
-    numericValue
-  )
+  return Number.isFinite(numericValue)
     ? `${numericValue.toFixed(
         3
       )} KGS`
     : text.toUpperCase();
 };
+
+const normalizeComparable = (
+  value
+) =>
+  String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 
 /* =========================================================
    ASSET HELPERS
@@ -223,9 +221,7 @@ const getFontBase64 = (
       fileName
     );
 
-    if (
-      !fs.existsSync(fontPath)
-    ) {
+    if (!fs.existsSync(fontPath)) {
       console.error(
         "BHARAT TC FONT NOT FOUND =>",
         fontPath
@@ -248,16 +244,19 @@ const getFontBase64 = (
 };
 
 /* =========================================================
-   CONSTANTS
+   CHEMICAL ELEMENTS
 ========================================================= */
 
-const CHEMICAL_ELEMENTS = [
+const FIXED_CHEMICAL_ELEMENTS = [
   ["c", "C"],
   ["si", "Si"],
   ["mn", "Mn"],
   ["p", "P"],
   ["s", "S"],
   ["cr", "Cr"],
+];
+
+const OPTIONAL_CHEMICAL_ELEMENTS = [
   ["mo", "Mo"],
   ["ni", "Ni"],
   ["al", "Al"],
@@ -268,22 +267,21 @@ const CHEMICAL_ELEMENTS = [
   ["b", "B"],
 ];
 
+const ALL_CHEMICAL_ELEMENTS = [
+  ...FIXED_CHEMICAL_ELEMENTS,
+  ...OPTIONAL_CHEMICAL_ELEMENTS,
+];
+
 /* =========================================================
    NORMALIZERS
 ========================================================= */
 
-const normalizeItems = (
-  mtc
-) => {
-  const sourceRows =
-    Array.isArray(mtc.items)
-      ? mtc.items
-      : [];
-
+const normalizeItems = (mtc) => {
   if (
-    sourceRows.length > 0
+    Array.isArray(mtc.items) &&
+    mtc.items.length > 0
   ) {
-    return sourceRows.map(
+    return mtc.items.map(
       (item) => ({
         heatNo:
           item.heatNo,
@@ -343,32 +341,29 @@ const normalizeChemicalRows = (
   if (
     Array.isArray(
       mtc.chemicalComposition
-    )
+    ) &&
+    mtc.chemicalComposition
+      .length > 0
   ) {
     const values = {};
 
-    CHEMICAL_ELEMENTS.forEach(
+    ALL_CHEMICAL_ELEMENTS.forEach(
       ([key, label]) => {
         const matchingElement =
-          mtc.chemicalComposition
-            .find(
-              (item) =>
-                String(
-                  item?.element ||
-                    ""
-                )
-                  .trim()
-                  .toLowerCase() ===
-                label.toLowerCase()
-            );
+          mtc.chemicalComposition.find(
+            (item) =>
+              String(
+                item?.element || ""
+              )
+                .trim()
+                .toLowerCase() ===
+              label.toLowerCase()
+          );
 
         values[key] =
-          matchingElement
-            ?.result ??
-          matchingElement
-            ?.achieved ??
-          matchingElement
-            ?.value ??
+          matchingElement?.result ??
+          matchingElement?.achieved ??
+          matchingElement?.value ??
           "-";
       }
     );
@@ -413,8 +408,7 @@ const normalizeMechanicalRows = (
 
       hardness:
         mtc.mechanicalProperties
-          ?.hardness
-          ?.achieved ??
+          ?.hardness?.achieved ??
         mtc.mechanicalProperties
           ?.hardnessResult ??
         "-",
@@ -439,11 +433,9 @@ const normalizeMechanicalRows = (
 
       elongation:
         mtc.mechanicalProperties
-          ?.elongation
-          ?.achieved ??
+          ?.elongation?.achieved ??
         mtc.mechanicalProperties
-          ?.elongation
-          ?.result ??
+          ?.elongation?.result ??
         "-",
 
       impactStrength:
@@ -470,30 +462,116 @@ const normalizeHardenabilityRows = (
       ?.distanceResults ||
     [];
 
-  return Array.isArray(
-    sourceRows
-  )
-    ? sourceRows.slice(
-        0,
-        15
-      )
+  return Array.isArray(sourceRows)
+    ? sourceRows.slice(0, 12)
     : [];
 };
 
 /* =========================================================
-   ROW RENDERERS
+   ITEM ROW MERGING
 ========================================================= */
+
+const getSameValueSpan = (
+  rows,
+  index,
+  field
+) => {
+  const current =
+    normalizeComparable(
+      rows[index]?.[field]
+    );
+
+  if (!current) {
+    return 1;
+  }
+
+  let rowSpan = 1;
+
+  for (
+    let nextIndex = index + 1;
+    nextIndex < rows.length;
+    nextIndex += 1
+  ) {
+    const next =
+      normalizeComparable(
+        rows[nextIndex]?.[field]
+      );
+
+    if (next !== current) {
+      break;
+    }
+
+    rowSpan += 1;
+  }
+
+  return rowSpan;
+};
+
+const shouldRenderMergedField = (
+  rows,
+  index,
+  field
+) => {
+  if (index === 0) {
+    return true;
+  }
+
+  return (
+    normalizeComparable(
+      rows[index - 1]?.[field]
+    ) !==
+    normalizeComparable(
+      rows[index]?.[field]
+    )
+  );
+};
+
+const renderMergedCell = ({
+  rows,
+  index,
+  field,
+  value,
+  className = "",
+}) => {
+  if (
+    !shouldRenderMergedField(
+      rows,
+      index,
+      field
+    )
+  ) {
+    return "";
+  }
+
+  const rowSpan =
+    getSameValueSpan(
+      rows,
+      index,
+      field
+    );
+
+  return `
+    <td
+      class="${className}"
+      ${
+        rowSpan > 1
+          ? `rowspan="${rowSpan}"`
+          : ""
+      }
+    >
+      ${escapeHtml(value)}
+    </td>
+  `;
+};
 
 const renderItemRows = (
   mtc
 ) => {
-  const rows =
+  const sourceRows =
     normalizeItems(mtc).map(
       (item) => ({
         heatNo:
-          String(
-            item.heatNo || ""
-          ).trim(),
+          dash(item.heatNo),
 
         size:
           dash(item.size),
@@ -511,9 +589,20 @@ const renderItemRows = (
       })
     );
 
-  if (
-    rows.length === 0
-  ) {
+  const rows =
+    sourceRows.length > 0
+      ? [...sourceRows]
+      : [
+          {
+            heatNo: "-",
+            size: "-",
+            noOfPcs: "-",
+            quantityInKgs: "-",
+            remarks: "-",
+          },
+        ];
+
+  while (rows.length < 2) {
     rows.push({
       heatNo: "-",
       size: "-",
@@ -523,175 +612,153 @@ const renderItemRows = (
     });
   }
 
-  while (
-    rows.length < 2
-  ) {
-    rows.push({
-      heatNo: "",
-      size: "-",
-      noOfPcs: "-",
-      quantityInKgs: "-",
-      remarks: "-",
-    });
-  }
-
   return rows
-    .map(
-      (
-        item,
-        index
-      ) => {
-        const currentHeat =
-          String(
-            item.heatNo || ""
-          ).trim();
+    .map((item, index) => {
+      const quantityRowSpan =
+        getSameValueSpan(
+          rows,
+          index,
+          "quantityInKgs"
+        );
 
-        const previousHeat =
-          index > 0
-            ? String(
-                rows[
-                  index - 1
-                ]?.heatNo ||
-                  ""
-              ).trim()
-            : null;
+      const showQuantity =
+        shouldRenderMergedField(
+          rows,
+          index,
+          "quantityInKgs"
+        );
 
-        let heatCell = "";
+      return `
+        <tr class="item-data-row">
 
-        if (
-          currentHeat &&
-          (
-            index === 0 ||
-            currentHeat !==
-              previousHeat
-          )
-        ) {
-          let rowSpan = 1;
+          <td class="bold">
+            ${escapeHtml(
+              item.heatNo
+            )}
+          </td>
 
-          for (
-            let nextIndex =
-              index + 1;
-            nextIndex <
-            rows.length;
-            nextIndex += 1
-          ) {
-            const nextHeat =
-              String(
-                rows[
-                  nextIndex
-                ]?.heatNo ||
-                  ""
-              ).trim();
+          ${renderMergedCell({
+            rows,
+            index,
+            field: "size",
+            value: item.size,
+          })}
 
-            if (
-              !nextHeat ||
-              nextHeat !==
-                currentHeat
-            ) {
-              break;
-            }
+          ${renderMergedCell({
+            rows,
+            index,
+            field: "noOfPcs",
+            value: item.noOfPcs,
+          })}
 
-            rowSpan += 1;
+          ${
+            showQuantity
+              ? `
+                <td
+                  ${
+                    quantityRowSpan > 1
+                      ? `rowspan="${quantityRowSpan}"`
+                      : ""
+                  }
+                >
+                  ${escapeHtml(
+                    formatWeight(
+                      item.quantityInKgs
+                    )
+                  )}
+                </td>
+              `
+              : ""
           }
 
-          heatCell = `
-            <td
-              class="center bold"
-              ${
-                rowSpan > 1
-                  ? `rowspan="${rowSpan}"`
-                  : ""
-              }
-            >
-              ${escapeHtml(
-                currentHeat
-              )}
-            </td>
-          `;
-        } else if (
-          !currentHeat
-        ) {
-          heatCell = `
-            <td class="center bold">
-              -
-            </td>
-          `;
-        }
+          <td>
+            ${escapeHtml(
+              item.remarks
+            )}
+          </td>
 
-        return `
-          <tr class="item-data-row">
-            ${heatCell}
-
-            <td>
-              ${escapeHtml(
-                item.size
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                item.noOfPcs
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                formatWeight(
-                  item.quantityInKgs
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                item.remarks
-              )}
-            </td>
-          </tr>
-        `;
-      }
-    )
+        </tr>
+      `;
+    })
     .join("");
 };
 
-const renderChemicalRows = (
-  mtc
-) => {
-  const rows =
-    normalizeChemicalRows(
-      mtc
+/* =========================================================
+   CHEMICAL RENDERING
+========================================================= */
+
+const hasActualChemicalValue = (
+  rows,
+  key
+) =>
+  rows.some((row) => {
+    const value = dash(
+      row.values?.[key]
     );
 
-  if (
-    rows.length === 0
-  ) {
-    return `
-      <tr>
-        <td class="chemical-heat-cell">
-          ${escapeHtml(
-            mtc.heatLotNo
-          )}
-        </td>
+    return (
+      value !== "-" &&
+      value !== "…" &&
+      value !== "…." &&
+      value !== "....."
+    );
+  });
 
-        <td class="chemical-result-label">
-          ACHIEVED
-        </td>
+const getChemicalElementOrder = (
+  rows
+) => {
+  const filledOptional =
+    OPTIONAL_CHEMICAL_ELEMENTS.filter(
+      ([key]) =>
+        hasActualChemicalValue(
+          rows,
+          key
+        )
+    );
 
-        ${CHEMICAL_ELEMENTS.map(
-          () => `
-            <td class="chemical-value-cell">
-              -
-            </td>
-          `
-        ).join("")}
-      </tr>
-    `;
-  }
+  const emptyOptional =
+    OPTIONAL_CHEMICAL_ELEMENTS.filter(
+      ([key]) =>
+        !hasActualChemicalValue(
+          rows,
+          key
+        )
+    );
 
-  return rows
+  return [
+    ...FIXED_CHEMICAL_ELEMENTS,
+    ...filledOptional,
+    ...emptyOptional,
+  ];
+};
+
+const renderChemicalRows = (
+  mtc,
+  chemicalElements
+) => {
+  const rows =
+    normalizeChemicalRows(mtc);
+
+  const visibleRows =
+    rows.length > 0
+      ? rows
+      : [
+          {
+            heatNo:
+              mtc.heatLotNo,
+
+            rowLabel:
+              "ACHIEVED",
+
+            values: {},
+          },
+        ];
+
+  return visibleRows
     .map(
       (row) => `
         <tr>
+
           <td class="chemical-heat-cell">
             ${escapeHtml(
               row.heatNo
@@ -705,32 +772,36 @@ const renderChemicalRows = (
             )}
           </td>
 
-          ${CHEMICAL_ELEMENTS.map(
-            ([key]) => `
-              <td class="chemical-value-cell">
-                ${escapeHtml(
-                  row.values?.[
-                    key
-                  ]
-                )}
-              </td>
-            `
-          ).join("")}
+          ${chemicalElements
+            .map(
+              ([key]) => `
+                <td class="chemical-value-cell">
+                  ${escapeHtml(
+                    row.values?.[key]
+                  )}
+                </td>
+              `
+            )
+            .join("")}
+
         </tr>
       `
     )
     .join("");
 };
 
+/* =========================================================
+   MECHANICAL RENDERING
+========================================================= */
+
 const renderMechanicalRows = (
   mtc
 ) =>
-  normalizeMechanicalRows(
-    mtc
-  )
+  normalizeMechanicalRows(mtc)
     .map(
       (row) => `
         <tr class="mechanical-result-row">
+
           <td class="bold">
             ${escapeHtml(
               row.heatNo
@@ -773,10 +844,15 @@ const renderMechanicalRows = (
               row.impactStrength
             )}
           </td>
+
         </tr>
       `
     )
     .join("");
+
+/* =========================================================
+   HARDENABILITY RENDERING
+========================================================= */
 
 const renderHardenability = (
   mtc
@@ -786,16 +862,9 @@ const renderHardenability = (
       mtc
     );
 
-  const columnCount =
-    Math.max(
-      sourceRows.length,
-      12
-    );
-
   const rows =
     Array.from({
-      length:
-        columnCount,
+      length: 12,
     }).map(
       (_, index) =>
         sourceRows[index] || {
@@ -812,17 +881,14 @@ const renderHardenability = (
     rows
       .map((row) => {
         const value =
-          field ===
-          "achieved"
+          field === "achieved"
             ? row.achieved ??
               row.result
             : row[field];
 
         return `
           <td class="hard-value-cell">
-            ${escapeHtml(
-              value
-            )}
+            ${escapeHtml(value)}
           </td>
         `;
       })
@@ -830,45 +896,64 @@ const renderHardenability = (
 
   return `
     <tr>
-      <td class="hard-row-label">
+
+      <td
+        class="hard-main-label"
+        colspan="2"
+      >
         Distance in mm
       </td>
 
       ${renderCells(
         "distance"
       )}
+
     </tr>
 
     <tr>
-      <td class="hard-row-label">
+
+      <td
+        class="hard-spec-label"
+        rowspan="2"
+      >
         SPEC.
-        <br/>
-        min
+      </td>
+
+      <td class="hard-minmax-label">
+        MIN
       </td>
 
       ${renderCells(
         "specMin"
       )}
+
     </tr>
 
     <tr>
-      <td class="hard-row-label">
-        max
+
+      <td class="hard-minmax-label">
+        MAX
       </td>
 
       ${renderCells(
         "specMax"
       )}
+
     </tr>
 
     <tr>
-      <td class="hard-row-label">
-        Achieved
+
+      <td
+        class="hard-main-label"
+        colspan="2"
+      >
+        ACHIEVED
       </td>
 
       ${renderCells(
         "achieved"
       )}
+
     </tr>
   `;
 };
@@ -911,32 +996,33 @@ const bharatTemplate = (
     {};
 
   const gas =
-    mtc.gasAnalysis ||
-    {};
+    mtc.gasAnalysis || {};
 
   const decarbonization =
     mtc.depthOfDecarbonization ||
     {};
 
   const inclusion =
-    mtc.inclusionRating ||
-    {};
+    mtc.inclusionRating || {};
 
   const grain =
-    mtc.grainSize ||
-    {};
+    mtc.grainSize || {};
 
   const physical =
-    mtc.physicalTesting ||
-    {};
+    mtc.physicalTesting || {};
 
-  const hardenabilityColumns =
-    Math.max(
-      normalizeHardenabilityRows(
-        mtc
-      ).length,
-      12
+  const chemicalRows =
+    normalizeChemicalRows(mtc);
+
+  const chemicalElements =
+    getChemicalElementOrder(
+      chemicalRows
     );
+
+  const supplyCondition =
+    mtc.supplyCondition ||
+    mtc.manufacturingRoute ||
+    mtc.condition;
 
   return `
 <!DOCTYPE html>
@@ -951,6 +1037,7 @@ const bharatTemplate = (
   />
 
   <style>
+
     @font-face {
       font-family:
         "RobotoEmbedded";
@@ -998,10 +1085,14 @@ const bharatTemplate = (
 
     @page {
       size:
-        216mm 279mm;
+        A4 portrait;
 
+      /*
+       * 8.8 mm print-safe space
+       * on all four sides.
+       */
       margin:
-        2.8mm;
+        8.8mm;
     }
 
     * {
@@ -1012,6 +1103,9 @@ const bharatTemplate = (
     html,
     body {
       width:
+        100%;
+
+      min-height:
         100%;
 
       margin:
@@ -1031,21 +1125,6 @@ const bharatTemplate = (
         Arial,
         sans-serif;
 
-      font-size:
-        6.7px;
-
-      line-height:
-        1.05;
-
-      font-weight:
-        400;
-
-      -webkit-font-smoothing:
-        antialiased;
-
-      text-rendering:
-        geometricPrecision;
-
       -webkit-print-color-adjust:
         exact;
 
@@ -1053,12 +1132,39 @@ const bharatTemplate = (
         exact;
     }
 
+    body {
+      font-size:
+        6.8px;
+
+      line-height:
+        1.04;
+
+      font-weight:
+        400;
+    }
+
     .certificate-page {
       width:
         100%;
 
+      /*
+       * A4 height minus:
+       * 8.8 mm top + 8.8 mm bottom.
+       */
+      min-height:
+        279.4mm;
+
+      display:
+        flex;
+
+      flex-direction:
+        column;
+
       border:
-        1.15px solid #000;
+        1.1px solid #000;
+
+      overflow:
+        hidden;
     }
 
     table {
@@ -1076,88 +1182,47 @@ const bharatTemplate = (
     }
 
     th,
-td {
-  border:
-    0.78px solid #000;
+    td {
+      border:
+        0.72px solid #000;
 
-  padding:
-    0.75px 1.35px;
+      padding:
+        0.55px 1px;
 
-  vertical-align:
-    middle;
+      vertical-align:
+        middle;
 
-  text-align:
-    center;
-
-  font-family:
-    "RobotoEmbedded",
-    Arial,
-    sans-serif;
-
-  /*
-   * Increase all normal certificate text.
-   */
-  font-size:
-    7.15px;
-
-  line-height:
-    1.08;
-
-  font-weight:
-    500;
-
-  overflow-wrap:
-    break-word;
-
-  word-break:
-    normal;
-}
-
-    .bold,
-th,
-.section-title,
-.meta-label,
-.meta-right-label,
-.final-label {
-  font-weight:
-    700;
-}
-
-/*
- * Strong heading text like the reference PDF.
- */
-th,
-.section-title,
-.document-title-main,
-.meta-table td.bold,
-.mechanical-table thead th,
-.inclusion-table .bold,
-.final-label {
-  font-family:
-    "RobotoEmbedded",
-    Arial,
-    sans-serif;
-
-  font-weight:
-    700;
-
-  letter-spacing:
-    -0.08px;
-}
-
-    .center {
       text-align:
         center;
+
+      font-family:
+        "RobotoEmbedded",
+        Arial,
+        sans-serif;
+
+      font-size:
+        6.65px;
+
+      line-height:
+        1.04;
+
+      font-weight:
+        500;
+
+      overflow-wrap:
+        break-word;
+
+      word-break:
+        normal;
     }
 
-    .left {
-      text-align:
-        left;
-    }
-
-    .nowrap {
-      white-space:
-        nowrap;
+    th,
+    .bold,
+    .section-title,
+    .meta-table td.bold,
+    .final-label {
+      font-weight:
+        700;
     }
 
     /* =====================================================
@@ -1166,23 +1231,21 @@ th,
 
     .company-header {
       border-bottom:
-        0.95px solid #000;
+        0.9px solid #000;
     }
 
     .gstin-row {
       height:
-        4.2mm;
+        4mm;
 
       padding:
-        0.75mm
-        0.75mm
-        0.35mm;
+        0.7mm;
 
       text-align:
         left;
 
       font-size:
-        6.2px;
+        6px;
 
       line-height:
         1;
@@ -1191,7 +1254,7 @@ th,
         700;
 
       border-bottom:
-        0.72px solid #000;
+        0.7px solid #000;
     }
 
     .brand-row {
@@ -1199,23 +1262,21 @@ th,
         relative;
 
       height:
-        29.5mm;
+        27mm;
 
       display:
         grid;
 
       grid-template-columns:
-        34mm
+        30mm
         minmax(0, 1fr)
-        45mm;
+        49mm;
 
       align-items:
         center;
 
       padding:
-        0.8mm
-        1.2mm
-        0.6mm;
+        0.8mm 1.2mm;
 
       overflow:
         hidden;
@@ -1233,10 +1294,10 @@ th,
         0;
 
       width:
-        63mm;
+        53mm;
 
       height:
-        5.5mm;
+        4.8mm;
 
       background:
         #000;
@@ -1265,36 +1326,200 @@ th,
     }
 
     .brand-center {
+      padding-top:
+        1.1mm;
+
       text-align:
         center;
-
-      align-self:
-        center;
-
-      padding-top:
-        1.4mm;
     }
 
     .company-logo {
       width:
-        31mm;
-
-      max-width:
-        31mm;
+        29mm;
 
       max-height:
-        8.5mm;
+        8mm;
+
+      margin-bottom:
+        0.3mm;
 
       object-fit:
         contain;
-
-      margin-bottom:
-        0.4mm;
     }
 
     .company-name {
       font-size:
-        15.3px;
+        14px;
+
+      line-height:
+        1;
+
+      font-weight:
+        700;
+    }
+
+    .company-address {
+      margin-top:
+        0.8mm;
+
+      font-size:
+        6px;
+
+      line-height:
+        1.18;
+
+      font-weight:
+        500;
+    }
+
+    .company-contact {
+      padding-top:
+        1.2mm;
+
+      padding-left:
+        1mm;
+
+      text-align:
+        left;
+    }
+
+    .contact-line {
+      display:
+        grid;
+
+      grid-template-columns:
+        11mm
+        minmax(0, 1fr);
+
+      align-items:
+        center;
+
+      min-height:
+        3.5mm;
+
+      white-space:
+        nowrap;
+    }
+
+    .contact-label {
+      color:
+        #000;
+
+      font-size:
+        5.8px;
+
+      font-weight:
+        700;
+    }
+
+    .contact-text {
+      color:
+        #0066cc;
+
+      font-size:
+        5.8px;
+
+      font-weight:
+        500;
+
+      text-decoration:
+        underline;
+
+      overflow:
+        hidden;
+    }
+
+    /* =====================================================
+       DOCUMENT TITLE
+    ===================================================== */
+
+    .document-title td {
+      height:
+        5.4mm;
+
+      padding:
+        0.4px 1px;
+
+      font-weight:
+        700;
+    }
+
+    .document-title-main {
+      width:
+        77%;
+
+      font-size:
+        9.2px !important;
+
+      letter-spacing:
+        0.05px;
+    }
+
+    .document-title-date {
+      width:
+        23%;
+
+      padding-left:
+        1.4mm !important;
+
+      text-align:
+        left;
+
+      font-size:
+        7px !important;
+
+      font-weight:
+        700;
+
+      white-space:
+        nowrap;
+    }
+
+    /* =====================================================
+       META TABLE
+    ===================================================== */
+
+    .meta-table td {
+      height:
+        4.1mm;
+
+      padding:
+        0.55px 1.25px;
+
+      text-align:
+        left;
+
+      font-size:
+        6.7px;
+
+      line-height:
+        1.03;
+
+      font-weight:
+        500;
+    }
+
+    .meta-table td.bold {
+      font-size:
+        6.8px;
+
+      font-weight:
+        700;
+    }
+
+    /* =====================================================
+       SECTION HEADINGS
+    ===================================================== */
+
+    .section-title {
+      height:
+        5.8mm;
+
+      padding:
+        0.5px 1px;
+
+      font-size:
+        8.4px;
 
       line-height:
         1;
@@ -1303,548 +1528,236 @@ th,
         700;
 
       letter-spacing:
-        -0.25px;
+        0.02px;
     }
-
-    .company-address {
-  margin-top:
-    1.1mm;
-
-  font-size:
-    6.4px;
-
-  line-height:
-    1.22;
-
-  font-weight:
-    500;
-}
-
-    .company-contact {
-  padding-top:
-    1.4mm;
-
-  padding-left:
-    1.5mm;
-
-  color:
-    #0066cc;
-
-  text-align:
-    left;
-
-  font-size:
-    6.1px;
-
-  line-height:
-    1.25;
-
-  font-weight:
-    500;
-}
-
-.contact-line {
-  display:
-    grid;
-
-  grid-template-columns:
-    11mm
-    minmax(0, 1fr);
-
-  align-items:
-    center;
-
-  min-height:
-    4mm;
-
-  white-space:
-    nowrap;
-}
-
-.contact-label {
-  color:
-    #000;
-
-  font-size:
-    6px;
-
-  line-height:
-    1;
-
-  font-weight:
-    700;
-
-  text-decoration:
-    none;
-}
-
-.contact-text {
-  color:
-    #0066cc;
-
-  font-size:
-    6px;
-
-  line-height:
-    1;
-
-  font-weight:
-    500;
-
-  text-decoration:
-    underline;
-}
-
-    /* =====================================================
-       DOCUMENT HEADER
-    ===================================================== */
-
-    .document-title td {
-  height:
-    5.3mm;
-
-  padding:
-    0.35px 1px;
-
-  font-size:
-    8.4px;
-
-  line-height:
-    1;
-
-  font-weight:
-    700;
-}
-
-.document-title-main {
-  width:
-    77%;
-
-  font-size:
-    9px !important;
-
-  font-weight:
-    700;
-
-  text-align:
-    center;
-}
-
-.document-title-date {
-  width:
-    23%;
-
-  padding-left:
-    1.4mm !important;
-
-  text-align:
-    left;
-
-  font-size:
-    7px !important;
-
-  line-height:
-    1;
-
-  font-weight:
-    700;
-
-  white-space:
-    nowrap;
-}
-
-    .meta-table td {
-  height:
-    4.45mm;
-
-  padding:
-    0.65px 1.55px;
-
-  font-size:
-    7.05px;
-
-  line-height:
-    1.06;
-
-  font-weight:
-    500;
-
-  text-align:
-    left;
-}
-
-/*
- * Left and right labels.
- */
-.meta-table td.bold,
-.meta-label,
-.meta-right-label {
-  font-size:
-    7px;
-
-  font-weight:
-    700;
-}
-
-/*
- * Dynamic values entered from the form.
- */
-.meta-main-value,
-.meta-right-value {
-  font-size:
-    7.1px;
-
-  font-weight:
-    500;
-}
-
-.meta-label {
-  width:
-    18%;
-}
-
-.meta-main-value {
-  width:
-    59%;
-}
-
-.meta-right-label {
-  width:
-    12%;
-
-  text-align:
-    center !important;
-}
-
-.meta-right-value {
-  width:
-    11%;
-
-  text-align:
-    center !important;
-}
-    /* =====================================================
-       SECTION TITLES
-    ===================================================== */
-
-    .section-title {
-  height:
-    6.3mm;
-
-  padding:
-    0.6px 1px;
-
-  font-size:
-    9px;
-
-  line-height:
-    1;
-
-  font-weight:
-    700;
-
-  text-align:
-    center;
-
-  vertical-align:
-    middle;
-
-  border-top-width:
-    1.05px;
-
-  border-bottom-width:
-    1.05px;
-}
 
     /* =====================================================
        ITEM TABLE
     ===================================================== */
 
     .item-table th {
-  height:
-    6.8mm;
+      height:
+        6.2mm;
 
-  padding:
-    0.5px 0.9px;
+      font-size:
+        6.8px;
 
-  font-size:
-    7.4px;
+      font-weight:
+        700;
+    }
 
-  line-height:
-    1;
+    .item-data-row td {
+      height:
+        7mm;
 
-  font-weight:
-    700;
-}
+      font-size:
+        6.8px;
 
-.item-data-row td {
-  height:
-    8.1mm;
-
-  padding:
-    0.5px 1px;
-
-  font-size:
-    7.4px;
-
-  line-height:
-    1.05;
-
-  font-weight:
-    500;
-}
-
-.item-data-row td.bold {
-  font-weight:
-    700;
-}
+      font-weight:
+        500;
+    }
 
     /* =====================================================
        CHEMICAL TABLE
     ===================================================== */
 
     .chemical-table th {
-  height:
-    7mm;
+      height:
+        6.2mm;
 
-  padding:
-    0.45px 0.2px;
+      padding:
+        0.4px 0.15px;
 
-  font-size:
-    7.15px;
+      font-size:
+        6.35px;
 
-  line-height:
-    1;
+      font-weight:
+        700;
+    }
 
-  font-weight:
-    700;
-}
+    .chemical-table td {
+      height:
+        6.5mm;
 
-.chemical-table td {
-  height:
-    7.3mm;
+      padding:
+        0.4px 0.15px;
 
-  padding:
-    0.45px 0.2px;
+      font-size:
+        6.15px;
 
-  font-size:
-    6.9px;
+      font-weight:
+        500;
+    }
 
-  line-height:
-    1;
-
-  font-weight:
-    500;
-}
-
-.chemical-heat-cell,
-.chemical-result-label {
-  font-size:
-    6.9px;
-
-  font-weight:
-    700;
-}
-
-.chemical-value-cell {
-  font-size:
-    6.9px;
-
-  font-weight:
-    500;
-}
-
+    .chemical-heat-cell,
+    .chemical-result-label {
+      font-weight:
+        700;
+    }
 
     /* =====================================================
        MECHANICAL TABLE
     ===================================================== */
 
     .mechanical-table th,
-.mechanical-table td {
-  padding:
-    0.6px 0.75px;
+    .mechanical-table td {
+      padding:
+        0.45px 0.55px;
 
-  font-size:
-    6.9px;
+      font-size:
+        6.2px;
 
-  line-height:
-    1.1;
+      line-height:
+        1.06;
+    }
 
-  font-weight:
-    500;
-}
+    .mechanical-table thead th {
+      height:
+        10mm;
 
-.mechanical-table thead th {
-  height:
-    12mm;
+      font-size:
+        6.25px;
 
-  font-size:
-    7.05px;
+      font-weight:
+        700;
+    }
 
-  line-height:
-    1.15;
-
-  font-weight:
-    700;
-}
-
-.mechanical-fixed-row .bold,
-.mechanical-result-row .bold {
-  font-size:
-    6.9px;
-
-  font-weight:
-    700;
-}
+    .mechanical-fixed-row td,
+    .mechanical-result-row td {
+      height:
+        5.7mm;
+    }
 
     /* =====================================================
        RAW MATERIAL AND HARDENABILITY
     ===================================================== */
 
+    .raw-hard-wrapper >
+      tbody >
+      tr >
+      td {
+      padding:
+        0;
+    }
+
     .raw-material-table td {
-  height:
-    5.7mm;
+      height:
+        5.1mm;
 
-  padding:
-    0.45px;
+      font-size:
+        6.1px;
+    }
 
-  font-size:
-    6.8px;
+    .hardenability-table td {
+      height:
+        5.1mm;
 
-  line-height:
-    1.05;
+      padding:
+        0.3px 0.12px;
 
-  font-weight:
-    500;
-}
+      font-size:
+        5.55px;
 
-.hardenability-table td {
-  height:
-    5.7mm;
+      line-height:
+        1;
+    }
 
-  padding:
-    0.4px 0.18px;
+    .hard-main-label {
+      width:
+        12%;
 
-  font-size:
-    6.35px;
+      font-weight:
+        600;
+    }
 
-  line-height:
-    1;
+    .hard-spec-label {
+      width:
+        6%;
 
-  font-weight:
-    500;
-}
+      font-weight:
+        700;
+    }
 
-.hard-row-label {
-  width:
-    15%;
+    .hard-minmax-label {
+      width:
+        6%;
 
-  font-size:
-    6.25px;
-
-  font-weight:
-    600;
-}
-
-.hard-value-cell {
-  font-size:
-    6.3px;
-
-  font-weight:
-    500;
-}
+      font-weight:
+        600;
+    }
 
     /* =====================================================
-       TESTING TABLES
+       TEST TABLES
     ===================================================== */
 
     .testing-table td {
-  height:
-    6.15mm;
+      height:
+        5.4mm;
 
-  padding:
-    0.5px 0.85px;
+      padding:
+        0.4px 0.65px;
 
-  font-size:
-    6.75px;
+      font-size:
+        5.95px;
+    }
 
-  line-height:
-    1.06;
+    .inclusion-table td,
+    .inclusion-table th {
+      height:
+        5mm;
 
-  font-weight:
-    500;
-}
+      padding:
+        0.4px 0.5px;
 
-.testing-table td.bold {
-  font-weight:
-    700;
-}
-
-.inclusion-table td,
-.inclusion-table th {
-  height:
-    5.65mm;
-
-  padding:
-    0.5px 0.6px;
-
-  font-size:
-    6.65px;
-
-  line-height:
-    1.05;
-
-  font-weight:
-    500;
-}
-
-.inclusion-table .bold {
-  font-weight:
-    700;
-}
+      font-size:
+        5.9px;
+    }
 
     /* =====================================================
-       FINAL DETAILS
+       FINAL TABLE
     ===================================================== */
 
+    .final-table {
+      margin-top:
+        auto;
+    }
+
     .final-table td {
-  height:
-    5.15mm;
+      height:
+        4.8mm;
 
-  padding:
-    0.5px 1.1px;
+      padding:
+        0.45px 0.8px;
 
-  text-align:
-    left;
+      text-align:
+        left;
 
-  font-size:
-    6.75px;
+      font-size:
+        5.9px;
 
-  line-height:
-    1.06;
+      line-height:
+        1.03;
+    }
 
-  font-weight:
-    500;
-}
+    .final-label {
+      text-align:
+        center !important;
 
-.final-label {
-  font-size:
-    6.6px;
+      font-size:
+        5.8px;
 
-  font-weight:
-    700;
+      font-weight:
+        700;
 
-  text-align:
-    center !important;
-
-  white-space:
-    nowrap;
-}
+      white-space:
+        nowrap;
+    }
 
   </style>
 </head>
 
 <body>
+
   <div class="certificate-page">
 
     <!-- ==================================================
@@ -1892,37 +1805,37 @@ th,
 
         <div class="company-contact">
 
-  <div class="contact-line">
-    <span class="contact-label">
-      Website:
-    </span>
+          <div class="contact-line">
+            <span class="contact-label">
+              Website:
+            </span>
 
-    <span class="contact-text">
-      www.bharatspecialsteel.com
-    </span>
-  </div>
+            <span class="contact-text">
+              www.bharatspecialsteel.com
+            </span>
+          </div>
 
-  <div class="contact-line">
-    <span class="contact-label">
-      Email:
-    </span>
+          <div class="contact-line">
+            <span class="contact-label">
+              Email:
+            </span>
 
-    <span class="contact-text">
-      info@bharatspecilsteels.com
-    </span>
-  </div>
+            <span class="contact-text">
+              info@bharatspecilsteels.com
+            </span>
+          </div>
 
-  <div class="contact-line">
-    <span class="contact-label">
-      Phone:
-    </span>
+          <div class="contact-line">
+            <span class="contact-label">
+              Phone:
+            </span>
 
-    <span class="contact-text">
-      8448119291
-    </span>
-  </div>
+            <span class="contact-text">
+              8448119291
+            </span>
+          </div>
 
-</div>
+        </div>
 
       </div>
     </div>
@@ -1951,16 +1864,16 @@ th,
     </table>
 
     <!-- ==================================================
-         CERTIFICATE INFORMATION
+         CERTIFICATE DETAILS
     =================================================== -->
 
     <table class="meta-table">
 
       <colgroup>
-        <col class="meta-label" />
-        <col class="meta-main-value" />
-        <col class="meta-right-label" />
-        <col class="meta-right-value" />
+        <col style="width:18%" />
+        <col style="width:59%" />
+        <col style="width:12%" />
+        <col style="width:11%" />
       </colgroup>
 
       <tr>
@@ -2078,8 +1991,7 @@ th,
         <td colspan="3">
           ${escapeHtml(
             upper(
-              mtc.manufacturingRoute ||
-                mtc.condition
+              supplyCondition
             )
           )}
         </td>
@@ -2102,11 +2014,11 @@ th,
     <table class="item-table">
 
       <colgroup>
-        <col style="width:8.3%" />
-        <col style="width:16%" />
-        <col style="width:17.7%" />
-        <col style="width:23.5%" />
-        <col style="width:34.5%" />
+        <col style="width:10%" />
+        <col style="width:18%" />
+        <col style="width:18%" />
+        <col style="width:24%" />
+        <col style="width:30%" />
       </colgroup>
 
       <thead>
@@ -2142,30 +2054,38 @@ th,
     <table class="chemical-table">
 
       <colgroup>
-        <col class="chemical-spec-column" />
-        <col class="chemical-result-column" />
+        <col style="width:9%" />
+        <col style="width:10%" />
 
-        ${CHEMICAL_ELEMENTS.map(
-          () =>
-            '<col style="width:5.82%" />'
-        ).join("")}
+        ${chemicalElements
+          .map(
+            () =>
+              '<col style="width:5.785%" />'
+          )
+          .join("")}
       </colgroup>
 
       <thead>
         <tr>
-          <th>SPEC</th>
-          <th></th>
 
-          ${CHEMICAL_ELEMENTS.map(
-            ([, label]) =>
-              `<th>${label}</th>`
-          ).join("")}
+          <th colspan="2">
+            SPEC
+          </th>
+
+          ${chemicalElements
+            .map(
+              ([, label]) =>
+                `<th>${label}</th>`
+            )
+            .join("")}
+
         </tr>
       </thead>
 
       <tbody>
         ${renderChemicalRows(
-          mtc
+          mtc,
+          chemicalElements
         )}
       </tbody>
 
@@ -2186,13 +2106,13 @@ th,
     <table class="mechanical-table">
 
       <colgroup>
-        <col style="width:8.3%" />
-        <col style="width:15.8%" />
-        <col style="width:17.3%" />
-        <col style="width:17.1%" />
-        <col style="width:13.8%" />
-        <col style="width:10.5%" />
-        <col style="width:17.2%" />
+        <col style="width:10%" />
+        <col style="width:15%" />
+        <col style="width:12%" />
+        <col style="width:17%" />
+        <col style="width:15%" />
+        <col style="width:11%" />
+        <col style="width:20%" />
       </colgroup>
 
       <thead>
@@ -2208,18 +2128,18 @@ th,
             ${escapeHtml(
               mechanical.hardness
                 ?.standard ||
-                "IS:1608 ASTM A370 As Normalized Condition"
+                "IS:1608 ASTM A370 AS NORMALIZED CONDITION"
             )}
           </th>
 
           <th>
-            Tensile Strength
+            TENSILE STRENGTH
             <br/>
             N/mm2
           </th>
 
           <th>
-            Yield Strength
+            YIELD STRENGTH
             <br/>
             N/mm2
           </th>
@@ -2229,9 +2149,9 @@ th,
           </th>
 
           <th>
-            IS:1757 Impact Strength Charpy
+            IS:1757 IMPACT STRENGTH CHARPY
             <br/>
-            V-NOTCH (Joules)
+            V-NOTCH (JOULES)
           </th>
 
         </tr>
@@ -2255,8 +2175,7 @@ th,
             ${escapeHtml(
               mechanical
                 .tensileStrength
-                ?.specMin ||
-                "-"
+                ?.specMin
             )}
           </td>
 
@@ -2264,8 +2183,7 @@ th,
             ${escapeHtml(
               mechanical
                 .yieldStrength
-                ?.specMin ||
-                "-"
+                ?.specMin
             )}
           </td>
 
@@ -2273,8 +2191,7 @@ th,
             ${escapeHtml(
               mechanical
                 .elongation
-                ?.specMin ||
-                "-"
+                ?.specMin
             )}
           </td>
 
@@ -2282,8 +2199,7 @@ th,
             ${escapeHtml(
               mechanical
                 .impactStrength
-                ?.specMin ||
-                "-"
+                ?.specMin
             )}
           </td>
 
@@ -2309,8 +2225,7 @@ th,
             ${escapeHtml(
               mechanical
                 .tensileStrength
-                ?.specMax ||
-                "-"
+                ?.specMax
             )}
           </td>
 
@@ -2318,8 +2233,7 @@ th,
             ${escapeHtml(
               mechanical
                 .yieldStrength
-                ?.specMax ||
-                "-"
+                ?.specMax
             )}
           </td>
 
@@ -2327,8 +2241,7 @@ th,
             ${escapeHtml(
               mechanical
                 .elongation
-                ?.specMax ||
-                "-"
+                ?.specMax
             )}
           </td>
 
@@ -2336,8 +2249,7 @@ th,
             ${escapeHtml(
               mechanical
                 .impactStrength
-                ?.specMax ||
-                "-"
+                ?.specMax
             )}
           </td>
 
@@ -2351,7 +2263,7 @@ th,
     </table>
 
     <!-- ==================================================
-         RAW MATERIAL AND HARDENABILITY
+         HARDENABILITY
     =================================================== -->
 
     <table class="raw-hard-wrapper">
@@ -2362,7 +2274,7 @@ th,
           style="width:18%"
           class="section-title"
         >
-          Raw Material Detail
+          RAW MATERIAL DETAIL
         </td>
 
         <td class="section-title">
@@ -2420,14 +2332,15 @@ th,
           <table class="hardenability-table">
 
             <colgroup>
-              <col style="width:15%" />
+              <col style="width:6%" />
+              <col style="width:8%" />
 
               ${Array.from({
-                length:
-                  hardenabilityColumns,
+                length: 12,
               })
                 .map(
-                  () => "<col />"
+                  () =>
+                    '<col style="width:7.166%" />'
                 )
                 .join("")}
             </colgroup>
@@ -2455,9 +2368,9 @@ th,
           style="width:30%"
           class="section-title"
         >
-          Ultrasonic Testing
+          ULTRASONIC TESTING
           <br/>
-          (As Per ASTM A388)
+          (AS PER ASTM A388)
         </td>
 
         <td
@@ -2471,7 +2384,7 @@ th,
           style="width:35%"
           class="section-title"
         >
-          Depth Of Decarbonization
+          DEPTH OF DECARBONIZATION
           <br/>
 
           ${escapeHtml(
@@ -2487,16 +2400,17 @@ th,
     <table class="testing-table">
 
       <colgroup>
-        <col style="width:8.3%" />
-        <col style="width:21.7%" />
-        <col style="width:10.5%" />
-        <col style="width:12.2%" />
-        <col style="width:12.3%" />
+        <col style="width:9%" />
+        <col style="width:21%" />
+        <col style="width:10%" />
+        <col style="width:12.5%" />
+        <col style="width:12.5%" />
         <col style="width:17.5%" />
         <col style="width:17.5%" />
       </colgroup>
 
       <tr>
+
         <td>
           Ref. Std.
         </td>
@@ -2509,28 +2423,30 @@ th,
           )}
         </td>
 
-        <td>
+        <td class="bold">
           GAS
         </td>
 
-        <td>
+        <td class="bold">
           REQ.
         </td>
 
-        <td>
+        <td class="bold">
           ACT.
         </td>
 
-        <td>
-          Mixup Testing
+        <td class="bold">
+          MIXUP TESTING
         </td>
 
-        <td>
+        <td class="bold">
           MICROSTRUCTURE
         </td>
+
       </tr>
 
       <tr>
+
         <td>
           Acceptance
         </td>
@@ -2574,9 +2490,11 @@ th,
               "Pearlite + Ferrite"
           )}
         </td>
+
       </tr>
 
       <tr>
+
         <td>
           Probe Used
         </td>
@@ -2604,9 +2522,11 @@ th,
             gas.n2?.actual
           )}
         </td>
+
       </tr>
 
       <tr>
+
         <td>
           Result
         </td>
@@ -2633,6 +2553,7 @@ th,
             gas.h2?.actual
           )}
         </td>
+
       </tr>
 
     </table>
@@ -2682,45 +2603,36 @@ th,
     <table class="inclusion-table">
 
       <colgroup>
-        <col style="width:8.3%" />
-        <col style="width:6.9%" />
-        <col style="width:6.9%" />
-        <col style="width:6.9%" />
-        <col style="width:7%" />
+        <col style="width:12%" />
+        <col style="width:6%" />
+        <col style="width:6%" />
+        <col style="width:6%" />
+        <col style="width:6%" />
+        <col style="width:9%" />
+        <col style="width:9%" />
         <col style="width:18%" />
-        <col style="width:18%" />
-        <col style="width:13.8%" />
-        <col style="width:14.2%" />
+        <col style="width:14%" />
+        <col style="width:14%" />
       </colgroup>
 
       <tr>
 
         <td></td>
 
-        <td class="bold">
-          A
-        </td>
+        <td class="bold">A</td>
+        <td class="bold">B</td>
+        <td class="bold">C</td>
+        <td class="bold">D</td>
 
         <td class="bold">
-          B
-        </td>
-
-        <td class="bold">
-          C
+          SPEC.
         </td>
 
         <td class="bold">
-          D
+          ACTUAL
         </td>
 
-        <td rowspan="2">
-          ${escapeHtml(
-            grain.specified ||
-              "5~8"
-          )}
-        </td>
-
-        <td rowspan="3">
+        <td rowspan="4">
           ${escapeHtml(
             mtc.macrostructure
           )}
@@ -2739,34 +2651,43 @@ th,
       <tr>
 
         <td class="bold">
-          Specified
+          SPECIFIED
         </td>
 
         <td>
           ${escapeHtml(
-            inclusion.specified
-              ?.a
+            inclusion.specified?.a
           )}
         </td>
 
         <td>
           ${escapeHtml(
-            inclusion.specified
-              ?.b
+            inclusion.specified?.b
           )}
         </td>
 
         <td>
           ${escapeHtml(
-            inclusion.specified
-              ?.c
+            inclusion.specified?.c
           )}
         </td>
 
         <td>
           ${escapeHtml(
-            inclusion.specified
-              ?.d
+            inclusion.specified?.d
+          )}
+        </td>
+
+        <td rowspan="3">
+          ${escapeHtml(
+            grain.specified ||
+              "5~8"
+          )}
+        </td>
+
+        <td rowspan="3">
+          ${escapeHtml(
+            grain.achieved
           )}
         </td>
 
@@ -2777,7 +2698,7 @@ th,
           )}
         </td>
 
-        <td rowspan="2">
+        <td rowspan="3">
           ${escapeHtml(
             physical.surface
           )}
@@ -2815,21 +2736,8 @@ th,
           )}
         </td>
 
-        <td>
-          ${escapeHtml(
-            grain.achieved
-          )}
-        </td>
-
         <td class="bold">
           COLD BEND TEST
-          <br/>
-
-          ${escapeHtml(
-            physical
-              .coldBendTest ||
-              "N/A"
-          )}
         </td>
 
       </tr>
@@ -2864,7 +2772,13 @@ th,
           )}
         </td>
 
-        <td colspan="4"></td>
+        <td>
+          ${escapeHtml(
+            physical
+              .coldBendTest ||
+              "N/A"
+          )}
+        </td>
 
       </tr>
 
@@ -2877,10 +2791,10 @@ th,
     <table class="final-table">
 
       <colgroup>
-        <col style="width:13.3%" />
-        <col style="width:57.7%" />
-        <col style="width:17.6%" />
-        <col style="width:11.4%" />
+        <col style="width:14%" />
+        <col style="width:57%" />
+        <col style="width:17%" />
+        <col style="width:12%" />
       </colgroup>
 
       <tr>
@@ -2911,7 +2825,7 @@ th,
       <tr>
 
         <td class="final-label">
-          Dimensional Inspection
+          DIMENSIONAL INSPECTION
         </td>
 
         <td colspan="3">
@@ -2925,7 +2839,7 @@ th,
       <tr>
 
         <td class="final-label">
-          Visual Inspection
+          VISUAL INSPECTION
         </td>
 
         <td colspan="3">
@@ -2953,6 +2867,7 @@ th,
     </table>
 
   </div>
+
 </body>
 </html>
   `;
