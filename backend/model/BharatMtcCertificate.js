@@ -691,11 +691,10 @@ const bharatMtcSchema =
         trim: true,
       },
 
-      manufacturingRoute: {
-        type: String,
-        required: true,
-        trim: true,
-      },
+      supplyCondition: {
+  type: String,
+  trim: true,
+},
 
       /* =====================================================
          ITEM DESCRIPTION
