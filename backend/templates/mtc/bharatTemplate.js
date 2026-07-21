@@ -1076,49 +1076,74 @@ const bharatTemplate = (
     }
 
     th,
-    td {
-      border:
-        0.72px solid #000;
+td {
+  border:
+    0.78px solid #000;
 
-      padding:
-        0.65px 1.25px;
+  padding:
+    0.75px 1.35px;
 
-      vertical-align:
-        middle;
+  vertical-align:
+    middle;
 
-      text-align:
-        center;
+  text-align:
+    center;
 
-      font-family:
-        "RobotoEmbedded",
-        Arial,
-        sans-serif;
+  font-family:
+    "RobotoEmbedded",
+    Arial,
+    sans-serif;
 
-      font-size:
-        6.25px;
+  /*
+   * Increase all normal certificate text.
+   */
+  font-size:
+    7.15px;
 
-      line-height:
-        1.04;
+  line-height:
+    1.08;
 
-      font-weight:
-        400;
+  font-weight:
+    500;
 
-      overflow-wrap:
-        break-word;
+  overflow-wrap:
+    break-word;
 
-      word-break:
-        normal;
-    }
+  word-break:
+    normal;
+}
 
     .bold,
-    th,
-    .section-title,
-    .meta-label,
-    .meta-right-label,
-    .final-label {
-      font-weight:
-        700;
-    }
+th,
+.section-title,
+.meta-label,
+.meta-right-label,
+.final-label {
+  font-weight:
+    700;
+}
+
+/*
+ * Strong heading text like the reference PDF.
+ */
+th,
+.section-title,
+.document-title-main,
+.meta-table td.bold,
+.mechanical-table thead th,
+.inclusion-table .bold,
+.final-label {
+  font-family:
+    "RobotoEmbedded",
+    Arial,
+    sans-serif;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    -0.08px;
+}
 
     .center {
       text-align:
@@ -1282,399 +1307,540 @@ const bharatTemplate = (
     }
 
     .company-address {
-      margin-top:
-        1.1mm;
+  margin-top:
+    1.1mm;
 
-      font-size:
-        5.85px;
+  font-size:
+    6.4px;
 
-      line-height:
-        1.22;
+  line-height:
+    1.22;
 
-      font-weight:
-        500;
-    }
+  font-weight:
+    500;
+}
 
     .company-contact {
-      padding-top:
-        1.6mm;
+  padding-top:
+    1.4mm;
 
-      padding-left:
-        2mm;
+  padding-left:
+    1.5mm;
 
-      color:
-        #0066cc;
+  color:
+    #0066cc;
 
-      text-align:
-        center;
+  text-align:
+    left;
 
-      font-size:
-        5.2px;
+  font-size:
+    6.1px;
 
-      line-height:
-        1.35;
+  line-height:
+    1.25;
 
-      text-decoration:
-        underline;
-    }
+  font-weight:
+    500;
+}
+
+.contact-line {
+  display:
+    grid;
+
+  grid-template-columns:
+    11mm
+    minmax(0, 1fr);
+
+  align-items:
+    center;
+
+  min-height:
+    4mm;
+
+  white-space:
+    nowrap;
+}
+
+.contact-label {
+  color:
+    #000;
+
+  font-size:
+    6px;
+
+  line-height:
+    1;
+
+  font-weight:
+    700;
+
+  text-decoration:
+    none;
+}
+
+.contact-text {
+  color:
+    #0066cc;
+
+  font-size:
+    6px;
+
+  line-height:
+    1;
+
+  font-weight:
+    500;
+
+  text-decoration:
+    underline;
+}
 
     /* =====================================================
        DOCUMENT HEADER
     ===================================================== */
 
     .document-title td {
-      height:
-        5.3mm;
+  height:
+    5.3mm;
 
-      padding:
-        0.35px 1px;
+  padding:
+    0.35px 1px;
 
-      font-size:
-        7.15px;
+  font-size:
+    8.4px;
 
-      line-height:
-        1;
+  line-height:
+    1;
 
-      font-weight:
-        700;
-    }
+  font-weight:
+    700;
+}
 
-    .document-title-main {
-      width:
-        77%;
-    }
+.document-title-main {
+  width:
+    77%;
 
-    .document-title-date {
-      width:
-        23%;
+  font-size:
+    9px !important;
 
-      text-align:
-        left;
+  font-weight:
+    700;
 
-      padding-left:
-        1.4mm !important;
+  text-align:
+    center;
+}
 
-      font-size:
-        6.2px !important;
+.document-title-date {
+  width:
+    23%;
 
-      white-space:
-        nowrap;
-    }
+  padding-left:
+    1.4mm !important;
+
+  text-align:
+    left;
+
+  font-size:
+    7px !important;
+
+  line-height:
+    1;
+
+  font-weight:
+    700;
+
+  white-space:
+    nowrap;
+}
 
     .meta-table td {
-      height:
-        4.45mm;
+  height:
+    4.45mm;
 
-      padding:
-        0.55px 1.4px;
+  padding:
+    0.65px 1.55px;
 
-      font-size:
-        5.95px;
+  font-size:
+    7.05px;
 
-      line-height:
-        1.02;
+  line-height:
+    1.06;
 
-      text-align:
-        left;
-    }
+  font-weight:
+    500;
 
-    .meta-label {
-      width:
-        18%;
+  text-align:
+    left;
+}
 
-      font-size:
-        5.7px;
-    }
+/*
+ * Left and right labels.
+ */
+.meta-table td.bold,
+.meta-label,
+.meta-right-label {
+  font-size:
+    7px;
 
-    .meta-main-value {
-      width:
-        59%;
-    }
+  font-weight:
+    700;
+}
 
-    .meta-right-label {
-      width:
-        12%;
+/*
+ * Dynamic values entered from the form.
+ */
+.meta-main-value,
+.meta-right-value {
+  font-size:
+    7.1px;
 
-      font-size:
-        5.7px;
+  font-weight:
+    500;
+}
 
-      text-align:
-        center !important;
-    }
+.meta-label {
+  width:
+    18%;
+}
 
-    .meta-right-value {
-      width:
-        11%;
+.meta-main-value {
+  width:
+    59%;
+}
 
-      font-size:
-        5.7px;
+.meta-right-label {
+  width:
+    12%;
 
-      text-align:
-        center !important;
-    }
+  text-align:
+    center !important;
+}
 
+.meta-right-value {
+  width:
+    11%;
+
+  text-align:
+    center !important;
+}
     /* =====================================================
        SECTION TITLES
     ===================================================== */
 
     .section-title {
-      height:
-        6.3mm;
+  height:
+    6.3mm;
 
-      padding:
-        0.6px 1px;
+  padding:
+    0.6px 1px;
 
-      font-size:
-        7.4px;
+  font-size:
+    9px;
 
-      line-height:
-        1;
+  line-height:
+    1;
 
-      text-align:
-        center;
+  font-weight:
+    700;
 
-      vertical-align:
-        middle;
+  text-align:
+    center;
 
-      border-top-width:
-        1px;
+  vertical-align:
+    middle;
 
-      border-bottom-width:
-        1px;
-    }
+  border-top-width:
+    1.05px;
+
+  border-bottom-width:
+    1.05px;
+}
 
     /* =====================================================
        ITEM TABLE
     ===================================================== */
 
     .item-table th {
-      height:
-        6.8mm;
+  height:
+    6.8mm;
 
-      padding:
-        0.45px 0.8px;
+  padding:
+    0.5px 0.9px;
 
-      font-size:
-        5.9px;
+  font-size:
+    7.4px;
 
-      line-height:
-        1;
-    }
+  line-height:
+    1;
 
-    .item-data-row td {
-      height:
-        8.1mm;
+  font-weight:
+    700;
+}
 
-      padding:
-        0.4px 1px;
+.item-data-row td {
+  height:
+    8.1mm;
 
-      font-size:
-        5.95px;
+  padding:
+    0.5px 1px;
 
-      line-height:
-        1;
-    }
+  font-size:
+    7.4px;
+
+  line-height:
+    1.05;
+
+  font-weight:
+    500;
+}
+
+.item-data-row td.bold {
+  font-weight:
+    700;
+}
 
     /* =====================================================
        CHEMICAL TABLE
     ===================================================== */
 
     .chemical-table th {
-      height:
-        7mm;
+  height:
+    7mm;
 
-      padding:
-        0.45px 0.2px;
+  padding:
+    0.45px 0.2px;
 
-      font-size:
-        5.75px;
+  font-size:
+    7.15px;
 
-      line-height:
-        1;
-    }
+  line-height:
+    1;
 
-    .chemical-table td {
-      height:
-        7.3mm;
+  font-weight:
+    700;
+}
 
-      padding:
-        0.4px 0.2px;
+.chemical-table td {
+  height:
+    7.3mm;
 
-      font-size:
-        5.55px;
+  padding:
+    0.45px 0.2px;
 
-      line-height:
-        1;
-    }
+  font-size:
+    6.9px;
 
-    .chemical-spec-column {
-      width:
-        8.7%;
-    }
+  line-height:
+    1;
 
-    .chemical-result-column {
-      width:
-        9.8%;
-    }
+  font-weight:
+    500;
+}
 
-    .chemical-heat-cell,
-    .chemical-result-label {
-      font-size:
-        5.3px;
+.chemical-heat-cell,
+.chemical-result-label {
+  font-size:
+    6.9px;
 
-      font-weight:
-        700;
-    }
+  font-weight:
+    700;
+}
+
+.chemical-value-cell {
+  font-size:
+    6.9px;
+
+  font-weight:
+    500;
+}
+
 
     /* =====================================================
        MECHANICAL TABLE
     ===================================================== */
 
     .mechanical-table th,
-    .mechanical-table td {
-      padding:
-        0.55px 0.7px;
+.mechanical-table td {
+  padding:
+    0.6px 0.75px;
 
-      font-size:
-        5.55px;
+  font-size:
+    6.9px;
 
-      line-height:
-        1.08;
-    }
+  line-height:
+    1.1;
 
-    .mechanical-table thead th {
-      height:
-        12mm;
+  font-weight:
+    500;
+}
 
-      font-size:
-        5.65px;
+.mechanical-table thead th {
+  height:
+    12mm;
 
-      line-height:
-        1.14;
-    }
+  font-size:
+    7.05px;
 
-    .mechanical-fixed-row td {
-      height:
-        6.4mm;
-    }
+  line-height:
+    1.15;
 
-    .mechanical-result-row td {
-      height:
-        6.4mm;
-    }
+  font-weight:
+    700;
+}
+
+.mechanical-fixed-row .bold,
+.mechanical-result-row .bold {
+  font-size:
+    6.9px;
+
+  font-weight:
+    700;
+}
 
     /* =====================================================
        RAW MATERIAL AND HARDENABILITY
     ===================================================== */
 
-    .raw-hard-wrapper >
-      tbody >
-      tr >
-      td {
-      padding:
-        0;
-    }
-
     .raw-material-table td {
-      height:
-        5.7mm;
+  height:
+    5.7mm;
 
-      padding:
-        0.4px;
+  padding:
+    0.45px;
 
-      font-size:
-        5.5px;
-    }
+  font-size:
+    6.8px;
 
-    .hardenability-table td {
-      height:
-        5.7mm;
+  line-height:
+    1.05;
 
-      padding:
-        0.35px 0.15px;
+  font-weight:
+    500;
+}
 
-      font-size:
-        5.1px;
+.hardenability-table td {
+  height:
+    5.7mm;
 
-      line-height:
-        1;
-    }
+  padding:
+    0.4px 0.18px;
 
-    .hard-row-label {
-      width:
-        15%;
+  font-size:
+    6.35px;
 
-      font-size:
-        4.95px;
+  line-height:
+    1;
 
-      font-weight:
-        500;
-    }
+  font-weight:
+    500;
+}
+
+.hard-row-label {
+  width:
+    15%;
+
+  font-size:
+    6.25px;
+
+  font-weight:
+    600;
+}
+
+.hard-value-cell {
+  font-size:
+    6.3px;
+
+  font-weight:
+    500;
+}
 
     /* =====================================================
        TESTING TABLES
     ===================================================== */
 
     .testing-table td {
-      height:
-        6.15mm;
+  height:
+    6.15mm;
 
-      padding:
-        0.45px 0.8px;
+  padding:
+    0.5px 0.85px;
 
-      font-size:
-        5.35px;
+  font-size:
+    6.75px;
 
-      line-height:
-        1.04;
-    }
+  line-height:
+    1.06;
 
-    .inclusion-table td,
-    .inclusion-table th {
-      height:
-        5.65mm;
+  font-weight:
+    500;
+}
 
-      padding:
-        0.45px 0.55px;
+.testing-table td.bold {
+  font-weight:
+    700;
+}
 
-      font-size:
-        5.25px;
+.inclusion-table td,
+.inclusion-table th {
+  height:
+    5.65mm;
 
-      line-height:
-        1.03;
-    }
+  padding:
+    0.5px 0.6px;
+
+  font-size:
+    6.65px;
+
+  line-height:
+    1.05;
+
+  font-weight:
+    500;
+}
+
+.inclusion-table .bold {
+  font-weight:
+    700;
+}
 
     /* =====================================================
        FINAL DETAILS
     ===================================================== */
 
     .final-table td {
-      height:
-        5.15mm;
+  height:
+    5.15mm;
 
-      padding:
-        0.45px 1px;
+  padding:
+    0.5px 1.1px;
 
-      text-align:
-        left;
+  text-align:
+    left;
 
-      font-size:
-        5.25px;
+  font-size:
+    6.75px;
 
-      line-height:
-        1.02;
-    }
+  line-height:
+    1.06;
 
-    .final-label {
-      font-size:
-        5.1px;
+  font-weight:
+    500;
+}
 
-      text-align:
-        center !important;
+.final-label {
+  font-size:
+    6.6px;
 
-      white-space:
-        nowrap;
-    }
+  font-weight:
+    700;
+
+  text-align:
+    center !important;
+
+  white-space:
+    nowrap;
+}
+
   </style>
 </head>
 
@@ -1725,14 +1891,38 @@ const bharatTemplate = (
         </div>
 
         <div class="company-contact">
-          www.bharatspecialsteel.com
-          <br/>
 
-          info@bharatspecilsteels.com
-          <br/>
+  <div class="contact-line">
+    <span class="contact-label">
+      Website:
+    </span>
 
-          8448119291
-        </div>
+    <span class="contact-text">
+      www.bharatspecialsteel.com
+    </span>
+  </div>
+
+  <div class="contact-line">
+    <span class="contact-label">
+      Email:
+    </span>
+
+    <span class="contact-text">
+      info@bharatspecilsteels.com
+    </span>
+  </div>
+
+  <div class="contact-line">
+    <span class="contact-label">
+      Phone:
+    </span>
+
+    <span class="contact-text">
+      8448119291
+    </span>
+  </div>
+
+</div>
 
       </div>
     </div>
