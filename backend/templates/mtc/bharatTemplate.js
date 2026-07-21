@@ -1074,24 +1074,24 @@ const bharatTemplate = (
     }
 
     .certificate-page {
-      width:
-        100%;
+    width: 100%;
 
-      min-height:
-        279.4mm;
+    display: inline-block;
+     
+    vertical-align: top;
+    
+    height: auto;
 
-      display:
-        flex;
+    min-height: auto;
 
-      flex-direction:
-        column;
+    margin: 0;
 
-      border:
-        1.1px solid #000;
+    padding: 0;
 
-      overflow:
-        hidden;
-    }
+    border: 1.8px solid #000;
+
+    overflow: hidden;
+}
 
     table {
       width:
@@ -1108,40 +1108,58 @@ const bharatTemplate = (
     }
 
     th,
-    td {
-      border:
-        0.72px solid #000;
+td {
+  /*
+   * Horizontal borders are intentionally
+   * darker than internal vertical borders.
+   */
+  border-top:
+    1.05px solid #000;
 
-      padding:
-        0.55px 1px;
+  border-bottom:
+    1.05px solid #000;
 
-      vertical-align:
-        middle;
+  border-left:
+    0.78px solid #000;
 
-      text-align:
-        center;
+  border-right:
+    0.78px solid #000;
 
-      font-family:
-        "RobotoEmbedded",
-        Arial,
-        sans-serif;
+  padding:
+    0.62px 1.05px;
 
-      font-size:
-        6.65px;
+  vertical-align:
+    middle;
 
-      line-height:
-        1.04;
+  text-align:
+    center;
 
-      font-weight:
-        500;
+  font-family:
+    "RobotoEmbedded",
+    Arial,
+    sans-serif;
 
-      overflow-wrap:
-        break-word;
+  /*
+   * Increased field-data font.
+   */
+  font-size:
+    7.05px;
 
-      word-break:
-        normal;
-    }
+  line-height:
+    1.06;
 
+  font-weight:
+    500;
+
+  color:
+    #000;
+
+  overflow-wrap:
+    break-word;
+
+  word-break:
+    normal;
+}
     th,
     .bold,
     .section-title,
@@ -1177,33 +1195,35 @@ const bharatTemplate = (
     ===================================================== */
 
     .company-header {
-      border-bottom:
-        0.9px solid #000;
-    }
+  border-bottom:
+    1.8px solid #000;
+}
 
     .gstin-row {
-      height:
-        4mm;
+  height:
+    4mm;
 
-      padding:
-        0.7mm;
+  padding:
+    0.7mm;
 
-      text-align:
-        left;
+  text-align:
+    left;
 
-      font-size:
-        6px;
+  font-size:
+    6.45px;
 
-      line-height:
-        1;
+  line-height:
+    1;
 
-      font-weight:
-        700;
+  font-weight:
+    700;
 
-      border-bottom:
-        0.7px solid #000;
-    }
+  color:
+    #000;
 
+  border-bottom:
+    1.5px solid #000;
+}
     .brand-row {
       position:
         relative;
@@ -1380,210 +1400,324 @@ const bharatTemplate = (
        DOCUMENT TITLE
     ===================================================== */
 
-    .document-title td {
-      height:
-        5.4mm;
+    .document-title {
+  border-top:
+    1.6px solid #000;
 
-      padding:
-        0.4px 1px;
+  border-bottom:
+    1.6px solid #000;
+}
 
-      font-weight:
-        700;
-    }
+.document-title td {
+  height:
+    5.6mm;
 
-    .document-title-main {
-      width:
-        77%;
+  padding:
+    0.45px 1px;
 
-      font-size:
-        9.2px !important;
+  font-weight:
+    700;
 
-      letter-spacing:
-        0.05px;
-    }
+  color:
+    #000;
+}
 
-    .document-title-date {
-      width:
-        23%;
+.document-title-main {
+  width:
+    77%;
 
-      padding-left:
-        1.4mm !important;
+  font-size:
+    9.8px !important;
 
-      text-align:
-        left;
+  letter-spacing:
+    0.05px;
 
-      font-size:
-        7px !important;
+  text-shadow:
+    0.08px 0 #000;
+}
 
-      font-weight:
-        700;
+.document-title-date {
+  width:
+    23%;
 
-      white-space:
-        nowrap;
-    }
+  padding-left:
+    1.4mm !important;
+
+  text-align:
+    left;
+
+  font-size:
+    7.45px !important;
+
+  font-weight:
+    700;
+
+  color:
+    #000;
+
+  white-space:
+    nowrap;
+}
 
     /* =====================================================
        META TABLE
     ===================================================== */
 
-    .meta-table td {
-      height:
-        4.1mm;
+    .meta-table {
+  border-bottom:
+    1.6px solid #000;
+}
 
-      padding:
-        0.55px 1.25px;
+.meta-table td {
+  height:
+    4.2mm;
 
-      text-align:
-        left;
+  padding:
+    0.62px 1.3px;
 
-      font-size:
-        6.7px;
+  text-align:
+    left;
 
-      line-height:
-        1.03;
+  font-size:
+    7.15px;
 
-      font-weight:
-        500;
-    }
+  line-height:
+    1.05;
 
-    .meta-table td.bold {
-      font-size:
-        6.8px;
+  font-weight:
+    500;
 
-      font-weight:
-        700;
-    }
+  color:
+    #000;
+}
+
+.meta-table td.bold {
+  font-size:
+    7.25px;
+
+  font-weight:
+    700;
+
+  color:
+    #000;
+
+  text-shadow:
+    0.06px 0 #000;
+}
 
     /* =====================================================
        SECTION HEADINGS
     ===================================================== */
 
     .section-title {
-      height:
-        5.8mm;
+  height:
+    6mm;
 
-      padding:
-        0.5px 1px;
+  padding:
+    0.55px 1px;
 
-      font-size:
-        8.9px;
+  font-size:
+    9.6px;
 
-      line-height:
-        1;
+  line-height:
+    1;
 
-      font-weight:
-        700;
+  font-weight:
+    700;
 
-      letter-spacing:
-        0.03px;
+  letter-spacing:
+    0.035px;
 
-      color:
-        #000;
+  color:
+    #000;
 
-      text-shadow:
-        0 0 0 #000;
-    }
+  text-shadow:
+    0.1px 0 #000;
 
+  /*
+   * Bold line above and below
+   * every major section title.
+   */
+  border-top:
+    1.8px solid #000 !important;
+
+  border-bottom:
+    1.8px solid #000 !important;
+}
     /* =====================================================
        ITEM TABLE
     ===================================================== */
 
-    .item-table th {
-      height:
-        6.2mm;
+    .item-table {
+  border-bottom:
+    1.7px solid #000;
+}
 
-      font-size:
-        6.8px;
+.item-table thead th {
+  height:
+    6.3mm;
 
-      font-weight:
-        700;
-    }
+  font-size:
+    7.45px;
 
-    .item-data-row td {
-      height:
-        7mm;
+  line-height:
+    1.05;
 
-      font-size:
-        6.8px;
+  font-weight:
+    700;
 
-      font-weight:
-        500;
-    }
+  color:
+    #000;
+
+  text-shadow:
+    0.07px 0 #000;
+
+  border-top:
+    1.35px solid #000;
+
+  border-bottom:
+    1.5px solid #000;
+}
+
+.item-data-row td {
+  height:
+    7mm;
+
+  font-size:
+    7.2px;
+
+  font-weight:
+    500;
+
+  color:
+    #000;
+}
 
     /* =====================================================
        CHEMICAL TABLE
     ===================================================== */
 
-    .chemical-table th {
-      height:
-        6.2mm;
+    .chemical-table {
+  border-top:
+    1.5px solid #000;
 
-      padding:
-        0.4px 0.15px;
+  border-bottom:
+    1.8px solid #000;
+}
 
-      font-size:
-        6.35px;
+.chemical-table thead th {
+  height:
+    6.2mm;
 
-      font-weight:
-        700;
-    }
+  padding:
+    0.45px 0.15px;
 
-    .chemical-table td {
-      height:
-        6.5mm;
+  font-size:
+    6.95px;
 
-      padding:
-        0.4px 0.15px;
+  line-height:
+    1.04;
 
-      font-size:
-        6.15px;
+  font-weight:
+    700;
 
-      font-weight:
-        500;
-    }
+  color:
+    #000;
 
-    .chemical-heat-cell,
-    .chemical-result-label {
-      font-weight:
-        700;
-    }
+  text-shadow:
+    0.07px 0 #000;
+
+  border-top:
+    1.4px solid #000;
+
+  border-bottom:
+    1.5px solid #000;
+}
+
+.chemical-table td {
+  height:
+    6.5mm;
+
+  padding:
+    0.45px 0.15px;
+
+  font-size:
+    6.75px;
+
+  line-height:
+    1.04;
+
+  font-weight:
+    500;
+
+  color:
+    #000;
+}
+
+.chemical-heat-cell,
+.chemical-result-label {
+  font-size:
+    6.85px;
+
+  font-weight:
+    700;
+
+  color:
+    #000;
+}
 
     /* =====================================================
        MECHANICAL TABLE
     ===================================================== */
 
-    .mechanical-table th,
-    .mechanical-table td {
-      padding:
-        0.45px 0.55px;
+    .mechanical-table {
+  border-top:
+    1.5px solid #000;
 
-      font-size:
-        6.3px;
+  border-bottom:
+    1.8px solid #000;
+}
 
-      line-height:
-        1.06;
+.mechanical-table th,
+.mechanical-table td {
+  padding:
+    0.5px 0.6px;
 
-      color:
-        #000;
-    }
+  font-size:
+    6.85px;
 
-    .mechanical-table thead th {
-      height:
-        10mm;
+  line-height:
+    1.07;
 
-      font-size:
-        6.55px;
+  color:
+    #000;
+}
 
-      line-height:
-        1.08;
+.mechanical-table thead th {
+  height:
+    10mm;
 
-      font-weight:
-        700;
+  font-size:
+    7.15px;
 
-      color:
-        #000;
-    }
+  line-height:
+    1.08;
 
+  font-weight:
+    700;
+
+  color:
+    #000;
+
+  text-shadow:
+    0.07px 0 #000;
+
+  border-top:
+    1.4px solid #000;
+
+  border-bottom:
+    1.5px solid #000;
+}
     .mechanical-fixed-row td,
     .mechanical-result-row td {
       height:
@@ -1591,43 +1725,48 @@ const bharatTemplate = (
     }
 
     .mechanical-spec-heading,
-    .mechanical-minmax-heading,
-    .mechanical-result-label {
-      font-size:
-        6.35px;
+.mechanical-minmax-heading,
+.mechanical-result-label {
+  font-size:
+    6.9px;
 
-      font-weight:
-        700;
+  font-weight:
+    700;
 
-      color:
-        #000;
-    }
+  color:
+    #000;
 
-    .mechanical-sample-cell {
-      font-size:
-        6.2px;
+  text-shadow:
+    0.05px 0 #000;
+}
 
-      font-weight:
-        600;
+.mechanical-sample-cell {
+  font-size:
+    6.8px;
 
-      line-height:
-        1.1;
+  font-weight:
+    600;
 
-      vertical-align:
-        middle;
-    }
+  line-height:
+    1.1;
 
-    .mechanical-result-value {
-      font-size:
-        6.35px;
+  vertical-align:
+    middle;
 
-      font-weight:
-        600;
+  color:
+    #000;
+}
 
-      color:
-        #000;
-    }
+.mechanical-result-value {
+  font-size:
+    6.95px;
 
+  font-weight:
+    600;
+
+  color:
+    #000;
+}
     /* =====================================================
        RAW MATERIAL AND HARDENABILITY
     ===================================================== */
@@ -1640,183 +1779,337 @@ const bharatTemplate = (
         0;
     }
 
-    .raw-material-table td {
-      height:
-        5.1mm;
+    .raw-hard-wrapper {
+  border-top:
+    1.8px solid #000;
 
-      font-size:
-        6.1px;
-    }
+  border-bottom:
+    1.8px solid #000;
+}
 
-    .hardenability-table td {
-      height:
-        5.1mm;
+.raw-material-table td {
+  height:
+    5.1mm;
 
-      padding:
-        0.3px 0.12px;
+  font-size:
+    6.65px;
 
-      font-size:
-        5.55px;
+  color:
+    #000;
+}
 
-      line-height:
-        1;
-    }
+.hardenability-table td {
+  height:
+    5.1mm;
+
+  padding:
+    0.34px 0.12px;
+
+  font-size:
+    6.1px;
+
+  line-height:
+    1.02;
+
+  color:
+    #000;
+}
 
     .hard-main-label {
-      width:
-        12%;
+  width:
+    12%;
 
-      font-weight:
-        600;
-    }
+  font-size:
+    6.25px;
 
-    .hard-spec-label {
-      width:
-        6%;
+  font-weight:
+    700;
 
-      font-weight:
-        700;
-    }
+  color:
+    #000;
+}
 
-    .hard-minmax-label {
-      width:
-        6%;
+.hard-spec-label {
+  width:
+    6%;
 
-      font-weight:
-        600;
-    }
+  font-size:
+    6.2px;
+
+  font-weight:
+    700;
+
+  color:
+    #000;
+}
+
+.hard-minmax-label {
+  width:
+    6%;
+
+  font-size:
+    6.2px;
+
+  font-weight:
+    700;
+
+  color:
+    #000;
+}
 
     /* =====================================================
        TEST TABLES
     ===================================================== */
 
-    .testing-table td {
-      height:
-        5.4mm;
+    .testing-table {
+  border-top:
+    1.8px solid #000;
 
-      padding:
-        0.4px 0.65px;
+  border-bottom:
+    1.8px solid #000;
+}
 
-      font-size:
-        5.95px;
-    }
+.testing-table td {
+  height:
+    5.4mm;
 
-    .inclusion-table td,
-    .inclusion-table th {
-      height:
-        5.8mm;
+  padding:
+    0.45px 0.7px;
 
-      padding:
-        0.4px 0.5px;
+  font-size:
+    6.55px;
 
-      font-size:
-        5.9px;
-    }
+  line-height:
+    1.04;
+
+  color:
+    #000;
+}
+
+.testing-table td.bold {
+  font-size:
+    6.7px;
+
+  font-weight:
+    700;
+
+  color:
+    #000;
+
+  text-shadow:
+    0.05px 0 #000;
+}
+
+    .inclusion-table {
+  border-top:
+    1.8px solid #000;
+
+  border-bottom:
+    1.8px solid #000;
+}
+
+.inclusion-table td,
+.inclusion-table th {
+  height:
+    5.8mm;
+
+  padding:
+    0.45px 0.55px;
+
+  font-size:
+    6.55px;
+
+  line-height:
+    1.04;
+
+  color:
+    #000;
+}
 
     .inclusion-column-heading,
-    .inclusion-row-heading,
-    .physical-heading {
-      font-size:
-        6.1px;
+.inclusion-row-heading,
+.physical-heading {
+  font-size:
+    6.8px;
 
-      font-weight:
-        700;
+  font-weight:
+    700;
 
-      color:
-        #000;
-    }
+  color:
+    #000;
 
-    .grain-size-value {
-      font-size:
-        6.35px;
+  text-shadow:
+    0.05px 0 #000;
+}
 
-      font-weight:
-        600;
+.grain-size-value {
+  font-size:
+    6.9px;
 
-      color:
-        #000;
+  font-weight:
+    600;
 
-      text-align:
-        center;
-    }
+  color:
+    #000;
 
-    .grain-size-specified {
-      border-bottom:
-        0.72px solid #000;
-    }
+  text-align:
+    center;
+}
 
-    .grain-size-achieved {
-      vertical-align:
-        middle;
-    }
+.grain-size-specified {
+  border-bottom:
+    1.25px solid #000;
+}
 
-    .macrostructure-value {
-      font-size:
-        6.25px;
+.macrostructure-value {
+  font-size:
+    6.85px;
 
-      font-weight:
-        600;
+  font-weight:
+    600;
 
-      color:
-        #000;
+  color:
+    #000;
 
-      vertical-align:
-        middle;
-    }
+  vertical-align:
+    middle;
+}
 
-    .physical-value {
-      font-size:
-        6.15px;
+.physical-value {
+  font-size:
+    6.75px;
 
-      font-weight:
-        600;
+  font-weight:
+    600;
 
-      color:
-        #000;
+  color:
+    #000;
 
-      vertical-align:
-        middle;
-    }
+  vertical-align:
+    middle;
+}
 
     /* =====================================================
        FINAL TABLE
     ===================================================== */
 
     .final-table {
-      margin-top:
-        0;
-    }
+    margin: 0;
 
-    .final-table td {
-      height:
-        5.8mm;
+    border-top: 1.8px solid #000;
 
-      padding:
-        0.45px 0.8px;
+    border-bottom: 0;
+}
 
-      text-align:
-        left;
+.final-table td {
+  height:
+    5.8mm;
 
-      font-size:
-        5.9px;
+  padding:
+    0.5px 0.85px;
 
-      line-height:
-        1.03;
-    }
+  text-align:
+    left;
 
-    .final-label {
-      text-align:
-        center !important;
+  font-size:
+    6.55px;
 
-      font-size:
-        5.8px;
+  line-height:
+    1.05;
 
-      font-weight:
-        700;
+  color:
+    #000;
+}
 
-      white-space:
-        nowrap;
-    }
+.final-label {
+  text-align:
+    center !important;
+
+  font-size:
+    6.75px;
+
+  font-weight:
+    700;
+
+  color:
+    #000;
+
+  text-shadow:
+    0.05px 0 #000;
+
+  white-space:
+    nowrap;
+}
+
+.final-table tr:last-child td {
+    border-bottom: 0 !important;
+}
+
+/* =========================================================
+   FINAL PRODUCTION BORDER EMPHASIS
+========================================================= */
+
+/*
+ * Strong left and right boundaries for every
+ * primary certificate section.
+ */
+.document-title,
+.meta-table,
+.item-table,
+.chemical-table,
+.mechanical-table,
+.raw-hard-wrapper,
+.testing-table,
+.inclusion-table,
+.final-table {
+  border-left:
+    1.35px solid #000;
+
+  border-right:
+    1.35px solid #000;
+}
+
+/*
+ * Strong horizontal lines around every
+ * major section table.
+ */
+.document-title {
+  border-top:
+    1.6px solid #000;
+
+  border-bottom:
+    1.6px solid #000;
+}
+
+.meta-table,
+.item-table,
+.chemical-table,
+.mechanical-table,
+.raw-hard-wrapper,
+.testing-table,
+.inclusion-table {
+  border-bottom:
+    1.8px solid #000;
+}
+
+/*
+ * Strong horizontal line directly above
+ * all main section names.
+ */
+
+
+/*
+ * Ensure the certificate closes strongly
+ * at the final RESULT row.
+ */
+/*
+ * The certificate outer border closes
+ * immediately after the RESULT row.
+ */
+.final-table tr:last-child td {
+  border-bottom:
+    0 !important;
+}
 
   </style>
 </head>
