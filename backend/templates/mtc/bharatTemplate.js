@@ -48,9 +48,7 @@ const formatDate = (value) => {
     return escapeHtml(value);
   }
 
-  return `${String(
-    date.getDate()
-  ).padStart(2, "0")}/${String(
+  return `${String(date.getDate()).padStart(2, "0")}/${String(
     date.getMonth() + 1
   ).padStart(2, "0")}/${date.getFullYear()}`;
 };
@@ -71,15 +69,11 @@ const formatWeight = (value) => {
   );
 
   return Number.isFinite(numericValue)
-    ? `${numericValue.toFixed(
-        3
-      )} KGS`
+    ? `${numericValue.toFixed(3)} KGS`
     : text.toUpperCase();
 };
 
-const normalizeComparable = (
-  value
-) =>
+const normalizeComparable = (value) =>
   String(value ?? "")
     .trim()
     .replace(/\s+/g, " ")
@@ -89,9 +83,7 @@ const normalizeComparable = (
    ASSET HELPERS
 ========================================================= */
 
-const fileToBase64Url = (
-  filePath
-) => {
+const fileToBase64Url = (filePath) => {
   try {
     if (
       !filePath ||
@@ -112,13 +104,9 @@ const fileToBase64Url = (
       extension === "jpeg"
     ) {
       mimeType = "jpeg";
-    } else if (
-      extension === "svg"
-    ) {
+    } else if (extension === "svg") {
       mimeType = "svg+xml";
-    } else if (
-      extension === "webp"
-    ) {
+    } else if (extension === "webp") {
       mimeType = "webp";
     }
 
@@ -206,9 +194,7 @@ const getLogoBase64 = () => {
   );
 };
 
-const getFontBase64 = (
-  fileName
-) => {
+const getFontBase64 = (fileName) => {
   try {
     const fontPath = path.join(
       __dirname,
@@ -394,15 +380,37 @@ const normalizeMechanicalRows = (
     mtc.mechanicalResults
       .length > 0
   ) {
-    return mtc
-      .mechanicalResults;
+    return mtc.mechanicalResults.map(
+      (row) => ({
+        rowLabel:
+          row.rowLabel ||
+          "ACHIEVED",
+
+        hardness:
+          row.hardness ??
+          "-",
+
+        tensileStrength:
+          row.tensileStrength ??
+          "-",
+
+        yieldStrength:
+          row.yieldStrength ??
+          "-",
+
+        reductionArea:
+          row.reductionArea ??
+          "-",
+
+        impactStrength:
+          row.impactStrength ??
+          "-",
+      })
+    );
   }
 
   return [
     {
-      heatNo:
-        mtc.heatLotNo,
-
       rowLabel:
         "ACHIEVED",
 
@@ -431,11 +439,13 @@ const normalizeMechanicalRows = (
           ?.result ??
         "-",
 
-      elongation:
+      reductionArea:
         mtc.mechanicalProperties
-          ?.elongation?.achieved ??
+          ?.reductionArea
+          ?.achieved ??
         mtc.mechanicalProperties
-          ?.elongation?.result ??
+          ?.reductionArea
+          ?.result ??
         "-",
 
       impactStrength:
@@ -564,9 +574,7 @@ const renderMergedCell = ({
   `;
 };
 
-const renderItemRows = (
-  mtc
-) => {
+const renderItemRows = (mtc) => {
   const sourceRows =
     normalizeItems(mtc).map(
       (item) => ({
@@ -614,20 +622,6 @@ const renderItemRows = (
 
   return rows
     .map((item, index) => {
-      const quantityRowSpan =
-        getSameValueSpan(
-          rows,
-          index,
-          "quantityInKgs"
-        );
-
-      const showQuantity =
-        shouldRenderMergedField(
-          rows,
-          index,
-          "quantityInKgs"
-        );
-
       return `
         <tr class="item-data-row">
 
@@ -648,28 +642,19 @@ const renderItemRows = (
             rows,
             index,
             field: "noOfPcs",
-            value: item.noOfPcs,
+            value:
+              item.noOfPcs,
           })}
 
-          ${
-            showQuantity
-              ? `
-                <td
-                  ${
-                    quantityRowSpan > 1
-                      ? `rowspan="${quantityRowSpan}"`
-                      : ""
-                  }
-                >
-                  ${escapeHtml(
-                    formatWeight(
-                      item.quantityInKgs
-                    )
-                  )}
-                </td>
-              `
-              : ""
-          }
+          ${renderMergedCell({
+            rows,
+            index,
+            field:
+              "quantityInKgs",
+            value: formatWeight(
+              item.quantityInKgs
+            ),
+          })}
 
           <td>
             ${escapeHtml(
@@ -777,7 +762,9 @@ const renderChemicalRows = (
               ([key]) => `
                 <td class="chemical-value-cell">
                   ${escapeHtml(
-                    row.values?.[key]
+                    row.values?.[
+                      key
+                    ]
                   )}
                 </td>
               `
@@ -802,9 +789,9 @@ const renderMechanicalRows = (
       (row) => `
         <tr class="mechanical-result-row">
 
-          <td class="bold">
+          <td>
             ${escapeHtml(
-              row.heatNo
+              row.hardness
             )}
           </td>
 
@@ -812,12 +799,6 @@ const renderMechanicalRows = (
             ${escapeHtml(
               row.rowLabel ||
                 "ACHIEVED"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              row.hardness
             )}
           </td>
 
@@ -835,7 +816,7 @@ const renderMechanicalRows = (
 
           <td>
             ${escapeHtml(
-              row.elongation
+              row.reductionArea
             )}
           </td>
 
@@ -896,7 +877,6 @@ const renderHardenability = (
 
   return `
     <tr>
-
       <td
         class="hard-main-label"
         colspan="2"
@@ -907,11 +887,9 @@ const renderHardenability = (
       ${renderCells(
         "distance"
       )}
-
     </tr>
 
     <tr>
-
       <td
         class="hard-spec-label"
         rowspan="2"
@@ -926,11 +904,9 @@ const renderHardenability = (
       ${renderCells(
         "specMin"
       )}
-
     </tr>
 
     <tr>
-
       <td class="hard-minmax-label">
         MAX
       </td>
@@ -938,11 +914,9 @@ const renderHardenability = (
       ${renderCells(
         "specMax"
       )}
-
     </tr>
 
     <tr>
-
       <td
         class="hard-main-label"
         colspan="2"
@@ -953,7 +927,6 @@ const renderHardenability = (
       ${renderCells(
         "achieved"
       )}
-
     </tr>
   `;
 };
@@ -986,6 +959,9 @@ const bharatTemplate = (
   const mechanical =
     mtc.mechanicalProperties ||
     {};
+
+  const mechanicalRows =
+    normalizeMechanicalRows(mtc);
 
   const rawMaterial =
     mtc.rawMaterialDetail ||
@@ -1021,8 +997,8 @@ const bharatTemplate = (
 
   const supplyCondition =
     mtc.supplyCondition ||
-    mtc.manufacturingRoute ||
-    mtc.condition;
+    mtc.condition ||
+    "-";
 
   return `
 <!DOCTYPE html>
@@ -1087,10 +1063,6 @@ const bharatTemplate = (
       size:
         A4 portrait;
 
-      /*
-       * 8.8 mm print-safe space
-       * on all four sides.
-       */
       margin:
         8.8mm;
     }
@@ -1147,10 +1119,6 @@ const bharatTemplate = (
       width:
         100%;
 
-      /*
-       * A4 height minus:
-       * 8.8 mm top + 8.8 mm bottom.
-       */
       min-height:
         279.4mm;
 
@@ -1704,7 +1672,7 @@ const bharatTemplate = (
     .inclusion-table td,
     .inclusion-table th {
       height:
-        5mm;
+        5.8mm;
 
       padding:
         0.4px 0.5px;
@@ -1719,12 +1687,12 @@ const bharatTemplate = (
 
     .final-table {
       margin-top:
-        auto;
+        0;
     }
 
     .final-table td {
       height:
-        4.8mm;
+        5.8mm;
 
       padding:
         0.45px 0.8px;
@@ -1883,9 +1851,7 @@ const bharatTemplate = (
 
         <td>
           ${escapeHtml(
-            mtc.customerName ||
-              mtc.companyName ||
-              mtc.messers
+            mtc.customerName
           )}
         </td>
 
@@ -1964,7 +1930,8 @@ const bharatTemplate = (
 
         <td>
           ${escapeHtml(
-            mtc.poNo
+            mtc.poNo ||
+              mtc.orderNo
           )}
         </td>
       </tr>
@@ -1985,7 +1952,7 @@ const bharatTemplate = (
 
       <tr>
         <td class="bold">
-          MFG. ROUTE
+          SUPPLY CONDITION
         </td>
 
         <td colspan="3">
@@ -2107,8 +2074,7 @@ const bharatTemplate = (
 
       <colgroup>
         <col style="width:10%" />
-        <col style="width:15%" />
-        <col style="width:12%" />
+        <col style="width:27%" />
         <col style="width:17%" />
         <col style="width:15%" />
         <col style="width:11%" />
@@ -2124,7 +2090,7 @@ const bharatTemplate = (
             (BHN)
           </th>
 
-          <th colspan="2">
+          <th>
             ${escapeHtml(
               mechanical.hardness
                 ?.standard ||
@@ -2145,7 +2111,9 @@ const bharatTemplate = (
           </th>
 
           <th>
-            EL (%)
+            REDUCTION AREA
+            <br/>
+            (%)
           </th>
 
           <th>
@@ -2164,11 +2132,7 @@ const bharatTemplate = (
           <td>-</td>
 
           <td class="bold">
-            SPEC
-          </td>
-
-          <td class="bold">
-            MIN
+            SPEC &nbsp;&nbsp;&nbsp; MIN
           </td>
 
           <td>
@@ -2190,7 +2154,7 @@ const bharatTemplate = (
           <td>
             ${escapeHtml(
               mechanical
-                .elongation
+                .reductionArea
                 ?.specMin
             )}
           </td>
@@ -2208,14 +2172,6 @@ const bharatTemplate = (
         <tr class="mechanical-fixed-row">
 
           <td>-</td>
-
-          <td rowspan="2">
-            ${escapeHtml(
-              mechanical.hardness
-                ?.sampleRemark ||
-                "ONLY H&T SAMPLE"
-            )}
-          </td>
 
           <td class="bold">
             MAX
@@ -2240,7 +2196,7 @@ const bharatTemplate = (
           <td>
             ${escapeHtml(
               mechanical
-                .elongation
+                .reductionArea
                 ?.specMax
             )}
           </td>
@@ -2252,6 +2208,25 @@ const bharatTemplate = (
                 ?.specMax
             )}
           </td>
+
+        </tr>
+
+        <tr class="mechanical-fixed-row">
+
+          <td>-</td>
+
+          <td>
+            ${escapeHtml(
+              mechanical.hardness
+                ?.sampleRemark ||
+                "ONLY H&T SAMPLE"
+            )}
+          </td>
+
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
 
         </tr>
 
@@ -2608,8 +2583,7 @@ const bharatTemplate = (
         <col style="width:6%" />
         <col style="width:6%" />
         <col style="width:6%" />
-        <col style="width:9%" />
-        <col style="width:9%" />
+        <col style="width:18%" />
         <col style="width:18%" />
         <col style="width:14%" />
         <col style="width:14%" />
@@ -2624,12 +2598,11 @@ const bharatTemplate = (
         <td class="bold">C</td>
         <td class="bold">D</td>
 
-        <td class="bold">
-          SPEC.
-        </td>
-
-        <td class="bold">
-          ACTUAL
+        <td>
+          ${escapeHtml(
+            grain.specified ||
+              "5~8"
+          )}
         </td>
 
         <td rowspan="4">
@@ -2675,13 +2648,6 @@ const bharatTemplate = (
         <td>
           ${escapeHtml(
             inclusion.specified?.d
-          )}
-        </td>
-
-        <td rowspan="3">
-          ${escapeHtml(
-            grain.specified ||
-              "5~8"
           )}
         </td>
 
