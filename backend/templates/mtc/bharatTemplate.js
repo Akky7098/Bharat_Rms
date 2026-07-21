@@ -398,8 +398,14 @@ const normalizeMechanicalRows = (
           row.yieldStrength ??
           "-",
 
+        /*
+         * New field first.
+         * Old elongation is retained as
+         * backward-compatible fallback.
+         */
         reductionArea:
           row.reductionArea ??
+          row.elongation ??
           "-",
 
         impactStrength:
@@ -445,6 +451,12 @@ const normalizeMechanicalRows = (
           ?.achieved ??
         mtc.mechanicalProperties
           ?.reductionArea
+          ?.result ??
+        mtc.mechanicalProperties
+          ?.elongation
+          ?.achieved ??
+        mtc.mechanicalProperties
+          ?.elongation
           ?.result ??
         "-",
 
@@ -776,60 +788,6 @@ const renderChemicalRows = (
     )
     .join("");
 };
-
-/* =========================================================
-   MECHANICAL RENDERING
-========================================================= */
-
-const renderMechanicalRows = (
-  mtc
-) =>
-  normalizeMechanicalRows(mtc)
-    .map(
-      (row) => `
-        <tr class="mechanical-result-row">
-
-          <td>
-            ${escapeHtml(
-              row.hardness
-            )}
-          </td>
-
-          <td class="bold">
-            ${escapeHtml(
-              row.rowLabel ||
-                "ACHIEVED"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              row.tensileStrength
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              row.yieldStrength
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              row.reductionArea
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              row.impactStrength
-            )}
-          </td>
-
-        </tr>
-      `
-    )
-    .join("");
 
 /* =========================================================
    HARDENABILITY RENDERING
@@ -1193,6 +1151,27 @@ const bharatTemplate = (
         700;
     }
 
+    thead th,
+    .item-table th,
+    .chemical-table th,
+    .mechanical-table th,
+    .section-title,
+    .raw-hard-wrapper .section-title,
+    .inclusion-table th,
+    .final-label {
+      color:
+        #000;
+
+      font-weight:
+        700;
+
+      -webkit-font-smoothing:
+        antialiased;
+
+      text-rendering:
+        geometricPrecision;
+    }
+
     /* =====================================================
        COMPANY HEADER
     ===================================================== */
@@ -1487,7 +1466,7 @@ const bharatTemplate = (
         0.5px 1px;
 
       font-size:
-        8.4px;
+        8.9px;
 
       line-height:
         1;
@@ -1496,7 +1475,13 @@ const bharatTemplate = (
         700;
 
       letter-spacing:
-        0.02px;
+        0.03px;
+
+      color:
+        #000;
+
+      text-shadow:
+        0 0 0 #000;
     }
 
     /* =====================================================
@@ -1573,10 +1558,13 @@ const bharatTemplate = (
         0.45px 0.55px;
 
       font-size:
-        6.2px;
+        6.3px;
 
       line-height:
         1.06;
+
+      color:
+        #000;
     }
 
     .mechanical-table thead th {
@@ -1584,16 +1572,60 @@ const bharatTemplate = (
         10mm;
 
       font-size:
-        6.25px;
+        6.55px;
+
+      line-height:
+        1.08;
 
       font-weight:
         700;
+
+      color:
+        #000;
     }
 
     .mechanical-fixed-row td,
     .mechanical-result-row td {
       height:
         5.7mm;
+    }
+
+    .mechanical-spec-heading,
+    .mechanical-minmax-heading,
+    .mechanical-result-label {
+      font-size:
+        6.35px;
+
+      font-weight:
+        700;
+
+      color:
+        #000;
+    }
+
+    .mechanical-sample-cell {
+      font-size:
+        6.2px;
+
+      font-weight:
+        600;
+
+      line-height:
+        1.1;
+
+      vertical-align:
+        middle;
+    }
+
+    .mechanical-result-value {
+      font-size:
+        6.35px;
+
+      font-weight:
+        600;
+
+      color:
+        #000;
     }
 
     /* =====================================================
@@ -1679,6 +1711,71 @@ const bharatTemplate = (
 
       font-size:
         5.9px;
+    }
+
+    .inclusion-column-heading,
+    .inclusion-row-heading,
+    .physical-heading {
+      font-size:
+        6.1px;
+
+      font-weight:
+        700;
+
+      color:
+        #000;
+    }
+
+    .grain-size-value {
+      font-size:
+        6.35px;
+
+      font-weight:
+        600;
+
+      color:
+        #000;
+
+      text-align:
+        center;
+    }
+
+    .grain-size-specified {
+      border-bottom:
+        0.72px solid #000;
+    }
+
+    .grain-size-achieved {
+      vertical-align:
+        middle;
+    }
+
+    .macrostructure-value {
+      font-size:
+        6.25px;
+
+      font-weight:
+        600;
+
+      color:
+        #000;
+
+      vertical-align:
+        middle;
+    }
+
+    .physical-value {
+      font-size:
+        6.15px;
+
+      font-weight:
+        600;
+
+      color:
+        #000;
+
+      vertical-align:
+        middle;
     }
 
     /* =====================================================
@@ -2074,7 +2171,8 @@ const bharatTemplate = (
 
       <colgroup>
         <col style="width:10%" />
-        <col style="width:27%" />
+        <col style="width:15%" />
+        <col style="width:12%" />
         <col style="width:17%" />
         <col style="width:15%" />
         <col style="width:11%" />
@@ -2090,7 +2188,7 @@ const bharatTemplate = (
             (BHN)
           </th>
 
-          <th>
+          <th colspan="2">
             ${escapeHtml(
               mechanical.hardness
                 ?.standard ||
@@ -2127,12 +2225,22 @@ const bharatTemplate = (
 
       <tbody>
 
+        <!-- SPEC MIN ROW -->
         <tr class="mechanical-fixed-row">
 
-          <td>-</td>
+          <td>
+            ${escapeHtml(
+              mechanical.hardness
+                ?.specMin
+            )}
+          </td>
 
-          <td class="bold">
-            SPEC &nbsp;&nbsp;&nbsp; MIN
+          <td class="mechanical-spec-heading">
+            SPEC
+          </td>
+
+          <td class="mechanical-minmax-heading">
+            MIN
           </td>
 
           <td>
@@ -2155,6 +2263,9 @@ const bharatTemplate = (
             ${escapeHtml(
               mechanical
                 .reductionArea
+                ?.specMin ??
+              mechanical
+                .elongation
                 ?.specMin
             )}
           </td>
@@ -2169,11 +2280,33 @@ const bharatTemplate = (
 
         </tr>
 
+        <!-- SPEC MAX ROW -->
         <tr class="mechanical-fixed-row">
 
-          <td>-</td>
+          <td>
+            ${escapeHtml(
+              mechanical.hardness
+                ?.specMax
+            )}
+          </td>
 
-          <td class="bold">
+          <td
+            class="mechanical-sample-cell"
+            rowspan="${
+              Math.max(
+                1,
+                mechanicalRows.length
+              ) + 1
+            }"
+          >
+            ${escapeHtml(
+              mechanical.hardness
+                ?.sampleRemark ||
+                "ONLY H&T SAMPLE"
+            )}
+          </td>
+
+          <td class="mechanical-minmax-heading">
             MAX
           </td>
 
@@ -2197,6 +2330,9 @@ const bharatTemplate = (
             ${escapeHtml(
               mechanical
                 .reductionArea
+                ?.specMax ??
+              mechanical
+                .elongation
                 ?.specMax
             )}
           </td>
@@ -2211,28 +2347,52 @@ const bharatTemplate = (
 
         </tr>
 
-        <tr class="mechanical-fixed-row">
+        ${normalizeMechanicalRows(mtc)
+          .map(
+            (row) => `
+              <tr class="mechanical-result-row">
 
-          <td>-</td>
+                <td class="mechanical-result-value">
+                  ${escapeHtml(
+                    row.hardness
+                  )}
+                </td>
 
-          <td>
-            ${escapeHtml(
-              mechanical.hardness
-                ?.sampleRemark ||
-                "ONLY H&T SAMPLE"
-            )}
-          </td>
+                <td class="mechanical-result-label">
+                  ${escapeHtml(
+                    row.rowLabel ||
+                      "ACHIEVED"
+                  )}
+                </td>
 
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
+                <td class="mechanical-result-value">
+                  ${escapeHtml(
+                    row.tensileStrength
+                  )}
+                </td>
 
-        </tr>
+                <td class="mechanical-result-value">
+                  ${escapeHtml(
+                    row.yieldStrength
+                  )}
+                </td>
 
-        ${renderMechanicalRows(
-          mtc
-        )}
+                <td class="mechanical-result-value">
+                  ${escapeHtml(
+                    row.reductionArea
+                  )}
+                </td>
+
+                <td class="mechanical-result-value">
+                  ${escapeHtml(
+                    row.impactStrength
+                  )}
+                </td>
+
+              </tr>
+            `
+          )
+          .join("")}
 
       </tbody>
     </table>
@@ -2593,29 +2753,43 @@ const bharatTemplate = (
 
         <td></td>
 
-        <td class="bold">A</td>
-        <td class="bold">B</td>
-        <td class="bold">C</td>
-        <td class="bold">D</td>
+        <td class="inclusion-column-heading">
+          A
+        </td>
 
-        <td>
+        <td class="inclusion-column-heading">
+          B
+        </td>
+
+        <td class="inclusion-column-heading">
+          C
+        </td>
+
+        <td class="inclusion-column-heading">
+          D
+        </td>
+
+        <td class="grain-size-value grain-size-specified">
           ${escapeHtml(
             grain.specified ||
               "5~8"
           )}
         </td>
 
-        <td rowspan="4">
+        <td
+          class="macrostructure-value"
+          rowspan="4"
+        >
           ${escapeHtml(
             mtc.macrostructure
           )}
         </td>
 
-        <td class="bold">
+        <td class="physical-heading">
           S.D.T. IS:4075
         </td>
 
-        <td class="bold">
+        <td class="physical-heading">
           SURFACE
         </td>
 
@@ -2623,7 +2797,7 @@ const bharatTemplate = (
 
       <tr>
 
-        <td class="bold">
+        <td class="inclusion-row-heading">
           SPECIFIED
         </td>
 
@@ -2651,20 +2825,26 @@ const bharatTemplate = (
           )}
         </td>
 
-        <td rowspan="3">
+        <td
+          class="grain-size-value grain-size-achieved"
+          rowspan="3"
+        >
           ${escapeHtml(
             grain.achieved
           )}
         </td>
 
-        <td>
+        <td class="physical-value">
           ${escapeHtml(
             physical.sdt ||
               "N/A"
           )}
         </td>
 
-        <td rowspan="3">
+        <td
+          class="physical-value"
+          rowspan="3"
+        >
           ${escapeHtml(
             physical.surface
           )}
@@ -2674,7 +2854,7 @@ const bharatTemplate = (
 
       <tr>
 
-        <td class="bold">
+        <td class="inclusion-row-heading">
           THIN
         </td>
 
@@ -2702,7 +2882,7 @@ const bharatTemplate = (
           )}
         </td>
 
-        <td class="bold">
+        <td class="physical-heading">
           COLD BEND TEST
         </td>
 
@@ -2710,7 +2890,7 @@ const bharatTemplate = (
 
       <tr>
 
-        <td class="bold">
+        <td class="inclusion-row-heading">
           THICK
         </td>
 
@@ -2738,7 +2918,7 @@ const bharatTemplate = (
           )}
         </td>
 
-        <td>
+        <td class="physical-value">
           ${escapeHtml(
             physical
               .coldBendTest ||

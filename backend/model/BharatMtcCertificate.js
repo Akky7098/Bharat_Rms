@@ -39,6 +39,9 @@ const bharatItemSchema =
         trim: true,
       },
 
+      /*
+       * Number of pieces is optional.
+       */
       noOfPcs: {
         type: String,
         default: "-",
@@ -94,7 +97,8 @@ const chemicalValuesSchema =
   );
 
 /*
- * One chemical row is generated for every heat.
+ * One chemical-composition row is generated
+ * for every material heat number.
  *
  * Example:
  *
@@ -103,7 +107,8 @@ const chemicalValuesSchema =
  *   rowLabel: "ACHIEVED",
  *   values: {
  *     c: "0.430",
- *     si: "0.242"
+ *     si: "0.242",
+ *     mn: "0.802"
  *   }
  * }
  */
@@ -214,6 +219,7 @@ const mechanicalPropertiesSchema =
       hardness: {
         type:
           hardnessConfigurationSchema,
+
         default: () => ({}),
       },
 
@@ -247,13 +253,20 @@ const mechanicalPropertiesSchema =
         }),
       },
 
-      elongation: {
+      /*
+       * Reduction Area replaces
+       * the previous Elongation field.
+       */
+      reductionArea: {
         type:
           mechanicalPropertyConfigurationSchema,
 
         default: () => ({
-          heading: "EL. (%)",
+          heading:
+            "REDUCTION AREA",
+
           unit: "%",
+
           specMin: "-",
           specMax: "-",
         }),
@@ -284,16 +297,24 @@ const mechanicalPropertiesSchema =
 ========================================================= */
 
 /*
- * One actual mechanical result row per heat.
+ * One actual mechanical-result row is stored
+ * for every material heat.
+ *
+ * The heat number is retained for internal
+ * item-to-result mapping. The PDF template
+ * does not display the heat number inside
+ * the Mechanical Properties table.
  *
  * Example:
  *
  * {
  *   heatNo: "BSSPL-592",
- *   rowLabel: "ACHIEVED",
- *   hardness: "-",
- *   tensileStrength: "850",
- *   yieldStrength: "650"
+ *   rowLabel: "ACTUAL (592)",
+ *   hardness: "179",
+ *   tensileStrength: "616",
+ *   yieldStrength: "490",
+ *   reductionArea: "-",
+ *   impactStrength: "-"
  * }
  */
 const mechanicalResultRowSchema =
@@ -312,19 +333,38 @@ const mechanicalResultRowSchema =
         uppercase: true,
       },
 
-      hardness: dashTextField,
+      hardness: {
+        type: String,
+        default: "-",
+        trim: true,
+      },
 
-      tensileStrength:
-        dashTextField,
+      tensileStrength: {
+        type: String,
+        default: "-",
+        trim: true,
+      },
 
-      yieldStrength:
-        dashTextField,
+      yieldStrength: {
+        type: String,
+        default: "-",
+        trim: true,
+      },
 
-      elongation:
-        dashTextField,
+      /*
+       * Reduction Area replaces Elongation.
+       */
+      reductionArea: {
+        type: String,
+        default: "-",
+        trim: true,
+      },
 
-      impactStrength:
-        dashTextField,
+      impactStrength: {
+        type: String,
+        default: "-",
+        trim: true,
+      },
     },
     {
       _id: false,
@@ -692,9 +732,10 @@ const bharatMtcSchema =
       },
 
       supplyCondition: {
-  type: String,
-  trim: true,
-},
+        type: String,
+        default: "",
+        trim: true,
+      },
 
       /* =====================================================
          ITEM DESCRIPTION
@@ -775,7 +816,9 @@ const bharatMtcSchema =
       ===================================================== */
 
       rawMaterialDetail: {
-        type: rawMaterialDetailSchema,
+        type:
+          rawMaterialDetailSchema,
+
         default: () => ({}),
       },
 
