@@ -4,7 +4,7 @@ const whatsappApprovalService = require("./whatsappApprovalService");
 const mongoose = require("mongoose");
 const finalApprovalService = require("./finalApprovalService");
 const crypto = require("crypto");
-
+const Enquiry = require("../model/enquiryModel");
 
 let notificationService = null;
 
@@ -289,9 +289,48 @@ const createSalesOrder = async (
   uploadedFeasibilityReportFile
 ) => {
   try {
+    const enquiryNumber = String(payload.enquiryNumber || "").trim();
+
+    if (!enquiryNumber) {
+      throw new Error("Enquiry number is required to create sales order.");
+    }
+
+    const enquiry = await Enquiry.findOne({
+      enquiryNumber,
+    }).lean();
+
+    if (!enquiry) {
+      throw new Error("Invalid enquiry number. No enquiry found.");
+    }
+
+    if (enquiry.closure?.status !== "won") {
+      throw new Error(
+        `Sales order can be created only for won enquiries. Current enquiry status is ${enquiry.closure?.status || "pending"}.`
+      );
+    }
+
+    if (
+      String(enquiry.salesPersonId) !== String(loggedInUser._id) &&
+      !["admin", "super_admin"].includes(loggedInUser.role)
+    ) {
+      throw new Error("You cannot create sales order for another salesperson's enquiry.");
+    }
+
+    const existingSalesOrder = await SalesOrder.findOne({
+      enquiryNumber,
+      isActive: { $ne: false },
+    }).lean();
+
+    if (existingSalesOrder) {
+      throw new Error(
+        `Sales order already exists for enquiry number ${enquiryNumber}.`
+      );
+    }
+
     const salesOrder = new SalesOrder({
       ...payload,
-
+      enquiryNumber,
+      enquiryFormFilled: "yes",
       orderType: payload.orderType || "domestic",
 
       salesPersonId: loggedInUser._id,
@@ -326,12 +365,12 @@ const createSalesOrder = async (
           action: "created",
           comment:
             uploadedPOFile && uploadedFeasibilityReportFile
-              ? "Sales order created with customer PO file and feasibility report"
+              ? `Sales order created with customer PO file and feasibility report for won enquiry ${enquiryNumber}`
               : uploadedPOFile
-              ? "Sales order created with customer PO file"
+              ? `Sales order created with customer PO file for won enquiry ${enquiryNumber}`
               : uploadedFeasibilityReportFile
-              ? "Sales order created with feasibility report"
-              : "Sales order created without customer PO file and feasibility report",
+              ? `Sales order created with feasibility report for won enquiry ${enquiryNumber}`
+              : `Sales order created for won enquiry ${enquiryNumber}`,
         },
       ],
     });
@@ -403,6 +442,7 @@ const createSalesOrder = async (
       meta: {
         companyName: savedOrder.companyName,
         poNumber: savedOrder.poNumber,
+        enquiryNumber: savedOrder.enquiryNumber,
         salesPersonName: loggedInUser.name,
         orderType: savedOrder.orderType,
       },
@@ -1548,8 +1588,15 @@ const deleteSalesOrder = async (salesOrderId, user) => {
     throw new Error("Sales order not found.");
   }
 
-  if (order.approvalStatus !== "rejected_by_manager") {
-    throw new Error("Only MD hold/rejected sales orders can be deleted.");
+  const allowedDeleteStatuses = [
+    "rejected_by_admin",
+    "rejected_by_manager",
+  ];
+
+  if (!allowedDeleteStatuses.includes(order.approvalStatus)) {
+    throw new Error(
+      "Only Admin hold or MD hold/rejected sales orders can be deleted."
+    );
   }
 
   order.isActive = false;
