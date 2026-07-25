@@ -23,6 +23,9 @@ const mtcRoutes = require("./routes/mtcRoutes");
 const supportTicketRoutes = require("./routes/supportTicketRoutes");
 const enquiryLookupRoutes = require("./routes/enquiryLookupRoutes");
 const itSupportRoutes = require("./routes/itSupportRoutes");
+const orderTrackingRoutes = require(
+  "./routes/orderTrackingRoutes"
+);
 
 const app = express();
 
@@ -90,6 +93,20 @@ app.use(
   )
 );
 
+
+app.use(
+  "/uploads/order-tracking",
+  express.static(
+    process.env.ORDER_TRACKING_UPLOAD_PATH ||
+      path.join(
+        __dirname,
+        "uploads",
+        "order-tracking"
+      )
+  )
+);
+
+
 /* MTC PDF - PERSISTENT UPLOAD PATH */
 app.use(
   "/uploads/mtc",
@@ -156,5 +173,10 @@ app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/mtc", mtcRoutes);
 app.use("/api/enquiry-lookup", enquiryLookupRoutes);
 app.use("/api/it-support", itSupportRoutes);
+app.use(
+  "/api/order-tracking",
+  orderTrackingRoutes
+);
+
 
 module.exports = app;

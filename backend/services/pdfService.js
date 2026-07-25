@@ -230,7 +230,7 @@ const mergeExistingPdf = async (mergedPdf, pdfPath, label = "ATTACHMENT") => {
     console.log(`${label} PDF MERGE FAILED =>`, error.message);
   }
 };
-const extractUniqueGrades = (sizeGradeQuantityRate = "") => {
+ const extractUniqueGrades = (sizeGradeQuantityRate = "") => {
   const lines = String(sizeGradeQuantityRate)
     .split(/\r?\n/)
     .filter((line) => line.trim());

@@ -105,6 +105,7 @@ const enquirySchema = new mongoose.Schema(
 supplyCondition: {
   type: String,
   enum: [
+    /* Existing Values (KEEP) */
     "as_per_standard",
 
     "as_rolled",
@@ -123,6 +124,31 @@ supplyCondition: {
     "as_forged_qt",
     "as_rolled_or_as_forged_qt",
 
+    /* New General Supply Conditions */
+
+    "hot_rolled",
+    "hot_rolled_annealed",
+    "hot_rolled_normalized",
+    "hot_rolled_qt_ht",
+    "hot_rolled_annealed_cold_drawn",
+    "hot_rolled_annealed_peeled",
+    "hot_rolled_normalized_peeled",
+    "hot_rolled_normalized_cold_drawn",
+    "hot_rolled_annealed_qt_ht",
+    "hot_rolled_normalized_qt_ht",
+    "hot_rolled_qt_peeled",
+    "double_rolled_condition",
+
+    "hot_forged",
+    "hot_forged_annealed",
+    "hot_forged_normalized",
+    "hot_forged_annealed_machined",
+    "hot_forged_normalized_machined",
+    "hot_forged_qt_ht",
+    "hot_forged_qt_ht_machined",
+    "hot_forged_rolled",
+
+    /* Manual */
     "other",
   ],
   required: true,

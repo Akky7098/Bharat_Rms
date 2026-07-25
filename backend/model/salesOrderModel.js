@@ -712,6 +712,11 @@ preShipmentInspectionPdf: {
 //   next();
 // });
 
-const SalesOrder = mongoose.model("SalesOrderForm", salesOrderSchema);
+const SalesOrder =
+  mongoose.models.SalesOrderForm ||
+  mongoose.model(
+    "SalesOrderForm",
+    salesOrderSchema
+  );
 
 module.exports = SalesOrder;
