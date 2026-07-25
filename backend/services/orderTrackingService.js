@@ -9,7 +9,7 @@ const OrderTrackingMessage = require(
 );
 
 const SalesOrderForm = require(
-  "../model/SalesOrderModel"
+  "../model/salesOrderModel"
 );
 
 const {
