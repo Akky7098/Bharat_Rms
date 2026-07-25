@@ -15,7 +15,8 @@ import NotificationBell from "../components/NotificationBell";
 import MtcPage from "./MtcPage";
 import SupportPage from "./SupportPage";
 import ITSupportPage from "./ITSupportPage";
-
+import OrderTrackingPage from
+  "./orderTracking/OrderTrackingPage";
 import { disablePushNotifications } from "../services/pushNotificationService";
 
 function Dashboard() {
@@ -31,6 +32,7 @@ function Dashboard() {
     if (hash === "enquiry") return "sheet";
     if (hash === "sales-order") return "salesOrder";
     if (hash === "dispatch") return "dispatch";
+    if (hash === "order-tracking") return "orderTracking";
     if (hash === "timesheet") return "timesheet";
     if (hash === "receivables") return "receivables";
     if (hash === "cold-call") return "coldCall";
@@ -80,6 +82,12 @@ if (hash === "support") return "support";
       icon: "🚚",
       desc: "Invoices & LR copies",
     },
+    {
+  key: "orderTracking",
+  label: "Order Tracking",
+  icon: "📦",
+  desc: "Factory status, chat & updates",
+},
     {
       key: "timesheet",
       label: "Timesheet",
@@ -139,6 +147,7 @@ useEffect(() => {
     attendance: "attendance",
     sheet: "enquiry",
     salesOrder: "sales-order",
+    orderTracking: "order-tracking",
     dispatch: "dispatch",
     timesheet: "timesheet",
     receivables: "receivables",
@@ -240,18 +249,21 @@ const handleLogout = () => {
     setModulePayload(null);
 
     const hashMap = {
-      dashboard: "dashboard",
-      dashboardHome: "dashboard-home",
-      attendance: "attendance",
-      sheet: "enquiry",
-      salesOrder: "sales-order",
-      dispatch: "dispatch",
-      timesheet: "timesheet",
-      receivables: "receivables",
-      coldCall: "cold-call",
-      documents: "documents",
-      mtc: "mtc",
-    };
+  dashboard: "dashboard",
+  dashboardHome: "dashboard-home",
+  attendance: "attendance",
+  sheet: "enquiry",
+  salesOrder: "sales-order",
+  dispatch: "dispatch",
+  orderTracking: "order-tracking",
+  timesheet: "timesheet",
+  receivables: "receivables",
+  coldCall: "cold-call",
+  documents: "documents",
+  mtc: "mtc",
+  support: "support",
+  itSupport: "it-support",
+};
 
     window.history.replaceState(
       null,
@@ -530,7 +542,9 @@ const handleLogout = () => {
           {active === "salesOrder" && (
             <SalesOrderList dashboardFilters={modulePayload?.filters} />
           )}
-
+           {active === "orderTracking" && (
+  <OrderTrackingPage />
+)}
           {active === "dispatch" && <DispatchPage />}
 
           {active === "timesheet" && <TimesheetPage />}

@@ -18,7 +18,6 @@ function SupportForm({ onClose, onCreated }) {
     assignedToId: "",
     priority: "medium",
     dueDate: "",
-    estimatedHours: "",
   });
 
   const fetchEmployees = async () => {
@@ -85,8 +84,6 @@ function SupportForm({ onClose, onCreated }) {
       formData.append("assignedToId", form.assignedToId);
       formData.append("priority", form.priority);
       formData.append("dueDate", form.dueDate);
-      formData.append("estimatedHours", Number(form.estimatedHours || 0));
-
       attachments.forEach((file) => {
         formData.append("attachments", file);
       });
@@ -185,7 +182,7 @@ function SupportForm({ onClose, onCreated }) {
           <div className="support-form-section">
             <label>
               <Clock size={15} />
-              Due Date / Time
+              Final Due Date / Time
             </label>
 
             <input
@@ -197,20 +194,7 @@ function SupportForm({ onClose, onCreated }) {
             />
           </div>
 
-          <div className="support-form-section">
-            <label>Estimated Hours</label>
-
-            <input
-              type="number"
-              min="0"
-              name="estimatedHours"
-              value={form.estimatedHours}
-              onChange={handleChange}
-              placeholder="Example: 2"
-              disabled={submitting}
-            />
-          </div>
-
+          
           <div className="support-form-section support-form-section-full">
             <label>
               <Paperclip size={15} />

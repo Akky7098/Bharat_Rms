@@ -114,9 +114,11 @@ const DispatchForm = ({ onClose, refresh }) => {
     setLoadingOrders(true);
 
     const response = await searchDispatchSalesOrders({
-      search: searchValue.trim(),
-      limit: 10,
-    });
+  search: String(searchValue || "").trim(),
+  limit: 10,
+});
+
+setOrders((response?.data || []).slice(0, 10));
 
     /*
      * Backend should already remove fully dispatched orders.

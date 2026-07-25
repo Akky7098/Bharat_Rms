@@ -1,18 +1,9 @@
 import axios from "axios";
 
-/*
- * Development URL
- */
-const API_BASE_URL = "http://localhost:5000/api";
 
-/*
- * Production URL
- *
- * Uncomment during deployment.
- */
-// const API_BASE_URL =
-//   process.env.REACT_APP_API_URL ||
-//   "https://bharatspecialsteels.bharatspecialsteels.com/api";
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL ||
+  "https://bharatspecialsteels.bharatspecialsteels.com/api";
 
 const getToken = () =>
   localStorage.getItem("token");

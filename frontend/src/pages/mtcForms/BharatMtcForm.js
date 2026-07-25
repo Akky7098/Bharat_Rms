@@ -180,7 +180,13 @@ const createEmptyMechanicalResultRow = (
   hardness: "",
   tensileStrength: "",
   yieldStrength: "",
-  elongation: "",
+
+  /*
+   * Reduction area replaces
+   * elongation in this TC.
+   */
+  reductionArea: "",
+
   impactStrength: "",
 });
 
@@ -218,12 +224,14 @@ const createInitialForm = () => {
      * Common/base certificate fields.
      */
     customerName: "",
-    companyName: "",
-    customerAddress: "",
+customerAddress: "",
 
-    orderNo: "",
-    poNo: "",
-    invoiceNo: "",
+/*
+ * Single field used for either
+ * customer PO number or order number.
+ */
+poNo: "",
+invoiceNo: "",
 
     tcNo: "",
     issueDate: "",
@@ -231,7 +239,12 @@ const createInitialForm = () => {
 
     purchaseSpecification: "",
     product: "",
-    manufacturingRoute: "",
+
+/*
+ * This is displayed as MFG. ROUTE
+ * in the PDF.
+ */
+   supplyCondition: "",
 
     /*
      * Initial material row.
@@ -296,14 +309,15 @@ mechanicalProperties: {
     specMax: "-",
   },
 
-  elongation: {
-    heading: "EL. (%)",
+  reductionArea: {
+  heading:
+    "REDUCTION AREA",
 
-    unit: "%",
+  unit: "%",
 
-    specMin: "-",
-    specMax: "-",
-  },
+  specMin: "-",
+  specMax: "-",
+},
 
   impactStrength: {
     heading:
@@ -489,19 +503,19 @@ function BharatMtcForm({
   const requiredFilled =
     useMemo(() => {
       const hasValidItems =
-        form.items.length > 0 &&
-        form.items.every(
-          (item) =>
-            String(
-              item.heatNo || ""
-            ).trim() &&
-            String(
-              item.size || ""
-            ).trim() &&
-            String(
-              item.quantityInKgs || ""
-            ).trim()
-        );
+  form.items.length > 0 &&
+  form.items.every(
+    (item) =>
+      String(
+        item.heatNo || ""
+      ).trim() &&
+      String(
+        item.size || ""
+      ).trim() &&
+      String(
+        item.quantityInKgs || ""
+      ).trim()
+  );
 
       return Boolean(
         String(
@@ -519,13 +533,15 @@ function BharatMtcForm({
               ""
           ).trim() &&
           String(
-            form.product || ""
-          ).trim() &&
-          String(
-            form.manufacturingRoute ||
-              ""
-          ).trim() &&
-          hasValidItems
+  form.product || ""
+).trim() &&
+String(
+  form.poNo || ""
+).trim() &&
+String(
+  form.supplyCondition || ""
+).trim() &&
+hasValidItems
       );
     }, [form]);
 
@@ -898,14 +914,34 @@ const handleMechanicalResultChange = (
  chemicalCompositions:
   form.chemicalCompositions.map(
     (row) => ({
-      heatNo: row.heatNo,
+      heatNo:
+        row.heatNo,
 
       rowLabel:
         "ACHIEVED",
 
-      values: {
-        ...row.values,
-      },
+      values:
+        CHEMICAL_ELEMENTS.reduce(
+          (
+            composition,
+            element
+          ) => {
+            const enteredValue =
+              String(
+                row.values?.[
+                  element.key
+                ] || ""
+              ).trim();
+
+            composition[
+              element.key
+            ] =
+              enteredValue || "-";
+
+            return composition;
+          },
+          {}
+        ),
     })
   ),
 
@@ -952,8 +988,8 @@ mechanicalResults:
         yieldStrength:
           row.yieldStrength || "-",
 
-        elongation:
-          row.elongation || "-",
+       reductionArea:
+  row.reductionArea || "-",
 
         impactStrength:
           row.impactStrength ||
@@ -1059,14 +1095,6 @@ const response =
             />
 
             <FormField
-              label="Company Name"
-              name="companyName"
-              value={form.companyName}
-              onChange={handleChange}
-              placeholder="Company name"
-            />
-
-            <FormField
               label="Customer Address"
               required
               name="customerAddress"
@@ -1122,20 +1150,13 @@ const response =
             />
 
             <FormField
-              label="Order Number"
-              name="orderNo"
-              value={form.orderNo}
-              onChange={handleChange}
-              placeholder="Sales order number"
-            />
-
-            <FormField
-              label="PO Number"
-              name="poNo"
-              value={form.poNo}
-              onChange={handleChange}
-              placeholder="Customer PO number"
-            />
+  label="PO / Order Number"
+  required
+  name="poNo"
+  value={form.poNo}
+  onChange={handleChange}
+  placeholder="PO number or order number"
+/>
 
             <FormField
               label="Purchase Specification"
@@ -1158,15 +1179,15 @@ const response =
             />
 
             <FormField
-              label="Manufacturing Route"
-              required
-              name="manufacturingRoute"
-              value={
-                form.manufacturingRoute
-              }
-              onChange={handleChange}
-              placeholder="AS ROLLED"
-            />
+  label="Supply Condition"
+  required
+  name="supplyCondition"
+  value={
+    form.supplyCondition
+  }
+  onChange={handleChange}
+  placeholder="AS ROLLED"
+/>
           </div>
         </FormSection>
 
@@ -1430,327 +1451,327 @@ const response =
   title="Mechanical Properties"
   subtitle="Fixed specifications are shown automatically. Enter actual values heat-wise."
 >
-  <div className="bharat-mechanical-table-wrap">
-    <table className="bharat-mechanical-table">
-      <thead>
-        <tr>
-          <th>
-            HARDNESS
-            <small>(BHN)</small>
-          </th>
+ <div className="bharat-mechanical-table-wrap">
+  <table className="bharat-mechanical-table">
+    <thead>
+      <tr>
+        <th>
+          RESULT
+        </th>
 
-          <th>
-            {
-              form
-                .mechanicalProperties
-                .hardness.standard
-            }
-          </th>
+        <th>
+          HARDNESS
+          <small>
+            (BHN)
+          </small>
+        </th>
 
-          <th>
-            TENSILE STRENGTH
-            <small>N/mm²</small>
-          </th>
+        <th>
+          TENSILE STRENGTH
+          <small>
+            N/mm²
+          </small>
+        </th>
 
-          <th>
-            YIELD STRENGTH
-            <small>N/mm²</small>
-          </th>
+        <th>
+          YIELD STRENGTH
+          <small>
+            N/mm²
+          </small>
+        </th>
 
-          <th>
-            EL. (%)
-          </th>
+        <th>
+          REDUCTION AREA
+          <small>
+            (%)
+          </small>
+        </th>
 
-          <th>
-            IS:1757 IMPACT STRENGTH
-            CHARPY V-NOTCH
-            <small>Joules</small>
-          </th>
-        </tr>
-      </thead>
+        <th>
+          IS:1757 IMPACT
+          STRENGTH CHARPY
+          V-NOTCH
+          <small>
+            Joules
+          </small>
+        </th>
+      </tr>
+    </thead>
 
-      <tbody>
-        {/* Fixed specification row */}
-        <tr>
-          <th>SPEC MIN</th>
+    <tbody>
+      <tr>
+        <th>
+          SPEC MIN
+        </th>
 
-          <td>
-            {
-              form
-                .mechanicalProperties
-                .hardness.specMin
-            }
-          </td>
-
-          <td>
-            {
-              form
-                .mechanicalProperties
-                .tensileStrength
-                .specMin
-            }
-          </td>
-
-          <td>
-            {
-              form
-                .mechanicalProperties
-                .yieldStrength
-                .specMin
-            }
-          </td>
-
-          <td>
-            {
-              form
-                .mechanicalProperties
-                .elongation.specMin
-            }
-          </td>
-
-          <td>
-            {
-              form
-                .mechanicalProperties
-                .impactStrength
-                .specMin
-            }
-          </td>
-        </tr>
-
-        {/* Fixed maximum row */}
-        <tr>
-          <th>SPEC MAX</th>
-
-          <td>
-            {
-              form
-                .mechanicalProperties
-                .hardness.specMax
-            }
-          </td>
-
-          <td>
-            {
-              form
-                .mechanicalProperties
-                .tensileStrength
-                .specMax
-            }
-          </td>
-
-          <td>
-            {
-              form
-                .mechanicalProperties
-                .yieldStrength
-                .specMax
-            }
-          </td>
-
-          <td>
-            {
-              form
-                .mechanicalProperties
-                .elongation.specMax
-            }
-          </td>
-
-          <td>
-            {
-              form
-                .mechanicalProperties
-                .impactStrength
-                .specMax
-            }
-          </td>
-        </tr>
-
-        {/* Fixed H&T sample row */}
-        <tr>
-          <th>REMARK</th>
-
-          <td>
-            <span className="bharat-fixed-value">
-              {
-                form
-                  .mechanicalProperties
-                  .hardness
-                  .sampleRemark
-              }
-            </span>
-          </td>
-
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
-        </tr>
-
-        {/* One actual result row per heat */}
-        {form.mechanicalResults.map(
-          (resultRow, index) => {
-            const linkedItem =
-              form.items.find(
-                (item) =>
-                  item.clientId ===
-                  resultRow.itemId
-              );
-
-            const heatNo =
-              resultRow.heatNo ||
-              linkedItem?.heatNo ||
-              "";
-
-            const heatDigits =
-              getHeatNumberDigits(
-                heatNo
-              );
-
-            const actualLabel =
-              form.mechanicalResults
-                .length === 1
-                ? "ACHIEVED"
-                : `ACTUAL${
-                    heatDigits
-                      ? ` (${heatDigits})`
-                      : ` (${index + 1})`
-                  }`;
-
-            return (
-              <tr
-                key={
-                  resultRow.itemId
-                }
-              >
-                <th>
-                  <div className="bharat-mechanical-result-label">
-                    <strong>
-                      {actualLabel}
-                    </strong>
-
-                    <small>
-                      {heatNo ||
-                        `Heat ${
-                          index + 1
-                        }`}
-                    </small>
-                  </div>
-                </th>
-
-                <td>
-                  <input
-                    value={
-                      resultRow.hardness
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      handleMechanicalResultChange(
-                        resultRow.itemId,
-                        "hardness",
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder="-"
-                  />
-                </td>
-
-                <td>
-                  <input
-                    value={
-                      resultRow
-                        .tensileStrength
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      handleMechanicalResultChange(
-                        resultRow.itemId,
-                        "tensileStrength",
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder="-"
-                  />
-                </td>
-
-                <td>
-                  <input
-                    value={
-                      resultRow
-                        .yieldStrength
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      handleMechanicalResultChange(
-                        resultRow.itemId,
-                        "yieldStrength",
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder="-"
-                  />
-                </td>
-
-                <td>
-                  <input
-                    value={
-                      resultRow.elongation
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      handleMechanicalResultChange(
-                        resultRow.itemId,
-                        "elongation",
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder="-"
-                  />
-                </td>
-
-                <td>
-                  <input
-                    value={
-                      resultRow
-                        .impactStrength
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      handleMechanicalResultChange(
-                        resultRow.itemId,
-                        "impactStrength",
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder="-"
-                  />
-                </td>
-              </tr>
-            );
+        <td>
+          {
+            form
+              .mechanicalProperties
+              .hardness.specMin
           }
-        )}
-      </tbody>
-    </table>
-  </div>
+        </td>
+
+        <td>
+          {
+            form
+              .mechanicalProperties
+              .tensileStrength
+              .specMin
+          }
+        </td>
+
+        <td>
+          {
+            form
+              .mechanicalProperties
+              .yieldStrength
+              .specMin
+          }
+        </td>
+
+        <td>
+          {
+            form
+              .mechanicalProperties
+              .reductionArea
+              .specMin
+          }
+        </td>
+
+        <td>
+          {
+            form
+              .mechanicalProperties
+              .impactStrength
+              .specMin
+          }
+        </td>
+      </tr>
+
+      <tr>
+        <th>
+          SPEC MAX
+        </th>
+
+        <td>
+          {
+            form
+              .mechanicalProperties
+              .hardness.specMax
+          }
+        </td>
+
+        <td>
+          {
+            form
+              .mechanicalProperties
+              .tensileStrength
+              .specMax
+          }
+        </td>
+
+        <td>
+          {
+            form
+              .mechanicalProperties
+              .yieldStrength
+              .specMax
+          }
+        </td>
+
+        <td>
+          {
+            form
+              .mechanicalProperties
+              .reductionArea
+              .specMax
+          }
+        </td>
+
+        <td>
+          {
+            form
+              .mechanicalProperties
+              .impactStrength
+              .specMax
+          }
+        </td>
+      </tr>
+
+      <tr>
+        <th>
+          REMARK
+        </th>
+
+        <td>
+          <span className="bharat-fixed-value">
+            {
+              form
+                .mechanicalProperties
+                .hardness
+                .sampleRemark
+            }
+          </span>
+        </td>
+
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+
+      {form.mechanicalResults.map(
+        (resultRow, index) => {
+          const linkedItem =
+            form.items.find(
+              (item) =>
+                item.clientId ===
+                resultRow.itemId
+            );
+
+          const heatNo =
+            resultRow.heatNo ||
+            linkedItem?.heatNo ||
+            "";
+
+          const heatDigits =
+            getHeatNumberDigits(
+              heatNo
+            );
+
+          const actualLabel =
+            form.mechanicalResults
+              .length === 1
+              ? "ACHIEVED"
+              : `ACTUAL${
+                  heatDigits
+                    ? ` (${heatDigits})`
+                    : ` (${index + 1})`
+                }`;
+
+          return (
+            <tr
+              key={
+                resultRow.itemId
+              }
+            >
+              <th>
+                <div className="bharat-mechanical-result-label">
+                  <strong>
+                    {actualLabel}
+                  </strong>
+                </div>
+              </th>
+
+              <td>
+                <input
+                  value={
+                    resultRow.hardness
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleMechanicalResultChange(
+                      resultRow.itemId,
+                      "hardness",
+                      event.target.value
+                    )
+                  }
+                  placeholder="-"
+                />
+              </td>
+
+              <td>
+                <input
+                  value={
+                    resultRow
+                      .tensileStrength
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleMechanicalResultChange(
+                      resultRow.itemId,
+                      "tensileStrength",
+                      event.target.value
+                    )
+                  }
+                  placeholder="-"
+                />
+              </td>
+
+              <td>
+                <input
+                  value={
+                    resultRow
+                      .yieldStrength
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleMechanicalResultChange(
+                      resultRow.itemId,
+                      "yieldStrength",
+                      event.target.value
+                    )
+                  }
+                  placeholder="-"
+                />
+              </td>
+
+              <td>
+                <input
+                  value={
+                    resultRow
+                      .reductionArea
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleMechanicalResultChange(
+                      resultRow.itemId,
+                      "reductionArea",
+                      event.target.value
+                    )
+                  }
+                  placeholder="-"
+                />
+              </td>
+
+              <td>
+                <input
+                  value={
+                    resultRow
+                      .impactStrength
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleMechanicalResultChange(
+                      resultRow.itemId,
+                      "impactStrength",
+                      event.target.value
+                    )
+                  }
+                  placeholder="-"
+                />
+              </td>
+            </tr>
+          );
+        }
+      )}
+    </tbody>
+  </table>
+</div>
 
   <div className="mtc-note">
-    Specification minimum,
-    specification maximum, test
-    standards, units and ONLY H&amp;T
-    SAMPLE are fixed. Enter only the
-    actual test result for each heat
-    number.
-  </div>
+  Specification minimum and maximum
+  values are fixed. Enter hardness,
+  tensile strength, yield strength,
+  reduction area and impact strength
+  for each material heat.
+</div>
 </FormSection>
 
         {/* =================================================

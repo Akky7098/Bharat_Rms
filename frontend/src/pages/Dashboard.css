@@ -1390,3 +1390,128 @@
     display: none !important;
   }
 }
+
+/* =========================================================
+   ORDER TRACKING PWA DASHBOARD VIEWPORT
+   Keep at the absolute end of Dashboard.css
+========================================================= */
+
+/* =========================================================
+   ORDER TRACKING PWA DASHBOARD SHELL
+   Keep at absolute end of Dashboard.css
+========================================================= */
+
+@media screen and (max-width: 900px) {
+  /*
+   * Support both possible module class names.
+   */
+  .dashboard.pwa-module-orderToDispatch
+    > .mobile-topbar,
+  .dashboard.pwa-module-orderTracking
+    > .mobile-topbar,
+  .dashboard:has(.ot-page)
+    > .mobile-topbar,
+
+  .dashboard.pwa-module-orderToDispatch
+    > .mobile-menu-panel,
+  .dashboard.pwa-module-orderTracking
+    > .mobile-menu-panel,
+  .dashboard:has(.ot-page)
+    > .mobile-menu-panel,
+
+  .dashboard.pwa-module-orderToDispatch
+    > .mobile-menu-overlay,
+  .dashboard.pwa-module-orderTracking
+    > .mobile-menu-overlay,
+  .dashboard:has(.ot-page)
+    > .mobile-menu-overlay,
+
+  .dashboard.pwa-module-orderToDispatch
+    .sidebar,
+  .dashboard.pwa-module-orderTracking
+    .sidebar,
+  .dashboard:has(.ot-page)
+    .sidebar {
+    display: none !important;
+  }
+
+  /*
+   * Remove the global notification bell because
+   * Order Tracking has its own header controls.
+   */
+  .dashboard.pwa-module-orderToDispatch
+    .notification-widget,
+  .dashboard.pwa-module-orderTracking
+    .notification-widget,
+  .dashboard:has(.ot-page)
+    .notification-widget {
+    display: none !important;
+  }
+
+  .dashboard.pwa-module-orderToDispatch,
+  .dashboard.pwa-module-orderTracking,
+  .dashboard:has(.ot-page),
+
+  .dashboard.pwa-module-orderToDispatch
+    .dashboard-layout,
+  .dashboard.pwa-module-orderTracking
+    .dashboard-layout,
+  .dashboard:has(.ot-page)
+    .dashboard-layout {
+    width: 100% !important;
+
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+
+    background: #f3f6f4 !important;
+  }
+
+  .dashboard.pwa-module-orderToDispatch
+    .dashboard-layout,
+  .dashboard.pwa-module-orderTracking
+    .dashboard-layout,
+  .dashboard:has(.ot-page)
+    .dashboard-layout {
+    display: block !important;
+  }
+
+  .dashboard.pwa-module-orderToDispatch
+    .main,
+  .dashboard.pwa-module-orderTracking
+    .main,
+  .dashboard:has(.ot-page)
+    .main {
+    position: relative !important;
+
+    display: block !important;
+
+    width: 100% !important;
+
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+
+    background: #f3f6f4 !important;
+  }
+
+  .dashboard.pwa-module-orderToDispatch
+    .ot-page,
+  .dashboard.pwa-module-orderTracking
+    .ot-page,
+  .dashboard:has(.ot-page)
+    .ot-page {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

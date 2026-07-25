@@ -1209,3 +1209,156 @@ x/* =========================================================
     border-radius: 11px;
   }
 }
+/* =========================================================
+   BHARAT MTC WIDE TABLE SAFETY
+========================================================= */
+
+.bharat-chemistry-table-wrap,
+.bharat-mechanical-table-wrap,
+.bharat-hardenability-table-wrap,
+.bharat-inclusion-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bharat-chemistry-table,
+.bharat-mechanical-table,
+.bharat-hardenability-table,
+.bharat-inclusion-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* =========================================================
+   MECHANICAL TABLE WIDTHS
+========================================================= */
+
+.bharat-mechanical-table th:nth-child(1),
+.bharat-mechanical-table td:nth-child(1) {
+  width: 14%;
+  min-width: 105px;
+}
+
+.bharat-mechanical-table th:nth-child(2),
+.bharat-mechanical-table td:nth-child(2) {
+  width: 14%;
+  min-width: 105px;
+}
+
+.bharat-mechanical-table th:nth-child(3),
+.bharat-mechanical-table td:nth-child(3) {
+  width: 17%;
+  min-width: 125px;
+}
+
+.bharat-mechanical-table th:nth-child(4),
+.bharat-mechanical-table td:nth-child(4) {
+  width: 17%;
+  min-width: 125px;
+}
+
+.bharat-mechanical-table th:nth-child(5),
+.bharat-mechanical-table td:nth-child(5) {
+  width: 15%;
+  min-width: 115px;
+}
+
+.bharat-mechanical-table th:nth-child(6),
+.bharat-mechanical-table td:nth-child(6) {
+  width: 23%;
+  min-width: 165px;
+}
+
+.bharat-mechanical-table th {
+  padding: 12px 8px;
+  vertical-align: middle;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.bharat-mechanical-table th small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.bharat-mechanical-table td {
+  padding: 8px;
+  vertical-align: middle;
+}
+
+.bharat-mechanical-table input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 8px 9px;
+  text-align: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+}
+
+/* =========================================================
+   CHEMISTRY TABLE
+========================================================= */
+
+.bharat-chemistry-table {
+  min-width: 1050px;
+}
+
+.bharat-chemistry-table th,
+.bharat-chemistry-table td {
+  min-width: 58px;
+  padding: 7px 4px;
+  text-align: center;
+}
+
+.bharat-chemistry-table th:first-child {
+  min-width: 120px;
+}
+
+.bharat-chemistry-table th:nth-child(2) {
+  min-width: 90px;
+}
+
+.bharat-chemistry-table input {
+  width: 100%;
+  min-width: 48px;
+  height: 35px;
+  padding: 6px;
+  text-align: center;
+}
+
+/* =========================================================
+   MOBILE / PWA
+========================================================= */
+
+@media (max-width: 900px) {
+  .bharat-mechanical-table {
+    min-width: 820px;
+  }
+
+  .bharat-hardenability-table {
+    min-width: 680px;
+  }
+
+  .bharat-inclusion-table {
+    min-width: 620px;
+  }
+
+  .bharat-mechanical-table th {
+    font-size: 11px;
+  }
+
+  .bharat-mechanical-table input {
+    height: 36px;
+    font-size: 13px;
+  }
+}

@@ -26,21 +26,9 @@ import {
 
 import MtcForm from "./MtcForm";
 
-/*
- * Development backend.
- *
- * Keep this aligned with the localhost URL currently used
- * inside mtcService.js.
- */
-const API_ORIGIN = "http://localhost:5000";
 
-/*
- * Production backend.
- *
- * Uncomment during production deployment.
- */
-// const API_ORIGIN =
-//   "https://bharatspecialsteels.bharatspecialsteels.com";
+const API_ORIGIN =
+  "https://bharatspecialsteels.bharatspecialsteels.com";
 
 const EMPTY_FILTERS = {
   companyName: "",
