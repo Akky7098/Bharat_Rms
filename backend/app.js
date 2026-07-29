@@ -94,15 +94,86 @@ app.use(
 );
 
 
+/* ORDER TRACKING FILES */
+const orderTrackingUploadDir =
+  process.env.ORDER_TRACKING_UPLOAD_PATH ||
+  path.join(
+    process.cwd(),
+    "uploads",
+    "order-tracking"
+  );
+
 app.use(
   "/uploads/order-tracking",
   express.static(
-    process.env.ORDER_TRACKING_UPLOAD_PATH ||
-      path.join(
-        __dirname,
-        "uploads",
-        "order-tracking"
-      )
+    orderTrackingUploadDir,
+    {
+      fallthrough: false,
+
+      setHeaders: (
+        res,
+        filePath
+      ) => {
+        const extension = path
+          .extname(filePath)
+          .toLowerCase();
+
+        if (
+          extension === ".webm"
+        ) {
+          res.setHeader(
+            "Content-Type",
+            "audio/webm"
+          );
+        } else if (
+          extension === ".m4a"
+        ) {
+          res.setHeader(
+            "Content-Type",
+            "audio/mp4"
+          );
+        } else if (
+          extension === ".ogg"
+        ) {
+          res.setHeader(
+            "Content-Type",
+            "audio/ogg"
+          );
+        } else if (
+          extension === ".mp3"
+        ) {
+          res.setHeader(
+            "Content-Type",
+            "audio/mpeg"
+          );
+        } else if (
+          extension === ".wav"
+        ) {
+          res.setHeader(
+            "Content-Type",
+            "audio/wav"
+          );
+        }
+
+        /*
+         * Browser audio players use byte-range
+         * requests for seeking and metadata.
+         */
+        res.setHeader(
+          "Accept-Ranges",
+          "bytes"
+        );
+
+        /*
+         * Audio messages can be cached because
+         * filenames are unique.
+         */
+        res.setHeader(
+          "Cache-Control",
+          "public, max-age=31536000, immutable"
+        );
+      },
+    }
   )
 );
 
