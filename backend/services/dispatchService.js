@@ -176,20 +176,73 @@ const calculatePaymentDueDate = (dispatchDate, paymentDueDays) => {
   return dueDate;
 };
 
-const calculatePaymentStatus = (pendingAmount, paymentDueDate, paidAmount) => {
-  const pending = Number(pendingAmount || 0);
-  const paid = Number(paidAmount || 0);
+const calculatePaymentStatus = (
+  pendingAmount,
+  paymentDueDate,
+  paidAmount
+) => {
+  const pending =
+    Number(
+      pendingAmount || 0
+    );
 
-  if (pending <= 0) return "paid";
-  if (paid > 0) return "partial";
+  const paid =
+    Number(
+      paidAmount || 0
+    );
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  if (pending <= 0) {
+    return "paid";
+  }
 
-  const due = new Date(paymentDueDate);
-  due.setHours(0, 0, 0, 0);
+  const today =
+    new Date();
 
-  return due < today ? "overdue" : "pending";
+  today.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+  const due =
+    paymentDueDate
+      ? new Date(
+          paymentDueDate
+        )
+      : null;
+
+  if (due) {
+    due.setHours(
+      0,
+      0,
+      0,
+      0
+    );
+  }
+
+  if (
+    due &&
+    due < today
+  ) {
+    return "overdue";
+  }
+
+  if (paid > 0) {
+    return "partial";
+  }
+
+  return "pending";
+};
+
+const getEffectivePaymentDueDate = (
+  dispatch
+) => {
+  return (
+    dispatch?.revisedPaymentDueDate ||
+    dispatch?.paymentDueDate ||
+    null
+  );
 };
 
 const getShippingAddress = (salesOrder) => {
@@ -1177,25 +1230,59 @@ const getAllDispatches = async (query, user) => {
   }
 
   if (
-    cardFilter ===
-    "overdue_this_month"
-  ) {
-    listMatch.pendingAmount = {
-      $gt: 0,
-    };
+  cardFilter ===
+  "overdue_this_month"
+) {
+  listMatch.pendingAmount = {
+    $gt: 0,
+  };
 
-    /*
-     * Do not depend only on saved paymentStatus.
-     * A dispatch can become overdue after it was
-     * originally stored as pending.
-     */
-    listMatch.paymentDueDate = {
-      $gte: monthStart,
-      $lte: monthEnd,
-      $lt: new Date(),
-    };
-  }
+  listMatch.dispatchStatus = {
+    $ne: "cancelled",
+  };
 
+  /*
+   * Use revised payment date when available;
+   * otherwise use the original payment due date.
+   */
+  listMatch.$expr = {
+    $and: [
+      {
+        $gte: [
+          {
+            $ifNull: [
+              "$revisedPaymentDueDate",
+              "$paymentDueDate",
+            ],
+          },
+          monthStart,
+        ],
+      },
+      {
+        $lte: [
+          {
+            $ifNull: [
+              "$revisedPaymentDueDate",
+              "$paymentDueDate",
+            ],
+          },
+          monthEnd,
+        ],
+      },
+      {
+        $lt: [
+          {
+            $ifNull: [
+              "$revisedPaymentDueDate",
+              "$paymentDueDate",
+            ],
+          },
+          new Date(),
+        ],
+      },
+    ],
+  };
+}
   /*
    * Manual date filters are used only when
    * no insight card is selected.
@@ -1259,14 +1346,134 @@ const getAllDispatches = async (query, user) => {
    * =====================================================
    */
 
-  const [
-    monthlyDispatchResult,
-    monthlyPaidResult,
-    totalDueResult,
-    overdueThisMonthResult,
-    totalRecords,
-    dispatches,
-  ] = await Promise.all([
+/*
+ * Keep payment status accurate whenever the
+ * Dispatch dashboard is opened.
+ *
+ * The cron remains responsible for sending email.
+ */
+const todayForPaymentStatus =
+  new Date();
+
+todayForPaymentStatus.setHours(
+  0,
+  0,
+  0,
+  0
+);
+
+/*
+ * Mark invoices overdue using revised date first,
+ * otherwise original due date.
+ */
+await Dispatch.updateMany(
+  {
+    ...accessMatch,
+
+    paymentStatus: {
+      $ne: "paid",
+    },
+
+    pendingAmount: {
+      $gt: 0,
+    },
+
+    dispatchStatus: {
+      $ne: "cancelled",
+    },
+
+    $expr: {
+      $lt: [
+        {
+          $ifNull: [
+            "$revisedPaymentDueDate",
+            "$paymentDueDate",
+          ],
+        },
+        todayForPaymentStatus,
+      ],
+    },
+  },
+  {
+    $set: {
+      paymentStatus:
+        "overdue",
+    },
+  }
+);
+
+/*
+ * If an overdue invoice receives a future revised
+ * commitment date, restore it to pending or partial.
+ */
+await Dispatch.updateMany(
+  {
+    ...accessMatch,
+
+    paymentStatus:
+      "overdue",
+
+    pendingAmount: {
+      $gt: 0,
+    },
+
+    revisedPaymentDueDate: {
+      $exists: true,
+      $ne: null,
+      $gte:
+        todayForPaymentStatus,
+    },
+
+    paidAmount: {
+      $lte: 0,
+    },
+  },
+  {
+    $set: {
+      paymentStatus:
+        "pending",
+    },
+  }
+);
+
+await Dispatch.updateMany(
+  {
+    ...accessMatch,
+
+    paymentStatus:
+      "overdue",
+
+    pendingAmount: {
+      $gt: 0,
+    },
+
+    revisedPaymentDueDate: {
+      $exists: true,
+      $ne: null,
+      $gte:
+        todayForPaymentStatus,
+    },
+
+    paidAmount: {
+      $gt: 0,
+    },
+  },
+  {
+    $set: {
+      paymentStatus:
+        "partial",
+    },
+  }
+);
+
+const [
+  monthlyDispatchResult,
+  monthlyPaidResult,
+  totalDueResult,
+  overdueThisMonthResult,
+  totalRecords,
+  dispatches,
+] = await Promise.all([
     /*
      * Monthly Dispatch:
      * Total invoice value dispatched during current month.
@@ -1393,11 +1600,43 @@ const getAllDispatches = async (query, user) => {
           pendingAmount: {
             $gt: 0,
           },
-          paymentDueDate: {
-            $gte: monthStart,
-            $lte: monthEnd,
-            $lt: new Date(),
-          },
+          $expr: {
+  $and: [
+    {
+      $gte: [
+        {
+          $ifNull: [
+            "$revisedPaymentDueDate",
+            "$paymentDueDate",
+          ],
+        },
+        monthStart,
+      ],
+    },
+    {
+      $lte: [
+        {
+          $ifNull: [
+            "$revisedPaymentDueDate",
+            "$paymentDueDate",
+          ],
+        },
+        monthEnd,
+      ],
+    },
+    {
+      $lt: [
+        {
+          $ifNull: [
+            "$revisedPaymentDueDate",
+            "$paymentDueDate",
+          ],
+        },
+        new Date(),
+      ],
+    },
+  ],
+},
         },
       },
       {
@@ -1542,129 +1781,764 @@ const getDispatchById = async (dispatchId, user) => {
   return dispatch;
 };
 
-const updateDispatchPayment = async (dispatchId, body, file, user) => {
-  const uploadedFiles = file ? [file] : [];
+const updateDispatchPayment = async (
+  dispatchId,
+  body,
+  file,
+  user
+) => {
+  const uploadedFiles = file
+    ? [file]
+    : [];
 
   try {
-    const dispatch = await Dispatch.findOne({
-      _id: dispatchId,
-      isActive: true,
-    });
+    const dispatch =
+      await Dispatch.findOne({
+        _id: dispatchId,
+        isActive: true,
+      });
 
-    if (!dispatch) throw new Error("Dispatch not found.");
-
-    if (!canManageDispatch(user, dispatch)) {
-      throw new Error("You are not allowed to update payment for this dispatch.");
+    if (!dispatch) {
+      throw new Error(
+        "Dispatch not found."
+      );
     }
 
-    const receivedAmount = Number(body.amount || 0);
-
-    if (!receivedAmount || receivedAmount <= 0) {
-      throw new Error("Payment amount must be greater than 0.");
+    if (
+      !canManageDispatch(
+        user,
+        dispatch
+      )
+    ) {
+      throw new Error(
+        "You are not allowed to update this dispatch."
+      );
     }
 
-    if (receivedAmount > Number(dispatch.pendingAmount || 0)) {
-      throw new Error("Payment amount cannot be greater than pending amount.");
+    /*
+     * =================================================
+     * PAYMENT AMOUNT VALIDATION
+     * =================================================
+     *
+     * Blank or zero means:
+     * no payment update.
+     *
+     * Positive value means:
+     * record payment.
+     *
+     * Negative or invalid value:
+     * reject request.
+     */
+    const rawAmount =
+      body.amount;
+
+    const normalizedAmount =
+      rawAmount !== undefined &&
+      rawAmount !== null
+        ? String(rawAmount).trim()
+        : "";
+
+    const parsedAmount =
+      normalizedAmount !== ""
+        ? Number(normalizedAmount)
+        : 0;
+
+    if (
+      normalizedAmount !== "" &&
+      !Number.isFinite(parsedAmount)
+    ) {
+      throw new Error(
+        "Payment amount must be a valid number."
+      );
     }
 
-    let paymentBillPdf;
+    if (
+      normalizedAmount !== "" &&
+      parsedAmount < 0
+    ) {
+      throw new Error(
+        "Payment amount cannot be less than 0."
+      );
+    }
 
-    if (file) {
-      const renamedFile = moveUploadedFileToPersistentDir(
-        file,
-        `payment-${dispatch.invoiceNumber}-${dispatch.companyName}`
+    const hasPaymentAmount =
+      parsedAmount > 0;
+
+    const receivedAmount =
+      hasPaymentAmount
+        ? parsedAmount
+        : 0;
+
+    /*
+     * Receipt must only be uploaded with
+     * an actual payment amount.
+     */
+    if (
+      file &&
+      !hasPaymentAmount
+    ) {
+      throw new Error(
+        "Enter a payment amount before uploading a payment receipt."
+      );
+    }
+
+    /*
+     * =================================================
+     * REVISED PAYMENT DATE
+     * =================================================
+     */
+    const rawRevisedDate =
+      body.revisedPaymentDueDate;
+
+    const normalizedRevisedDate =
+      rawRevisedDate !== undefined &&
+      rawRevisedDate !== null
+        ? String(
+            rawRevisedDate
+          ).trim()
+        : "";
+
+    const submittedRevisedDate =
+      normalizedRevisedDate
+        ? parseLocalDateOnly(
+            normalizedRevisedDate
+          )
+        : null;
+
+    const existingRevisedDate =
+      dispatch.revisedPaymentDueDate
+        ? parseLocalDateOnly(
+            dispatch.revisedPaymentDueDate
+          )
+        : null;
+
+    const hasRevisedDate =
+      Boolean(
+        submittedRevisedDate
+      ) &&
+      (
+        !existingRevisedDate ||
+        submittedRevisedDate.getTime() !==
+          existingRevisedDate.getTime()
       );
 
-      paymentBillPdf = buildFileObject(renamedFile);
+    const revisedPaymentRemark =
+      String(
+        body.revisedPaymentRemark ||
+          ""
+      ).trim();
+
+    /*
+     * =================================================
+     * STATUS CHANGE DETECTION
+     * =================================================
+     */
+    const incomingDispatchStatus =
+      body.dispatchStatus !==
+      undefined
+        ? String(
+            body.dispatchStatus ||
+              ""
+          ).trim()
+        : "";
+
+    const incomingInternalRemark =
+      body.internalRemark !==
+      undefined
+        ? String(
+            body.internalRemark ||
+              ""
+          ).trim()
+        : "";
+
+    const hasDispatchStatusChange =
+      body.dispatchStatus !==
+        undefined &&
+      incomingDispatchStatus !==
+        String(
+          dispatch.dispatchStatus ||
+            ""
+        ).trim();
+
+    const hasInternalRemarkChange =
+      body.internalRemark !==
+        undefined &&
+      incomingInternalRemark !==
+        String(
+          dispatch.internalRemark ||
+            ""
+        ).trim();
+
+    const hasStatusUpdate =
+      hasDispatchStatusChange ||
+      hasInternalRemarkChange;
+
+    if (
+      !hasPaymentAmount &&
+      !hasRevisedDate &&
+      !hasStatusUpdate
+    ) {
+      throw new Error(
+        "No changes detected. Enter payment, revise the payment due date, or update dispatch details."
+      );
     }
 
-    dispatch.paidAmount = Number(
-      (Number(dispatch.paidAmount || 0) + receivedAmount).toFixed(2)
-    );
+    /*
+     * =================================================
+     * PAYMENT DATE REVISION
+     * =================================================
+     */
+    if (hasRevisedDate) {
+      if (
+        dispatch.paymentStatus ===
+          "paid" ||
+        Number(
+          dispatch.pendingAmount ||
+            0
+        ) <= 0
+      ) {
+        throw new Error(
+          "Payment due date cannot be revised because this invoice is already paid."
+        );
+      }
 
-    dispatch.pendingAmount = Number(
-      (Number(dispatch.invoiceValue || 0) - Number(dispatch.paidAmount || 0)).toFixed(2)
-    );
+      if (
+        !revisedPaymentRemark
+      ) {
+        throw new Error(
+          "Payment revision remark is required when revising the due date."
+        );
+      }
 
-    dispatch.paymentStatus = calculatePaymentStatus(
-      dispatch.pendingAmount,
-      dispatch.paymentDueDate,
-      dispatch.paidAmount
-    );
+      const revisedDate =
+        submittedRevisedDate;
 
-    dispatch.paymentRemark = body.remark || dispatch.paymentRemark;
+      const currentEffectiveDate =
+        parseLocalDateOnly(
+          getEffectivePaymentDueDate(
+            dispatch
+          )
+        );
 
-    dispatch.paymentHistory.push({
-      amount: receivedAmount,
-      receivedAt: body.receivedAt || new Date(),
-      remark: body.remark || "",
-      paymentBillPdf,
-      updatedBy: {
-        userId: getUserId(user),
-        name: user.name,
-        email: user.email,
-      },
-      mailStatus: { sent: false },
-    });
+      const dispatchDateOnly =
+        parseLocalDateOnly(
+          dispatch.dispatchDate
+        );
+
+      if (
+        revisedDate <
+        dispatchDateOnly
+      ) {
+        throw new Error(
+          "Revised payment due date cannot be earlier than the dispatch date."
+        );
+      }
+
+      if (
+        revisedDate <=
+        currentEffectiveDate
+      ) {
+        throw new Error(
+          "Revised payment due date must be later than the current payment due date."
+        );
+      }
+
+      dispatch.paymentDueDateHistory =
+        Array.isArray(
+          dispatch.paymentDueDateHistory
+        )
+          ? dispatch.paymentDueDateHistory
+          : [];
+
+      dispatch.paymentDueDateHistory.push(
+        {
+          previousDate:
+            currentEffectiveDate,
+
+          revisedDate,
+
+          remark:
+            revisedPaymentRemark,
+
+          revisedAt:
+            new Date(),
+
+          revisedBy: {
+            userId:
+              getUserId(user),
+
+            name:
+              user?.name || "",
+
+            email:
+              user?.email || "",
+
+            role:
+              user?.role || "",
+          },
+        }
+      );
+
+      dispatch.revisedPaymentDueDate =
+        revisedDate;
+
+      dispatch.revisedPaymentRemark =
+        revisedPaymentRemark;
+
+      dispatch.revisedPaymentAt =
+        new Date();
+
+      dispatch.revisedPaymentBy = {
+        userId:
+          getUserId(user),
+
+        name:
+          user?.name || "",
+
+        email:
+          user?.email || "",
+
+        role:
+          user?.role || "",
+      };
+
+      /*
+       * Reset reminder milestones for
+       * the newly committed date.
+       */
+      if (
+        !dispatch.paymentReminder
+      ) {
+        dispatch.paymentReminder =
+          {};
+      }
+
+      dispatch.paymentReminder.beforeDueDateSent =
+        false;
+
+      dispatch.paymentReminder.dueDateSent =
+        false;
+
+      dispatch.paymentReminder.overdueReminderCount =
+        0;
+
+      dispatch.paymentReminder.lastReminderSentAt =
+        undefined;
+
+      dispatch.paymentReminder.lastReminderType =
+        null;
+    }
+
+    /*
+     * =================================================
+     * PAYMENT RECEIPT
+     * =================================================
+     */
+    let paymentBillPdf;
+
+    if (hasPaymentAmount) {
+      if (
+        receivedAmount >
+        Number(
+          dispatch.pendingAmount ||
+            0
+        )
+      ) {
+        throw new Error(
+          "Payment amount cannot be greater than pending amount."
+        );
+      }
+
+      if (file) {
+        const renamedFile =
+          moveUploadedFileToPersistentDir(
+            file,
+            `payment-${dispatch.invoiceNumber}-${dispatch.companyName}`
+          );
+
+        paymentBillPdf =
+          buildFileObject(
+            renamedFile
+          );
+      }
+
+      dispatch.paidAmount =
+        Number(
+          (
+            Number(
+              dispatch.paidAmount ||
+                0
+            ) +
+            receivedAmount
+          ).toFixed(2)
+        );
+
+      dispatch.pendingAmount =
+        Math.max(
+          Number(
+            (
+              Number(
+                dispatch.invoiceValue ||
+                  0
+              ) -
+              Number(
+                dispatch.paidAmount ||
+                  0
+              )
+            ).toFixed(2)
+          ),
+          0
+        );
+
+      dispatch.paymentRemark =
+        String(
+          body.paymentRemark ||
+            body.remark ||
+            dispatch.paymentRemark ||
+            ""
+        ).trim();
+
+      dispatch.paymentHistory =
+        Array.isArray(
+          dispatch.paymentHistory
+        )
+          ? dispatch.paymentHistory
+          : [];
+
+      dispatch.paymentHistory.push(
+        {
+          amount:
+            receivedAmount,
+
+          receivedAt:
+            body.receivedAt ||
+            new Date(),
+
+          remark:
+            String(
+              body.paymentRemark ||
+                body.remark ||
+                ""
+            ).trim(),
+
+          paymentBillPdf,
+
+          updatedBy: {
+            userId:
+              getUserId(user),
+
+            name:
+              user?.name || "",
+
+            email:
+              user?.email || "",
+          },
+
+          mailStatus: {
+            sent: false,
+          },
+        }
+      );
+    }
+
+    /*
+     * =================================================
+     * DISPATCH STATUS
+     * =================================================
+     */
+    if (
+      hasDispatchStatusChange
+    ) {
+      const allowedStatuses = [
+        "dispatched",
+        "delivered",
+        "cancelled",
+      ];
+
+      if (
+        !allowedStatuses.includes(
+          incomingDispatchStatus
+        )
+      ) {
+        throw new Error(
+          "Invalid dispatch status."
+        );
+      }
+
+      if (
+        dispatch.dispatchStatus ===
+          "delivered" &&
+        incomingDispatchStatus !==
+          "delivered"
+      ) {
+        throw new Error(
+          "Delivered dispatch status cannot be changed."
+        );
+      }
+
+      dispatch.dispatchStatus =
+        incomingDispatchStatus;
+
+      if (
+        incomingDispatchStatus ===
+        "delivered"
+      ) {
+        dispatch.deliveredAt =
+          dispatch.deliveredAt ||
+          new Date();
+      }
+    }
+
+    if (
+      hasInternalRemarkChange
+    ) {
+      dispatch.internalRemark =
+        incomingInternalRemark;
+    }
+
+    /*
+     * Recalculate payment status using
+     * revised date when available.
+     */
+    const effectiveDueDate =
+      getEffectivePaymentDueDate(
+        dispatch
+      );
+
+    dispatch.paymentStatus =
+      calculatePaymentStatus(
+        dispatch.pendingAmount,
+        effectiveDueDate,
+        dispatch.paidAmount
+      );
 
     await dispatch.save();
 
-    await safeCreateNotification({
-      module: "dispatch",
-      event: "payment_updated",
-      title: dispatch.paymentStatus === "paid" ? "Payment Completed" : "Payment Updated",
-      message: `₹${Number(receivedAmount).toLocaleString("en-IN")} received for ${
-        dispatch.companyName
-      } | Invoice ${dispatch.invoiceNumber}`,
-      priority: dispatch.paymentStatus === "paid" ? "high" : "normal",
-      targetUserIds:
-        String(dispatch.salesPersonId) === String(getUserId(user))
-          ? []
-          : [dispatch.salesPersonId],
-      targetRoles: isAdminOrSuperAdmin(user) ? [] : ["admin", "super_admin"],
-      createdBy: getUserId(user),
-      referenceId: dispatch._id,
-      referenceModel: "Dispatch",
-      actionUrl: "/dashboard#dispatch",
-      meta: {
-        companyName: dispatch.companyName,
-        invoiceNumber: dispatch.invoiceNumber,
-        receivedAmount,
-        paidAmount: dispatch.paidAmount,
-        pendingAmount: dispatch.pendingAmount,
-        paymentStatus: dispatch.paymentStatus,
-        updatedByName: user.name,
-      },
-    });
+    /*
+     * Revised-date internal notification.
+     */
+    if (hasRevisedDate) {
+      await safeCreateNotification({
+        module:
+          "dispatch",
 
-    const lastPaymentIndex = dispatch.paymentHistory.length - 1;
+        event:
+          "payment_due_date_revised",
 
-    try {
-      const mailInfo = await sendPaymentUpdateEmail(dispatch, {
-        amount: receivedAmount,
-        remark: body.remark || "",
-        paymentBillPdf,
+        title:
+          "Payment Due Date Revised",
+
+        message: `${
+          dispatch.companyName
+        } payment commitment revised to ${new Date(
+          dispatch.revisedPaymentDueDate
+        ).toLocaleDateString(
+          "en-IN"
+        )} | Invoice ${
+          dispatch.invoiceNumber
+        }`,
+
+        priority:
+          "high",
+
+        targetUserIds:
+          String(
+            dispatch.salesPersonId
+          ) ===
+          String(
+            getUserId(user)
+          )
+            ? []
+            : [
+                dispatch.salesPersonId,
+              ],
+
+        targetRoles:
+          isAdminOrSuperAdmin(user)
+            ? []
+            : [
+                "admin",
+                "super_admin",
+              ],
+
+        createdBy:
+          getUserId(user),
+
+        referenceId:
+          dispatch._id,
+
+        referenceModel:
+          "Dispatch",
+
+        actionUrl:
+          "/dashboard#dispatch",
+
+        meta: {
+          companyName:
+            dispatch.companyName,
+
+          invoiceNumber:
+            dispatch.invoiceNumber,
+
+          originalPaymentDueDate:
+            dispatch.paymentDueDate,
+
+          revisedPaymentDueDate:
+            dispatch.revisedPaymentDueDate,
+
+          revisedPaymentRemark:
+            dispatch.revisedPaymentRemark,
+
+          revisedByName:
+            user?.name || "",
+        },
+      });
+    }
+
+    /*
+     * Payment email and notification run
+     * only for a positive payment amount.
+     */
+    if (hasPaymentAmount) {
+      await safeCreateNotification({
+        module:
+          "dispatch",
+
+        event:
+          "payment_updated",
+
+        title:
+          dispatch.paymentStatus ===
+          "paid"
+            ? "Payment Completed"
+            : "Payment Updated",
+
+        message: `₹${Number(
+          receivedAmount
+        ).toLocaleString(
+          "en-IN"
+        )} received for ${
+          dispatch.companyName
+        } | Invoice ${
+          dispatch.invoiceNumber
+        }`,
+
+        priority:
+          dispatch.paymentStatus ===
+          "paid"
+            ? "high"
+            : "normal",
+
+        targetUserIds:
+          String(
+            dispatch.salesPersonId
+          ) ===
+          String(
+            getUserId(user)
+          )
+            ? []
+            : [
+                dispatch.salesPersonId,
+              ],
+
+        targetRoles:
+          isAdminOrSuperAdmin(user)
+            ? []
+            : [
+                "admin",
+                "super_admin",
+              ],
+
+        createdBy:
+          getUserId(user),
+
+        referenceId:
+          dispatch._id,
+
+        referenceModel:
+          "Dispatch",
+
+        actionUrl:
+          "/dashboard#dispatch",
+
+        meta: {
+          companyName:
+            dispatch.companyName,
+
+          invoiceNumber:
+            dispatch.invoiceNumber,
+
+          receivedAmount,
+
+          paidAmount:
+            dispatch.paidAmount,
+
+          pendingAmount:
+            dispatch.pendingAmount,
+
+          paymentStatus:
+            dispatch.paymentStatus,
+
+          updatedByName:
+            user?.name || "",
+        },
       });
 
-      dispatch.paymentHistory[lastPaymentIndex].mailStatus = {
-        sent: true,
-        sentAt: new Date(),
-        messageId: mailInfo.messageId || "",
-      };
+      const lastPaymentIndex =
+        dispatch.paymentHistory.length -
+        1;
 
-      await dispatch.save();
-    } catch (mailError) {
-      dispatch.paymentHistory[lastPaymentIndex].mailStatus = {
-        sent: false,
-        errorMessage: mailError.message,
-      };
+      try {
+        const mailInfo =
+          await sendPaymentUpdateEmail(
+            dispatch,
+            {
+              amount:
+                receivedAmount,
 
-      await dispatch.save();
+              remark:
+                body.paymentRemark ||
+                body.remark ||
+                "",
+
+              paymentBillPdf,
+            }
+          );
+
+        dispatch.paymentHistory[
+          lastPaymentIndex
+        ].mailStatus = {
+          sent: true,
+
+          sentAt:
+            new Date(),
+
+          messageId:
+            mailInfo.messageId ||
+            "",
+        };
+
+        await dispatch.save();
+      } catch (mailError) {
+        dispatch.paymentHistory[
+          lastPaymentIndex
+        ].mailStatus = {
+          sent: false,
+
+          errorMessage:
+            mailError.message,
+        };
+
+        await dispatch.save();
+      }
     }
 
     return dispatch;
   } catch (error) {
-    deleteUploadedFiles(uploadedFiles);
+    deleteUploadedFiles(
+      uploadedFiles
+    );
+
     throw error;
   }
 };

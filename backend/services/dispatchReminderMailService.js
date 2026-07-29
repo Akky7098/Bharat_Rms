@@ -27,6 +27,16 @@ const formatDate = (date) => {
   });
 };
 
+const getEffectivePaymentDueDate = (
+  dispatch
+) => {
+  return (
+    dispatch?.revisedPaymentDueDate ||
+    dispatch?.paymentDueDate ||
+    null
+  );
+};
+
 const cleanEmails = (emails = []) => [
   ...new Set(
     emails
@@ -411,11 +421,29 @@ const buildReminderTemplate = (dispatch, type, overdueDays = 0) => {
         </tr>
         <tr>
           ${infoCard("Invoice Date", formatDate(dispatch.invoiceDate))}
-          ${infoCard(
-            "Payment Due Date",
-            formatDate(dispatch.paymentDueDate),
-            "#b45309"
-          )}
+          ${
+  dispatch.revisedPaymentDueDate
+    ? `
+      <div style="margin-top:13px;">
+        ${messageBox(
+          `<strong>Original Due Date:</strong> ${formatDate(
+            dispatch.paymentDueDate
+          )}<br/>
+          <strong>Revised Due Date:</strong> ${formatDate(
+            dispatch.revisedPaymentDueDate
+          )}<br/>
+          <strong>Revision Remark:</strong> ${
+            dispatch.revisedPaymentRemark ||
+            "-"
+          }`,
+          "#fff7ed",
+          "#fed7aa",
+          "#9a3412"
+        )}
+      </div>
+    `
+    : ""
+}
         </tr>
       </table>
 
@@ -435,22 +463,79 @@ const getReminderTitle = (type, overdueDays) => {
   return getReminderMeta(type, overdueDays).title;
 };
 
-const sendPaymentReminderEmail = async (dispatch, type, overdueDays = 0) => {
-  const cc = cleanEmails([
-    dispatch.salesPersonEmail,
-    ...(dispatch.notificationEmail?.cc || []),
+const sendPaymentReminderEmail = async (
+  dispatch,
+  type,
+  overdueDays = 0
+) => {
+  const to = cleanEmails([
+    dispatch.contactPersonEmail,
   ]);
+
+  /*
+   * CC ONLY:
+   * 1. Info
+   * 2. Concerned Salesperson
+   * 3. Finance
+   *
+   * No admin.
+   * No super admin.
+   * No old notification CC list.
+   * No sales@bharatspecialsteels.com.
+   */
+  const cc = cleanEmails([
+  dispatch.salesPersonEmail,
+  "finance@bharatspecialsteels.com",
+]).filter(
+  (email) =>
+    ![
+      "info@bharatspecialsteels.com",
+      "sales@bharatspecialsteels.com",
+      process.env.ADMIN_EMAIL
+        ?.trim()
+        .toLowerCase(),
+      process.env.SUPER_ADMIN_EMAIL
+        ?.trim()
+        .toLowerCase(),
+    ]
+      .filter(Boolean)
+      .includes(email)
+);
+
+  if (!to.length) {
+    throw new Error(
+      `Customer email is missing for invoice ${
+        dispatch.invoiceNumber || "-"
+      }.`
+    );
+  }
 
   return transporter.sendMail({
     from: `"${COMPANY.name}" <${process.env.ADMIN_EMAIL}>`,
-    to: dispatch.contactPersonEmail,
+
+    to,
     cc,
-    subject: `${getReminderTitle(type, overdueDays)} | Invoice ${
+
+    subject: `${getReminderTitle(
+      type,
+      overdueDays
+    )} | Invoice ${
       dispatch.invoiceNumber
-    } | Pending ${formatCurrency(dispatch.pendingAmount)}`,
-    html: buildReminderTemplate(dispatch, type, overdueDays),
-    inReplyTo: dispatch.notificationEmail?.messageId || undefined,
-    references: dispatch.notificationEmail?.messageId || undefined,
+    } | Pending ${formatCurrency(
+      dispatch.pendingAmount
+    )}`,
+
+    html: buildReminderTemplate(
+      dispatch,
+      type,
+      overdueDays
+    ),
+
+    inReplyTo:
+      dispatch.notificationEmail?.messageId || undefined,
+
+    references:
+      dispatch.notificationEmail?.messageId || undefined,
   });
 };
 

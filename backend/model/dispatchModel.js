@@ -102,11 +102,111 @@ const dispatchSchema = new mongoose.Schema(
 
     tcCertificatePdf: fileSchema,
 
-    paymentTerms: { type: String, trim: true, default: "" },
-    paymentDueDays: { type: Number, required: true, min: 0 },
-    paymentDueDate: { type: Date, required: true, index: true },
+    paymentTerms: {
+  type: String,
+  trim: true,
+  default: "",
+},
 
-    paymentStatus: {
+paymentDueDays: {
+  type: Number,
+  required: true,
+  min: 0,
+},
+
+/*
+ * Original contractual payment due date.
+ * Do not overwrite this when the customer asks
+ * for an extension.
+ */
+paymentDueDate: {
+  type: Date,
+  required: true,
+  index: true,
+},
+
+/*
+ * Latest customer-committed payment date.
+ * When present, this becomes the effective date
+ * for reminders and overdue calculation.
+ */
+revisedPaymentDueDate: {
+  type: Date,
+  default: null,
+  index: true,
+},
+
+revisedPaymentRemark: {
+  type: String,
+  trim: true,
+  default: "",
+},
+
+revisedPaymentAt: {
+  type: Date,
+  default: null,
+},
+
+revisedPaymentBy: {
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  name: {
+    type: String,
+    trim: true,
+  },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+  },
+  role: {
+    type: String,
+    trim: true,
+  },
+},
+
+paymentDueDateHistory: [
+  {
+    previousDate: {
+      type: Date,
+      required: true,
+    },
+
+    revisedDate: {
+      type: Date,
+      required: true,
+    },
+
+    remark: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+
+    revisedAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    revisedBy: {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      name: String,
+      email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+      },
+      role: String,
+    },
+  },
+],
+
+paymentStatus: {
       type: String,
       enum: ["pending", "partial", "paid", "overdue"],
       default: "pending",
@@ -221,19 +321,40 @@ dispatchSchema.pre("validate", function () {
     0
   );
 
-  if (this.pendingAmount === 0 && invoiceValue > 0) {
-    this.paymentStatus = "paid";
-  } else if (paidAmount > 0) {
-    this.paymentStatus = "partial";
-  } else {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const today = new Date();
+today.setHours(0, 0, 0, 0);
 
-    const dueDate = this.paymentDueDate ? new Date(this.paymentDueDate) : null;
-    if (dueDate) dueDate.setHours(0, 0, 0, 0);
+const effectiveDueDate =
+  this.revisedPaymentDueDate ||
+  this.paymentDueDate;
 
-    this.paymentStatus = dueDate && today > dueDate ? "overdue" : "pending";
-  }
+const dueDate = effectiveDueDate
+  ? new Date(effectiveDueDate)
+  : null;
+
+if (dueDate) {
+  dueDate.setHours(0, 0, 0, 0);
+}
+
+if (
+  this.pendingAmount === 0 &&
+  invoiceValue > 0
+) {
+  this.paymentStatus = "paid";
+} else if (
+  dueDate &&
+  today > dueDate
+) {
+  /*
+   * An unpaid or partially-paid invoice becomes
+   * overdue after its effective due date.
+   */
+  this.paymentStatus = "overdue";
+} else if (paidAmount > 0) {
+  this.paymentStatus = "partial";
+} else {
+  this.paymentStatus = "pending";
+}
 
   const total = Number(this.salesOrderTotalQtySnapshot || 0);
   const remaining = Number(this.remainingQtyAfterDispatch || 0);
@@ -248,5 +369,10 @@ dispatchSchema.pre("validate", function () {
 dispatchSchema.index({ salesOrderId: 1, isActive: 1, dispatchStatus: 1 });
 dispatchSchema.index({ companyName: 1, invoiceNumber: 1 });
 dispatchSchema.index({ tcApplicable: 1, isActive: 1 });
+dispatchSchema.index({
+  revisedPaymentDueDate: 1,
+  paymentStatus: 1,
+  isActive: 1,
+});
 
 module.exports = mongoose.model("Dispatch", dispatchSchema);
