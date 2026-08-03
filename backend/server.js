@@ -70,6 +70,8 @@ const startApp = async () => {
         `Server running on port ${PORT}`
       );
 
+      console.log("hii")
+
       if (
         process.env
           .ENABLE_BACKGROUND_JOBS ===
