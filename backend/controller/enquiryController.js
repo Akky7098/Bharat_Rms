@@ -67,9 +67,36 @@ const getAllEnquiries = async (req, res) => {
 };
 
 
+const getLostEnquiryReasons = async (
+  req,
+  res
+) => {
+  try {
+    const result =
+      await enquiryService.getLostEnquiryReasons(
+        req.query,
+        req.user
+      );
+
+    res.status(200).json({
+      success: true,
+
+      data: result,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+
+      message:
+        error.message,
+    });
+  }
+};
+
 module.exports = {
   createEnquiry,
   getProductConfig,
   updateWorkflow,
   getAllEnquiries,
+  getLostEnquiryReasons,
 };

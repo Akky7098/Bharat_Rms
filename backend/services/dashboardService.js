@@ -1284,54 +1284,81 @@ const getActionRequiredInsights = async (query, user) => {
 const getMisScoring = async (query, user) => {
   const { fromDate, toDate } = query;
 
+  // =========================================================
+  // MONTHLY MIS TARGETS
+  // =========================================================
   const MIS_TARGETS = {
     "deepak yadav": {
       enquiry: 60,
       sales: 15000000,
       visits: 40,
       orders: 10,
+      newCustomers: 1,
     },
+
     renu: {
       enquiry: 60,
       sales: 3000000,
       visits: 15,
       orders: 6,
+      newCustomers: 1,
     },
+
     deepika: {
       enquiry: 100,
       sales: 10000000,
       visits: 15,
       orders: 8,
+      newCustomers: 1,
     },
+
     shalu: {
       enquiry: 100,
       sales: 10000000,
       visits: 15,
       orders: 8,
+      newCustomers: 1,
     },
+
     saloni: {
       enquiry: 70,
       sales: 5000000,
       visits: 15,
       orders: 6,
+      newCustomers: 1,
     },
+
     kailash: {
       enquiry: 60,
       sales: 20000000,
       visits: 40,
       orders: 12,
+      newCustomers: 1,
     },
   };
 
- const MIS_WEIGHTAGE = {
-  enquiry: 15,
-  visits: 25,
+  // =========================================================
+  // NEW MIS WEIGHTAGE
+  //
+  // Enquiry              = 10%
+  // Customer Meeting     = 15%
+  // Sales Value          = 25%
+  // Number of Orders     = 20%
+  // New Customer         = 30%
+  //
+  // TOTAL                = 100%
+  // =========================================================
+  const MIS_WEIGHTAGE = {
+    enquiry: 10,
+    visits: 15,
+    salesVolume: 25,
+    ordersWon: 20,
+    newCustomers: 30,
+  };
 
-  // Updated as per new management decision
-  salesVolume: 40,
-  ordersWon: 20,
-};
-
+  // =========================================================
+  // HELPERS
+  // =========================================================
   const normalizeName = (name = "") =>
     String(name).toLowerCase().trim().replace(/\s+/g, " ");
 
@@ -1341,17 +1368,8 @@ const getMisScoring = async (query, user) => {
       sales: 0,
       visits: 0,
       orders: 0,
+      newCustomers: 0,
     };
-
-  // const makeObjectId = (id) => {
-  //   if (!id) return id;
-
-  //   if (mongoose.Types.ObjectId.isValid(id)) {
-  //     return new mongoose.Types.ObjectId(id);
-  //   }
-
-  //   return id;
-  // };
 
   const formatCurrency = (amount = 0) =>
     `₹${Number(amount || 0).toLocaleString("en-IN")}`;
@@ -1362,50 +1380,101 @@ const getMisScoring = async (query, user) => {
 
     if (!target) return 0;
 
-    return Math.min(100, Number(((actual / target) * 100).toFixed(1)));
+    return Math.min(
+      100,
+      Number(((actual / target) * 100).toFixed(1))
+    );
   };
 
   const getShortBy = (actual, target) =>
-    Math.max(Number(target || 0) - Number(actual || 0), 0);
+    Math.max(
+      Number(target || 0) - Number(actual || 0),
+      0
+    );
 
+  // =========================================================
+  // WEIGHTED MIS SCORE
+  // =========================================================
   const calculateWeightedScore = ({
     enquiryPercent,
     visitPercent,
     salesPercent,
     orderPercent,
+    newCustomerPercent,
   }) => {
     const score =
-      (Number(enquiryPercent || 0) * MIS_WEIGHTAGE.enquiry) / 100 +
-      (Number(visitPercent || 0) * MIS_WEIGHTAGE.visits) / 100 +
-      (Number(salesPercent || 0) * MIS_WEIGHTAGE.salesVolume) / 100 +
-      (Number(orderPercent || 0) * MIS_WEIGHTAGE.ordersWon) / 100;
+      (Number(enquiryPercent || 0) *
+        MIS_WEIGHTAGE.enquiry) /
+        100 +
 
-    return Math.min(100, Number(score.toFixed(1)));
+      (Number(visitPercent || 0) *
+        MIS_WEIGHTAGE.visits) /
+        100 +
+
+      (Number(salesPercent || 0) *
+        MIS_WEIGHTAGE.salesVolume) /
+        100 +
+
+      (Number(orderPercent || 0) *
+        MIS_WEIGHTAGE.ordersWon) /
+        100 +
+
+      (Number(newCustomerPercent || 0) *
+        MIS_WEIGHTAGE.newCustomers) /
+        100;
+
+    return Math.min(
+      100,
+      Number(score.toFixed(1))
+    );
   };
 
+  // =========================================================
+  // DATE RANGE
+  // =========================================================
   const getMonthDateRange = () => {
     if (fromDate && toDate) {
       return {
-        startDate: new Date(`${fromDate}T00:00:00.000+05:30`),
-        endDate: new Date(`${toDate}T23:59:59.999+05:30`),
+        startDate: new Date(
+          `${fromDate}T00:00:00.000+05:30`
+        ),
+
+        endDate: new Date(
+          `${toDate}T23:59:59.999+05:30`
+        ),
       };
     }
 
     const now = new Date();
+
     const istNow = new Date(
-      now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+      now.toLocaleString("en-US", {
+        timeZone: "Asia/Kolkata",
+      })
     );
 
     const year = istNow.getFullYear();
     const month = istNow.getMonth() + 1;
-    const lastDay = new Date(year, month, 0).getDate();
+
+    const lastDay = new Date(
+      year,
+      month,
+      0
+    ).getDate();
 
     return {
       startDate: new Date(
-        `${year}-${String(month).padStart(2, "0")}-01T00:00:00.000+05:30`
+        `${year}-${String(month).padStart(
+          2,
+          "0"
+        )}-01T00:00:00.000+05:30`
       ),
+
       endDate: new Date(
-        `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(
+        `${year}-${String(month).padStart(
+          2,
+          "0"
+        )}-${String(lastDay).padStart(
           2,
           "0"
         )}T23:59:59.999+05:30`
@@ -1413,139 +1482,166 @@ const getMisScoring = async (query, user) => {
     };
   };
 
- const getFourMonthWeeks = (
-  startDate,
-  endDate
-) => {
-  /*
-   * Read the selected month in IST.
-   *
-   * Do not use startDate.getMonth() directly
-   * because the production server may run in UTC.
-   * Example:
-   * 01 July 00:00 IST becomes
-   * 30 June 18:30 UTC.
-   */
-  const istStart = new Date(
-    startDate.toLocaleString(
-      "en-US",
-      {
+  // =========================================================
+  // FOUR MIS WEEKS
+  //
+  // Week 1 = 1 - 8
+  // Week 2 = 9 - 15
+  // Week 3 = 16 - 23
+  // Week 4 = 24 - Month End
+  // =========================================================
+  const getFourMonthWeeks = (
+    startDate,
+    endDate
+  ) => {
+    /*
+     * Read selected month in IST.
+     *
+     * Do not use startDate.getMonth() directly
+     * because production server may run in UTC.
+     */
+
+    const istStart = new Date(
+      startDate.toLocaleString("en-US", {
         timeZone: "Asia/Kolkata",
-      }
-    )
-  );
+      })
+    );
 
-  const year =
-    istStart.getFullYear();
+    const year = istStart.getFullYear();
+    const monthIndex = istStart.getMonth();
 
-  const monthIndex =
-    istStart.getMonth();
-
-  const monthNumber =
-    String(
+    const monthNumber = String(
       monthIndex + 1
     ).padStart(2, "0");
 
-  const lastDay =
-    new Date(
+    const lastDay = new Date(
       year,
       monthIndex + 1,
       0
     ).getDate();
-const ranges = [
-  [1, 8],
-  [9, 15],
-  [16, 23],
-  [24, lastDay],
-];
 
-  const createIstBoundary = (
-    day,
-    isEnd = false
-  ) => {
-    const dayText =
-      String(day).padStart(
+    const ranges = [
+      [1, 8],
+      [9, 15],
+      [16, 23],
+      [24, lastDay],
+    ];
+
+    const createIstBoundary = (
+      day,
+      isEnd = false
+    ) => {
+      const dayText = String(day).padStart(
         2,
         "0"
       );
 
-    const timeText =
-      isEnd
+      const timeText = isEnd
         ? "23:59:59.999"
         : "00:00:00.000";
 
-    return new Date(
-      `${year}-${monthNumber}-${dayText}T${timeText}+05:30`
-    );
-  };
+      return new Date(
+        `${year}-${monthNumber}-${dayText}T${timeText}+05:30`
+      );
+    };
 
-  return ranges.map(
-    (
-      [weekStartDay, weekEndDay],
-      index
-    ) => ({
-      weekNo: index + 1,
+    return ranges.map(
+      ([weekStartDay, weekEndDay], index) => ({
+        weekNo: index + 1,
 
-      label:
-        `Week ${index + 1}`,
+        label: `Week ${index + 1}`,
 
-      displayRange:
-        `${weekStartDay}-${weekEndDay}`,
+        displayRange: `${weekStartDay}-${weekEndDay}`,
 
-      startDate:
-        createIstBoundary(
+        startDate: createIstBoundary(
           weekStartDay,
           false
         ),
 
-      endDate:
-        createIstBoundary(
+        endDate: createIstBoundary(
           weekEndDay,
           true
         ),
-    })
-  );
-};
+      })
+    );
+  };
 
+  // =========================================================
+  // FIND WEEK
+  // =========================================================
   const findWeekIndex = (weeks, date) => {
     if (!date) return -1;
 
     const d = new Date(date);
 
     return weeks.findIndex(
-      (week) => d >= new Date(week.startDate) && d <= new Date(week.endDate)
+      (week) =>
+        d >= new Date(week.startDate) &&
+        d <= new Date(week.endDate)
     );
   };
 
+  // =========================================================
+  // PERFORMANCE REASON
+  // =========================================================
   const getPerformanceReason = (person) => {
     const reasons = [];
 
-    if (person.achievement.orderPercent < 60) {
-      reasons.push("low number of approved orders");
+    /*
+     * New customer has highest MIS weightage,
+     * therefore checking it first.
+     */
+    if (
+      person.achievement.newCustomerPercent < 60
+    ) {
+      reasons.push("low new customer acquisition");
     }
 
     if (person.achievement.salesPercent < 60) {
       reasons.push("lower sales order value");
     }
 
-    if (person.achievement.enquiryPercent < 60) {
-      reasons.push("less enquiry focus");
+    if (person.achievement.orderPercent < 60) {
+      reasons.push(
+        "low number of approved orders"
+      );
     }
 
     if (person.achievement.visitPercent < 60) {
-      reasons.push("less meeting/visit activity");
+      reasons.push(
+        "less customer meeting/visit activity"
+      );
+    }
+
+    if (
+      person.achievement.enquiryPercent < 60
+    ) {
+      reasons.push("less enquiry focus");
     }
 
     if (!reasons.length) {
-      reasons.push("balanced performance across MIS parameters");
+      reasons.push(
+        "balanced performance across MIS parameters"
+      );
     }
 
     return reasons.join(", ");
   };
 
-  const { startDate, endDate } = getMonthDateRange();
-  const weeks = getFourMonthWeeks(startDate, endDate);
+  // =========================================================
+  // GET DATE RANGE + WEEKS
+  // =========================================================
+  const { startDate, endDate } =
+    getMonthDateRange();
 
+  const weeks = getFourMonthWeeks(
+    startDate,
+    endDate
+  );
+
+  // =========================================================
+  // ENQUIRY FILTER
+  // =========================================================
   const enquiryFilter = {
     enquiryDate: {
       $gte: startDate,
@@ -1553,117 +1649,192 @@ const ranges = [
     },
   };
 
+  // =========================================================
+  // SALES ORDER FILTER
+  //
+  // ONLY APPROVED SALES ORDERS ARE COUNTED
+  // =========================================================
   const salesOrderFilter = {
     approvalStatus: "approved",
-    isActive: { $ne: false },
+
+    isActive: {
+      $ne: false,
+    },
+
     "managerApproval.approvedAt": {
       $gte: startDate,
       $lte: endDate,
     },
   };
 
- const visitFilter = {
-  $and: [
-    /*
-     * New records use the activity date.
-     * Older records may only contain createdAt.
-     */
-    {
-      $or: [
-        {
-          date: {
-            $gte: startDate,
-            $lte: endDate,
+  // =========================================================
+  // CUSTOMER MEETING / VISIT FILTER
+  // =========================================================
+  const visitFilter = {
+    $and: [
+      /*
+       * New records use activity date.
+       * Older records may only have createdAt.
+       */
+      {
+        $or: [
+          {
+            date: {
+              $gte: startDate,
+              $lte: endDate,
+            },
           },
-        },
-        {
-          date: {
-            $exists: false,
-          },
-          createdAt: {
-            $gte: startDate,
-            $lte: endDate,
-          },
-        },
-        {
-          date: null,
-          createdAt: {
-            $gte: startDate,
-            $lte: endDate,
-          },
-        },
-      ],
-    },
 
-    /*
-     * Count only visits or meetings.
-     */
-    {
-      $or: [
-        {
-          activityType: {
-            $in: ["visit", "meeting"],
+          {
+            date: {
+              $exists: false,
+            },
+
+            createdAt: {
+              $gte: startDate,
+              $lte: endDate,
+            },
           },
-        },
-        {
-          callType: {
-            $in: ["visit", "meeting"],
+
+          {
+            date: null,
+
+            createdAt: {
+              $gte: startDate,
+              $lte: endDate,
+            },
           },
-        },
-        {
-          type: {
-            $in: ["visit", "meeting"],
+        ],
+      },
+
+      /*
+       * Count customer visits / meetings only.
+       */
+      {
+        $or: [
+          {
+            activityType: {
+              $in: ["visit", "meeting"],
+            },
           },
-        },
-        {
-          visitType: {
-            $exists: true,
+
+          {
+            callType: {
+              $in: ["visit", "meeting"],
+            },
           },
-        },
-        {
-          meetingType: {
-            $exists: true,
+
+          {
+            type: {
+              $in: ["visit", "meeting"],
+            },
           },
-        },
-      ],
-    },
-  ],
-};
 
-  // if (user.role !== "admin" && user.role !== "super_admin") {
-  //   const userId = makeObjectId(user.id || user._id);
+          {
+            visitType: {
+              $exists: true,
+            },
+          },
 
-  //   enquiryFilter.salesPersonId = userId;
+          {
+            meetingType: {
+              $exists: true,
+            },
+          },
+        ],
+      },
+    ],
+  };
 
-  //   salesOrderFilter.$or = [
-  //     { salesPersonId: userId },
-  //     { salesPersonId: String(user.id || user._id) },
-  //   ];
+  // =========================================================
+  // OPTIONAL USER FILTER
+  //
+  // CURRENT PRODUCTION LOGIC KEPT COMMENTED
+  // =========================================================
 
-  //   visitFilter.salesPersonId = userId;
-  // }
+  /*
+  if (
+    user.role !== "admin" &&
+    user.role !== "super_admin"
+  ) {
+    const userId = makeObjectId(
+      user.id || user._id
+    );
 
-  const enquiries = await Enquiry.find(enquiryFilter)
-    .populate("salesPersonId", "name email")
-    .lean();
+    enquiryFilter.salesPersonId = userId;
 
-  const approvedSalesOrders = await SalesOrder.find(salesOrderFilter)
-    .select(
-      "salesPersonId salesPersonName salesPersonEmail orderValue orderDate managerApproval.approvedAt approvalStatus"
+    salesOrderFilter.$or = [
+      {
+        salesPersonId: userId,
+      },
+      {
+        salesPersonId: String(
+          user.id || user._id
+        ),
+      },
+    ];
+
+    visitFilter.salesPersonId = userId;
+  }
+  */
+
+  // =========================================================
+  // FETCH ENQUIRIES
+  // =========================================================
+  const enquiries = await Enquiry.find(
+    enquiryFilter
+  )
+    .populate(
+      "salesPersonId",
+      "name email"
     )
     .lean();
 
-const visits = await ColdCall.find(
-  visitFilter
-)
-  .select(
-    "salesPersonId salesPersonName salesPersonEmail date createdAt"
-  )
-  .lean();
+  // =========================================================
+  // FETCH APPROVED SALES ORDERS
+  //
+  // customerType IS ADDED HERE.
+  //
+  // customerType === "new"
+  // will count toward 30% new-customer MIS.
+  // =========================================================
+  const approvedSalesOrders =
+    await SalesOrder.find(salesOrderFilter)
+      .select(
+        [
+          "salesPersonId",
+          "salesPersonName",
+          "salesPersonEmail",
+          "orderValue",
+          "orderDate",
+          "customerType",
+          "managerApproval.approvedAt",
+          "approvalStatus",
+        ].join(" ")
+      )
+      .lean();
 
+  // =========================================================
+  // FETCH CUSTOMER MEETINGS / VISITS
+  // =========================================================
+  const visits = await ColdCall.find(
+    visitFilter
+  )
+    .select(
+      "salesPersonId salesPersonName salesPersonEmail date createdAt"
+    )
+    .lean();
+
+  // =========================================================
+  // SALES PERSON MAP
+  // =========================================================
   const salesMap = {};
 
-  const ensurePerson = ({ id, name, email }) => {
+  const ensurePerson = ({
+    id,
+    name,
+    email,
+  }) => {
     if (!id) return null;
 
     const salesPersonId = String(id);
@@ -1671,42 +1842,76 @@ const visits = await ColdCall.find(
     if (!salesMap[salesPersonId]) {
       salesMap[salesPersonId] = {
         salesPersonId: id,
+
         name: name || "",
+
         email: email || "",
 
+        // Enquiry
         totalEnquiries: 0,
+
         wonEnquiries: 0,
+
         lostEnquiries: 0,
+
         pendingEnquiries: 0,
 
+        // Sales Order
         approvedSalesValue: 0,
+
         approvedOrders: 0,
+
+        // Customer Meeting
         visitsDone: 0,
 
-        weeklyReport: weeks.map((week) => ({
-          weekNo: week.weekNo,
-          label: week.label,
-          displayRange: week.displayRange,
-          startDate: week.startDate,
-          endDate: week.endDate,
-          enquiries: 0,
-          approvedSalesValue: 0,
-          approvedOrders: 0,
-          visits: 0,
-        })),
+        // NEW CUSTOMER
+        newCustomers: 0,
+
+        // Weekly report
+        weeklyReport: weeks.map(
+          (week) => ({
+            weekNo: week.weekNo,
+
+            label: week.label,
+
+            displayRange:
+              week.displayRange,
+
+            startDate: week.startDate,
+
+            endDate: week.endDate,
+
+            enquiries: 0,
+
+            approvedSalesValue: 0,
+
+            approvedOrders: 0,
+
+            visits: 0,
+
+            newCustomers: 0,
+          })
+        ),
       };
     }
 
     return salesMap[salesPersonId];
   };
 
+  // =========================================================
+  // PROCESS ENQUIRIES
+  // =========================================================
   enquiries.forEach((enquiry) => {
-    const salesPerson = enquiry.salesPersonId;
+    const salesPerson =
+      enquiry.salesPersonId;
+
     if (!salesPerson) return;
 
     const person = ensurePerson({
       id: salesPerson._id,
+
       name: salesPerson.name,
+
       email: salesPerson.email,
     });
 
@@ -1714,48 +1919,111 @@ const visits = await ColdCall.find(
 
     person.totalEnquiries += 1;
 
-    if (enquiry.closure?.status === "won") {
+    if (
+      enquiry.closure?.status === "won"
+    ) {
       person.wonEnquiries += 1;
-    } else if (enquiry.closure?.status === "lost") {
+    } else if (
+      enquiry.closure?.status === "lost"
+    ) {
       person.lostEnquiries += 1;
     } else {
       person.pendingEnquiries += 1;
     }
 
-    const weekIndex = findWeekIndex(weeks, enquiry.enquiryDate);
+    const weekIndex = findWeekIndex(
+      weeks,
+      enquiry.enquiryDate
+    );
 
     if (weekIndex >= 0) {
-      person.weeklyReport[weekIndex].enquiries += 1;
+      person.weeklyReport[
+        weekIndex
+      ].enquiries += 1;
     }
   });
 
+  // =========================================================
+  // PROCESS APPROVED SALES ORDERS
+  // =========================================================
   approvedSalesOrders.forEach((order) => {
     const person = ensurePerson({
       id: order.salesPersonId,
+
       name: order.salesPersonName,
+
       email: order.salesPersonEmail,
     });
 
     if (!person) return;
 
-    const value = Number(order.orderValue || 0);
+    const value = Number(
+      order.orderValue || 0
+    );
 
+    // Approved sales value
     person.approvedSalesValue += value;
+
+    // Number of approved orders
     person.approvedOrders += 1;
 
-    const approvalDate = order.managerApproval?.approvedAt || order.orderDate;
-    const weekIndex = findWeekIndex(weeks, approvalDate);
+    // =====================================================
+    // NEW CUSTOMER
+    //
+    // IMPORTANT:
+    // New customer comes directly from SalesOrder.customerType
+    //
+    // customerType = "new"      -> Count
+    // customerType = "existing" -> Do not count
+    // =====================================================
+    if (
+      String(
+        order.customerType || ""
+      ).toLowerCase() === "new"
+    ) {
+      person.newCustomers += 1;
+    }
+
+    const approvalDate =
+      order.managerApproval?.approvedAt ||
+      order.orderDate;
+
+    const weekIndex = findWeekIndex(
+      weeks,
+      approvalDate
+    );
 
     if (weekIndex >= 0) {
-      person.weeklyReport[weekIndex].approvedSalesValue += value;
-      person.weeklyReport[weekIndex].approvedOrders += 1;
+      person.weeklyReport[
+        weekIndex
+      ].approvedSalesValue += value;
+
+      person.weeklyReport[
+        weekIndex
+      ].approvedOrders += 1;
+
+      // Weekly new customer
+      if (
+        String(
+          order.customerType || ""
+        ).toLowerCase() === "new"
+      ) {
+        person.weeklyReport[
+          weekIndex
+        ].newCustomers += 1;
+      }
     }
   });
 
+  // =========================================================
+  // PROCESS CUSTOMER MEETINGS / VISITS
+  // =========================================================
   visits.forEach((visit) => {
     const person = ensurePerson({
       id: visit.salesPersonId,
+
       name: visit.salesPersonName,
+
       email: visit.salesPersonEmail,
     });
 
@@ -1763,37 +2031,37 @@ const visits = await ColdCall.find(
 
     person.visitsDone += 1;
 
-const visitActivityDate =
-  visit.date ||
-  visit.createdAt;
+    const visitActivityDate =
+      visit.date || visit.createdAt;
 
-const weekIndex = findWeekIndex(
-  weeks,
-  visitActivityDate
-);
+    const weekIndex = findWeekIndex(
+      weeks,
+      visitActivityDate
+    );
+
     if (weekIndex >= 0) {
-      person.weeklyReport[weekIndex].visits += 1;
+      person.weeklyReport[
+        weekIndex
+      ].visits += 1;
     }
   });
 
-const now = new Date();
+  // =========================================================
+  // FIND CURRENT WEEK IN IST
+  // =========================================================
+  const now = new Date();
 
-const istNow = new Date(
-  now.toLocaleString(
-    "en-US",
-    {
+  const istNow = new Date(
+    now.toLocaleString("en-US", {
       timeZone: "Asia/Kolkata",
-    }
-  )
-);
+    })
+  );
 
-/*
- * Convert the IST wall-clock value back into
- * an IST-offset Date so it can be compared with
- * the IST week boundaries.
- */
-const currentIstDate =
-  new Date(
+  /*
+   * Convert IST wall-clock time into
+   * Date with IST offset.
+   */
+  const currentIstDate = new Date(
     `${istNow.getFullYear()}-${String(
       istNow.getMonth() + 1
     ).padStart(2, "0")}-${String(
@@ -1807,652 +2075,1298 @@ const currentIstDate =
     ).padStart(2, "0")}+05:30`
   );
 
-let currentWeekIndex =
-  findWeekIndex(
-    weeks,
-    currentIstDate
-  );
+  let currentWeekIndex =
+    findWeekIndex(
+      weeks,
+      currentIstDate
+    );
 
-if (currentWeekIndex < 0) {
-  const firstWeekStart =
-    new Date(
+  if (currentWeekIndex < 0) {
+    const firstWeekStart = new Date(
       weeks[0]?.startDate
     );
 
-  const lastWeekEnd =
-    new Date(
+    const lastWeekEnd = new Date(
       weeks[
         weeks.length - 1
       ]?.endDate
     );
 
-  /*
-   * Past selected month:
-   * display its final week.
-   *
-   * Future selected month:
-   * display its first week.
-   */
-  if (currentIstDate > lastWeekEnd) {
-    currentWeekIndex =
-      weeks.length - 1;
-  } else if (
-    currentIstDate <
-    firstWeekStart
-  ) {
-    currentWeekIndex = 0;
-  } else {
-    currentWeekIndex = 0;
+    /*
+     * Past selected month:
+     * show last week.
+     *
+     * Future selected month:
+     * show first week.
+     */
+    if (
+      currentIstDate > lastWeekEnd
+    ) {
+      currentWeekIndex =
+        weeks.length - 1;
+    } else if (
+      currentIstDate <
+      firstWeekStart
+    ) {
+      currentWeekIndex = 0;
+    } else {
+      currentWeekIndex = 0;
+    }
   }
-}
-
-  const salesPersonScores = Object.values(salesMap)
-    .map((person) => {
-      const target = getTargetByName(person.name);
-
-      const weeklyBaseTarget = {
-        enquiries: Number((Number(target.enquiry || 0) / 4).toFixed(1)),
-        salesValue: Number((Number(target.sales || 0) / 4).toFixed(0)),
-        visits: Number((Number(target.visits || 0) / 4).toFixed(1)),
-        orders: Number((Number(target.orders || 0) / 4).toFixed(1)),
-      };
-
-      let cumulativeTarget = {
-  enquiries: 0,
-  salesValue: 0,
-  visits: 0,
-  orders: 0,
-};
-
-let cumulativeActual = {
-  enquiries: 0,
-  salesValue: 0,
-  visits: 0,
-  orders: 0,
-};
-
-/*
- * Previous week's pending target.
- *
- * Week 1 starts with zero carry-forward.
- * Every following week receives only the
- * immediately previous week's shortfall.
- */
-let carryForward = {
-  enquiries: 0,
-  salesValue: 0,
-  visits: 0,
-  orders: 0,
-};
-
-const weeklyReport = person.weeklyReport.map((week) => {
-  /*
-   * Base weekly target = monthly target / 4.
-   *
-   * Current week's effective target =
-   * base weekly target + previous week's shortfall.
-   */
-  const targetWithCarryForward = {
-    enquiries:
-      Number(weeklyBaseTarget.enquiries || 0) +
-      Number(carryForward.enquiries || 0),
-
-    salesValue:
-      Number(weeklyBaseTarget.salesValue || 0) +
-      Number(carryForward.salesValue || 0),
-
-    visits:
-      Number(weeklyBaseTarget.visits || 0) +
-      Number(carryForward.visits || 0),
-
-    orders:
-      Number(weeklyBaseTarget.orders || 0) +
-      Number(carryForward.orders || 0),
-  };
-
-  cumulativeTarget.enquiries +=
-    Number(weeklyBaseTarget.enquiries || 0);
-
-  cumulativeTarget.salesValue +=
-    Number(weeklyBaseTarget.salesValue || 0);
-
-  cumulativeTarget.visits +=
-    Number(weeklyBaseTarget.visits || 0);
-
-  cumulativeTarget.orders +=
-    Number(weeklyBaseTarget.orders || 0);
-
-  cumulativeActual.enquiries +=
-    Number(week.enquiries || 0);
-
-  cumulativeActual.salesValue +=
-    Number(week.approvedSalesValue || 0);
-
-  cumulativeActual.visits +=
-    Number(week.visits || 0);
-
-  cumulativeActual.orders +=
-    Number(week.approvedOrders || 0);
-
-  /*
-   * Weekly achievement must be calculated
-   * against the effective target, including
-   * the previous week's carry-forward.
-   */
-  const weekAchievement = {
-    enquiryPercent: getPercent(
-      week.enquiries,
-      targetWithCarryForward.enquiries
-    ),
-
-    salesPercent: getPercent(
-      week.approvedSalesValue,
-      targetWithCarryForward.salesValue
-    ),
-
-    visitPercent: getPercent(
-      week.visits,
-      targetWithCarryForward.visits
-    ),
-
-    orderPercent: getPercent(
-      week.approvedOrders,
-      targetWithCarryForward.orders
-    ),
-  };
-
-  const cumulativeAchievement = {
-    enquiryPercent: getPercent(
-      cumulativeActual.enquiries,
-      cumulativeTarget.enquiries
-    ),
-
-    salesPercent: getPercent(
-      cumulativeActual.salesValue,
-      cumulativeTarget.salesValue
-    ),
-
-    visitPercent: getPercent(
-      cumulativeActual.visits,
-      cumulativeTarget.visits
-    ),
-
-    orderPercent: getPercent(
-      cumulativeActual.orders,
-      cumulativeTarget.orders
-    ),
-  };
-
-  /*
-   * Current week's shortage after applying
-   * the carry-forward target.
-   */
-  const shortBy = {
-    enquiries: getShortBy(
-      week.enquiries,
-      targetWithCarryForward.enquiries
-    ),
-
-    salesValue: getShortBy(
-      week.approvedSalesValue,
-      targetWithCarryForward.salesValue
-    ),
-
-    visits: getShortBy(
-      week.visits,
-      targetWithCarryForward.visits
-    ),
-
-    orders: getShortBy(
-      week.approvedOrders,
-      targetWithCarryForward.orders
-    ),
-  };
-
-  const cumulativeShortBy = {
-    enquiries: getShortBy(
-      cumulativeActual.enquiries,
-      cumulativeTarget.enquiries
-    ),
-
-    salesValue: getShortBy(
-      cumulativeActual.salesValue,
-      cumulativeTarget.salesValue
-    ),
-
-    visits: getShortBy(
-      cumulativeActual.visits,
-      cumulativeTarget.visits
-    ),
-
-    orders: getShortBy(
-      cumulativeActual.orders,
-      cumulativeTarget.orders
-    ),
-  };
-
-  const weekScore = calculateWeightedScore({
-    enquiryPercent:
-      weekAchievement.enquiryPercent,
-
-    visitPercent:
-      weekAchievement.visitPercent,
-
-    salesPercent:
-      weekAchievement.salesPercent,
-
-    orderPercent:
-      weekAchievement.orderPercent,
-  });
-
-  /*
-   * Save this week's shortage so that it
-   * becomes next week's carry-forward.
-   *
-   * Excess work does not produce a negative
-   * carry-forward because getShortBy() always
-   * returns a minimum value of zero.
-   */
-  const nextCarryForward = {
-    enquiries: Number(shortBy.enquiries || 0),
-    salesValue: Number(shortBy.salesValue || 0),
-    visits: Number(shortBy.visits || 0),
-    orders: Number(shortBy.orders || 0),
-  };
-
-  const weekResult = {
-    ...week,
-
-    baseTarget: {
-      enquiries: Number(
-        Number(
-          weeklyBaseTarget.enquiries || 0
-        ).toFixed(1)
-      ),
-
-      salesValue: Number(
-        Number(
-          weeklyBaseTarget.salesValue || 0
-        ).toFixed(0)
-      ),
-
-      visits: Number(
-        Number(
-          weeklyBaseTarget.visits || 0
-        ).toFixed(1)
-      ),
-
-      orders: Number(
-        Number(
-          weeklyBaseTarget.orders || 0
-        ).toFixed(1)
-      ),
-    },
-
-    /*
-     * This is the value used by your frontend.
-     */
-    targetWithCarryForward: {
-      enquiries: Number(
-        targetWithCarryForward.enquiries.toFixed(1)
-      ),
-
-      salesValue: Number(
-        targetWithCarryForward.salesValue.toFixed(0)
-      ),
-
-      visits: Number(
-        targetWithCarryForward.visits.toFixed(1)
-      ),
-
-      orders: Number(
-        targetWithCarryForward.orders.toFixed(1)
-      ),
-    },
-
-    /*
-     * Shows exactly what came from the
-     * immediately previous week.
-     */
-    carryForwardFromPreviousWeek: {
-      enquiries: Number(
-        Number(carryForward.enquiries || 0).toFixed(1)
-      ),
-
-      salesValue: Number(
-        Number(carryForward.salesValue || 0).toFixed(0)
-      ),
-
-      visits: Number(
-        Number(carryForward.visits || 0).toFixed(1)
-      ),
-
-      orders: Number(
-        Number(carryForward.orders || 0).toFixed(1)
-      ),
-    },
-
-    cumulativeTarget: {
-      enquiries: Number(
-        cumulativeTarget.enquiries.toFixed(1)
-      ),
-
-      salesValue: Number(
-        cumulativeTarget.salesValue.toFixed(0)
-      ),
-
-      visits: Number(
-        cumulativeTarget.visits.toFixed(1)
-      ),
-
-      orders: Number(
-        cumulativeTarget.orders.toFixed(1)
-      ),
-    },
-
-    cumulativeActual: {
-      enquiries: Number(
-        cumulativeActual.enquiries.toFixed(1)
-      ),
-
-      salesValue: Number(
-        cumulativeActual.salesValue.toFixed(0)
-      ),
-
-      visits: Number(
-        cumulativeActual.visits.toFixed(1)
-      ),
-
-      orders: Number(
-        cumulativeActual.orders.toFixed(1)
-      ),
-    },
-
-    shortBy: {
-      enquiries: Math.ceil(
-        shortBy.enquiries
-      ),
-
-      salesValue: Number(
-        shortBy.salesValue.toFixed(0)
-      ),
-
-      visits: Math.ceil(
-        shortBy.visits
-      ),
-
-      orders: Math.ceil(
-        shortBy.orders
-      ),
-    },
-
-    cumulativeShortBy: {
-      enquiries: Math.ceil(
-        cumulativeShortBy.enquiries
-      ),
-
-      salesValue: Number(
-        cumulativeShortBy.salesValue.toFixed(0)
-      ),
-
-      visits: Math.ceil(
-        cumulativeShortBy.visits
-      ),
-
-      orders: Math.ceil(
-        cumulativeShortBy.orders
-      ),
-    },
-
-    achievement: cumulativeAchievement,
-    weekAchievement,
-    weekScore,
-
-    insight: {
-      orders:
-        shortBy.orders > 0
-          ? `Need ${Math.ceil(
-              shortBy.orders
-            )} more approved order(s) in ${week.label}. The pending target will carry forward to the next week.`
-          : `Order target is on track in ${week.label}.`,
-
-      sales:
-        shortBy.salesValue > 0
-          ? `Need ${formatCurrency(
-              shortBy.salesValue
-            )} more sales value in ${week.label}. The pending value will carry forward to the next week.`
-          : `Sales value target is on track in ${week.label}.`,
-
-      enquiries:
-        shortBy.enquiries > 0
-          ? `Need ${Math.ceil(
-              shortBy.enquiries
-            )} more enquiries in ${week.label}. The pending target will carry forward to the next week.`
-          : `Enquiry target is on track in ${week.label}.`,
-
-      visits:
-        shortBy.visits > 0
-          ? `Need ${Math.ceil(
-              shortBy.visits
-            )} more meeting/visit(s) in ${week.label}. The pending target will carry forward to the next week.`
-          : `Meeting/visit target is on track in ${week.label}.`,
-    },
-  };
-
-  /*
-   * Update only after building the current
-   * week's response. This ensures Week 1 has
-   * zero carry-forward and Week 2 receives
-   * Week 1's shortage.
-   */
-  carryForward = nextCarryForward;
-
-  return weekResult;
-});
-
-      const currentWeek =
-        weeklyReport[currentWeekIndex] || weeklyReport[weeklyReport.length - 1];
-
-      const monthlyAchievement = {
-        enquiryPercent: getPercent(person.totalEnquiries, target.enquiry),
-        salesPercent: getPercent(person.approvedSalesValue, target.sales),
-        visitPercent: getPercent(person.visitsDone, target.visits),
-        orderPercent: getPercent(person.approvedOrders, target.orders),
-      };
-
-      const monthlyScore = calculateWeightedScore({
-        enquiryPercent: monthlyAchievement.enquiryPercent,
-        visitPercent: monthlyAchievement.visitPercent,
-        salesPercent: monthlyAchievement.salesPercent,
-        orderPercent: monthlyAchievement.orderPercent,
+
+  // =========================================================
+  // CALCULATE SALES PERSON MIS SCORES
+  // =========================================================
+  const salesPersonScores =
+    Object.values(salesMap)
+      .map((person) => {
+        const target =
+          getTargetByName(
+            person.name
+          );
+
+        // ===================================================
+        // WEEKLY BASE TARGET
+        //
+        // Monthly target / 4
+        // ===================================================
+        const weeklyBaseTarget = {
+          enquiries: Number(
+            (
+              Number(
+                target.enquiry || 0
+              ) / 4
+            ).toFixed(1)
+          ),
+
+          salesValue: Number(
+            (
+              Number(
+                target.sales || 0
+              ) / 4
+            ).toFixed(0)
+          ),
+
+          visits: Number(
+            (
+              Number(
+                target.visits || 0
+              ) / 4
+            ).toFixed(1)
+          ),
+
+          orders: Number(
+            (
+              Number(
+                target.orders || 0
+              ) / 4
+            ).toFixed(1)
+          ),
+
+          newCustomers: Number(
+            (
+              Number(
+                target.newCustomers ||
+                  0
+              ) / 4
+            ).toFixed(2)
+          ),
+        };
+
+        // ===================================================
+        // CUMULATIVE TARGET
+        // ===================================================
+        let cumulativeTarget = {
+          enquiries: 0,
+
+          salesValue: 0,
+
+          visits: 0,
+
+          orders: 0,
+
+          newCustomers: 0,
+        };
+
+        // ===================================================
+        // CUMULATIVE ACTUAL
+        // ===================================================
+        let cumulativeActual = {
+          enquiries: 0,
+
+          salesValue: 0,
+
+          visits: 0,
+
+          orders: 0,
+
+          newCustomers: 0,
+        };
+
+        // ===================================================
+        // CARRY FORWARD
+        // ===================================================
+        let carryForward = {
+          enquiries: 0,
+
+          salesValue: 0,
+
+          visits: 0,
+
+          orders: 0,
+
+          newCustomers: 0,
+        };
+
+        // ===================================================
+        // WEEKLY REPORT
+        // ===================================================
+        const weeklyReport =
+          person.weeklyReport.map(
+            (week) => {
+              // =============================================
+              // TARGET WITH CARRY FORWARD
+              // =============================================
+              const targetWithCarryForward =
+                {
+                  enquiries:
+                    Number(
+                      weeklyBaseTarget.enquiries ||
+                        0
+                    ) +
+                    Number(
+                      carryForward.enquiries ||
+                        0
+                    ),
+
+                  salesValue:
+                    Number(
+                      weeklyBaseTarget.salesValue ||
+                        0
+                    ) +
+                    Number(
+                      carryForward.salesValue ||
+                        0
+                    ),
+
+                  visits:
+                    Number(
+                      weeklyBaseTarget.visits ||
+                        0
+                    ) +
+                    Number(
+                      carryForward.visits ||
+                        0
+                    ),
+
+                  orders:
+                    Number(
+                      weeklyBaseTarget.orders ||
+                        0
+                    ) +
+                    Number(
+                      carryForward.orders ||
+                        0
+                    ),
+
+                  newCustomers:
+                    Number(
+                      weeklyBaseTarget.newCustomers ||
+                        0
+                    ) +
+                    Number(
+                      carryForward.newCustomers ||
+                        0
+                    ),
+                };
+
+              // =============================================
+              // UPDATE CUMULATIVE TARGET
+              // =============================================
+              cumulativeTarget.enquiries +=
+                Number(
+                  weeklyBaseTarget.enquiries ||
+                    0
+                );
+
+              cumulativeTarget.salesValue +=
+                Number(
+                  weeklyBaseTarget.salesValue ||
+                    0
+                );
+
+              cumulativeTarget.visits +=
+                Number(
+                  weeklyBaseTarget.visits ||
+                    0
+                );
+
+              cumulativeTarget.orders +=
+                Number(
+                  weeklyBaseTarget.orders ||
+                    0
+                );
+
+              cumulativeTarget.newCustomers +=
+                Number(
+                  weeklyBaseTarget.newCustomers ||
+                    0
+                );
+
+              // =============================================
+              // UPDATE CUMULATIVE ACTUAL
+              // =============================================
+              cumulativeActual.enquiries +=
+                Number(
+                  week.enquiries || 0
+                );
+
+              cumulativeActual.salesValue +=
+                Number(
+                  week.approvedSalesValue ||
+                    0
+                );
+
+              cumulativeActual.visits +=
+                Number(
+                  week.visits || 0
+                );
+
+              cumulativeActual.orders +=
+                Number(
+                  week.approvedOrders ||
+                    0
+                );
+
+              cumulativeActual.newCustomers +=
+                Number(
+                  week.newCustomers ||
+                    0
+                );
+
+              // =============================================
+              // WEEK ACHIEVEMENT
+              // =============================================
+              const weekAchievement = {
+                enquiryPercent:
+                  getPercent(
+                    week.enquiries,
+                    targetWithCarryForward.enquiries
+                  ),
+
+                salesPercent:
+                  getPercent(
+                    week.approvedSalesValue,
+                    targetWithCarryForward.salesValue
+                  ),
+
+                visitPercent:
+                  getPercent(
+                    week.visits,
+                    targetWithCarryForward.visits
+                  ),
+
+                orderPercent:
+                  getPercent(
+                    week.approvedOrders,
+                    targetWithCarryForward.orders
+                  ),
+
+                newCustomerPercent:
+                  getPercent(
+                    week.newCustomers,
+                    targetWithCarryForward.newCustomers
+                  ),
+              };
+
+              // =============================================
+              // CUMULATIVE ACHIEVEMENT
+              // =============================================
+              const cumulativeAchievement =
+                {
+                  enquiryPercent:
+                    getPercent(
+                      cumulativeActual.enquiries,
+                      cumulativeTarget.enquiries
+                    ),
+
+                  salesPercent:
+                    getPercent(
+                      cumulativeActual.salesValue,
+                      cumulativeTarget.salesValue
+                    ),
+
+                  visitPercent:
+                    getPercent(
+                      cumulativeActual.visits,
+                      cumulativeTarget.visits
+                    ),
+
+                  orderPercent:
+                    getPercent(
+                      cumulativeActual.orders,
+                      cumulativeTarget.orders
+                    ),
+
+                  newCustomerPercent:
+                    getPercent(
+                      cumulativeActual.newCustomers,
+                      cumulativeTarget.newCustomers
+                    ),
+                };
+
+              // =============================================
+              // WEEKLY SHORTAGE
+              // =============================================
+              const shortBy = {
+                enquiries:
+                  getShortBy(
+                    week.enquiries,
+                    targetWithCarryForward.enquiries
+                  ),
+
+                salesValue:
+                  getShortBy(
+                    week.approvedSalesValue,
+                    targetWithCarryForward.salesValue
+                  ),
+
+                visits:
+                  getShortBy(
+                    week.visits,
+                    targetWithCarryForward.visits
+                  ),
+
+                orders:
+                  getShortBy(
+                    week.approvedOrders,
+                    targetWithCarryForward.orders
+                  ),
+
+                newCustomers:
+                  getShortBy(
+                    week.newCustomers,
+                    targetWithCarryForward.newCustomers
+                  ),
+              };
+
+              // =============================================
+              // CUMULATIVE SHORTAGE
+              // =============================================
+              const cumulativeShortBy =
+                {
+                  enquiries:
+                    getShortBy(
+                      cumulativeActual.enquiries,
+                      cumulativeTarget.enquiries
+                    ),
+
+                  salesValue:
+                    getShortBy(
+                      cumulativeActual.salesValue,
+                      cumulativeTarget.salesValue
+                    ),
+
+                  visits:
+                    getShortBy(
+                      cumulativeActual.visits,
+                      cumulativeTarget.visits
+                    ),
+
+                  orders:
+                    getShortBy(
+                      cumulativeActual.orders,
+                      cumulativeTarget.orders
+                    ),
+
+                  newCustomers:
+                    getShortBy(
+                      cumulativeActual.newCustomers,
+                      cumulativeTarget.newCustomers
+                    ),
+                };
+
+              // =============================================
+              // WEEKLY WEIGHTED MIS SCORE
+              // =============================================
+              const weekScore =
+                calculateWeightedScore({
+                  enquiryPercent:
+                    weekAchievement.enquiryPercent,
+
+                  visitPercent:
+                    weekAchievement.visitPercent,
+
+                  salesPercent:
+                    weekAchievement.salesPercent,
+
+                  orderPercent:
+                    weekAchievement.orderPercent,
+
+                  newCustomerPercent:
+                    weekAchievement.newCustomerPercent,
+                });
+
+              // =============================================
+              // NEXT WEEK CARRY FORWARD
+              // =============================================
+              const nextCarryForward =
+                {
+                  enquiries: Number(
+                    shortBy.enquiries || 0
+                  ),
+
+                  salesValue: Number(
+                    shortBy.salesValue ||
+                      0
+                  ),
+
+                  visits: Number(
+                    shortBy.visits || 0
+                  ),
+
+                  orders: Number(
+                    shortBy.orders || 0
+                  ),
+
+                  newCustomers:
+                    Number(
+                      shortBy.newCustomers ||
+                        0
+                    ),
+                };
+
+              // =============================================
+              // BUILD WEEK RESULT
+              // =============================================
+              const weekResult = {
+                ...week,
+
+                // -------------------------------------------
+                // BASE TARGET
+                // -------------------------------------------
+                baseTarget: {
+                  enquiries: Number(
+                    Number(
+                      weeklyBaseTarget.enquiries ||
+                        0
+                    ).toFixed(1)
+                  ),
+
+                  salesValue: Number(
+                    Number(
+                      weeklyBaseTarget.salesValue ||
+                        0
+                    ).toFixed(0)
+                  ),
+
+                  visits: Number(
+                    Number(
+                      weeklyBaseTarget.visits ||
+                        0
+                    ).toFixed(1)
+                  ),
+
+                  orders: Number(
+                    Number(
+                      weeklyBaseTarget.orders ||
+                        0
+                    ).toFixed(1)
+                  ),
+
+                  newCustomers: Number(
+                    Number(
+                      weeklyBaseTarget.newCustomers ||
+                        0
+                    ).toFixed(2)
+                  ),
+                },
+
+                // -------------------------------------------
+                // TARGET WITH CARRY FORWARD
+                // -------------------------------------------
+                targetWithCarryForward:
+                  {
+                    enquiries: Number(
+                      targetWithCarryForward.enquiries.toFixed(
+                        1
+                      )
+                    ),
+
+                    salesValue: Number(
+                      targetWithCarryForward.salesValue.toFixed(
+                        0
+                      )
+                    ),
+
+                    visits: Number(
+                      targetWithCarryForward.visits.toFixed(
+                        1
+                      )
+                    ),
+
+                    orders: Number(
+                      targetWithCarryForward.orders.toFixed(
+                        1
+                      )
+                    ),
+
+                    newCustomers:
+                      Number(
+                        targetWithCarryForward.newCustomers.toFixed(
+                          2
+                        )
+                      ),
+                  },
+
+                // -------------------------------------------
+                // PREVIOUS WEEK CARRY FORWARD
+                // -------------------------------------------
+                carryForwardFromPreviousWeek:
+                  {
+                    enquiries: Number(
+                      Number(
+                        carryForward.enquiries ||
+                          0
+                      ).toFixed(1)
+                    ),
+
+                    salesValue: Number(
+                      Number(
+                        carryForward.salesValue ||
+                          0
+                      ).toFixed(0)
+                    ),
+
+                    visits: Number(
+                      Number(
+                        carryForward.visits ||
+                          0
+                      ).toFixed(1)
+                    ),
+
+                    orders: Number(
+                      Number(
+                        carryForward.orders ||
+                          0
+                      ).toFixed(1)
+                    ),
+
+                    newCustomers:
+                      Number(
+                        Number(
+                          carryForward.newCustomers ||
+                            0
+                        ).toFixed(2)
+                      ),
+                  },
+
+                // -------------------------------------------
+                // CUMULATIVE TARGET
+                // -------------------------------------------
+                cumulativeTarget: {
+                  enquiries: Number(
+                    cumulativeTarget.enquiries.toFixed(
+                      1
+                    )
+                  ),
+
+                  salesValue: Number(
+                    cumulativeTarget.salesValue.toFixed(
+                      0
+                    )
+                  ),
+
+                  visits: Number(
+                    cumulativeTarget.visits.toFixed(
+                      1
+                    )
+                  ),
+
+                  orders: Number(
+                    cumulativeTarget.orders.toFixed(
+                      1
+                    )
+                  ),
+
+                  newCustomers:
+                    Number(
+                      cumulativeTarget.newCustomers.toFixed(
+                        2
+                      )
+                    ),
+                },
+
+                // -------------------------------------------
+                // CUMULATIVE ACTUAL
+                // -------------------------------------------
+                cumulativeActual: {
+                  enquiries: Number(
+                    cumulativeActual.enquiries.toFixed(
+                      1
+                    )
+                  ),
+
+                  salesValue: Number(
+                    cumulativeActual.salesValue.toFixed(
+                      0
+                    )
+                  ),
+
+                  visits: Number(
+                    cumulativeActual.visits.toFixed(
+                      1
+                    )
+                  ),
+
+                  orders: Number(
+                    cumulativeActual.orders.toFixed(
+                      1
+                    )
+                  ),
+
+                  newCustomers:
+                    Number(
+                      cumulativeActual.newCustomers.toFixed(
+                        0
+                      )
+                    ),
+                },
+
+                // -------------------------------------------
+                // WEEK SHORTAGE
+                // -------------------------------------------
+                shortBy: {
+                  enquiries: Math.ceil(
+                    shortBy.enquiries
+                  ),
+
+                  salesValue: Number(
+                    shortBy.salesValue.toFixed(
+                      0
+                    )
+                  ),
+
+                  visits: Math.ceil(
+                    shortBy.visits
+                  ),
+
+                  orders: Math.ceil(
+                    shortBy.orders
+                  ),
+
+                  newCustomers:
+                    Math.ceil(
+                      shortBy.newCustomers
+                    ),
+                },
+
+                // -------------------------------------------
+                // CUMULATIVE SHORTAGE
+                // -------------------------------------------
+                cumulativeShortBy: {
+                  enquiries: Math.ceil(
+                    cumulativeShortBy.enquiries
+                  ),
+
+                  salesValue: Number(
+                    cumulativeShortBy.salesValue.toFixed(
+                      0
+                    )
+                  ),
+
+                  visits: Math.ceil(
+                    cumulativeShortBy.visits
+                  ),
+
+                  orders: Math.ceil(
+                    cumulativeShortBy.orders
+                  ),
+
+                  newCustomers:
+                    Math.ceil(
+                      cumulativeShortBy.newCustomers
+                    ),
+                },
+
+                achievement:
+                  cumulativeAchievement,
+
+                weekAchievement,
+
+                weekScore,
+
+                // -------------------------------------------
+                // WEEK INSIGHT
+                // -------------------------------------------
+                insight: {
+                  newCustomers:
+                    shortBy.newCustomers >
+                    0
+                      ? `Need ${Math.ceil(
+                          shortBy.newCustomers
+                        )} more new customer(s) in ${week.label}. The pending target will carry forward to the next week.`
+                      : `New customer target is on track in ${week.label}.`,
+
+                  orders:
+                    shortBy.orders > 0
+                      ? `Need ${Math.ceil(
+                          shortBy.orders
+                        )} more approved order(s) in ${week.label}. The pending target will carry forward to the next week.`
+                      : `Order target is on track in ${week.label}.`,
+
+                  sales:
+                    shortBy.salesValue >
+                    0
+                      ? `Need ${formatCurrency(
+                          shortBy.salesValue
+                        )} more sales value in ${week.label}. The pending value will carry forward to the next week.`
+                      : `Sales value target is on track in ${week.label}.`,
+
+                  enquiries:
+                    shortBy.enquiries >
+                    0
+                      ? `Need ${Math.ceil(
+                          shortBy.enquiries
+                        )} more enquiries in ${week.label}. The pending target will carry forward to the next week.`
+                      : `Enquiry target is on track in ${week.label}.`,
+
+                  visits:
+                    shortBy.visits > 0
+                      ? `Need ${Math.ceil(
+                          shortBy.visits
+                        )} more customer meeting/visit(s) in ${week.label}. The pending target will carry forward to the next week.`
+                      : `Customer meeting/visit target is on track in ${week.label}.`,
+                },
+              };
+
+              /*
+               * Update carry-forward only after
+               * current week's result is built.
+               *
+               * Week 2 receives Week 1 shortage,
+               * Week 3 receives Week 2 shortage, etc.
+               */
+              carryForward =
+                nextCarryForward;
+
+              return weekResult;
+            }
+          );
+
+        // ===================================================
+        // CURRENT WEEK
+        // ===================================================
+        const currentWeek =
+          weeklyReport[
+            currentWeekIndex
+          ] ||
+          weeklyReport[
+            weeklyReport.length - 1
+          ];
+
+        // ===================================================
+        // MONTHLY ACHIEVEMENT
+        // ===================================================
+        const monthlyAchievement = {
+          enquiryPercent:
+            getPercent(
+              person.totalEnquiries,
+              target.enquiry
+            ),
+
+          salesPercent:
+            getPercent(
+              person.approvedSalesValue,
+              target.sales
+            ),
+
+          visitPercent:
+            getPercent(
+              person.visitsDone,
+              target.visits
+            ),
+
+          orderPercent:
+            getPercent(
+              person.approvedOrders,
+              target.orders
+            ),
+
+          newCustomerPercent:
+            getPercent(
+              person.newCustomers,
+              target.newCustomers
+            ),
+        };
+
+        // ===================================================
+        // MONTHLY MIS SCORE
+        // ===================================================
+        const monthlyScore =
+          calculateWeightedScore({
+            enquiryPercent:
+              monthlyAchievement.enquiryPercent,
+
+            visitPercent:
+              monthlyAchievement.visitPercent,
+
+            salesPercent:
+              monthlyAchievement.salesPercent,
+
+            orderPercent:
+              monthlyAchievement.orderPercent,
+
+            newCustomerPercent:
+              monthlyAchievement.newCustomerPercent,
+          });
+
+        // ===================================================
+        // MONTHLY SHORTAGE
+        // ===================================================
+        const monthlyShortBy = {
+          enquiries:
+            getShortBy(
+              person.totalEnquiries,
+              target.enquiry
+            ),
+
+          salesValue:
+            getShortBy(
+              person.approvedSalesValue,
+              target.sales
+            ),
+
+          visits:
+            getShortBy(
+              person.visitsDone,
+              target.visits
+            ),
+
+          orders:
+            getShortBy(
+              person.approvedOrders,
+              target.orders
+            ),
+
+          newCustomers:
+            getShortBy(
+              person.newCustomers,
+              target.newCustomers
+            ),
+        };
+
+        // ===================================================
+        // USER INSIGHT
+        // ===================================================
+        const userInsight = {
+          title: `${person.name}, MIS performance update`,
+
+          weekly:
+            currentWeek?.weekScore >=
+            80
+              ? `Good performance in ${currentWeek.label}. Weekly weighted MIS score is ${currentWeek.weekScore}/100.`
+              : `${currentWeek?.label} weighted MIS score is ${
+                  currentWeek?.weekScore ||
+                  0
+                }/100. Focus first on new customer acquisition, then sales value, approved orders, customer meetings and enquiries.`,
+
+          newCustomers:
+            currentWeek?.shortBy
+              ?.newCustomers > 0
+              ? `Need ${currentWeek.shortBy.newCustomers} more new customer(s) in ${currentWeek.label}. New customer carries the highest MIS weightage of 30%.`
+              : `New customer target is on track in ${currentWeek?.label}.`,
+
+          sales:
+            currentWeek?.shortBy
+              ?.salesValue > 0
+              ? `Need ${formatCurrency(
+                  currentWeek
+                    .shortBy
+                    .salesValue
+                )} more approved sales value in ${currentWeek.label}. Sales value carries 25% MIS weightage.`
+              : `Sales value target is on track in ${currentWeek?.label}.`,
+
+          orders:
+            currentWeek?.shortBy
+              ?.orders > 0
+              ? `Need ${currentWeek.shortBy.orders} more approved order(s) in ${currentWeek.label}. Number of orders carries 20% MIS weightage.`
+              : `Approved order target is on track in ${currentWeek?.label}.`,
+
+          visits:
+            currentWeek?.shortBy
+              ?.visits > 0
+              ? `Need ${currentWeek.shortBy.visits} more customer meeting/visit(s) in ${currentWeek.label}. Customer meetings carry 15% MIS weightage.`
+              : `Customer meeting/visit target is on track in ${currentWeek?.label}.`,
+
+          enquiries:
+            currentWeek?.shortBy
+              ?.enquiries > 0
+              ? `Need ${currentWeek.shortBy.enquiries} more enquiries in ${currentWeek.label}. Enquiries carry 10% MIS weightage.`
+              : `Enquiry target is on track in ${currentWeek?.label}.`,
+
+          monthly:
+            monthlyScore >= 80
+              ? `Monthly MIS is strong at ${monthlyScore}/100.`
+              : `Monthly pending: ${Math.ceil(
+                  monthlyShortBy.newCustomers
+                )} new customer(s), ${Math.ceil(
+                  monthlyShortBy.orders
+                )} approved order(s), ${formatCurrency(
+                  monthlyShortBy.salesValue
+                )} sales value, ${Math.ceil(
+                  monthlyShortBy.enquiries
+                )} enquiries and ${Math.ceil(
+                  monthlyShortBy.visits
+                )} customer meeting/visit(s).`,
+        };
+
+        // ===================================================
+        // SALES PERSON RESPONSE
+        // ===================================================
+        return {
+          salesPersonId:
+            person.salesPersonId,
+
+          name: person.name,
+
+          email: person.email,
+
+          monthlyScore,
+
+          score: monthlyScore,
+
+          weightage:
+            MIS_WEIGHTAGE,
+
+          // Enquiries
+          totalEnquiries:
+            person.totalEnquiries,
+
+          wonEnquiries:
+            person.wonEnquiries,
+
+          lostEnquiries:
+            person.lostEnquiries,
+
+          pendingEnquiries:
+            person.pendingEnquiries,
+
+          // Sales Orders
+          approvedSalesValue:
+            person.approvedSalesValue,
+
+          approvedOrders:
+            person.approvedOrders,
+
+          // Customer meetings
+          visitsDone:
+            person.visitsDone,
+
+          // NEW CUSTOMERS
+          newCustomers:
+            person.newCustomers,
+
+          // Targets
+          target: {
+            monthly: {
+              enquiries:
+                target.enquiry,
+
+              salesValue:
+                target.sales,
+
+              visits:
+                target.visits,
+
+              orders:
+                target.orders,
+
+              newCustomers:
+                target.newCustomers,
+            },
+
+            weeklyBase:
+              weeklyBaseTarget,
+          },
+
+          achievement:
+            monthlyAchievement,
+
+          shortBy: {
+            enquiries: Math.ceil(
+              monthlyShortBy.enquiries
+            ),
+
+            salesValue:
+              monthlyShortBy.salesValue,
+
+            visits: Math.ceil(
+              monthlyShortBy.visits
+            ),
+
+            orders: Math.ceil(
+              monthlyShortBy.orders
+            ),
+
+            newCustomers:
+              Math.ceil(
+                monthlyShortBy.newCustomers
+              ),
+          },
+
+          currentWeek,
+
+          userInsight,
+
+          weeklyReport,
+        };
+      })
+
+      // =====================================================
+      // SORT PERFORMANCE
+      // =====================================================
+      .sort((a, b) => {
+        // First by MIS score
+        if (
+          b.monthlyScore !==
+          a.monthlyScore
+        ) {
+          return (
+            b.monthlyScore -
+            a.monthlyScore
+          );
+        }
+
+        // Then new customers
+        if (
+          b.newCustomers !==
+          a.newCustomers
+        ) {
+          return (
+            b.newCustomers -
+            a.newCustomers
+          );
+        }
+
+        // Then approved orders
+        if (
+          b.approvedOrders !==
+          a.approvedOrders
+        ) {
+          return (
+            b.approvedOrders -
+            a.approvedOrders
+          );
+        }
+
+        // Then sales value
+        return (
+          b.approvedSalesValue -
+          a.approvedSalesValue
+        );
       });
 
-      const monthlyShortBy = {
-        enquiries: getShortBy(person.totalEnquiries, target.enquiry),
-        salesValue: getShortBy(person.approvedSalesValue, target.sales),
-        visits: getShortBy(person.visitsDone, target.visits),
-        orders: getShortBy(person.approvedOrders, target.orders),
-      };
+  // =========================================================
+  // COMPANY TOTALS
+  // =========================================================
+  const totalMonthlyOrdersWon =
+    salesPersonScores.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.approvedOrders || 0
+        ),
+      0
+    );
 
-      const userInsight = {
-        title: `${person.name}, MIS performance update`,
+  const totalMonthlySalesVolume =
+    salesPersonScores.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.approvedSalesValue ||
+            0
+        ),
+      0
+    );
 
-        weekly:
-          currentWeek?.weekScore >= 80
-            ? `Good performance in ${currentWeek.label}. Weekly weighted score is ${currentWeek.weekScore}/100.`
-            : `${currentWeek?.label} weighted score is ${
-                currentWeek?.weekScore || 0
-              }/100. Focus first on approved orders, then visits and sales volume.`,
+  const totalMonthlyEnquiries =
+    salesPersonScores.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.totalEnquiries || 0
+        ),
+      0
+    );
 
-        orders:
-          currentWeek?.shortBy?.orders > 0
-            ? `Need ${currentWeek.shortBy.orders} more approved order(s) in ${currentWeek.label}. Orders carry highest MIS weightage of 40%.`
-            : `Approved order target is on track in ${currentWeek?.label}.`,
+  const totalMonthlyVisits =
+    salesPersonScores.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.visitsDone || 0
+        ),
+      0
+    );
 
-        sales:
-          currentWeek?.shortBy?.salesValue > 0
-            ? `Need ${formatCurrency(
-                currentWeek.shortBy.salesValue
-              )} more sales volume in ${currentWeek.label}.`
-            : `Sales volume target is on track in ${currentWeek?.label}.`,
+  // =========================================================
+  // TOTAL NEW CUSTOMERS
+  // =========================================================
+  const totalMonthlyNewCustomers =
+    salesPersonScores.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.newCustomers || 0
+        ),
+      0
+    );
 
-        enquiries:
-          currentWeek?.shortBy?.enquiries > 0
-            ? `Need ${currentWeek.shortBy.enquiries} more enquiries in ${currentWeek.label}.`
-            : `Enquiry target is on track in ${currentWeek?.label}.`,
+  // =========================================================
+  // TOP / WORST PERFORMER
+  // =========================================================
+  const topPerformer =
+    salesPersonScores[0] || null;
 
-        visits:
-          currentWeek?.shortBy?.visits > 0
-            ? `Need ${currentWeek.shortBy.visits} more meeting/visit(s) in ${currentWeek.label}.`
-            : `Meeting/visit target is on track in ${currentWeek?.label}.`,
-
-        monthly:
-          monthlyScore >= 80
-            ? `Monthly MIS is strong at ${monthlyScore}/100.`
-            : `Monthly pending: ${Math.ceil(
-                monthlyShortBy.orders
-              )} orders, ${formatCurrency(
-                monthlyShortBy.salesValue
-              )} sales volume, ${Math.ceil(
-                monthlyShortBy.enquiries
-              )} enquiries and ${Math.ceil(monthlyShortBy.visits)} visits.`,
-      };
-
-      return {
-        salesPersonId: person.salesPersonId,
-        name: person.name,
-        email: person.email,
-
-        monthlyScore,
-        score: monthlyScore,
-
-        weightage: MIS_WEIGHTAGE,
-
-        totalEnquiries: person.totalEnquiries,
-        wonEnquiries: person.wonEnquiries,
-        lostEnquiries: person.lostEnquiries,
-        pendingEnquiries: person.pendingEnquiries,
-
-        approvedSalesValue: person.approvedSalesValue,
-        approvedOrders: person.approvedOrders,
-        visitsDone: person.visitsDone,
-
-        target: {
-          monthly: {
-            enquiries: target.enquiry,
-            salesValue: target.sales,
-            visits: target.visits,
-            orders: target.orders,
-          },
-          weeklyBase: weeklyBaseTarget,
-        },
-
-        achievement: monthlyAchievement,
-
-        shortBy: {
-          enquiries: Math.ceil(monthlyShortBy.enquiries),
-          salesValue: monthlyShortBy.salesValue,
-          visits: Math.ceil(monthlyShortBy.visits),
-          orders: Math.ceil(monthlyShortBy.orders),
-        },
-
-        currentWeek,
-        userInsight,
-        weeklyReport,
-      };
-    })
-    .sort((a, b) => {
-      if (b.monthlyScore !== a.monthlyScore) {
-        return b.monthlyScore - a.monthlyScore;
-      }
-
-      if (b.approvedOrders !== a.approvedOrders) {
-        return b.approvedOrders - a.approvedOrders;
-      }
-
-      return b.approvedSalesValue - a.approvedSalesValue;
-    });
-
-  const totalMonthlyOrdersWon = salesPersonScores.reduce(
-    (sum, item) => sum + Number(item.approvedOrders || 0),
-    0
-  );
-
-  const totalMonthlySalesVolume = salesPersonScores.reduce(
-    (sum, item) => sum + Number(item.approvedSalesValue || 0),
-    0
-  );
-
-  const totalMonthlyEnquiries = salesPersonScores.reduce(
-    (sum, item) => sum + Number(item.totalEnquiries || 0),
-    0
-  );
-
-  const totalMonthlyVisits = salesPersonScores.reduce(
-    (sum, item) => sum + Number(item.visitsDone || 0),
-    0
-  );
-
-  const topPerformer = salesPersonScores[0] || null;
   const worstPerformer =
     salesPersonScores.length > 1
-      ? salesPersonScores[salesPersonScores.length - 1]
+      ? salesPersonScores[
+          salesPersonScores.length -
+            1
+        ]
       : null;
 
+  // =========================================================
+  // BUSINESS INSIGHT
+  // =========================================================
   const businessInsight = {
     totalMonthlyOrdersWon,
+
     totalMonthlySalesVolume,
+
     totalMonthlyEnquiries,
+
     totalMonthlyVisits,
 
+    totalMonthlyNewCustomers,
+
+    // -------------------------------------------------------
+    // TOP PERFORMER
+    // -------------------------------------------------------
     topPerformer: topPerformer
       ? {
-          salesPersonId: topPerformer.salesPersonId,
-          name: topPerformer.name,
-          score: topPerformer.monthlyScore,
-          approvedOrders: topPerformer.approvedOrders,
-          approvedSalesValue: topPerformer.approvedSalesValue,
-          reason: `Top performer due to ${topPerformer.approvedOrders} approved order(s), ${formatCurrency(
-            topPerformer.approvedSalesValue
-          )} sales volume and strong MIS score of ${topPerformer.monthlyScore}/100.`,
+          salesPersonId:
+            topPerformer.salesPersonId,
+
+          name:
+            topPerformer.name,
+
+          score:
+            topPerformer.monthlyScore,
+
+          approvedOrders:
+            topPerformer.approvedOrders,
+
+          approvedSalesValue:
+            topPerformer.approvedSalesValue,
+
+          newCustomers:
+            topPerformer.newCustomers,
+
+          reason:
+            `Top performer with MIS score of ${topPerformer.monthlyScore}/100, ` +
+            `${topPerformer.newCustomers} new customer(s), ` +
+            `${topPerformer.approvedOrders} approved order(s) and ` +
+            `${formatCurrency(
+              topPerformer.approvedSalesValue
+            )} approved sales value.`,
         }
       : null,
 
-    worstPerformer: worstPerformer
-      ? {
-          salesPersonId: worstPerformer.salesPersonId,
-          name: worstPerformer.name,
-          score: worstPerformer.monthlyScore,
-          approvedOrders: worstPerformer.approvedOrders,
-          approvedSalesValue: worstPerformer.approvedSalesValue,
-          reason: getPerformanceReason(worstPerformer),
-        }
-      : null,
+    // -------------------------------------------------------
+    // WORST PERFORMER
+    // -------------------------------------------------------
+    worstPerformer:
+      worstPerformer
+        ? {
+            salesPersonId:
+              worstPerformer.salesPersonId,
 
+            name:
+              worstPerformer.name,
+
+            score:
+              worstPerformer.monthlyScore,
+
+            approvedOrders:
+              worstPerformer.approvedOrders,
+
+            approvedSalesValue:
+              worstPerformer.approvedSalesValue,
+
+            newCustomers:
+              worstPerformer.newCustomers,
+
+            reason:
+              getPerformanceReason(
+                worstPerformer
+              ),
+          }
+        : null,
+
+    // -------------------------------------------------------
+    // SUMMARY
+    // -------------------------------------------------------
     summaryMessage:
-      topPerformer && worstPerformer
-        ? `${topPerformer.name} is leading this month with ${topPerformer.approvedOrders} approved order(s). ${worstPerformer.name} needs focus on ${getPerformanceReason(
+      topPerformer &&
+      worstPerformer
+        ? `${topPerformer.name} is leading this month with MIS score ${topPerformer.monthlyScore}/100, ${topPerformer.newCustomers} new customer(s) and ${topPerformer.approvedOrders} approved order(s). ${worstPerformer.name} needs focus on ${getPerformanceReason(
             worstPerformer
           )}.`
         : "MIS business insight will appear once employee performance data is available.",
   };
 
+  // =========================================================
+  // FINAL RESPONSE
+  // =========================================================
   return {
-    reportType: "monthly_weightage_mis",
+    reportType:
+      "monthly_weightage_mis",
 
     dateRange: {
       fromDate: startDate,
+
       toDate: endDate,
     },
 
-    weightage: MIS_WEIGHTAGE,
+    // =======================================================
+    // NEW MANAGEMENT WEIGHTAGE
+    // =======================================================
+    weightage:
+      MIS_WEIGHTAGE,
 
+    // =======================================================
+    // OVERALL SUMMARY
+    // =======================================================
     summary: {
-      totalApprovedSalesValue: totalMonthlySalesVolume,
-      totalApprovedOrders: totalMonthlyOrdersWon,
+      totalApprovedSalesValue:
+        totalMonthlySalesVolume,
+
+      totalApprovedOrders:
+        totalMonthlyOrdersWon,
+
       totalMonthlyOrdersWon,
-      totalEnquiries: totalMonthlyEnquiries,
-      totalVisits: totalMonthlyVisits,
+
+      totalEnquiries:
+        totalMonthlyEnquiries,
+
+      totalVisits:
+        totalMonthlyVisits,
+
+      totalNewCustomers:
+        totalMonthlyNewCustomers,
     },
 
     businessInsight,

@@ -29,4 +29,10 @@ router.get(
   enquiryController.getAllEnquiries
 );
 
+router.get(
+  "/lost-reasons",
+  authMiddleware,
+  enquiryController.getLostEnquiryReasons
+);
+
 module.exports = router;

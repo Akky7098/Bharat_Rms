@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Enquiry = require("../model/enquiryModel");
 const productGrades = require("../constants/productGrades");
 
@@ -618,15 +619,16 @@ const buildStatusFilter = (status) => {
 
 const getAllEnquiries = async (query, user) => {
   const {
-    page = 1,
-    limit = 30,
-    salesPersonId,
-    fromDate,
-    toDate,
-    companyName,
-    search,
-    status = "all",
-  } = query;
+  page = 1,
+  limit = 30,
+  salesPersonId,
+  fromDate,
+  toDate,
+  companyName,
+  search,
+  status = "all",
+  lostReason,
+} = query;
 
   const safePage = Math.max(Number(page) || 1, 1);
   const safeLimit = Math.min(Number(limit) || 30, 100);
@@ -687,7 +689,47 @@ const getAllEnquiries = async (query, user) => {
   if (selectedStatusFilter) {
     finalFilter.$and = [...(finalFilter.$and || []), selectedStatusFilter];
   }
+   // =========================================================
+// LOST REASON DRILL-DOWN FILTER
+//
+// Example:
+// status=lost&lostReason=price
+//
+// This will show only enquiries lost due to price.
+// =========================================================
+if (
+  cleanStatus === "lost" &&
+  lostReason
+) {
+  const allowedLostReasons = [
+    "price",
+    "delivery",
+    "qty",
+    "quality",
+    "payment_terms",
+    "material_not_available",
+    "others",
+  ];
 
+  const cleanLostReason =
+    String(
+      lostReason
+    ).trim();
+
+  if (
+    !allowedLostReasons.includes(
+      cleanLostReason
+    )
+  ) {
+    throw new Error(
+      "Invalid lost reason"
+    );
+  }
+
+  finalFilter[
+    "closure.lostRemark"
+  ] = cleanLostReason;
+}
   const summaryBaseFilter = { ...baseFilter };
   delete summaryBaseFilter.$and;
 
@@ -945,9 +987,273 @@ const processDelayedEnquiryNotifications = async () => {
   };
 };
 
+const getLostEnquiryReasons = async (query, user) => {
+  const {
+    fromDate,
+    toDate,
+    salesPersonId,
+  } = query;
+
+  const matchFilter = {
+    "closure.status": "lost",
+  };
+
+  // =========================================================
+  // ROLE BASED ACCESS
+  //
+  // Salesperson -> own data only
+  // Admin / Super Admin -> all data
+  // Admin / Super Admin can optionally filter salesperson
+  // =========================================================
+  if (
+    user.role === "admin" ||
+    user.role === "super_admin"
+  ) {
+    if (salesPersonId) {
+      if (
+        !mongoose.Types.ObjectId.isValid(
+          salesPersonId
+        )
+      ) {
+        throw new Error(
+          "Invalid sales person id"
+        );
+      }
+
+      matchFilter.salesPersonId =
+        new mongoose.Types.ObjectId(
+          salesPersonId
+        );
+    }
+  } else {
+    const loggedInUserId =
+      user._id || user.id;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        loggedInUserId
+      )
+    ) {
+      throw new Error(
+        "Invalid logged in user id"
+      );
+    }
+
+    matchFilter.salesPersonId =
+      new mongoose.Types.ObjectId(
+        loggedInUserId
+      );
+  }
+
+  // =========================================================
+  // DATE FILTER
+  //
+  // Custom dates when supplied.
+  // Otherwise use current month.
+  // =========================================================
+  if (fromDate || toDate) {
+    matchFilter.enquiryDate = {};
+
+    if (fromDate) {
+      matchFilter.enquiryDate.$gte =
+        new Date(
+          `${fromDate}T00:00:00.000+05:30`
+        );
+    }
+
+    if (toDate) {
+      matchFilter.enquiryDate.$lte =
+        new Date(
+          `${toDate}T23:59:59.999+05:30`
+        );
+    }
+  } else {
+    const now = new Date();
+
+    const istNow = new Date(
+      now.toLocaleString("en-US", {
+        timeZone: "Asia/Kolkata",
+      })
+    );
+
+    const year =
+      istNow.getFullYear();
+
+    const month =
+      istNow.getMonth() + 1;
+
+    const lastDay =
+      new Date(
+        year,
+        month,
+        0
+      ).getDate();
+
+    matchFilter.enquiryDate = {
+      $gte: new Date(
+        `${year}-${String(
+          month
+        ).padStart(
+          2,
+          "0"
+        )}-01T00:00:00.000+05:30`
+      ),
+
+      $lte: new Date(
+        `${year}-${String(
+          month
+        ).padStart(
+          2,
+          "0"
+        )}-${String(
+          lastDay
+        ).padStart(
+          2,
+          "0"
+        )}T23:59:59.999+05:30`
+      ),
+    };
+  }
+
+  // =========================================================
+  // STANDARD LOST REASONS
+  // =========================================================
+  const LOST_REASONS = [
+    "price",
+    "delivery",
+    "qty",
+    "quality",
+    "payment_terms",
+    "material_not_available",
+    "others",
+  ];
+
+  const REASON_LABELS = {
+    price: "Price",
+    delivery: "Delivery",
+    qty: "Quantity",
+    quality: "Quality",
+    payment_terms: "Payment Terms",
+    material_not_available:
+      "Material Not Available",
+    others: "Others",
+  };
+
+  // =========================================================
+  // AGGREGATE
+  // =========================================================
+  const result =
+    await Enquiry.aggregate([
+      {
+        $match: matchFilter,
+      },
+
+      {
+        $match: {
+          "closure.lostRemark": {
+            $in: LOST_REASONS,
+          },
+        },
+      },
+
+      {
+        $group: {
+          _id:
+            "$closure.lostRemark",
+
+          count: {
+            $sum: 1,
+          },
+        },
+      },
+
+      {
+        $sort: {
+          count: -1,
+        },
+      },
+    ]);
+
+  const totalLost =
+    result.reduce(
+      (sum, item) =>
+        sum +
+        Number(item.count || 0),
+      0
+    );
+
+  // =========================================================
+  // FORMAT PIE CHART RESPONSE
+  //
+  // No custom remarks / other text included.
+  // =========================================================
+  const reasons =
+    result.map((item) => {
+      const count =
+        Number(
+          item.count || 0
+        );
+
+      const percentage =
+        totalLost > 0
+          ? Number(
+              (
+                (count /
+                  totalLost) *
+                100
+              ).toFixed(1)
+            )
+          : 0;
+
+      return {
+        reason: item._id,
+
+        label:
+          REASON_LABELS[
+            item._id
+          ] ||
+          item._id,
+
+        count,
+
+        percentage,
+      };
+    });
+
+  return {
+    totalLost,
+
+    reasons,
+
+    dateRange: {
+      fromDate:
+        matchFilter
+          .enquiryDate
+          ?.$gte || null,
+
+      toDate:
+        matchFilter
+          .enquiryDate
+          ?.$lte || null,
+    },
+
+    salesPersonId:
+      user.role === "admin" ||
+      user.role ===
+        "super_admin"
+        ? salesPersonId ||
+          null
+        : String(
+            user._id ||
+              user.id
+          ),
+  };
+};
+
 module.exports = {
   createEnquiry,
   updateWorkflow,
   getAllEnquiries,
+  getLostEnquiryReasons,
   processDelayedEnquiryNotifications,
 };
