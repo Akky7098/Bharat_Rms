@@ -6,16 +6,30 @@ const runWithChromiumLock = async (jobName, jobFn) => {
 
     try {
       const result = await jobFn();
+
       console.log(`CHROMIUM LOCK END => ${jobName}`);
+
       return result;
     } catch (error) {
-      console.log(`CHROMIUM LOCK ERROR => ${jobName}`, error.message);
+      console.log(
+        `CHROMIUM LOCK ERROR => ${jobName}`,
+        error.message
+      );
+
       throw error;
     }
   };
 
-  const current = queue.then(execute, execute);
+  const current = queue.then(
+    execute,
+    execute
+  );
 
+  /*
+   * IMPORTANT:
+   * Never allow one failed Chromium job
+   * to permanently break the queue.
+   */
   queue = current.catch(() => {});
 
   return current;

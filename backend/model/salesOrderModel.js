@@ -138,6 +138,14 @@ supplyFinish: {
   required: true,
   default: "domestic",
 },
+
+trackingOrderType: {
+  type: String,
+  enum: ["H.O.", "N.H.O."],
+  required: true,
+  default: "N.H.O.",
+  index: true,
+},
     companyName: {
       type: String,
       required: true,

@@ -1,115 +1,151 @@
-const express = require("express");
+// ============================================================
+// FILE: routes/orderTrackingRoutes.js
+// ============================================================
 
-const authMiddleware = require(
-  "../util/auth"
-);
+const express =
+  require("express");
 
-const uploadOrderTrackingFiles = require(
-  "../util/uploadOrderTrackingFiles"
-);
+const router =
+  express.Router();
 
-const orderTrackingController = require(
-  "../controller/orderTrackingController"
-);
+const orderTrackingController =
+  require("../controller/orderTrackingController");
 
-const router = express.Router();
-
-router.use(authMiddleware);
+const authMiddleware =
+  require("../util/auth");
 
 /* =========================================================
-   DASHBOARD
-========================================================= */
+   AUTO SYNC ALL APPROVED SALES ORDERS
 
-router.get(
-  "/dashboard",
-  orderTrackingController.getDashboard
-);
+   POST
+   /api/order-tracking/sync
 
-/* =========================================================
-   MANUAL SYNC FOR EXISTING APPROVED SALES ORDERS
+   BODY:
+   {}
+
+   Automatically reads:
+   trackingOrderType
+   supplyCondition
+   otherSupplyConditions
+   from Sales Order.
 ========================================================= */
 
 router.post(
-  "/sync-approved-orders",
+  "/sync",
+  authMiddleware,
   orderTrackingController.syncApprovedSalesOrders
 );
 
 /* =========================================================
-   TRACKING LIST AND DETAILS
+   SYNC SINGLE APPROVED SALES ORDER
+
+   POST
+   /api/order-tracking/sync/:salesOrderId
+
+   BODY:
+   {}
+========================================================= */
+
+router.post(
+  "/sync/:salesOrderId",
+  authMiddleware,
+  orderTrackingController.syncSalesOrder
+);
+
+/* =========================================================
+   GET ALL TRACKING ORDERS
+
+   GET
+   /api/order-tracking
 ========================================================= */
 
 router.get(
   "/",
-  orderTrackingController.getTrackingList
-);
-
-router.get(
-  "/:trackingId",
-  orderTrackingController.getTrackingById
+  authMiddleware,
+  orderTrackingController.getAllOrderTrackings
 );
 
 /* =========================================================
-   STATUS UPDATE
-========================================================= */
-
-router.patch(
-  "/:trackingId/status",
-  uploadOrderTrackingFiles.array(
-    "files",
-    10
-  ),
-  orderTrackingController.updateStatus
-);
-
-/* =========================================================
-   REQUEST UPDATE
-========================================================= */
-
-router.post(
-  "/:trackingId/request-update",
-  orderTrackingController.requestUpdate
-);
-
-/* =========================================================
-   CHAT
+   GET TRACKING BY SALES ORDER
 ========================================================= */
 
 router.get(
-  "/:trackingId/messages",
-  orderTrackingController.getMessages
-);
-
-router.post(
-  "/:trackingId/messages",
-  uploadOrderTrackingFiles.array(
-    "files",
-    10
-  ),
-  orderTrackingController.sendMessage
-);
-
-router.patch(
-  "/:trackingId/messages/read",
-  orderTrackingController.markMessagesRead
-);
-
-router.delete(
-  "/:trackingId/messages/:messageId",
-  orderTrackingController.deleteMessage
+  "/sales-order/:salesOrderId",
+  authMiddleware,
+  orderTrackingController.getTrackingBySalesOrderId
 );
 
 /* =========================================================
-   CHAT CONTROL
+   GET TRACKING BY TRACKING NUMBER
+========================================================= */
+
+router.get(
+  "/track/:trackingNumber",
+  authMiddleware,
+  orderTrackingController.getTrackingByNumber
+);
+
+/* =========================================================
+   COMPLETE CURRENT MILESTONE
+
+   PATCH
+   /api/order-tracking/:id/milestones/:milestoneId/complete
+
+   BODY:
+   {}
+
+   or:
+
+   {
+     "comment": "Forging completed"
+   }
+
+   Backend automatically:
+   - saves current actual date/time
+   - calculates early/late gap
+   - shifts all future estimated dates
+   - activates next milestone
+   - updates progress
 ========================================================= */
 
 router.patch(
-  "/:trackingId/close-chat",
-  orderTrackingController.closeChat
+  "/:id/milestones/:milestoneId/complete",
+  authMiddleware,
+  orderTrackingController.completeMilestone
 );
+
+/* =========================================================
+   UPDATE ESTIMATED DATE
+========================================================= */
 
 router.patch(
-  "/:trackingId/reopen-chat",
-  orderTrackingController.reopenChat
+  "/:id/milestones/:milestoneId/estimated-date",
+  authMiddleware,
+  orderTrackingController.updateEstimatedDate
 );
 
-module.exports = router;
+/* =========================================================
+   UPDATE TRANSPORTER
+========================================================= */
+
+router.patch(
+  "/:id/transporter",
+  authMiddleware,
+  orderTrackingController.updateTransporter
+);
+
+/* =========================================================
+   GET SINGLE TRACKING
+
+   IMPORTANT:
+   KEEP THIS LAST
+========================================================= */
+
+router.get(
+  "/:id",
+  authMiddleware,
+  orderTrackingController.getOrderTrackingById
+);
+
+module.exports =
+  router;

@@ -289,37 +289,75 @@ const createSalesOrder = async (
   uploadedFeasibilityReportFile
 ) => {
   try {
-    const enquiryNumber = String(payload.enquiryNumber || "").trim();
+    /* =====================================================
+       ENQUIRY VALIDATION
+    ===================================================== */
+
+    const enquiryNumber =
+      String(
+        payload.enquiryNumber || ""
+      ).trim();
 
     if (!enquiryNumber) {
-      throw new Error("Enquiry number is required to create sales order.");
+      throw new Error(
+        "Enquiry number is required to create sales order."
+      );
     }
 
-    const enquiry = await Enquiry.findOne({
-      enquiryNumber,
-    }).lean();
+    const enquiry =
+      await Enquiry.findOne({
+        enquiryNumber,
+      }).lean();
 
     if (!enquiry) {
-      throw new Error("Invalid enquiry number. No enquiry found.");
-    }
-
-    if (enquiry.closure?.status !== "won") {
       throw new Error(
-        `Sales order can be created only for won enquiries. Current enquiry status is ${enquiry.closure?.status || "pending"}.`
+        "Invalid enquiry number. No enquiry found."
       );
     }
 
     if (
-      String(enquiry.salesPersonId) !== String(loggedInUser._id) &&
-      !["admin", "super_admin"].includes(loggedInUser.role)
+      enquiry.closure?.status !==
+      "won"
     ) {
-      throw new Error("You cannot create sales order for another salesperson's enquiry.");
+      throw new Error(
+        `Sales order can be created only for won enquiries. Current enquiry status is ${
+          enquiry.closure?.status ||
+          "pending"
+        }.`
+      );
     }
 
-    const existingSalesOrder = await SalesOrder.findOne({
-      enquiryNumber,
-      isActive: { $ne: false },
-    }).lean();
+    if (
+      String(
+        enquiry.salesPersonId
+      ) !==
+        String(
+          loggedInUser._id
+        ) &&
+      ![
+        "admin",
+        "super_admin",
+      ].includes(
+        loggedInUser.role
+      )
+    ) {
+      throw new Error(
+        "You cannot create sales order for another salesperson's enquiry."
+      );
+    }
+
+    /* =====================================================
+       DUPLICATE SALES ORDER CHECK
+    ===================================================== */
+
+    const existingSalesOrder =
+      await SalesOrder.findOne({
+        enquiryNumber,
+
+        isActive: {
+          $ne: false,
+        },
+      }).lean();
 
     if (existingSalesOrder) {
       throw new Error(
@@ -327,58 +365,232 @@ const createSalesOrder = async (
       );
     }
 
-    const salesOrder = new SalesOrder({
-      ...payload,
-      enquiryNumber,
-      enquiryFormFilled: "yes",
-      orderType: payload.orderType || "domestic",
+    /* =====================================================
+       BUSINESS ORDER TYPE
 
-      salesPersonId: loggedInUser._id,
-      salesPersonName: loggedInUser.name,
-      salesPersonEmail: loggedInUser.email,
-      salesPersonMobile: loggedInUser.mobileNumber,
+       Existing field:
+       domestic
+       international
+       special_economic_zone
+    ===================================================== */
 
-      customerPOFile: uploadedPOFile
-        ? {
-            originalName: uploadedPOFile.originalname,
-            fileName: uploadedPOFile.filename,
-            filePath: uploadedPOFile.path,
-            fileUrl: `/uploads/customer-po/${uploadedPOFile.filename}`,
-            uploadedAt: new Date(),
-          }
-        : undefined,
+    const businessOrderType =
+      payload.orderType ||
+      "domestic";
 
-      feasibilityReportFile: uploadedFeasibilityReportFile
-        ? {
-            originalName: uploadedFeasibilityReportFile.originalname,
-            fileName: uploadedFeasibilityReportFile.filename,
-            filePath: uploadedFeasibilityReportFile.path,
-            fileUrl: `/uploads/feasibility-report/${uploadedFeasibilityReportFile.filename}`,
-            uploadedAt: new Date(),
-          }
-        : undefined,
+    const validBusinessOrderTypes =
+      [
+        "domestic",
+        "international",
+        "special_economic_zone",
+      ];
 
-      approvalHistory: [
-        {
-          actionBy: loggedInUser._id,
-          role: "salesperson",
-          action: "created",
-          comment:
-            uploadedPOFile && uploadedFeasibilityReportFile
-              ? `Sales order created with customer PO file and feasibility report for won enquiry ${enquiryNumber}`
-              : uploadedPOFile
-              ? `Sales order created with customer PO file for won enquiry ${enquiryNumber}`
-              : uploadedFeasibilityReportFile
-              ? `Sales order created with feasibility report for won enquiry ${enquiryNumber}`
-              : `Sales order created for won enquiry ${enquiryNumber}`,
-        },
-      ],
-    });
+    if (
+      !validBusinessOrderTypes.includes(
+        businessOrderType
+      )
+    ) {
+      throw new Error(
+        "Invalid order type."
+      );
+    }
 
-    let savedOrder = await salesOrder.save();
+    /* =====================================================
+       ORDER TRACKING TYPE
+
+       NEW FIELD:
+
+       H.O.
+       N.H.O.
+
+       IMPORTANT:
+       This is different from orderType above.
+
+       For now default is N.H.O.
+    ===================================================== */
+
+    const trackingOrderType =
+      String(
+        payload.trackingOrderType ||
+          "N.H.O."
+      )
+        .trim()
+        .toUpperCase();
+
+    const normalizedTrackingOrderType =
+      trackingOrderType ===
+        "HO"
+        ? "H.O."
+        : trackingOrderType ===
+          "NHO"
+        ? "N.H.O."
+        : trackingOrderType;
+
+    if (
+      ![
+        "H.O.",
+        "N.H.O.",
+      ].includes(
+        normalizedTrackingOrderType
+      )
+    ) {
+      throw new Error(
+        "Invalid tracking order type. Use H.O. or N.H.O."
+      );
+    }
+
+    /* =====================================================
+       N.H.O. VALIDATION
+
+       N.H.O. depends on supplyCondition
+       for Order Tracking process generation.
+    ===================================================== */
+
+    if (
+      normalizedTrackingOrderType ===
+        "N.H.O." &&
+      !payload.supplyCondition
+    ) {
+      throw new Error(
+        "Supply condition is required for N.H.O. order tracking."
+      );
+    }
+
+    /* =====================================================
+       CREATE SALES ORDER
+    ===================================================== */
+
+    const salesOrder =
+      new SalesOrder({
+        ...payload,
+
+        enquiryNumber,
+
+        enquiryFormFilled:
+          "yes",
+
+        /* -----------------------------------------------
+           Existing business order type
+        ----------------------------------------------- */
+
+        orderType:
+          businessOrderType,
+
+        /* -----------------------------------------------
+           NEW H.O. / N.H.O. field
+        ----------------------------------------------- */
+
+        trackingOrderType:
+          normalizedTrackingOrderType,
+
+        /* -----------------------------------------------
+           Logged-in salesperson
+        ----------------------------------------------- */
+
+        salesPersonId:
+          loggedInUser._id,
+
+        salesPersonName:
+          loggedInUser.name,
+
+        salesPersonEmail:
+          loggedInUser.email,
+
+        salesPersonMobile:
+          loggedInUser.mobileNumber,
+
+        /* -----------------------------------------------
+           CUSTOMER PO FILE
+        ----------------------------------------------- */
+
+        customerPOFile:
+          uploadedPOFile
+            ? {
+                originalName:
+                  uploadedPOFile.originalname,
+
+                fileName:
+                  uploadedPOFile.filename,
+
+                filePath:
+                  uploadedPOFile.path,
+
+                fileUrl:
+                  `/uploads/customer-po/${uploadedPOFile.filename}`,
+
+                uploadedAt:
+                  new Date(),
+              }
+            : undefined,
+
+        /* -----------------------------------------------
+           FEASIBILITY REPORT
+        ----------------------------------------------- */
+
+        feasibilityReportFile:
+          uploadedFeasibilityReportFile
+            ? {
+                originalName:
+                  uploadedFeasibilityReportFile.originalname,
+
+                fileName:
+                  uploadedFeasibilityReportFile.filename,
+
+                filePath:
+                  uploadedFeasibilityReportFile.path,
+
+                fileUrl:
+                  `/uploads/feasibility-report/${uploadedFeasibilityReportFile.filename}`,
+
+                uploadedAt:
+                  new Date(),
+              }
+            : undefined,
+
+        /* -----------------------------------------------
+           APPROVAL HISTORY
+        ----------------------------------------------- */
+
+        approvalHistory: [
+          {
+            actionBy:
+              loggedInUser._id,
+
+            role:
+              "salesperson",
+
+            action:
+              "created",
+
+            comment:
+              uploadedPOFile &&
+              uploadedFeasibilityReportFile
+                ? `Sales order created with customer PO file and feasibility report for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}`
+                : uploadedPOFile
+                ? `Sales order created with customer PO file for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}`
+                : uploadedFeasibilityReportFile
+                ? `Sales order created with feasibility report for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}`
+                : `Sales order created for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}`,
+          },
+        ],
+      });
+
+    /* =====================================================
+       SAVE SALES ORDER
+    ===================================================== */
+
+    let savedOrder =
+      await salesOrder.save();
+
+    /* =====================================================
+       GENERATE PDF
+    ===================================================== */
 
     try {
-      const pdfDetails = await pdfService.generateSalesOrderPdf(savedOrder);
+      const pdfDetails =
+        await pdfService.generateSalesOrderPdf(
+          savedOrder
+        );
 
       if (
         !pdfDetails ||
@@ -386,96 +598,209 @@ const createSalesOrder = async (
         !pdfDetails.filePath ||
         !pdfDetails.fileUrl
       ) {
-        throw new Error("PDF details missing");
+        throw new Error(
+          "PDF details missing"
+        );
       }
 
       savedOrder.pdf = {
         generated: true,
-        fileName: pdfDetails.fileName,
-        filePath: pdfDetails.filePath,
-        fileUrl: pdfDetails.fileUrl,
-        generatedAt: new Date(),
+
+        fileName:
+          pdfDetails.fileName,
+
+        filePath:
+          pdfDetails.filePath,
+
+        fileUrl:
+          pdfDetails.fileUrl,
+
+        generatedAt:
+          new Date(),
       };
 
-      savedOrder.finalSalesOrderPackage = {
-        generated: true,
-        fileName: pdfDetails.fileName,
-        filePath: pdfDetails.filePath,
-        fileUrl: pdfDetails.fileUrl,
-        generatedAt: new Date(),
-      };
+      savedOrder.finalSalesOrderPackage =
+        {
+          generated: true,
 
-      savedOrder.preShipmentInspectionPdf = {
-        generated: true,
-        fileName: pdfDetails.fileName,
-        filePath: pdfDetails.filePath,
-        fileUrl: pdfDetails.fileUrl,
-        generatedAt: new Date(),
-      };
+          fileName:
+            pdfDetails.fileName,
 
-      savedOrder.approvalHistory.push({
-        role: "system",
-        action: "pdf_generated",
-        comment: "Sales order PDF generated successfully during creation",
-      });
+          filePath:
+            pdfDetails.filePath,
 
-      savedOrder = await savedOrder.save();
+          fileUrl:
+            pdfDetails.fileUrl,
+
+          generatedAt:
+            new Date(),
+        };
+
+      savedOrder.preShipmentInspectionPdf =
+        {
+          generated: true,
+
+          fileName:
+            pdfDetails.fileName,
+
+          filePath:
+            pdfDetails.filePath,
+
+          fileUrl:
+            pdfDetails.fileUrl,
+
+          generatedAt:
+            new Date(),
+        };
+
+      savedOrder.approvalHistory.push(
+        {
+          role:
+            "system",
+
+          action:
+            "pdf_generated",
+
+          comment:
+            "Sales order PDF generated successfully during creation",
+        }
+      );
+
+      savedOrder =
+        await savedOrder.save();
     } catch (pdfError) {
-      await SalesOrder.deleteOne({ _id: savedOrder._id });
+      /*
+       * Existing behaviour:
+       * Sales Order should not remain
+       * if PDF generation fails.
+       */
+
+      await SalesOrder.deleteOne({
+        _id:
+          savedOrder._id,
+      });
 
       throw new Error(
         `PDF not generated. Failed to create sales order. ${pdfError.message}`
       );
     }
 
+    /* =====================================================
+       CREATE NOTIFICATION
+    ===================================================== */
+
     await safeCreateNotification({
-      module: "sales_order",
-      event: "created",
-      title: "New Sales Order Created",
-      message: `${loggedInUser.name} created a sales order for ${savedOrder.companyName}`,
-      priority: "high",
-      targetRoles: ["admin"],
-      createdBy: loggedInUser._id,
-      referenceId: savedOrder._id,
-      referenceModel: "SalesOrder",
-      actionUrl: "/dashboard#sales-order",
+      module:
+        "sales_order",
+
+      event:
+        "created",
+
+      title:
+        "New Sales Order Created",
+
+      message:
+        `${loggedInUser.name} created a sales order for ${savedOrder.companyName}`,
+
+      priority:
+        "high",
+
+      targetRoles: [
+        "admin",
+      ],
+
+      createdBy:
+        loggedInUser._id,
+
+      referenceId:
+        savedOrder._id,
+
+      referenceModel:
+        "SalesOrder",
+
+      actionUrl:
+        "/dashboard#sales-order",
+
       meta: {
-        companyName: savedOrder.companyName,
-        poNumber: savedOrder.poNumber,
-        enquiryNumber: savedOrder.enquiryNumber,
-        salesPersonName: loggedInUser.name,
-        orderType: savedOrder.orderType,
+        companyName:
+          savedOrder.companyName,
+
+        poNumber:
+          savedOrder.poNumber,
+
+        enquiryNumber:
+          savedOrder.enquiryNumber,
+
+        salesPersonName:
+          loggedInUser.name,
+
+        /*
+         * Existing commercial/business order type
+         */
+        orderType:
+          savedOrder.orderType,
+
+        /*
+         * NEW H.O. / N.H.O.
+         */
+        trackingOrderType:
+          savedOrder.trackingOrderType,
+
+        /*
+         * Useful later for tracking
+         */
+        supplyCondition:
+          savedOrder.supplyCondition,
       },
     });
 
+    /* =====================================================
+       WHATSAPP
+    ===================================================== */
+
     setImmediate(() => {
-      enqueueWhatsapp(async () => {
-        const freshOrder = await SalesOrder.findById(savedOrder._id);
+      enqueueWhatsapp(
+        async () => {
+          const freshOrder =
+            await SalesOrder.findById(
+              savedOrder._id
+            );
 
-        if (!freshOrder) return;
+          if (!freshOrder) {
+            return;
+          }
 
-        try {
-          await sendSalesOrderCreatedToAdminWhatsapp(freshOrder);
+          try {
+            await sendSalesOrderCreatedToAdminWhatsapp(
+              freshOrder
+            );
 
-          await addHistoryAndSave(
-            freshOrder,
-            "whatsapp_group_sent",
-            "Sales order creation WhatsApp sent to Sonia"
-          );
-        } catch (waError) {
-          console.log(
-            "SALES ORDER CREATE ADMIN WHATSAPP ERROR =>",
-            waError.message
-          );
+            await addHistoryAndSave(
+              freshOrder,
+              "whatsapp_group_sent",
+              "Sales order creation WhatsApp sent to Sonia"
+            );
+          } catch (
+            waError
+          ) {
+            console.log(
+              "SALES ORDER CREATE ADMIN WHATSAPP ERROR =>",
+              waError.message
+            );
 
-          await addHistoryAndSave(
-            freshOrder,
-            "failed",
-            `Sales order creation admin WhatsApp failed: ${waError.message}`
-          );
+            await addHistoryAndSave(
+              freshOrder,
+              "failed",
+              `Sales order creation admin WhatsApp failed: ${waError.message}`
+            );
+          }
         }
-      });
+      );
     });
+
+    /* =====================================================
+       RETURN
+    ===================================================== */
 
     return savedOrder;
   } catch (error) {

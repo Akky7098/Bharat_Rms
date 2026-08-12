@@ -128,68 +128,114 @@ const formatDate = (date) => {
   ).padStart(2, "0")}.${d.getFullYear()}`;
 };
 
+
+/* =========================================================
+   SALES ORDER HTML -> PDF
+   Uses existing WhatsApp Chromium.
+   If Chromium silently dies, recover it automatically.
+========================================================= */
+
 const generateSalesOrderPdfBuffer = async (salesOrder) => {
-  const html = salesOrderTemplate(salesOrder);
+  return runWithChromiumLock("SALES_ORDER_PDF", async () => {
+    const html = salesOrderTemplate(salesOrder);
 
-  let page;
+    let page;
 
-  const {
-    getWhatsappBrowser,
-    pauseWhatsappHealthForPdf,
-    resumeWhatsappHealthAfterPdf,
-  } = require("../util/whatsappClient");
-
-  try {
-    pauseWhatsappHealthForPdf();
-
-    const whatsappBrowser = getWhatsappBrowser();
-
-    if (!whatsappBrowser || !whatsappBrowser.isConnected()) {
-      throw new Error(
-        "WhatsApp Chromium is not connected. Please restart the Node app once and try again."
-      );
-    }
-
-    console.log("PDF USING WHATSAPP CHROMIUM");
-
-    page = await whatsappBrowser.newPage();
-
-    await page.setContent(html, {
-      waitUntil: "domcontentloaded",
-      timeout: 120000,
-    });
-
-    await page.emulateMediaType("screen");
+    const {
+      getWhatsappBrowser,
+      pauseWhatsappHealthForPdf,
+      resumeWhatsappHealthAfterPdf,
+      ensureWhatsappConnected,
+    } = require("../util/whatsappClient");
 
     try {
-      await page.evaluateHandle("document.fonts.ready");
-    } catch (error) {
-      console.log("PDF font wait skipped:", error.message);
+      pauseWhatsappHealthForPdf();
+
+      let whatsappBrowser = getWhatsappBrowser();
+
+      /*
+       * Normally PDF should reuse the Chromium already
+       * running for WhatsApp.
+       *
+       * If Chromium has silently crashed/disconnected,
+       * automatically recover WhatsApp Chromium first.
+       */
+      if (
+        !whatsappBrowser ||
+        !whatsappBrowser.isConnected()
+      ) {
+        console.log(
+          "PDF detected disconnected WhatsApp Chromium. Attempting recovery..."
+        );
+
+        await ensureWhatsappConnected({
+          forceRecovery: true,
+        });
+
+        whatsappBrowser = getWhatsappBrowser();
+      }
+
+      /*
+       * Recovery must result in a real connected
+       * Puppeteer browser before continuing.
+       */
+      if (
+        !whatsappBrowser ||
+        !whatsappBrowser.isConnected()
+      ) {
+        throw new Error(
+          "WhatsApp Chromium recovery failed. PDF generation cannot continue."
+        );
+      }
+
+      console.log("PDF USING WHATSAPP CHROMIUM");
+
+      page = await whatsappBrowser.newPage();
+
+      await page.setContent(html, {
+        waitUntil: "domcontentloaded",
+        timeout: 120000,
+      });
+
+      await page.emulateMediaType("screen");
+
+      try {
+        await page.evaluateHandle("document.fonts.ready");
+      } catch (error) {
+        console.log(
+          "PDF font wait skipped:",
+          error.message
+        );
+      }
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 500)
+      );
+
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: {
+          top: "8mm",
+          right: "8mm",
+          bottom: "8mm",
+          left: "8mm",
+        },
+      });
+
+      return pdfBuffer;
+    } finally {
+      if (page) {
+        await page.close().catch(() => {});
+      }
+
+      resumeWhatsappHealthAfterPdf();
     }
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: {
-        top: "8mm",
-        right: "8mm",
-        bottom: "8mm",
-        left: "8mm",
-      },
-    });
-
-    return pdfBuffer;
-  } finally {
-    if (page) {
-      await page.close().catch(() => {});
-    }
-
-    resumeWhatsappHealthAfterPdf();
-  }
+  });
 };
+
+
 const addSalesOrderHtmlPages = async (mergedPdf, salesOrder) => {
   const salesOrderPdfBuffer = await generateSalesOrderPdfBuffer(salesOrder);
 
@@ -230,6 +276,7 @@ const mergeExistingPdf = async (mergedPdf, pdfPath, label = "ATTACHMENT") => {
     console.log(`${label} PDF MERGE FAILED =>`, error.message);
   }
 };
+
  const extractUniqueGrades = (sizeGradeQuantityRate = "") => {
   const lines = String(sizeGradeQuantityRate)
     .split(/\r?\n/)

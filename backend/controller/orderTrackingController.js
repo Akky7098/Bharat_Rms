@@ -1,326 +1,491 @@
-const orderTrackingService = require(
-  "../services/orderTrackingService"
-);
+// ============================================================
+// FILE: controller/orderTrackingController.js
+// ============================================================
 
-const sendSuccess = (
-  res,
-  message,
-  data,
-  statusCode = 200
-) =>
-  res.status(statusCode).json({
-    success: true,
-    message,
-    data,
-  });
+const orderTrackingService =
+  require("../services/orderTrackingService");
 
-const getDashboard = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.getTrackingDashboard(
-        req.user
-      );
+/* =========================================================
+   GET ALL TRACKING ORDERS
+========================================================= */
 
-    return sendSuccess(
-      res,
-      "Order tracking dashboard fetched successfully.",
-      data
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
-
-const getTrackingList = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.getTrackingList(
-        {
-          query: req.query,
-          user: req.user,
-        }
-      );
-
-    return sendSuccess(
-      res,
-      "Order tracking records fetched successfully.",
-      data
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
-
-const getTrackingById = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.getTrackingById(
-        {
-          trackingId:
-            req.params.trackingId,
-          user: req.user,
-        }
-      );
-
-    return sendSuccess(
-      res,
-      "Order tracking record fetched successfully.",
-      data
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
-
-const syncApprovedSalesOrders =
-  async (req, res, next) => {
+const getAllOrderTrackings =
+  async (req, res) => {
     try {
       const data =
-        await orderTrackingService.syncApprovedSalesOrders(
+        await orderTrackingService.getAllOrderTrackings(
+          req.query,
           req.user
         );
 
-      return sendSuccess(
-        res,
-        "Approved sales orders synced successfully.",
-        data
-      );
+      return res.status(200).json({
+        success: true,
+        data,
+      });
     } catch (error) {
-      return next(error);
+      return res.status(400).json({
+        success: false,
+        message:
+          error.message ||
+          "Failed to fetch order tracking",
+      });
     }
   };
 
-const updateStatus = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.updateTrackingStatus(
-        {
+/* =========================================================
+   GET SINGLE TRACKING
+========================================================= */
+
+const getOrderTrackingById =
+  async (req, res) => {
+    try {
+      const data =
+        await orderTrackingService.getOrderTrackingById(
+          req.params.id
+        );
+
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return res.status(404).json({
+        success: false,
+        message:
+          error.message ||
+          "Order tracking not found",
+      });
+    }
+  };
+
+/* =========================================================
+   GET TRACKING BY SALES ORDER ID
+========================================================= */
+
+const getTrackingBySalesOrderId =
+  async (req, res) => {
+    try {
+      const {
+        salesOrderId,
+      } = req.params;
+
+      if (!salesOrderId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Sales Order ID is required",
+        });
+      }
+
+      const data =
+        await orderTrackingService.getTrackingBySalesOrderId(
+          salesOrderId
+        );
+
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return res.status(404).json({
+        success: false,
+        message:
+          error.message ||
+          "Tracking not found",
+      });
+    }
+  };
+
+/* =========================================================
+   GET BY TRACKING NUMBER
+========================================================= */
+
+const getTrackingByNumber =
+  async (req, res) => {
+    try {
+      const {
+        trackingNumber,
+      } = req.params;
+
+      if (!trackingNumber) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Tracking number is required",
+        });
+      }
+
+      const data =
+        await orderTrackingService.getTrackingByNumber(
+          trackingNumber
+        );
+
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return res.status(404).json({
+        success: false,
+        message:
+          error.message ||
+          "Order tracking not found",
+      });
+    }
+  };
+
+/* =========================================================
+   SYNC SINGLE APPROVED SALES ORDER
+
+   POST
+   /api/order-tracking/sync/:salesOrderId
+
+   BODY:
+   {}
+
+   Backend reads:
+   - salesOrder.trackingOrderType
+   - salesOrder.supplyCondition
+   - salesOrder.otherSupplyConditions
+========================================================= */
+
+const syncSalesOrder =
+  async (req, res) => {
+    try {
+      const {
+        salesOrderId,
+      } = req.params;
+
+      if (!salesOrderId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Sales Order ID is required",
+        });
+      }
+
+      const data =
+        await orderTrackingService.syncSalesOrder({
+          salesOrderId,
+          user:
+            req.user,
+        });
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          data.alreadySynced
+            ? "Sales Order is already synced with order tracking"
+            : "Sales Order synced with order tracking successfully",
+
+        data,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message:
+          error.message ||
+          "Failed to sync Sales Order",
+      });
+    }
+  };
+
+/* =========================================================
+   AUTO SYNC ALL APPROVED SALES ORDERS
+
+   POST
+   /api/order-tracking/sync
+
+   BODY:
+   {}
+
+   Backend automatically:
+   - finds approved Sales Orders
+   - skips already synced records
+   - reads trackingOrderType
+   - reads supplyCondition
+   - resolves process
+   - generates milestones
+========================================================= */
+
+const syncApprovedSalesOrders =
+  async (req, res) => {
+    try {
+      const data =
+        await orderTrackingService.syncApprovedSalesOrders({
+          user:
+            req.user,
+        });
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Approved Sales Orders sync completed successfully",
+        data,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message:
+          error.message ||
+          "Failed to sync approved Sales Orders",
+      });
+    }
+  };
+
+/* =========================================================
+   COMPLETE CURRENT MILESTONE
+
+   PATCH
+   /api/order-tracking/:id/milestones/:milestoneId/complete
+
+   BODY CAN BE:
+   {}
+
+   Backend automatically uses server date/time.
+
+   Optional:
+   {
+     "comment": "Forging completed"
+   }
+========================================================= */
+
+const completeMilestone =
+  async (req, res) => {
+    try {
+      const {
+        actualDate,
+        comment,
+        attachments,
+      } = req.body || {};
+
+      const {
+        id,
+        milestoneId,
+      } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Tracking ID is required",
+        });
+      }
+
+      if (!milestoneId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Milestone ID is required",
+        });
+      }
+
+      const data =
+        await orderTrackingService.completeMilestone({
           trackingId:
-            req.params.trackingId,
-          payload: req.body,
-          files: req.files || [],
-          user: req.user,
-        }
-      );
+            id,
 
-    return sendSuccess(
-      res,
-      "Order status updated successfully.",
-      data
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
+          milestoneId,
 
-const requestUpdate = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.requestOrderUpdate(
-        {
+          actualDate:
+            actualDate ||
+            undefined,
+
+          comment:
+            comment ||
+            "",
+
+          attachments:
+            Array.isArray(
+              attachments
+            )
+              ? attachments
+              : [],
+
+          user:
+            req.user,
+        });
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          "Milestone completed successfully. Future estimated dates adjusted automatically.",
+
+        data,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message:
+          error.message ||
+          "Failed to complete milestone",
+      });
+    }
+  };
+
+/* =========================================================
+   UPDATE ESTIMATED DATE
+========================================================= */
+
+const updateEstimatedDate =
+  async (req, res) => {
+    try {
+      const {
+        estimatedDate,
+        comment,
+      } = req.body || {};
+
+      const {
+        id,
+        milestoneId,
+      } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Tracking ID is required",
+        });
+      }
+
+      if (!milestoneId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Milestone ID is required",
+        });
+      }
+
+      if (!estimatedDate) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Estimated date is required",
+        });
+      }
+
+      const data =
+        await orderTrackingService.updateEstimatedDate({
           trackingId:
-            req.params.trackingId,
-          user: req.user,
-        }
-      );
+            id,
 
-    return sendSuccess(
-      res,
-      "Order update requested successfully.",
-      data
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
+          milestoneId,
 
-const sendMessage = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.sendTrackingMessage(
-        {
+          estimatedDate,
+
+          comment:
+            comment ||
+            "",
+
+          user:
+            req.user,
+        });
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          "Estimated date updated and future milestone dates adjusted successfully",
+
+        data,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message:
+          error.message ||
+          "Failed to update estimated date",
+      });
+    }
+  };
+
+/* =========================================================
+   UPDATE TRANSPORTER
+========================================================= */
+
+const updateTransporter =
+  async (req, res) => {
+    try {
+      const {
+        id,
+      } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Tracking ID is required",
+        });
+      }
+
+      const transporter = {
+        transporterName:
+          req.body
+            ?.transporterName,
+
+        vehicleNumber:
+          req.body
+            ?.vehicleNumber,
+
+        driverName:
+          req.body
+            ?.driverName,
+
+        driverPhone:
+          req.body
+            ?.driverPhone,
+
+        lrNumber:
+          req.body
+            ?.lrNumber,
+      };
+
+      const data =
+        await orderTrackingService.updateTransporter({
           trackingId:
-            req.params.trackingId,
-          payload: req.body,
-          files: req.files || [],
-          user: req.user,
-        }
-      );
+            id,
 
-    return sendSuccess(
-      res,
-      "Message sent successfully.",
-      data,
-      201
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
+          transporter,
 
-const getMessages = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.getTrackingMessages(
-        {
-          trackingId:
-            req.params.trackingId,
-          query: req.query,
-          user: req.user,
-        }
-      );
+          user:
+            req.user,
+        });
 
-    return sendSuccess(
-      res,
-      "Order tracking messages fetched successfully.",
-      data
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
+      return res.status(200).json({
+        success: true,
+        message:
+          "Transporter details updated successfully",
+        data,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message:
+          error.message ||
+          "Failed to update transporter details",
+      });
+    }
+  };
 
-const markMessagesRead = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.markMessagesRead(
-        {
-          trackingId:
-            req.params.trackingId,
-          user: req.user,
-        }
-      );
-
-    return sendSuccess(
-      res,
-      "Messages marked as read.",
-      data
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
-
-const deleteMessage = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.deleteTrackingMessage(
-        {
-          trackingId:
-            req.params.trackingId,
-          messageId:
-            req.params.messageId,
-          user: req.user,
-        }
-      );
-
-    return sendSuccess(
-      res,
-      "Message deleted for everyone successfully.",
-      data
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
-
-const closeChat = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.closeTrackingChat(
-        {
-          trackingId:
-            req.params.trackingId,
-          user: req.user,
-        }
-      );
-
-    return sendSuccess(
-      res,
-      "Order chat closed successfully.",
-      data
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
-
-const reopenChat = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const data =
-      await orderTrackingService.reopenTrackingChat(
-        {
-          trackingId:
-            req.params.trackingId,
-          user: req.user,
-        }
-      );
-
-    return sendSuccess(
-      res,
-      "Order chat reopened successfully.",
-      data
-    );
-  } catch (error) {
-    return next(error);
-  }
-};
+/* =========================================================
+   EXPORTS
+========================================================= */
 
 module.exports = {
-  getDashboard,
-  getTrackingList,
-  getTrackingById,
+  /* SYNC */
+  syncSalesOrder,
   syncApprovedSalesOrders,
-  updateStatus,
-  requestUpdate,
-  sendMessage,
-  getMessages,
-  markMessagesRead,
-  deleteMessage,
-  closeChat,
-  reopenChat,
+
+  /* GET */
+  getAllOrderTrackings,
+  getOrderTrackingById,
+  getTrackingBySalesOrderId,
+  getTrackingByNumber,
+
+  /* UPDATE */
+  completeMilestone,
+  updateEstimatedDate,
+  updateTransporter,
 };
