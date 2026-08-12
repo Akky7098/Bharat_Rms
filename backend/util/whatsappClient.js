@@ -11,47 +11,28 @@ let latestQr = null;
 // PDF pause flag
 let isPdfUsingWhatsappBrowser = false;
 
-// ======================================================
-// SELF RECOVERY CONTROL
-// ======================================================
-
+// Self-recovery control
 let restartPromise = null;
 let lastRestartAttempt = 0;
 
 const RESTART_COOLDOWN_MS = 15000;
-const READY_WAIT_TIMEOUT_MS = 60000;
+const READY_WAIT_TIMEOUT_MS = 45000;
 
 const whatsappSessionPath =
   process.env.WHATSAPP_SESSION_PATH ||
-  path.join(
-    process.env.HOME || "/home/u607090171",
-    "whatsapp-session"
-  );
+  path.join(process.env.HOME || "/home/u607090171", "whatsapp-session");
 
 const authClientId = "bharat-rms-company-whatsapp";
-
-const whatsappCachePath = path.join(
-  whatsappSessionPath,
-  "wwebjs-cache"
-);
+const whatsappCachePath = path.join(whatsappSessionPath, "wwebjs-cache");
 
 const sleep = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
-// ======================================================
-// SESSION FOLDER
-// ======================================================
-
 const ensureSessionFolder = () => {
   try {
-    fs.mkdirSync(whatsappSessionPath, {
-      recursive: true,
-    });
-
-    fs.mkdirSync(whatsappCachePath, {
-      recursive: true,
-    });
+    fs.mkdirSync(whatsappSessionPath, { recursive: true });
+    fs.mkdirSync(whatsappCachePath, { recursive: true });
 
     const testFile = path.join(
       whatsappSessionPath,
@@ -60,10 +41,7 @@ const ensureSessionFolder = () => {
 
     fs.writeFileSync(testFile, "ok");
 
-    console.log(
-      "WHATSAPP SESSION PATH =>",
-      whatsappSessionPath
-    );
+    console.log("WHATSAPP SESSION PATH =>", whatsappSessionPath);
 
     console.log(
       "WHATSAPP LOCAL AUTH PATH =>",
@@ -90,10 +68,6 @@ const ensureSessionFolder = () => {
   }
 };
 
-// ======================================================
-// PDF HEALTH PAUSE
-// ======================================================
-
 const pauseWhatsappHealthForPdf = () => {
   isPdfUsingWhatsappBrowser = true;
 
@@ -114,9 +88,9 @@ const isWhatsappHealthPausedForPdf = () => {
   return isPdfUsingWhatsappBrowser;
 };
 
-// ======================================================
-// BROWSER ALIVE CHECK
-// ======================================================
+/* =========================================================
+   CHECK WHETHER WHATSAPP CHROMIUM IS REALLY ALIVE
+========================================================= */
 
 const isWhatsappBrowserAlive = () => {
   try {
@@ -136,45 +110,38 @@ const isWhatsappBrowserAlive = () => {
   }
 };
 
-// ======================================================
-// WAIT UNTIL REAL WHATSAPP READY EVENT + CONNECTED
-// ======================================================
+/* =========================================================
+   WAIT UNTIL WHATSAPP REACHES CONNECTED STATE
+========================================================= */
 
 const waitForWhatsappReady = async (
-  expectedClient,
   timeoutMs = READY_WAIT_TIMEOUT_MS
 ) => {
   const startedAt = Date.now();
 
-  while (Date.now() - startedAt < timeoutMs) {
-    /*
-     * Client was replaced/destroyed while waiting.
-     */
-    if (
-      !expectedClient ||
-      whatsappClient !== expectedClient
-    ) {
-      return false;
-    }
-
+  while (
+    Date.now() - startedAt < timeoutMs
+  ) {
     try {
-      const browser = expectedClient.pupBrowser;
-
       if (
-        browser &&
-        browser.isConnected() &&
-        isReady
+        whatsappClient &&
+        whatsappClient.pupBrowser &&
+        whatsappClient.pupBrowser.isConnected()
       ) {
-        const state = await expectedClient
+        const state = await whatsappClient
           .getState()
           .catch(() => null);
 
         if (state === "CONNECTED") {
+          isReady = true;
+          isInitializing = false;
+          latestQr = null;
+
           return true;
         }
       }
     } catch (error) {
-      // Still initializing.
+      // Browser may still be initializing.
     }
 
     await sleep(1000);
@@ -183,22 +150,15 @@ const waitForWhatsappReady = async (
   return false;
 };
 
-// ======================================================
-// INITIALIZE WHATSAPP
-// ======================================================
+/* =========================================================
+   INITIALIZE WHATSAPP CLIENT
+========================================================= */
 
 const initWhatsappClient = () => {
-  /*
-   * Existing client already exists.
-   */
   if (whatsappClient) {
     return whatsappClient;
   }
 
-  /*
-   * Never create another Chromium while one is
-   * currently being initialized.
-   */
   if (isInitializing) {
     console.log(
       "WhatsApp client already initializing..."
@@ -207,27 +167,11 @@ const initWhatsappClient = () => {
     return whatsappClient;
   }
 
-  /*
-   * IMPORTANT:
-   *
-   * If central recovery is currently running,
-   * no outside caller is allowed to launch another
-   * Chromium.
-   */
-  if (restartPromise) {
-    console.log(
-      "WhatsApp initialization blocked: recovery already running"
-    );
-
-    return whatsappClient;
-  }
-
   ensureSessionFolder();
 
   isInitializing = true;
-  isReady = false;
 
-  const newClient = new Client({
+  whatsappClient = new Client({
     authStrategy: new LocalAuth({
       clientId: authClientId,
       dataPath: whatsappSessionPath,
@@ -259,17 +203,11 @@ const initWhatsappClient = () => {
     },
   });
 
-  whatsappClient = newClient;
+  const currentClient = whatsappClient;
 
-  // ====================================================
-  // QR
-  // ====================================================
-
-  newClient.on("qr", (qr) => {
-    /*
-     * Ignore delayed event from an old/stale client.
-     */
-    if (whatsappClient !== newClient) {
+  currentClient.on("qr", (qr) => {
+    // Ignore stale client events
+    if (whatsappClient !== currentClient) {
       return;
     }
 
@@ -284,29 +222,26 @@ const initWhatsappClient = () => {
     });
   });
 
-  // ====================================================
-  // AUTHENTICATED
-  // ====================================================
+  currentClient.on(
+    "authenticated",
+    () => {
+      if (whatsappClient !== currentClient) {
+        return;
+      }
 
-  newClient.on("authenticated", () => {
-    if (whatsappClient !== newClient) {
-      return;
+      console.log(
+        "WhatsApp authenticated"
+      );
+
+      console.log(
+        "WhatsApp session saved at:",
+        whatsappSessionPath
+      );
     }
+  );
 
-    console.log("WhatsApp authenticated");
-
-    console.log(
-      "WhatsApp session saved at:",
-      whatsappSessionPath
-    );
-  });
-
-  // ====================================================
-  // READY
-  // ====================================================
-
-  newClient.on("ready", () => {
-    if (whatsappClient !== newClient) {
+  currentClient.on("ready", async () => {
+    if (whatsappClient !== currentClient) {
       return;
     }
 
@@ -319,36 +254,29 @@ const initWhatsappClient = () => {
     );
   });
 
-  // ====================================================
-  // AUTH FAILURE
-  // ====================================================
+  currentClient.on(
+    "auth_failure",
+    (msg) => {
+      if (whatsappClient !== currentClient) {
+        return;
+      }
 
-  newClient.on("auth_failure", (msg) => {
-    if (whatsappClient !== newClient) {
-      return;
+      isReady = false;
+      isInitializing = false;
+      latestQr = null;
+
+      console.log(
+        "WhatsApp auth failed:",
+        msg
+      );
     }
+  );
 
-    isReady = false;
-    isInitializing = false;
-    latestQr = null;
-
-    console.log(
-      "WhatsApp auth failed:",
-      msg
-    );
-  });
-
-  // ====================================================
-  // DISCONNECTED
-  // ====================================================
-
-  newClient.on(
+  currentClient.on(
     "disconnected",
     async (reason) => {
-      /*
-       * Ignore disconnected event from an old client.
-       */
-      if (whatsappClient !== newClient) {
+      // Ignore event emitted by an already replaced client
+      if (whatsappClient !== currentClient) {
         return;
       }
 
@@ -364,7 +292,7 @@ const initWhatsappClient = () => {
       whatsappClient = null;
 
       try {
-        await newClient
+        await currentClient
           .destroy()
           .catch(() => {});
       } catch (error) {
@@ -374,25 +302,9 @@ const initWhatsappClient = () => {
         );
       }
 
-      /*
-       * Don't restart while PDF is actively using
-       * Chromium.
-       */
       if (isPdfUsingWhatsappBrowser) {
         console.log(
           "WhatsApp recovery postponed: PDF generation running"
-        );
-
-        return;
-      }
-
-      /*
-       * If recovery is already active then it will
-       * handle the situation.
-       */
-      if (restartPromise) {
-        console.log(
-          "WhatsApp disconnected during active recovery"
         );
 
         return;
@@ -409,19 +321,14 @@ const initWhatsappClient = () => {
     }
   );
 
-  // ====================================================
-  // INITIALIZE
-  // ====================================================
-
-  newClient
+  currentClient
     .initialize()
     .catch(async (error) => {
-      /*
-       * Ignore failure belonging to stale client.
-       */
+      // Ignore failure from an old client that
+      // has already been replaced.
       if (
-        whatsappClient &&
-        whatsappClient !== newClient
+        whatsappClient !== currentClient &&
+        whatsappClient !== null
       ) {
         return;
       }
@@ -435,12 +342,12 @@ const initWhatsappClient = () => {
         error.message
       );
 
-      if (whatsappClient === newClient) {
+      if (whatsappClient === currentClient) {
         whatsappClient = null;
       }
 
       try {
-        await newClient
+        await currentClient
           .destroy()
           .catch(() => {});
       } catch (destroyError) {
@@ -451,26 +358,31 @@ const initWhatsappClient = () => {
       }
 
       /*
-       * DO NOT automatically call initWhatsappClient()
-       * here.
+       * IMPORTANT:
        *
-       * Recovery/health manager controls retries.
+       * Do NOT immediately call initWhatsappClient()
+       * from here.
+       *
+       * Health check / recovery manager will perform
+       * the next controlled restart.
+       *
+       * This prevents repeated Chromium launch loops.
        */
     });
 
-  return newClient;
+  return currentClient;
 };
 
-// ======================================================
-// CENTRAL RECOVERY
-// ======================================================
+/* =========================================================
+   CENTRAL WHATSAPP SELF-RECOVERY
+========================================================= */
 
 const recoverWhatsappClient = async ({
   force = false,
   reason = "UNKNOWN",
 } = {}) => {
   /*
-   * Absolutely only ONE recovery at a time.
+   * Only one restart/recovery can run at a time.
    */
   if (restartPromise) {
     console.log(
@@ -481,28 +393,7 @@ const recoverWhatsappClient = async ({
     return restartPromise;
   }
 
-  /*
-   * Don't interfere with a legitimate startup.
-   */
-  if (isInitializing && whatsappClient) {
-    console.log(
-      "WHATSAPP RECOVERY SKIPPED => CLIENT INITIALIZING"
-    );
-
-    return whatsappClient;
-  }
-
-  /*
-   * During normal health monitoring we don't restart
-   * browser while PDF is active.
-   *
-   * force=true is used by PDF itself when it discovers
-   * the existing Chromium is already dead.
-   */
-  if (
-    isPdfUsingWhatsappBrowser &&
-    !force
-  ) {
+  if (isPdfUsingWhatsappBrowser && !force) {
     console.log(
       "WHATSAPP RECOVERY SKIPPED => PDF GENERATION RUNNING"
     );
@@ -527,10 +418,7 @@ const recoverWhatsappClient = async ({
 
   lastRestartAttempt = now;
 
-  /*
-   * Create the promise first.
-   */
-  const recoveryTask = (async () => {
+  restartPromise = (async () => {
     console.log(
       "========================================"
     );
@@ -547,11 +435,11 @@ const recoverWhatsappClient = async ({
     const oldClient = whatsappClient;
 
     /*
-     * Clear global state before destroy.
-     *
-     * Other callers are blocked by restartPromise.
+     * Clear references first so no request
+     * can continue using stale Chromium.
      */
     whatsappClient = null;
+
     isReady = false;
     isInitializing = false;
     latestQr = null;
@@ -579,220 +467,38 @@ const recoverWhatsappClient = async ({
     }
 
     /*
-     * Allow Hostinger/Linux to release the old
-     * Chromium process and profile lock.
+     * Allow Linux / Hostinger to release
+     * Chromium process/thread resources.
      */
-    await sleep(3000);
+    await sleep(2000);
 
     console.log(
       "Starting fresh WhatsApp Chromium..."
     );
 
-    /*
-     * We are intentionally inside recovery,
-     * therefore create client directly here
-     * without allowing outside callers to race us.
-     */
+    const newClient =
+      initWhatsappClient();
 
-    ensureSessionFolder();
-
-    isInitializing = true;
-    isReady = false;
-
-    const recoveredClient = new Client({
-      authStrategy: new LocalAuth({
-        clientId: authClientId,
-        dataPath: whatsappSessionPath,
-      }),
-
-      webVersionCache: {
-        type: "local",
-        path: whatsappCachePath,
-      },
-
-      puppeteer: {
-        headless: true,
-
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--disable-extensions",
-          "--disable-background-networking",
-          "--disable-background-timer-throttling",
-          "--disable-renderer-backgrounding",
-          "--disable-features=TranslateUI",
-          "--disable-ipc-flooding-protection",
-          "--single-process",
-          "--no-zygote",
-          "--no-first-run",
-        ],
-      },
-    });
-
-    whatsappClient = recoveredClient;
-
-    // ================================================
-    // RECOVERED CLIENT EVENTS
-    // ================================================
-
-    recoveredClient.on("qr", (qr) => {
-      if (
-        whatsappClient !== recoveredClient
-      ) {
-        return;
-      }
-
-      isReady = false;
-      isInitializing = false;
-      latestQr = qr;
-
-      console.log("Scan WhatsApp QR:");
-
-      qrcode.generate(qr, {
-        small: true,
-      });
-    });
-
-    recoveredClient.on(
-      "authenticated",
-      () => {
-        if (
-          whatsappClient !== recoveredClient
-        ) {
-          return;
-        }
-
-        console.log(
-          "WhatsApp authenticated"
-        );
-
-        console.log(
-          "WhatsApp session saved at:",
-          whatsappSessionPath
-        );
-      }
-    );
-
-    recoveredClient.on("ready", () => {
-      if (
-        whatsappClient !== recoveredClient
-      ) {
-        return;
-      }
-
-      isReady = true;
-      isInitializing = false;
-      latestQr = null;
-
-      console.log(
-        "WhatsApp client is ready"
+    if (!newClient) {
+      throw new Error(
+        "Unable to initialize WhatsApp client"
       );
-    });
-
-    recoveredClient.on(
-      "auth_failure",
-      (msg) => {
-        if (
-          whatsappClient !== recoveredClient
-        ) {
-          return;
-        }
-
-        isReady = false;
-        isInitializing = false;
-        latestQr = null;
-
-        console.log(
-          "WhatsApp auth failed:",
-          msg
-        );
-      }
-    );
-
-    recoveredClient.on(
-      "disconnected",
-      async (disconnectReason) => {
-        if (
-          whatsappClient !== recoveredClient
-        ) {
-          return;
-        }
-
-        isReady = false;
-        isInitializing = false;
-        latestQr = null;
-
-        console.log(
-          "WhatsApp disconnected:",
-          disconnectReason
-        );
-
-        whatsappClient = null;
-
-        try {
-          await recoveredClient
-            .destroy()
-            .catch(() => {});
-        } catch (error) {
-          console.log(
-            "WhatsApp recovered client destroy error:",
-            error.message
-          );
-        }
-      }
-    );
-
-    /*
-     * Start recovered Chromium.
-     */
-    try {
-      await recoveredClient.initialize();
-    } catch (error) {
-      isReady = false;
-      isInitializing = false;
-
-      if (
-        whatsappClient === recoveredClient
-      ) {
-        whatsappClient = null;
-      }
-
-      try {
-        await recoveredClient
-          .destroy()
-          .catch(() => {});
-      } catch (destroyError) {
-        console.log(
-          "Recovery initialize cleanup error =>",
-          destroyError.message
-        );
-      }
-
-      throw error;
     }
 
-    /*
-     * IMPORTANT:
-     *
-     * initialize() finishing does NOT necessarily mean
-     * whatsapp-web.js "ready" event has completed.
-     *
-     * Wait for the REAL ready event and CONNECTED state.
-     */
     const connected =
-      await waitForWhatsappReady(
-        recoveredClient
-      );
+      await waitForWhatsappReady();
 
     if (!connected) {
       console.log(
-        "WHATSAPP RECOVERY DID NOT REACH READY/CONNECTED STATE"
+        "WHATSAPP RECOVERY DID NOT REACH CONNECTED STATE"
       );
 
+      /*
+       * Do not immediately launch Chromium again.
+       * Health check will retry after cooldown.
+       */
       if (
-        whatsappClient === recoveredClient
+        whatsappClient === newClient
       ) {
         whatsappClient = null;
       }
@@ -801,7 +507,7 @@ const recoverWhatsappClient = async ({
       isInitializing = false;
 
       try {
-        await recoveredClient
+        await newClient
           .destroy()
           .catch(() => {});
       } catch (error) {
@@ -828,80 +534,34 @@ const recoverWhatsappClient = async ({
       "========================================"
     );
 
-    return recoveredClient;
-  })();
+    return whatsappClient;
+  })()
+    .catch((error) => {
+      console.log(
+        "WHATSAPP SELF RECOVERY FAILED =>",
+        error.message
+      );
 
-  restartPromise = recoveryTask;
-
-  try {
-    return await recoveryTask;
-  } catch (error) {
-    console.log(
-      "WHATSAPP SELF RECOVERY FAILED =>",
-      error.message
-    );
-
-    throw error;
-  } finally {
-    /*
-     * Only clear if this exact recovery is still
-     * the active one.
-     */
-    if (
-      restartPromise === recoveryTask
-    ) {
+      throw error;
+    })
+    .finally(() => {
       restartPromise = null;
-    }
-  }
+    });
+
+  return restartPromise;
 };
 
-// ======================================================
-// ENSURE CONNECTED
-// ======================================================
+/* =========================================================
+   ENSURE WORKING WHATSAPP / CHROMIUM
+========================================================= */
 
 const ensureWhatsappConnected = async ({
   forceRecovery = false,
 } = {}) => {
-  /*
-   * If recovery is already running, WAIT FOR IT.
-   */
-  if (restartPromise) {
-    console.log(
-      "WhatsApp recovery already active. Waiting..."
-    );
-
-    return restartPromise;
-  }
-
-  /*
-   * Don't destroy a normally initializing startup.
-   */
-  if (
-    isInitializing &&
-    whatsappClient
-  ) {
-    console.log(
-      "WhatsApp is currently initializing..."
-    );
-
-    const clientBeingInitialized =
-      whatsappClient;
-
-    const connected =
-      await waitForWhatsappReady(
-        clientBeingInitialized
-      );
-
-    if (connected) {
-      return clientBeingInitialized;
-    }
-
-    /*
-     * Only recover after real initialization timeout.
-     */
-  }
-
   try {
+    /*
+     * First verify Chromium itself.
+     */
     if (
       whatsappClient &&
       isWhatsappBrowserAlive()
@@ -910,10 +570,9 @@ const ensureWhatsappConnected = async ({
         .getState()
         .catch(() => null);
 
-      if (
-        state === "CONNECTED" &&
-        isReady
-      ) {
+      if (state === "CONNECTED") {
+        isReady = true;
+
         return whatsappClient;
       }
     }
@@ -936,208 +595,177 @@ const ensureWhatsappConnected = async ({
   }
 };
 
-// ======================================================
-// GET CLIENT
-// ======================================================
+/* =========================================================
+   GET CLIENT
+========================================================= */
 
 const getWhatsappClient = () => {
-  /*
-   * Existing client.
-   */
-  if (whatsappClient) {
-    return whatsappClient;
+  if (!whatsappClient) {
+    return initWhatsappClient();
   }
 
-  /*
-   * NEVER launch another Chromium during recovery.
-   */
-  if (restartPromise) {
-    console.log(
-      "getWhatsappClient: recovery running"
-    );
-
-    return null;
-  }
-
-  /*
-   * NEVER launch another Chromium while initializing.
-   */
-  if (isInitializing) {
-    console.log(
-      "getWhatsappClient: initialization running"
-    );
-
-    return whatsappClient;
-  }
-
-  return initWhatsappClient();
+  return whatsappClient;
 };
 
-// ======================================================
-// HEALTH CHECK
-// ======================================================
+/* =========================================================
+   HEALTH CHECK
+========================================================= */
 
-const forceCheckWhatsappStatus = async () => {
-  try {
-    /*
-     * PDF currently owns Chromium work.
-     */
-    if (isPdfUsingWhatsappBrowser) {
-      return {
-        ready: isReady,
-        state: "PDF_GENERATION_RUNNING",
-        qr: latestQr,
-        sessionPath: whatsappSessionPath,
-      };
-    }
+const forceCheckWhatsappStatus =
+  async () => {
+    try {
+      if (isPdfUsingWhatsappBrowser) {
+        return {
+          ready: isReady,
+          state:
+            "PDF_GENERATION_RUNNING",
+          qr: latestQr,
+          sessionPath:
+            whatsappSessionPath,
+        };
+      }
 
-    /*
-     * CENTRAL RECOVERY IS ACTIVE.
-     *
-     * Never perform another browser test or restart.
-     */
-    if (restartPromise) {
-      return {
-        ready: false,
-        state: "RECOVERING",
-        qr: latestQr,
-        sessionPath: whatsappSessionPath,
-      };
-    }
+      /*
+       * No client exists
+       */
+      if (!whatsappClient) {
+        if (
+          !isInitializing &&
+          !restartPromise
+        ) {
+          recoverWhatsappClient({
+            reason:
+              "HEALTH_CHECK_NO_CLIENT",
+          }).catch((error) => {
+            console.log(
+              "Health recovery failed =>",
+              error.message
+            );
+          });
+        }
 
-    /*
-     * CRITICAL FIX:
-     *
-     * During normal WhatsApp startup pupBrowser may
-     * temporarily not exist yet.
-     *
-     * That is INITIALIZING, NOT DEAD CHROMIUM.
-     */
-    if (isInitializing) {
-      return {
-        ready: false,
-        state: "INITIALIZING",
-        qr: latestQr,
-        sessionPath: whatsappSessionPath,
-      };
-    }
+        return {
+          ready: false,
+          state: restartPromise
+            ? "RECOVERING"
+            : "INITIALIZING",
+          qr: latestQr,
+          sessionPath:
+            whatsappSessionPath,
+        };
+      }
 
-    /*
-     * No client exists.
-     */
-    if (!whatsappClient) {
-      recoverWhatsappClient({
-        reason: "HEALTH_CHECK_NO_CLIENT",
-      }).catch((error) => {
+      /*
+       * Client exists but Chromium died.
+       */
+      if (!isWhatsappBrowserAlive()) {
+        isReady = false;
+
         console.log(
-          "Health recovery failed =>",
-          error.message
+          "WhatsApp health detected dead Chromium"
         );
-      });
+
+        if (!restartPromise) {
+          recoverWhatsappClient({
+            reason:
+              "HEALTH_CHECK_BROWSER_DEAD",
+          }).catch((error) => {
+            console.log(
+              "Dead browser recovery failed =>",
+              error.message
+            );
+          });
+        }
+
+        return {
+          ready: false,
+          state: "RECOVERING",
+          qr: latestQr,
+          sessionPath:
+            whatsappSessionPath,
+        };
+      }
+
+      /*
+       * Chromium is alive.
+       * Now check WhatsApp state.
+       */
+      const state =
+        await whatsappClient
+          .getState()
+          .catch(() => null);
+
+      if (state === "CONNECTED") {
+        isReady = true;
+
+        return {
+          ready: true,
+          state,
+          qr: null,
+          sessionPath:
+            whatsappSessionPath,
+        };
+      }
+
+      isReady = false;
+
+      /*
+       * Chromium is alive but WhatsApp isn't
+       * connected anymore.
+       *
+       * Use the centralized recovery system.
+       */
+      if (
+        !isInitializing &&
+        !restartPromise
+      ) {
+        recoverWhatsappClient({
+          reason:
+            `HEALTH_CHECK_STATE_${
+              state || "NULL"
+            }`,
+        }).catch((error) => {
+          console.log(
+            "WhatsApp state recovery failed =>",
+            error.message
+          );
+        });
+      }
 
       return {
         ready: false,
-        state: "RECOVERING",
+        state: restartPromise
+          ? "RECOVERING"
+          : state ||
+            "NOT_CONNECTED",
         qr: latestQr,
-        sessionPath: whatsappSessionPath,
+        sessionPath:
+          whatsappSessionPath,
       };
-    }
-
-    /*
-     * Client exists and initialization is complete.
-     *
-     * NOW it is safe to determine whether Chromium
-     * has actually died.
-     */
-    if (!isWhatsappBrowserAlive()) {
+    } catch (error) {
       isReady = false;
 
       console.log(
-        "WhatsApp health detected dead Chromium"
+        "WhatsApp health check error =>",
+        error.message
       );
-
-      recoverWhatsappClient({
-        reason:
-          "HEALTH_CHECK_BROWSER_DEAD",
-      }).catch((error) => {
-        console.log(
-          "Dead browser recovery failed =>",
-          error.message
-        );
-      });
 
       return {
         ready: false,
-        state: "RECOVERING",
+        state: restartPromise
+          ? "RECOVERING"
+          : "DISCONNECTED",
+        error: error.message,
         qr: latestQr,
-        sessionPath: whatsappSessionPath,
+        sessionPath:
+          whatsappSessionPath,
       };
     }
+  };
 
-    /*
-     * Browser is alive.
-     */
-    const state = await whatsappClient
-      .getState()
-      .catch(() => null);
-
-    if (
-      state === "CONNECTED" &&
-      isReady
-    ) {
-      return {
-        ready: true,
-        state: "CONNECTED",
-        qr: null,
-        sessionPath: whatsappSessionPath,
-      };
-    }
-
-    /*
-     * Browser is alive but WhatsApp isn't ready.
-     */
-    isReady = false;
-
-    recoverWhatsappClient({
-      reason: `HEALTH_CHECK_STATE_${
-        state || "NULL"
-      }`,
-    }).catch((error) => {
-      console.log(
-        "WhatsApp state recovery failed =>",
-        error.message
-      );
-    });
-
-    return {
-      ready: false,
-      state: "RECOVERING",
-      qr: latestQr,
-      sessionPath: whatsappSessionPath,
-    };
-  } catch (error) {
-    isReady = false;
-
-    console.log(
-      "WhatsApp health check error =>",
-      error.message
-    );
-
-    return {
-      ready: false,
-      state: restartPromise
-        ? "RECOVERING"
-        : "DISCONNECTED",
-      error: error.message,
-      qr: latestQr,
-      sessionPath: whatsappSessionPath,
-    };
-  }
-};
-
-// ======================================================
-// READY CHECK
-// ======================================================
+/* =========================================================
+   READY STATUS
+========================================================= */
 
 const isWhatsappReady = async () => {
   const status =
@@ -1146,15 +774,11 @@ const isWhatsappReady = async () => {
   return status.ready;
 };
 
-// ======================================================
-// QR
-// ======================================================
+/* =========================================================
+   QR
+========================================================= */
 
 const getLatestQr = () => {
-  /*
-   * Never launch Chromium while recovery/init
-   * already owns startup.
-   */
   if (
     !whatsappClient &&
     !isInitializing &&
@@ -1167,18 +791,19 @@ const getLatestQr = () => {
   return latestQr;
 };
 
-// ======================================================
-// GET ACTIVE PUPPETEER BROWSER
-// ======================================================
+/* =========================================================
+   GET ACTIVE PUPPETEER BROWSER
+========================================================= */
 
 const getWhatsappBrowser = () => {
-  /*
-   * IMPORTANT:
-   *
-   * This function only RETURNS a browser.
-   * It never starts Chromium.
-   */
   if (!whatsappClient) {
+    /*
+     * Do NOT launch a new Chromium just because
+     * somebody requested the browser reference.
+     *
+     * Recovery / PDF code will explicitly handle
+     * initialization if required.
+     */
     return null;
   }
 
@@ -1192,9 +817,9 @@ const getWhatsappBrowser = () => {
   }
 };
 
-// ======================================================
-// MANUAL RESTART
-// ======================================================
+/* =========================================================
+   MANUAL / CONTROLLED RESTART
+========================================================= */
 
 const restartWhatsappClient = async () => {
   if (isPdfUsingWhatsappBrowser) {
@@ -1205,25 +830,25 @@ const restartWhatsappClient = async () => {
     return whatsappClient;
   }
 
-  if (restartPromise) {
-    return restartPromise;
-  }
-
   return recoverWhatsappClient({
     force: true,
     reason: "MANUAL_RESTART",
   });
 };
 
-// ======================================================
-// DESTROY
-// ======================================================
+/* =========================================================
+   DESTROY CLIENT
+========================================================= */
 
 const destroyWhatsappClient = async () => {
   const clientToDestroy =
     whatsappClient;
 
+  /*
+   * Clear reference immediately.
+   */
   whatsappClient = null;
+
   isReady = false;
   isInitializing = false;
   latestQr = null;
@@ -1246,9 +871,9 @@ const destroyWhatsappClient = async () => {
   }
 };
 
-// ======================================================
-// EXPORTS
-// ======================================================
+/* =========================================================
+   EXPORTS
+========================================================= */
 
 module.exports = {
   initWhatsappClient,
