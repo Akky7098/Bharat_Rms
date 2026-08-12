@@ -61,21 +61,21 @@ const MIS_WEIGHTAGE_RULES = [
     key: "enquiry",
     title: "Enquiries",
     shortTitle: "Enquiries",
-    weightage: 15,
+    weightage: 10,
     tone: "blue",
   },
   {
     key: "meeting",
     title: "Customer Meetings",
     shortTitle: "Customer Meetings",
-    weightage: 25,
+    weightage: 15,
     tone: "purple",
   },
   {
     key: "sales_volume",
     title: "Sales Value",
     shortTitle: "Sales Value",
-    weightage: 40,
+    weightage: 25,
     tone: "green",
   },
   {
@@ -84,6 +84,13 @@ const MIS_WEIGHTAGE_RULES = [
     shortTitle: "Sales Orders",
     weightage: 20,
     tone: "orange",
+  },
+  {
+    key: "new_customer",
+    title: "New Customers",
+    shortTitle: "New Customers",
+    weightage: 30,
+    tone: "rose",
   },
 ];
 
@@ -395,6 +402,12 @@ const [chartWidth, setChartWidth] = useState(
             currentWeek?.visits ||
               0
           ),
+
+        weeklyNewCustomers:
+          Number(
+            currentWeek?.newCustomers ||
+              0
+          ),
       };
     })
     .sort(
@@ -429,6 +442,10 @@ const weeklyMisChartData = getMisChartData(misChartData);
 const sortedSalesUsers = [...misChartData].sort((a, b) => {
   if (Number(b.monthlyScore || 0) !== Number(a.monthlyScore || 0)) {
     return Number(b.monthlyScore || 0) - Number(a.monthlyScore || 0);
+  }
+
+  if (Number(b.newCustomers || 0) !== Number(a.newCustomers || 0)) {
+    return Number(b.newCustomers || 0) - Number(a.newCustomers || 0);
   }
 
   if (Number(b.approvedOrders || 0) !== Number(a.approvedOrders || 0)) {
@@ -849,10 +866,14 @@ const orderWonChartData = [...misChartData]
     </div>
   </div>
 
-  <div
-    className="ios-total-pill"
-  >
-    Total Leads: {misScoring?.totalLeads || 0}
+  <div className="ios-mis-summary-pills">
+    <div className="ios-total-pill">
+      Orders Won: {misScoring?.summary?.totalMonthlyOrdersWon || 0}
+    </div>
+
+    <div className="ios-total-pill ios-total-pill-new-customer">
+      New Customers: {misScoring?.summary?.totalNewCustomers || 0}
+    </div>
   </div>
 
   {!misChartData.length ? (
@@ -869,6 +890,9 @@ const orderWonChartData = [...misChartData]
         currentWeek?.weekScore || 0
       );
       const scoreClass = getScoreClass(monthlyScore);
+      const monthlyTarget = item?.target?.monthly || {};
+      const weeklyTarget =
+        currentWeek?.targetWithCarryForward || {};
 
       return (
         <div
@@ -902,7 +926,7 @@ const orderWonChartData = [...misChartData]
             />
           </div>
 
-          <div className="ios-score-stats">
+          <div className="ios-score-stats ios-score-stats-five">
             <MiniStat
               label="Enq"
               value={item.totalEnquiries || 0}
@@ -914,11 +938,11 @@ const orderWonChartData = [...misChartData]
             />
 
             <MiniStat
-              label="Won"
-              value={item.wonEnquiries || 0}
+              label="Meetings"
+              value={item.visitsDone || 0}
               onClick={() =>
-                openEnquiries({
-                  status: "won",
+                drillTo("coldCall", {
+                  activityType: "visit",
                   salesPersonId: item.salesPersonId,
                 })
               }
@@ -935,12 +959,12 @@ const orderWonChartData = [...misChartData]
             />
 
             <MiniStat
-              label="Visits"
-              value={item.visitsDone || 0}
+              label="New Cust."
+              value={item.newCustomers || 0}
               onClick={() =>
-                drillTo("coldCall", {
-                  activityType: "visit",
+                openSalesOrders({
                   salesPersonId: item.salesPersonId,
+                  customerType: "new",
                 })
               }
             />
@@ -948,48 +972,106 @@ const orderWonChartData = [...misChartData]
 
           <div className="ios-mis-month-card">
             <div className="ios-mis-month-head">
-              <span>Monthly Target</span>
+              <span>Monthly MIS Target</span>
 
               <b>
-                {formatCurrency(
-                  item?.target?.monthly?.salesValue || 0
-                )}
+                New Customer Weight: 30%
               </b>
             </div>
 
-            <div className="ios-mis-month-grid">
-              <MisMetric
-                label="Sales Done"
-                value={formatCurrency(
-                  item?.approvedSalesValue || 0
-                )}
-                onClick={() =>
-                  openSalesOrders({
-                    salesPersonId: item.salesPersonId,
-                  })
-                }
-              />
+            <div className="ios-mis-rule-grid">
+              <div className="ios-mis-rule-row">
+                <div>
+                  <span>Enquiry Target</span>
+                  <b>{monthlyTarget.enquiries || 0}</b>
+                </div>
 
-              <MisMetric
-                label="Enq Done"
-                value={item?.totalEnquiries || 0}
-                onClick={() =>
-                  openEnquiries({
-                    salesPersonId: item.salesPersonId,
-                  })
-                }
-              />
+                <MisMetric
+                  label="Enquiry Done"
+                  value={item.totalEnquiries || 0}
+                  onClick={() =>
+                    openEnquiries({
+                      salesPersonId: item.salesPersonId,
+                    })
+                  }
+                />
+              </div>
 
-              <MisMetric
-                label="Visit Done"
-                value={item?.visitsDone || 0}
-                onClick={() =>
-                  drillTo("attendance", {
-                    type: "visits",
-                    salesPersonId: item.salesPersonId,
-                  })
-                }
-              />
+              <div className="ios-mis-rule-row">
+                <div>
+                  <span>Meeting Target</span>
+                  <b>{monthlyTarget.visits || 0}</b>
+                </div>
+
+                <MisMetric
+                  label="Meeting Done"
+                  value={item.visitsDone || 0}
+                  onClick={() =>
+                    drillTo("coldCall", {
+                      activityType: "visit",
+                      salesPersonId: item.salesPersonId,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="ios-mis-rule-row">
+                <div>
+                  <span>Sales Target</span>
+                  <b>
+                    {formatCurrency(
+                      monthlyTarget.salesValue || 0
+                    )}
+                  </b>
+                </div>
+
+                <MisMetric
+                  label="Sales Done"
+                  value={formatCurrency(
+                    item.approvedSalesValue || 0
+                  )}
+                  onClick={() =>
+                    openSalesOrders({
+                      salesPersonId: item.salesPersonId,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="ios-mis-rule-row">
+                <div>
+                  <span>Order Target</span>
+                  <b>{monthlyTarget.orders || 0}</b>
+                </div>
+
+                <MisMetric
+                  label="Orders Done"
+                  value={item.approvedOrders || 0}
+                  onClick={() =>
+                    openSalesOrders({
+                      salesPersonId: item.salesPersonId,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="ios-mis-rule-row new-customer">
+                <div>
+                  <span>New Customer Target</span>
+                  <b>{monthlyTarget.newCustomers || 0}</b>
+                </div>
+
+                <MisMetric
+                  label="New Customers"
+                  value={item.newCustomers || 0}
+                  onClick={() =>
+                    openSalesOrders({
+                      salesPersonId: item.salesPersonId,
+                      customerType: "new",
+                    })
+                  }
+                />
+              </div>
             </div>
           </div>
 
@@ -1008,42 +1090,104 @@ const orderWonChartData = [...misChartData]
               />
             </div>
 
-            <div className="ios-mis-week-grid">
-              <MiniStat
-                label="Sales Done"
-                value={formatCurrency(
-                  currentWeek?.approvedSalesValue || 0
-                )}
-                onClick={() =>
-                  openSalesOrders({
-                    salesPersonId: item.salesPersonId,
-                    weekNo: currentWeek?.weekNo,
-                  })
-                }
-              />
+            <div className="ios-mis-rule-grid ios-mis-week-rule-grid">
+              <div className="ios-mis-rule-row">
+                <div>
+                  <span>Enq Target</span>
+                  <b>{Math.ceil(weeklyTarget.enquiries || 0)}</b>
+                </div>
 
-              <MiniStat
-                label="Enq Done"
-                value={currentWeek?.enquiries || 0}
-                onClick={() =>
-                  openEnquiries({
-                    salesPersonId: item.salesPersonId,
-                    weekNo: currentWeek?.weekNo,
-                  })
-                }
-              />
+                <MisMetric
+                  label="Enq Done"
+                  value={currentWeek?.enquiries || 0}
+                  onClick={() =>
+                    openEnquiries({
+                      salesPersonId: item.salesPersonId,
+                      weekNo: currentWeek?.weekNo,
+                    })
+                  }
+                />
+              </div>
 
-              <MiniStat
-                label="Visit Done"
-                value={currentWeek?.visits || 0}
-                onClick={() =>
-                  drillTo("coldCall", {
-                    activityType: "visit",
-                    salesPersonId: item.salesPersonId,
-                    weekNo: currentWeek?.weekNo,
-                  })
-                }
-              />
+              <div className="ios-mis-rule-row">
+                <div>
+                  <span>Meeting Target</span>
+                  <b>{Math.ceil(weeklyTarget.visits || 0)}</b>
+                </div>
+
+                <MisMetric
+                  label="Meeting Done"
+                  value={currentWeek?.visits || 0}
+                  onClick={() =>
+                    drillTo("coldCall", {
+                      activityType: "visit",
+                      salesPersonId: item.salesPersonId,
+                      weekNo: currentWeek?.weekNo,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="ios-mis-rule-row">
+                <div>
+                  <span>Sales Target</span>
+                  <b>
+                    {formatCurrency(
+                      weeklyTarget.salesValue || 0
+                    )}
+                  </b>
+                </div>
+
+                <MisMetric
+                  label="Sales Done"
+                  value={formatCurrency(
+                    currentWeek?.approvedSalesValue || 0
+                  )}
+                  onClick={() =>
+                    openSalesOrders({
+                      salesPersonId: item.salesPersonId,
+                      weekNo: currentWeek?.weekNo,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="ios-mis-rule-row">
+                <div>
+                  <span>Order Target</span>
+                  <b>{Math.ceil(weeklyTarget.orders || 0)}</b>
+                </div>
+
+                <MisMetric
+                  label="Orders Done"
+                  value={currentWeek?.approvedOrders || 0}
+                  onClick={() =>
+                    openSalesOrders({
+                      salesPersonId: item.salesPersonId,
+                      weekNo: currentWeek?.weekNo,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="ios-mis-rule-row new-customer">
+                <div>
+                  <span>New Customer Target</span>
+                  <b>{Math.ceil(weeklyTarget.newCustomers || 0)}</b>
+                </div>
+
+                <MisMetric
+                  label="New Customers"
+                  value={currentWeek?.newCustomers || 0}
+                  onClick={() =>
+                    openSalesOrders({
+                      salesPersonId: item.salesPersonId,
+                      customerType: "new",
+                      weekNo: currentWeek?.weekNo,
+                    })
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -1304,431 +1448,515 @@ const orderWonChartData = [...misChartData]
       </p>
     </div>
 
-    <button
-      type="button"
-      className="mis-total-pill drill-pill"
-      onClick={() => openSalesOrders({ view: "ordersWon" })}
-    >
-      Orders Won: {misScoring?.summary?.totalMonthlyOrdersWon || 0}
-    </button>
-  </div>
-
- <div className="mis-weightage-summary">
-  <div className="mis-weightage-summary-title">
-    <span>MIS WEIGHTAGE</span>
-    <strong>Performance Scoring Formula</strong>
-  </div>
-
-  <div className="mis-weightage-summary-items">
-    {MIS_WEIGHTAGE_RULES.map((rule) => (
-      <div
-        key={rule.key}
-        className={`mis-weightage-summary-item ${rule.tone}`}
+    <div className="mis-header-pills">
+      <button
+        type="button"
+        className="mis-total-pill drill-pill"
+        onClick={() => openSalesOrders({ view: "ordersWon" })}
       >
-        <span>{rule.shortTitle}</span>
-        <strong>{rule.weightage}%</strong>
-      </div>
-    ))}
+        Orders Won: {misScoring?.summary?.totalMonthlyOrdersWon || 0}
+      </button>
+
+      <button
+        type="button"
+        className="mis-total-pill mis-new-customer-pill drill-pill"
+        onClick={() =>
+          openSalesOrders({
+            customerType: "new",
+          })
+        }
+      >
+        New Customers: {misScoring?.summary?.totalNewCustomers || 0}
+      </button>
+    </div>
   </div>
-</div>
+
+  <div className="mis-weightage-summary">
+    <div className="mis-weightage-summary-title">
+      <span>MIS WEIGHTAGE</span>
+      <strong>Performance Scoring Formula</strong>
+    </div>
+
+    <div className="mis-weightage-summary-items">
+      {MIS_WEIGHTAGE_RULES.map((rule) => (
+        <div
+          key={rule.key}
+          className={`mis-weightage-summary-item ${rule.tone}`}
+        >
+          <span>{rule.shortTitle}</span>
+          <strong>{rule.weightage}%</strong>
+        </div>
+      ))}
+    </div>
+  </div>
 
   {!misChartData.length ? (
-  <div className="cashflow-empty">
-    No MIS scoring data available
-  </div>
-) : (
-  <>
-    <div className="mis-employee-grid mis-employee-grid-premium">
-      {misChartData.map((item, index) => {
-        const monthlyScore = getMonthlyScore(item);
-        const currentWeek = getFrontendCurrentWeek(item);
-        const weekLabel =
-          currentWeek?.label || getWeekLabel(item);
-        const weeklyScore = Number(
-          currentWeek?.weekScore || 0
-        );
-        const scoreClass = getScoreClass(monthlyScore);
-        const monthlyTarget = item?.target?.monthly || {};
-        
+    <div className="cashflow-empty">
+      No MIS scoring data available
+    </div>
+  ) : (
+    <>
+      <div className="mis-employee-grid mis-employee-grid-premium">
+        {misChartData.map((item, index) => {
+          const monthlyScore = getMonthlyScore(item);
+          const currentWeek = getFrontendCurrentWeek(item);
+          const weekLabel =
+            currentWeek?.label || getWeekLabel(item);
+          const weeklyScore = Number(
+            currentWeek?.weekScore || 0
+          );
+          const scoreClass = getScoreClass(monthlyScore);
+          const monthlyTarget = item?.target?.monthly || {};
+          const weeklyTarget =
+            currentWeek?.targetWithCarryForward || {};
 
-        return (
-          <div
-            key={item.salesPersonId || index}
-            className={`mis-employee-card ${scoreClass}`}
-          >
-            <div className="mis-employee-top">
-              <button
-                type="button"
-                className="mis-person-drill"
-                onClick={() =>
-                  openEnquiries({
-                    salesPersonId: item.salesPersonId,
-                    salesPersonName: item.name,
-                  })
-                }
-              >
-                <span className="mis-rank">
-                  #{index + 1}
-                </span>
-
-                <h4>{item.name}</h4>
-              </button>
-
-              <strong>{monthlyScore}/100</strong>
-            </div>
-
-            <p className="mis-monthly-label">
-              Monthly MIS Score
-            </p>
-
-            <div className="mis-progress">
-              <span
-                style={{
-                  width: `${Math.min(monthlyScore, 100)}%`,
-                }}
-              />
-            </div>
-
-            <div className="mis-employee-stats">
-              <MisStat
-                value={item.totalEnquiries || 0}
-                label="Enquiries"
-                onClick={() =>
-                  openEnquiries({
-                    salesPersonId: item.salesPersonId,
-                  })
-                }
-              />
-
-              <MisStat
-                value={item.wonEnquiries || 0}
-                label="Won"
-                onClick={() =>
-                  openEnquiries({
-                    status: "won",
-                    salesPersonId: item.salesPersonId,
-                  })
-                }
-              />
-
-              <MisStat
-                value={item.approvedOrders || 0}
-                label="Orders"
-                onClick={() =>
-                  openSalesOrders({
-                    salesPersonId: item.salesPersonId,
-                  })
-                }
-              />
-
-              <MisStat
-                value={item.visitsDone || 0}
-                label="Visits"
-                onClick={() =>
-                  drillTo("attendance", {
-                    type: "visits",
-                    salesPersonId: item.salesPersonId,
-                  })
-                }
-              />
-            </div>
-
-            <div className="mis-month-target-box">
-              <div className="mis-target-title">
-                <span>Monthly Target</span>
-              </div>
-
-              <div className="mis-target-grid mis-target-grid-two-column">
-  <div>
-    <span>Sales Target</span>
-    <b>
-      {formatCurrency(
-        monthlyTarget.salesValue || 0
-      )}
-    </b>
-  </div>
-
-  <MisMetric
-    label="Sales Done"
-    value={formatCurrency(
-      item.approvedSalesValue || 0
-    )}
-    onClick={() =>
-      openSalesOrders({
-        salesPersonId: item.salesPersonId,
-      })
-    }
-  />
-
-  <div>
-    <span>Enquiry Target</span>
-    <b>{monthlyTarget.enquiries || 0}</b>
-  </div>
-
-  <MisMetric
-    label="Enquiry Done"
-    value={item.totalEnquiries || 0}
-    onClick={() =>
-      openEnquiries({
-        salesPersonId: item.salesPersonId,
-      })
-    }
-  />
-
-  <div>
-    <span>Visit Target</span>
-    <b>{monthlyTarget.visits || 0}</b>
-  </div>
-
-  <MisMetric
-    label="Visit Done"
-    value={item.visitsDone || 0}
-    onClick={() =>
-      drillTo("attendance", {
-        type: "visits",
-        salesPersonId: item.salesPersonId,
-      })
-    }
-  />
-</div>
-            </div>
-
-            <div className="mis-week-premium">
-              <div className="mis-week-title">
-                <div>
-                  <span>
-                    {currentWeek?.label || weekLabel}
+          return (
+            <div
+              key={item.salesPersonId || index}
+              className={`mis-employee-card ${scoreClass}`}
+            >
+              <div className="mis-employee-top">
+                <button
+                  type="button"
+                  className="mis-person-drill"
+                  onClick={() =>
+                    openEnquiries({
+                      salesPersonId: item.salesPersonId,
+                      salesPersonName: item.name,
+                    })
+                  }
+                >
+                  <span className="mis-rank">
+                    #{index + 1}
                   </span>
 
-                  <strong>
-                    {Number(
-                      currentWeek?.weekScore ||
-                        weeklyScore ||
-                        0
-                    )}
-                    /100
-                  </strong>
-                </div>
+                  <h4>{item.name}</h4>
+                </button>
 
-                <b>Weekly Score</b>
+                <strong>{monthlyScore}/100</strong>
               </div>
 
-              <div className="mis-week-progress">
+              <p className="mis-monthly-label">
+                Monthly MIS Score
+              </p>
+
+              <div className="mis-progress">
                 <span
                   style={{
-                    width: `${Math.min(
-                      Number(
-                        currentWeek?.weekScore ||
-                          weeklyScore ||
-                          0
-                      ),
-                      100
-                    )}%`,
-                    background: getMisBarColor(
-                      Number(
-                        currentWeek?.weekScore ||
-                          weeklyScore ||
-                          0
-                      )
-                    ),
+                    width: `${Math.min(monthlyScore, 100)}%`,
                   }}
                 />
               </div>
 
-             <div className="mis-week-target-grid mis-week-target-grid-two-column">
-  <div>
-    <span>Sales Target</span>
-    <b>
-      {formatCurrency(
-        currentWeek?.targetWithCarryForward
-          ?.salesValue || 0
-      )}
-    </b>
-  </div>
+              <div className="mis-employee-stats mis-employee-stats-new-rule">
+                <MisStat
+                  value={item.totalEnquiries || 0}
+                  label="Enquiries"
+                  onClick={() =>
+                    openEnquiries({
+                      salesPersonId: item.salesPersonId,
+                    })
+                  }
+                />
 
-  <MisMetric
-    label="Sales Done"
-    value={formatCurrency(
-      currentWeek?.approvedSalesValue || 0
-    )}
-    onClick={() =>
-      openSalesOrders({
-        salesPersonId: item.salesPersonId,
-        weekNo: currentWeek?.weekNo,
-      })
-    }
-  />
+                <MisStat
+                  value={item.visitsDone || 0}
+                  label="Meetings"
+                  onClick={() =>
+                    drillTo("coldCall", {
+                      activityType: "visit",
+                      salesPersonId: item.salesPersonId,
+                    })
+                  }
+                />
 
-  <div>
-    <span>Enq Target</span>
-    <b>
-      {Math.ceil(
-        currentWeek?.targetWithCarryForward
-          ?.enquiries || 0
-      )}
-    </b>
-  </div>
+                <MisStat
+                  value={item.approvedOrders || 0}
+                  label="Orders"
+                  onClick={() =>
+                    openSalesOrders({
+                      salesPersonId: item.salesPersonId,
+                    })
+                  }
+                />
 
-  <MisMetric
-    label="Enq Done"
-    value={currentWeek?.enquiries || 0}
-    onClick={() =>
-      openEnquiries({
-        salesPersonId: item.salesPersonId,
-        weekNo: currentWeek?.weekNo,
-      })
-    }
-  />
+                <MisStat
+                  value={item.newCustomers || 0}
+                  label="New Customers"
+                  onClick={() =>
+                    openSalesOrders({
+                      salesPersonId: item.salesPersonId,
+                      customerType: "new",
+                    })
+                  }
+                />
+              </div>
 
-  <div>
-    <span>Visit Target</span>
-    <b>
-      {Math.ceil(
-        currentWeek?.targetWithCarryForward
-          ?.visits || 0
-      )}
-    </b>
-  </div>
+              <div className="mis-month-target-box">
+                <div className="mis-target-title">
+                  <span>Monthly Target vs Done</span>
+                </div>
 
-  <MisMetric
-    label="Visit Done"
-    value={currentWeek?.visits || 0}
-    onClick={() =>
-      drillTo("attendance", {
-        type: "visits",
-        salesPersonId: item.salesPersonId,
-        weekNo: currentWeek?.weekNo,
-      })
-    }
-  />
-</div>
+                <div className="mis-target-grid mis-target-grid-two-column mis-target-grid-new-rule">
+                  <div>
+                    <span>Enquiry Target · 10%</span>
+                    <b>{monthlyTarget.enquiries || 0}</b>
+                  </div>
+
+                  <MisMetric
+                    label="Enquiry Done"
+                    value={item.totalEnquiries || 0}
+                    onClick={() =>
+                      openEnquiries({
+                        salesPersonId: item.salesPersonId,
+                      })
+                    }
+                  />
+
+                  <div>
+                    <span>Meeting Target · 15%</span>
+                    <b>{monthlyTarget.visits || 0}</b>
+                  </div>
+
+                  <MisMetric
+                    label="Meeting Done"
+                    value={item.visitsDone || 0}
+                    onClick={() =>
+                      drillTo("coldCall", {
+                        activityType: "visit",
+                        salesPersonId: item.salesPersonId,
+                      })
+                    }
+                  />
+
+                  <div>
+                    <span>Sales Target · 25%</span>
+                    <b>
+                      {formatCurrency(
+                        monthlyTarget.salesValue || 0
+                      )}
+                    </b>
+                  </div>
+
+                  <MisMetric
+                    label="Sales Done"
+                    value={formatCurrency(
+                      item.approvedSalesValue || 0
+                    )}
+                    onClick={() =>
+                      openSalesOrders({
+                        salesPersonId: item.salesPersonId,
+                      })
+                    }
+                  />
+
+                  <div>
+                    <span>Order Target · 20%</span>
+                    <b>{monthlyTarget.orders || 0}</b>
+                  </div>
+
+                  <MisMetric
+                    label="Orders Done"
+                    value={item.approvedOrders || 0}
+                    onClick={() =>
+                      openSalesOrders({
+                        salesPersonId: item.salesPersonId,
+                      })
+                    }
+                  />
+
+                  <div className="mis-new-customer-target">
+                    <span>New Customer Target · 30%</span>
+                    <b>{monthlyTarget.newCustomers || 0}</b>
+                  </div>
+
+                  <MisMetric
+                    label="New Customers"
+                    value={item.newCustomers || 0}
+                    onClick={() =>
+                      openSalesOrders({
+                        salesPersonId: item.salesPersonId,
+                        customerType: "new",
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="mis-week-premium">
+                <div className="mis-week-title">
+                  <div>
+                    <span>
+                      {currentWeek?.label || weekLabel}
+                    </span>
+
+                    <strong>
+                      {Number(
+                        currentWeek?.weekScore ||
+                          weeklyScore ||
+                          0
+                      )}
+                      /100
+                    </strong>
+                  </div>
+
+                  <b>Weekly Score</b>
+                </div>
+
+                <div className="mis-week-progress">
+                  <span
+                    style={{
+                      width: `${Math.min(
+                        Number(
+                          currentWeek?.weekScore ||
+                            weeklyScore ||
+                            0
+                        ),
+                        100
+                      )}%`,
+                      background: getMisBarColor(
+                        Number(
+                          currentWeek?.weekScore ||
+                            weeklyScore ||
+                            0
+                        )
+                      ),
+                    }}
+                  />
+                </div>
+
+                <div className="mis-week-target-grid mis-week-target-grid-two-column mis-week-target-grid-new-rule">
+                  <div>
+                    <span>Enq Target · 10%</span>
+                    <b>
+                      {Math.ceil(
+                        weeklyTarget.enquiries || 0
+                      )}
+                    </b>
+                  </div>
+
+                  <MisMetric
+                    label="Enq Done"
+                    value={currentWeek?.enquiries || 0}
+                    onClick={() =>
+                      openEnquiries({
+                        salesPersonId: item.salesPersonId,
+                        weekNo: currentWeek?.weekNo,
+                      })
+                    }
+                  />
+
+                  <div>
+                    <span>Meeting Target · 15%</span>
+                    <b>
+                      {Math.ceil(
+                        weeklyTarget.visits || 0
+                      )}
+                    </b>
+                  </div>
+
+                  <MisMetric
+                    label="Meeting Done"
+                    value={currentWeek?.visits || 0}
+                    onClick={() =>
+                      drillTo("coldCall", {
+                        activityType: "visit",
+                        salesPersonId: item.salesPersonId,
+                        weekNo: currentWeek?.weekNo,
+                      })
+                    }
+                  />
+
+                  <div>
+                    <span>Sales Target · 25%</span>
+                    <b>
+                      {formatCurrency(
+                        weeklyTarget.salesValue || 0
+                      )}
+                    </b>
+                  </div>
+
+                  <MisMetric
+                    label="Sales Done"
+                    value={formatCurrency(
+                      currentWeek?.approvedSalesValue || 0
+                    )}
+                    onClick={() =>
+                      openSalesOrders({
+                        salesPersonId: item.salesPersonId,
+                        weekNo: currentWeek?.weekNo,
+                      })
+                    }
+                  />
+
+                  <div>
+                    <span>Order Target · 20%</span>
+                    <b>
+                      {Math.ceil(
+                        weeklyTarget.orders || 0
+                      )}
+                    </b>
+                  </div>
+
+                  <MisMetric
+                    label="Orders Done"
+                    value={currentWeek?.approvedOrders || 0}
+                    onClick={() =>
+                      openSalesOrders({
+                        salesPersonId: item.salesPersonId,
+                        weekNo: currentWeek?.weekNo,
+                      })
+                    }
+                  />
+
+                  <div className="mis-new-customer-target">
+                    <span>New Customer Target · 30%</span>
+                    <b>
+                      {Math.ceil(
+                        weeklyTarget.newCustomers || 0
+                      )}
+                    </b>
+                  </div>
+
+                  <MisMetric
+                    label="New Customers"
+                    value={currentWeek?.newCustomers || 0}
+                    onClick={() =>
+                      openSalesOrders({
+                        salesPersonId: item.salesPersonId,
+                        customerType: "new",
+                        weekNo: currentWeek?.weekNo,
+                      })
+                    }
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
-
-    <div className="mis-chart-compact">
-      <div className="mis-weekly-chart-head">
-        <div>
-          <span>TEAM COMPETITION</span>
-
-          <h4>
-            Salesperson Weekly MIS Score Comparison
-          </h4>
-
-          <p>
-            Current-week score for every sales employee
-          </p>
-        </div>
+          );
+        })}
       </div>
 
-      {!weeklyMisChartData.length ? (
-        <div className="cashflow-empty">
-          No weekly MIS data available
+      <div className="mis-chart-compact">
+        <div className="mis-weekly-chart-head">
+          <div>
+            <span>TEAM COMPETITION</span>
+
+            <h4>
+              Salesperson Weekly MIS Score Comparison
+            </h4>
+
+            <p>
+              Current-week score using Enquiry 10%, Meetings 15%, Sales Value 25%, Orders 20% and New Customers 30%
+            </p>
+          </div>
         </div>
-      ) : (
-        <ResponsiveContainer
-          width="100%"
-          height={Math.max(
-            300,
-            weeklyMisChartData.length * 55
-          )}
-        >
-          <BarChart
-            data={weeklyMisChartData}
-            layout="vertical"
-            margin={{
-              top: 18,
-              right: 55,
-              left: 35,
-              bottom: 10,
-            }}
+
+        {!weeklyMisChartData.length ? (
+          <div className="cashflow-empty">
+            No weekly MIS data available
+          </div>
+        ) : (
+          <ResponsiveContainer
+            width="100%"
+            height={Math.max(
+              300,
+              weeklyMisChartData.length * 55
+            )}
           >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              opacity={0.15}
-            />
-
-            <XAxis
-              type="number"
-              domain={[0, 100]}
-              allowDecimals={false}
-              tick={{
-                fontSize: 12,
+            <BarChart
+              data={weeklyMisChartData}
+              layout="vertical"
+              margin={{
+                top: 18,
+                right: 55,
+                left: 35,
+                bottom: 10,
               }}
-            />
-
-            <YAxis
-              type="category"
-              dataKey="name"
-              width={120}
-              interval={0}
-              tick={{
-                fontSize: 12,
-                fontWeight: 700,
-              }}
-            />
-
-            <Tooltip
-              formatter={(value, name, props) => {
-                if (name === "weeklyScore") {
-                  return [
-                    `${Number(value || 0)}/100`,
-                    `${
-                      props?.payload?.currentWeekLabel ||
-                      "Current Week"
-                    } MIS Score`,
-                  ];
-                }
-
-                return [value, name];
-              }}
-              labelFormatter={(label) =>
-                `Sales Person: ${label}`
-              }
-            />
-
-            <Bar
-              dataKey="weeklyScore"
-              radius={[0, 12, 12, 0]}
-              label={{
-                position: "right",
-                formatter: (value) =>
-                  `${Number(value || 0)}/100`,
-                fontSize: 11,
-                fontWeight: 800,
-                fill: "#334155",
-              }}
-              onClick={(entry) =>
-                openEnquiries({
-                  salesPersonId: entry?.salesPersonId,
-                  salesPersonName: entry?.name,
-                  sourceType: "weeklyMis",
-                })
-              }
             >
-              {weeklyMisChartData.map(
-                (entry, index) => (
-                  <Cell
-                    key={
-                      entry.salesPersonId || index
-                    }
-                    fill={getMisBarColor(
-                      entry.weeklyScore
-                    )}
-                    className="drill-chart-cell"
-                  />
-                )
-              )}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-    </div>
-  </>
-)}
-        </div>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                opacity={0.15}
+              />
+
+              <XAxis
+                type="number"
+                domain={[0, 100]}
+                allowDecimals={false}
+                tick={{
+                  fontSize: 12,
+                }}
+              />
+
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={120}
+                interval={0}
+                tick={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              />
+
+              <Tooltip
+                formatter={(value, name, props) => {
+                  if (name === "weeklyScore") {
+                    return [
+                      `${Number(value || 0)}/100`,
+                      `${
+                        props?.payload?.currentWeekLabel ||
+                        "Current Week"
+                      } MIS Score`,
+                    ];
+                  }
+
+                  return [value, name];
+                }}
+                labelFormatter={(label) =>
+                  `Sales Person: ${label}`
+                }
+              />
+
+              <Bar
+                dataKey="weeklyScore"
+                radius={[0, 12, 12, 0]}
+                label={{
+                  position: "right",
+                  formatter: (value) =>
+                    `${Number(value || 0)}/100`,
+                  fontSize: 11,
+                  fontWeight: 800,
+                  fill: "#334155",
+                }}
+                onClick={(entry) =>
+                  openEnquiries({
+                    salesPersonId: entry?.salesPersonId,
+                    salesPersonName: entry?.name,
+                    sourceType: "weeklyMis",
+                  })
+                }
+              >
+                {weeklyMisChartData.map(
+                  (entry, index) => (
+                    <Cell
+                      key={
+                        entry.salesPersonId || index
+                      }
+                      fill={getMisBarColor(
+                        entry.weeklyScore
+                      )}
+                      className="drill-chart-cell"
+                    />
+                  )
+                )}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </>
+  )}
+</div>
 
         {cashflow && (
           <div className="cashflow-section">

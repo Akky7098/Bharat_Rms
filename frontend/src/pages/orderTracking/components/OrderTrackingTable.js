@@ -1,371 +1,382 @@
 import React from "react";
 
 import {
+  ArrowUpRight,
+  CalendarDays,
+  Factory,
+  PackageOpen,
+  Truck,
+} from "lucide-react";
+
+import {
   formatDate,
-  getStatusTone,
-  humanize,
+  formatMaterial,
+  formatOrderDate,
+  getOrderHealth,
+  getStatusMeta,
+  prettyProcessType,
+  prettySupplyCondition,
 } from "../orderTrackingUtils";
 
-const getMaterialPreview = (
-  value = ""
-) => {
-  const normalized = String(
-    value || ""
-  )
-    .replace(/\r/g, "")
-    .replace(/\n+/g, " · ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!normalized) {
-    return "Material details not available.";
-  }
-
-  if (normalized.length <= 155) {
-    return normalized;
-  }
-
-  return `${normalized.slice(
-    0,
-    152
-  )}...`;
-};
-
-const getLatestUpdate = (
-  tracking = {}
-) => {
-  if (tracking.latestUpdateText) {
-    return tracking.latestUpdateText;
-  }
-
-  if (tracking.currentStatus) {
-    return `Order is currently ${humanize(
-      tracking.currentStatus
-    ).toLowerCase()}.`;
-  }
-
-  return "No update available.";
-};
-
-const getStatusLabel = (
-  tracking = {}
-) =>
-  humanize(
-    tracking.currentStatus ||
-      "order_approved"
-  );
-
 const OrderTrackingTable = ({
-  records = [],
-  requestingId = "",
-  openingId = "",
+  items = [],
+  loading = false,
   onOpen,
-  onRequestUpdate,
 }) => {
-  const handleRowOpen = (
-    event,
-    tracking
-  ) => {
-    const interactiveElement =
-      event.target.closest(
-        "button, a, input, select, textarea"
-      );
+  if (loading) {
+    return (
+      <div className="ot-empty-state">
+        <div className="ot-loader" />
+        <strong>
+          Loading latest tracking orders...
+        </strong>
+      </div>
+    );
+  }
 
-    if (interactiveElement) {
-      return;
-    }
-
-    onOpen?.(tracking);
-  };
-
-  const handleRowKeyDown = (
-    event,
-    tracking
-  ) => {
-    if (
-      event.key === "Enter" ||
-      event.key === " "
-    ) {
-      event.preventDefault();
-      onOpen?.(tracking);
-    }
-  };
+  if (!items.length) {
+    return (
+      <div className="ot-empty-state">
+        <PackageOpen size={36} />
+        <strong>
+          No tracking orders found
+        </strong>
+        <span>
+          Try changing your filters
+          or click Refresh & Sync.
+        </span>
+      </div>
+    );
+  }
 
   return (
-    <div className="ot-table-wrap">
-      <table className="ot-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Tracking No.</th>
-            <th>Sales Person</th>
-            <th>Company / Sales Order</th>
-            <th>PO Number</th>
-            <th>Material</th>
-            <th>Current Status</th>
-            <th>Latest Factory Update</th>
-            <th>Expected Dispatch</th>
-            <th>Transporter</th>
-            <th>Action</th>
-          </tr>
-        </thead>
+    <>
+      <div className="ot-table-wrap">
+        <table className="ot-orders-table">
+          <thead>
+            <tr>
+              <th>Customer / Order</th>
+              <th>Order Date</th>
+              <th>Material</th>
+              <th>Process</th>
+              <th>Current Stage</th>
+              <th>Progress</th>
+              <th>Est. Ready</th>
+              <th>Est. Delivery</th>
+              <th>Health</th>
+              <th />
+            </tr>
+          </thead>
 
-        <tbody>
-          {records.map((tracking) => {
-            const requesting =
-              requestingId ===
-              tracking._id;
+          <tbody>
+            {items.map(
+              (tracking) => {
+                const statusMeta =
+                  getStatusMeta(
+                    tracking.currentStatus
+                  );
 
-            const opening =
-              openingId ===
-              tracking._id;
+                const health =
+                  getOrderHealth(
+                    tracking
+                  );
 
-            const chatClosed =
-              tracking.chatStatus ===
-              "closed";
+                const progress =
+                  Math.min(
+                    Math.max(
+                      Number(
+                        tracking.progressPercentage || 0
+                      ),
+                      0
+                    ),
+                    100
+                  );
+
+                return (
+                  <tr
+                    key={tracking._id}
+                    onClick={() =>
+                      onOpen?.(
+                        tracking._id
+                      )
+                    }
+                  >
+                    <td>
+                      <div className="ot-order-cell">
+                        <div className="ot-order-cell__icon">
+                          <Factory size={16} />
+                        </div>
+
+                        <div className="ot-order-cell__content">
+                          <strong>
+                            {tracking.companyName ||
+                              "Customer"}
+                          </strong>
+
+                          <span>
+                            PO{" "}
+                            {tracking.poNumber ||
+                              "—"}
+                            {"  •  "}
+                            SO{" "}
+                            {tracking.salesOrderNo ||
+                              "—"}
+                          </span>
+
+                          <small>
+                            {tracking.trackingNumber}
+                          </small>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="ot-order-date-cell">
+                        <CalendarDays size={13} />
+                        <strong>
+                          {formatOrderDate(
+                            tracking
+                          )}
+                        </strong>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="ot-material-cell">
+                        {formatMaterial(
+                          tracking.material
+                        )}
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="ot-type-cell">
+                        <div>
+                          <span className="ot-order-type">
+                            {tracking.orderType}
+                          </span>
+
+                          <strong>
+                            {prettyProcessType(
+                              tracking.processType
+                            )}
+                          </strong>
+                        </div>
+
+                        <small>
+                          {prettySupplyCondition(
+                            tracking.supplyCondition
+                          )}
+                        </small>
+                      </div>
+                    </td>
+
+                    <td>
+                      <span
+                        className={`ot-status-pill ${statusMeta.className}`}
+                      >
+                        <i />
+                        {tracking.currentStatusLabel ||
+                          statusMeta.label}
+                      </span>
+                    </td>
+
+                    <td>
+                      <div className="ot-progress-cell">
+                        <div>
+                          <strong>
+                            {progress}%
+                          </strong>
+                        </div>
+
+                        <div className="ot-progress">
+                          <span
+                            style={{
+                              width:
+                                `${progress}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="ot-date-cell">
+                        <CalendarDays size={13} />
+                        {formatDate(
+                          tracking.estimatedReadyDate
+                        )}
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="ot-date-cell">
+                        <Truck size={13} />
+                        {formatDate(
+                          tracking.estimatedDeliveryDate
+                        )}
+                      </div>
+                    </td>
+
+                    <td>
+                      <span
+                        className={`ot-health ${health.className}`}
+                      >
+                        {health.label}
+                      </span>
+                    </td>
+
+                    <td>
+                      <button
+                        type="button"
+                        className="ot-open-row"
+                        aria-label="Open tracking"
+                      >
+                        <ArrowUpRight size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              }
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="ot-mobile-list">
+        {items.map(
+          (tracking) => {
+            const statusMeta =
+              getStatusMeta(
+                tracking.currentStatus
+              );
+
+            const health =
+              getOrderHealth(
+                tracking
+              );
+
+            const progress =
+              Math.min(
+                Math.max(
+                  Number(
+                    tracking.progressPercentage || 0
+                  ),
+                  0
+                ),
+                100
+              );
 
             return (
-              <tr
+              <button
+                type="button"
+                className="ot-mobile-order"
                 key={tracking._id}
-                className={`ot-table-row ${
-                  tracking.updateRequested
-                    ? "has-update-request"
-                    : ""
-                } ${
-                  opening
-                    ? "is-opening"
-                    : ""
-                }`}
-                tabIndex={0}
-                role="button"
-                onClick={(event) =>
-                  handleRowOpen(
-                    event,
-                    tracking
+                onClick={() =>
+                  onOpen?.(
+                    tracking._id
                   )
                 }
-                onKeyDown={(event) =>
-                  handleRowKeyDown(
-                    event,
-                    tracking
-                  )
-                }
-                aria-label={`Open tracking details for ${
-                  tracking.companyName ||
-                  "order"
-                }`}
               >
-                <td className="ot-date-cell">
-                  <strong>
-                    {formatDate(
-                      tracking.createdAt
-                    )}
-                  </strong>
-
-                  <span>
-                    {formatDate(
-                      tracking.createdAt,
-                      true
-                    )
-                      .split(",")
-                      .slice(-1)
-                      .join("")
-                      .trim()}
-                  </span>
-                </td>
-
-                <td className="ot-tracking-cell">
-                  <button
-                    type="button"
-                    className="ot-table-link"
-                    onClick={() =>
-                      onOpen?.(tracking)
-                    }
-                    disabled={opening}
-                  >
-                    {opening
-                      ? "Opening..."
-                      : tracking.trackingNumber ||
-                        "-"}
-                  </button>
-
-                  {tracking.updateRequested && (
-                    <span className="ot-requested-badge">
-                      Update Requested
-                    </span>
-                  )}
-                </td>
-
-                <td>
-                  <strong>
-                    {tracking.salesPersonName ||
-                      "-"}
-                  </strong>
-
-                  <span>
-                    {tracking.salesPersonEmail ||
-                      ""}
-                  </span>
-                </td>
-
-                <td className="ot-company-cell">
-                  <strong>
-                    {tracking.companyName ||
-                      "-"}
-                  </strong>
-
-                  <span>
-                    SO:{" "}
-                    {tracking.salesOrderNo ||
-                      "-"}
-                  </span>
-
-                  {tracking.shippingAddress && (
+                <div className="ot-mobile-order__top">
+                  <div>
                     <small>
-                      {tracking.shippingAddress}
+                      {tracking.trackingNumber}
                     </small>
-                  )}
-                </td>
 
-                <td>
+                    <strong>
+                      {tracking.companyName}
+                    </strong>
+
+                    <span>
+                      PO{" "}
+                      {tracking.poNumber ||
+                        "—"}
+                    </span>
+                  </div>
+
+                  <ArrowUpRight size={18} />
+                </div>
+
+                <div className="ot-mobile-order__date">
+                  Order / Approval:{" "}
                   <strong>
-                    {tracking.poNumber ||
-                      "-"}
+                    {formatOrderDate(
+                      tracking
+                    )}
                   </strong>
-                </td>
+                </div>
 
-                <td className="ot-material-cell">
+                <div className="ot-mobile-order__material">
+                  {formatMaterial(
+                    tracking.material
+                  )}
+                </div>
+
+                <div className="ot-mobile-order__meta">
                   <span>
-                    {getMaterialPreview(
-                      tracking.materialSnapshot
+                    {tracking.orderType}
+                  </span>
+
+                  <span>
+                    {prettyProcessType(
+                      tracking.processType
                     )}
                   </span>
-                </td>
+                </div>
 
-                <td className="ot-status-cell">
+                <div className="ot-mobile-order__status">
                   <span
-                    className={`ot-status-pill ${getStatusTone(
-                      tracking.currentStatus
-                    )}`}
+                    className={`ot-status-pill ${statusMeta.className}`}
                   >
-                    {getStatusLabel(
-                      tracking
-                    )}
+                    <i />
+                    {tracking.currentStatusLabel ||
+                      statusMeta.label}
                   </span>
 
-                  <small>
-                    Chat:{" "}
-                    {humanize(
-                      tracking.chatStatus ||
-                        "open"
-                    )}
-                  </small>
-                </td>
-
-                <td className="ot-latest-cell">
-                  <strong>
-                    {getLatestUpdate(
-                      tracking
-                    )}
-                  </strong>
-
-                  <span>
-                    {formatDate(
-                      tracking.latestUpdateAt,
-                      true
-                    )}
+                  <span
+                    className={`ot-health ${health.className}`}
+                  >
+                    {health.label}
                   </span>
+                </div>
 
-                  {tracking.latestUpdateBy
-                    ?.name && (
-                    <small>
-                      By{" "}
-                      {
-                        tracking
-                          .latestUpdateBy
-                          .name
-                      }
-                    </small>
-                  )}
-                </td>
+                <div className="ot-progress ot-progress--mobile">
+                  <span
+                    style={{
+                      width:
+                        `${progress}%`,
+                    }}
+                  />
+                </div>
 
-                <td>
-                  <strong>
-                    {formatDate(
-                      tracking.expectedDispatchDate
-                    )}
-                  </strong>
-
-                  {tracking.expectedReadyDate && (
-                    <span>
-                      Ready:{" "}
+                <div className="ot-mobile-order__dates">
+                  <div>
+                    <span>Ready</span>
+                    <strong>
                       {formatDate(
-                        tracking.expectedReadyDate
-                      )}
-                    </span>
-                  )}
-                </td>
-
-                <td>
-                  <strong>
-                    {tracking.transporter
-                      ?.transporterName ||
-                      "-"}
-                  </strong>
-
-                  {tracking.dispatchDateTime && (
-                    <span>
-                      {formatDate(
-                        tracking.dispatchDateTime,
+                        tracking.estimatedReadyDate,
                         true
                       )}
-                    </span>
-                  )}
-                </td>
-
-                <td>
-                  <div className="ot-table-actions">
-                    <button
-                      type="button"
-                      className="ot-view-action"
-                      onClick={() =>
-                        onOpen?.(tracking)
-                      }
-                      disabled={opening}
-                    >
-                      {opening
-                        ? "Opening..."
-                        : "Open"}
-                    </button>
-
-                    <button
-                      type="button"
-                      className="ot-request-action"
-                      onClick={() =>
-                        onRequestUpdate?.(
-                          tracking
-                        )
-                      }
-                      disabled={
-                        requesting ||
-                        tracking.updateRequested ||
-                        chatClosed
-                      }
-                    >
-                      {tracking.updateRequested
-                        ? "Requested"
-                        : requesting
-                        ? "Requesting..."
-                        : "Request Update"}
-                    </button>
+                    </strong>
                   </div>
-                </td>
-              </tr>
+
+                  <div>
+                    <span>Delivery</span>
+                    <strong>
+                      {formatDate(
+                        tracking.estimatedDeliveryDate,
+                        true
+                      )}
+                    </strong>
+                  </div>
+                </div>
+              </button>
             );
-          })}
-        </tbody>
-      </table>
-    </div>
+          }
+        )}
+      </div>
+    </>
   );
 };
 

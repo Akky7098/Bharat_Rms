@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { getAllEnquiries } from "../services/enquiryService";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { getAllEnquiries, getLostEnquiryReasons } from "../services/enquiryService";
 import { getSalesPersons } from "../services/salesOrderService";
 import "./EnquiryList.css";
 import EnquiryForm from "./EnquiryForm";
@@ -8,6 +9,16 @@ import WorkflowUpdate from "./WorkflowUpdate";
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
   "https://bharatspecialsteels.bharatspecialsteels.com";
+
+const LOST_REASON_COLORS = [
+  "#7f1d1d",
+  "#991b1b",
+  "#b91c1c",
+  "#dc2626",
+  "#ef4444",
+  "#f87171",
+  "#fca5a5",
+];
 
 
 const formatDateInputValue = (date) => {
@@ -40,6 +51,10 @@ const EnquiryList = ({ dashboardFilters }) => {
 
   const [enquiries, setEnquiries] = useState([]);
   const [salesPersons, setSalesPersons] = useState([]);
+  const [lostReasonSummary, setLostReasonSummary] = useState({
+    totalLost: 0,
+    reasons: [],
+  });
   const [showForm, setShowForm] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
@@ -115,6 +130,36 @@ setSummary(response.summary || {});
     }
   }, [filters]);
 
+  const fetchLostReasonSummary = useCallback(async () => {
+    try {
+      const params = {};
+
+      if (filters.fromDate) params.fromDate = filters.fromDate;
+      if (filters.toDate) params.toDate = filters.toDate;
+      if (isAdmin && filters.salesPersonId) {
+        params.salesPersonId = filters.salesPersonId;
+      }
+
+      const response = await getLostEnquiryReasons(params);
+      const result =
+        response?.data?.data ||
+        response?.data ||
+        response ||
+        {};
+
+      setLostReasonSummary({
+        totalLost: Number(result?.totalLost || 0),
+        reasons: Array.isArray(result?.reasons) ? result.reasons : [],
+      });
+    } catch (error) {
+      console.log(error);
+      setLostReasonSummary({
+        totalLost: 0,
+        reasons: [],
+      });
+    }
+  }, [filters.fromDate, filters.toDate, filters.salesPersonId, isAdmin]);
+
    const fetchSalesPersons = useCallback(async () => {
     try {
       const data = await getSalesPersons();
@@ -131,13 +176,20 @@ setSummary(response.summary || {});
   }, [fetchEnquiries]);
 
   useEffect(() => {
+    fetchLostReasonSummary();
+  }, [fetchLostReasonSummary]);
+
+  useEffect(() => {
     if (isAdmin) fetchSalesPersons();
   }, [isAdmin, fetchSalesPersons]);
 
   const iosRefreshAll = async () => {
     try {
       setIosRefreshing(true);
-      await fetchEnquiries();
+      await Promise.all([
+        fetchEnquiries(),
+        fetchLostReasonSummary(),
+      ]);
     } finally {
       setIosRefreshing(false);
     }
@@ -496,6 +548,17 @@ const handleStatusCardClick = (status) => {
     status: prev.status === status && status !== "all" ? "all" : status,
   }));
 };
+
+const handleLostReasonDrillDown = (reason) => {
+  if (!reason) return;
+
+  setFilters((prev) => ({
+    ...prev,
+    page: 1,
+    status: "lost",
+    lostReason: reason,
+  }));
+};
   return (
     <div className={`enquiry-page-root ${isAdmin ? "admin-view" : "user-view"}`}>
       <div className="enquiry-pwa-shell">
@@ -553,6 +616,13 @@ const handleStatusCardClick = (status) => {
           </div>
 
           <div className="ios-enquiry-content">
+  <LostReasonDonut
+    data={lostReasonSummary?.reasons || []}
+    totalLost={lostReasonSummary?.totalLost || 0}
+    onReasonClick={handleLostReasonDrillDown}
+    mobile
+  />
+
   {showIosFilters && (
     <div className="ios-enquiry-filter-overlay">
       <div className="ios-enquiry-filter-card">
@@ -824,6 +894,11 @@ const handleStatusCardClick = (status) => {
     </button>
   ))}
 </div>
+<LostReasonDonut
+  data={lostReasonSummary?.reasons || []}
+  totalLost={lostReasonSummary?.totalLost || 0}
+  onReasonClick={handleLostReasonDrillDown}
+/>
 <div className="enquiry-filter-card">
   <div className="enquiry-filter-grid">
     <div className="filter-field">
@@ -1166,6 +1241,98 @@ const handleStatusCardClick = (status) => {
     </div>
   );
 };
+
+function LostReasonDonut({ data, totalLost, onReasonClick, mobile = false }) {
+  const chartData = Array.isArray(data) ? data : [];
+
+  return (
+    <div className={`lost-reason-chart-card ${mobile ? "mobile" : ""}`}>
+      <div className="lost-reason-chart-head">
+        <div>
+          <span>LOST ENQUIRIES</span>
+          <strong>Lost Reason Analysis</strong>
+          <p>Click a reason to open only those lost enquiries.</p>
+        </div>
+
+        <b>{Number(totalLost || 0)}</b>
+      </div>
+
+      {!chartData.length ? (
+        <div className="lost-reason-chart-empty">
+          No lost reason data available
+        </div>
+      ) : (
+        <div className="lost-reason-chart-layout">
+          <div className="lost-reason-donut-wrap">
+            <ResponsiveContainer width="100%" height={mobile ? 190 : 210}>
+              <PieChart>
+                <Pie
+  data={chartData}
+  dataKey="count"
+  nameKey="label"
+  cx="50%"
+  cy="50%"
+  innerRadius={mobile ? 28 : 30}
+  outerRadius={mobile ? 42 : 46}
+  paddingAngle={3}
+  onClick={(entry) => onReasonClick?.(entry?.reason)}
+>
+  {chartData.map((entry, index) => (
+    <Cell
+      key={entry.reason || index}
+      fill={
+        LOST_REASON_COLORS[
+          index % LOST_REASON_COLORS.length
+        ]
+      }
+      className="lost-reason-chart-slice"
+    />
+  ))}
+</Pie>
+
+                <Tooltip
+                  formatter={(value, name, props) => [
+                    `${Number(value || 0)} (${Number(props?.payload?.percentage || 0)}%)`,
+                    name,
+                  ]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+
+            <div className="lost-reason-donut-center">
+              <strong>{Number(totalLost || 0)}</strong>
+              <span>Lost</span>
+            </div>
+          </div>
+
+          <div className="lost-reason-chart-legend">
+            {chartData.map((item, index) => (
+              <button
+                key={item.reason || index}
+                type="button"
+                onClick={() => onReasonClick?.(item.reason)}
+              >
+                <span
+                  className="lost-reason-legend-dot"
+                  style={{
+                    background: LOST_REASON_COLORS[index % LOST_REASON_COLORS.length],
+                  }}
+                />
+
+                <div>
+                  <strong>{item.label || "-"}</strong>
+                  <small>
+                    {Number(item.count || 0)} · {Number(item.percentage || 0)}%
+                  </small>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function EnquiryDetailModal({
   enquiry,

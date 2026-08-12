@@ -1,204 +1,126 @@
-.ot-page,
-.ot-page * {
+:root {
+  --ot-bg: #f4f7fb;
+  --ot-card: #ffffff;
+  --ot-ink: #162033;
+  --ot-muted: #66758d;
+  --ot-line: #e6ebf2;
+  --ot-blue: #2468f2;
+  --ot-blue-dark: #174fc4;
+  --ot-blue-soft: #edf4ff;
+  --ot-green: #15966b;
+  --ot-green-soft: #e9f8f2;
+  --ot-yellow: #b47a00;
+  --ot-yellow-soft: #fff4ce;
+  --ot-orange: #c76519;
+  --ot-orange-soft: #fff0e4;
+  --ot-purple: #6653d6;
+  --ot-purple-soft: #f0edff;
+  --ot-violet: #8748be;
+  --ot-violet-soft: #f7edff;
+  --ot-cyan: #087f9a;
+  --ot-cyan-soft: #e8f9fc;
+  --ot-red: #c43d4a;
+  --ot-red-soft: #ffedf0;
+  --ot-indigo: #4d54cb;
+  --ot-indigo-soft: #eef0ff;
+  --ot-teal: #087f77;
+  --ot-teal-soft: #e7f8f5;
+  --ot-gray: #687487;
+  --ot-gray-soft: #f1f4f7;
+  --ot-shadow: 0 12px 35px rgba(34, 52, 84, 0.07);
+  --ot-shadow-lg: 0 24px 70px rgba(28, 45, 76, 0.1);
+}
+
+* {
   box-sizing: border-box;
 }
 
 .ot-page {
-  width: 100%;
   min-height: 100vh;
-  background: #f3f7f4;
-  color: #17251d;
+  padding: 18px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(36, 104, 242, 0.1), transparent 32%),
+    radial-gradient(circle at 0% 100%, rgba(21, 150, 107, 0.05), transparent 26%),
+    var(--ot-bg);
+  color: var(--ot-ink);
 }
 
-.ot-page button,
-.ot-page input,
-.ot-page select,
-.ot-page textarea {
-  font: inherit;
+.ot-eyebrow,
+.ot-section-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ot-blue);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.ot-page-header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
+.ot-page-head,
+.ot-list-card,
+.ot-detail-hero,
+.ot-journey-strip-card,
+.ot-metric-card,
+.ot-timeline-card,
+.ot-side-card {
+  border: 1px solid var(--ot-line);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--ot-shadow);
+}
+
+.ot-page-head {
   display: flex;
-  min-height: 84px;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 14px 24px;
-  border-bottom: 1px solid #dce7e0;
-  background: rgba(255, 255, 255, 0.97);
-  backdrop-filter: blur(14px);
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 18px 20px;
+  border-radius: 18px;
 }
 
-.ot-page-title {
-  display: flex;
-  align-items: center;
-  gap: 13px;
+.ot-page-head h1 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.03em;
 }
 
-.ot-page-title > button {
-  width: 40px;
-  height: 40px;
-  border: 1px solid #cadbd0;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #225f3e;
-  cursor: pointer;
-  font-size: 18px;
-  font-weight: 900;
-}
-
-.ot-page-title span {
-  display: block;
-  color: #267248;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-}
-
-.ot-page-title h1 {
-  margin: 2px 0 0;
-  color: #14281d;
-  font-size: 25px;
-  line-height: 1.15;
-}
-
-.ot-page-title p {
-  margin: 4px 0 0;
-  color: #6d7e74;
-  font-size: 12px;
-}
-
-.ot-header-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.ot-header-actions button {
-  min-height: 40px;
-  padding: 9px 14px;
-  border: 1px solid #bed0c4;
-  border-radius: 11px;
-  background: #ffffff;
-  color: #235f3e;
-  cursor: pointer;
+.ot-page-head p {
+  margin: 5px 0 0;
+  color: var(--ot-muted);
   font-size: 11px;
-  font-weight: 850;
 }
 
-.ot-page-content {
-  width: 100%;
-  padding: 20px 24px 28px;
-}
-
-.ot-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(
-    9,
-    minmax(120px, 1fr)
-  );
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.ot-summary-grid button {
-  min-width: 120px;
-  padding: 14px;
-  border: 1px solid #d9e4de;
-  border-radius: 15px;
-  background: #ffffff;
-  cursor: pointer;
-  text-align: left;
-  box-shadow: 0 8px 22px rgba(17, 36, 25, 0.05);
-}
-
-.ot-summary-grid button span {
-  display: block;
-  min-height: 28px;
-  color: #687a70;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.ot-summary-grid button strong {
-  display: block;
-  margin-top: 7px;
-  color: #173626;
-  font-size: 23px;
-  font-weight: 900;
-}
-
-.ot-filter-panel {
-  display: grid;
-  grid-template-columns:
-    minmax(260px, 1.8fr)
-    repeat(3, minmax(150px, 0.7fr))
-    auto;
-  gap: 10px;
-  margin: 16px 0;
-  padding: 13px;
-  border: 1px solid #dce7e0;
-  border-radius: 16px;
-  background: #ffffff;
-}
-
-.ot-filter-panel input,
-.ot-filter-panel select {
-  width: 100%;
-  min-height: 42px;
-  padding: 10px 12px;
-  border: 1px solid #cfdcd4;
-  border-radius: 10px;
-  outline: none;
-  background: #ffffff;
-  color: #203429;
-  font-size: 11.5px;
-}
-
-.ot-filter-panel input:focus,
-.ot-filter-panel select:focus {
-  border-color: #2b7d4f;
-  box-shadow: 0 0 0 3px rgba(43, 125, 79, 0.1);
-}
-
-.ot-filter-panel button {
-  min-height: 42px;
-  padding: 10px 14px;
-  border: 1px solid #c8d7ce;
-  border-radius: 10px;
-  background: #f7faf8;
-  color: #315f46;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 850;
-}
-
-.ot-page-state {
-  display: flex;
-  min-height: 280px;
+.ot-btn {
+  min-height: 38px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  gap: 10px;
-  border: 1px solid #dce7e0;
-  border-radius: 18px;
-  background: #ffffff;
-  color: #61736a;
+  gap: 7px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 13px;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
 }
 
-.ot-page-state > span {
-  font-size: 32px;
+.ot-btn--secondary {
+  border: 1px solid var(--ot-line);
+  color: var(--ot-ink);
+  background: #fff;
 }
 
-.ot-loader {
-  width: 34px;
-  height: 34px;
-  border: 3px solid #d7e5dc;
-  border-top-color: #29784d;
-  border-radius: 50%;
+.ot-btn--primary {
+  color: #fff;
+  background: linear-gradient(135deg, #3476ff, #1e56d8);
+}
+
+.ot-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ot-spin {
   animation: ot-spin 0.8s linear infinite;
 }
 
@@ -208,6270 +130,1967 @@
   }
 }
 
-.ot-table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  border: 1px solid #d8e3dc;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 12px 30px rgba(17, 36, 25, 0.06);
-}
-
-.ot-table {
-  width: 100%;
-  min-width: 1450px;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-}
-
-.ot-table th {
-  padding: 14px 12px;
-  background: #163d2a;
-  color: #ffffff;
-  text-align: left;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
-}
-
-.ot-table th:nth-child(1) {
-  width: 155px;
-}
-
-.ot-table th:nth-child(2) {
-  width: 210px;
-}
-
-.ot-table th:nth-child(3) {
-  width: 180px;
-}
-
-.ot-table th:nth-child(4) {
-  width: 145px;
-}
-
-.ot-table th:nth-child(5) {
-  width: 265px;
-}
-
-.ot-table th:nth-child(6) {
-  width: 230px;
-}
-
-.ot-table th:nth-child(7) {
-  width: 150px;
-}
-
-.ot-table th:nth-child(8) {
-  width: 140px;
-}
-
-.ot-table th:nth-child(9) {
-  width: 150px;
-}
-
-.ot-table td {
-  padding: 14px 12px;
-  border-bottom: 1px solid #e5ece8;
-  vertical-align: top;
-  color: #2b3f34;
-  font-size: 11px;
-  line-height: 1.45;
-}
-
-.ot-table tbody tr:hover {
-  background: #f5faf7;
-}
-
-.ot-table td > strong,
-.ot-table td > span,
-.ot-table td > small {
-  display: block;
-}
-
-.ot-table td > strong {
-  color: #182f22;
-  font-size: 11.5px;
-  font-weight: 850;
-}
-
-.ot-table td > span {
-  margin-top: 5px;
-  color: #64756c;
-}
-
-.ot-table-link {
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: #187041;
-  cursor: pointer;
-  font-size: 11.5px;
-  font-weight: 900;
-}
-
-.ot-material-cell span {
-  display: -webkit-box !important;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  white-space: pre-line;
-}
-
-.ot-latest-cell strong {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.ot-requested-text {
-  margin-top: 7px;
-  color: #a66412;
-  font-weight: 850;
-}
-
-.ot-table-actions {
-  display: grid;
-  gap: 8px;
-}
-
-.ot-table-actions button {
-  min-height: 34px;
-  padding: 8px 9px;
-  border: 1px solid #bcd0c3;
-  border-radius: 9px;
-  background: #ffffff;
-  color: #255e3e;
-  cursor: pointer;
-  font-size: 10px;
-  font-weight: 850;
-}
-
-.ot-table-actions button:disabled,
-.ot-page button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.ot-status-pill {
-  display: inline-flex !important;
-  width: fit-content;
-  align-items: center;
-  justify-content: center;
-  margin-top: 8px;
-  padding: 6px 9px;
-  border-radius: 999px;
-  font-size: 9.5px;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
-.ot-status-pill.tone-green {
-  background: #e8f6ed;
-  color: #1d7042;
-}
-
-.ot-status-pill.tone-blue {
-  background: #eaf2fc;
-  color: #295f96;
-}
-
-.ot-status-pill.tone-orange {
-  background: #fff3df;
-  color: #986214;
-}
-
-.ot-status-pill.tone-red {
-  background: #ffebeb;
-  color: #a93434;
-}
-
-.ot-status-pill.tone-neutral {
-  background: #edf1ef;
-  color: #57665e;
-}
-
-.ot-mobile-view {
-  display: none;
-}
-
-.ot-mobile-card {
-  overflow: hidden;
-  border: 1px solid #d8e4dc;
-  border-radius: 17px;
-  background: #ffffff;
-  box-shadow: 0 10px 26px rgba(17, 36, 25, 0.07);
-}
-
-.ot-mobile-card-main {
-  width: 100%;
-  padding: 15px;
-  border: none;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-}
-
-.ot-mobile-card-main header {
+.ot-alert {
   display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.ot-alert--error,
+.ot-inline-error {
+  border: 1px solid #f6cbd0;
+  color: var(--ot-red);
+  background: var(--ot-red-soft);
+}
+
+.ot-list-card {
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.ot-list-toolbar {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
+  padding: 15px 17px;
+  border-bottom: 1px solid var(--ot-line);
 }
 
-.ot-mobile-card-main header > div {
-  min-width: 0;
+.ot-list-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.ot-mobile-card-main header > div > span {
-  color: #28764a;
-  font-size: 9.5px;
+.ot-list-title__icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--ot-blue);
+  background: var(--ot-blue-soft);
+}
+
+.ot-list-title h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.ot-search {
+  width: min(450px, 45vw);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  border: 1px solid var(--ot-line);
+  border-radius: 11px;
+  color: #8c97a9;
+  background: #fbfcfe;
+}
+
+.ot-search:focus-within {
+  border-color: #b4c7f7;
+  box-shadow: 0 0 0 4px rgba(36, 104, 242, 0.06);
+  background: #fff;
+}
+
+.ot-search input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ot-ink);
+  font-size: 11px;
+}
+
+.ot-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 50px;
+  padding: 8px 17px;
+  border-bottom: 1px solid var(--ot-line);
+  background: #fafbfd;
+}
+
+.ot-filter-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 2px;
+  color: var(--ot-muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.ot-filters select {
+  height: 33px;
+  min-width: 140px;
+  padding: 0 9px;
+  border: 1px solid var(--ot-line);
+  border-radius: 9px;
+  outline: 0;
+  color: #445067;
+  background: #fff;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.ot-table-wrap {
+  overflow-x: auto;
+}
+
+.ot-orders-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+}
+
+.ot-orders-table thead {
+  background: #f7f9fc;
+}
+
+.ot-orders-table th {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--ot-line);
+  color: #7e899b;
+  text-align: left;
+  font-size: 8px;
   font-weight: 900;
   letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.ot-mobile-card-main h3 {
-  margin: 5px 0 0;
-  color: #193025;
-  font-size: 16px;
-  line-height: 1.3;
+.ot-orders-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #edf1f5;
+  vertical-align: middle;
 }
 
-.ot-mobile-card-main header p {
-  margin: 5px 0 0;
-  color: #6a7b71;
-  font-size: 10.5px;
+.ot-orders-table tbody tr {
+  cursor: pointer;
+  transition: 0.16s ease;
 }
 
-.ot-mobile-card-main header .ot-status-pill {
-  flex: 0 0 auto;
-  max-width: 120px;
-  margin-top: 0;
+.ot-orders-table tbody tr:hover {
+  background: #f8faff;
 }
 
-.ot-mobile-meta {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+.ot-order-cell {
+  min-width: 225px;
+  display: flex;
+  align-items: center;
   gap: 9px;
-  margin-top: 13px;
 }
 
-.ot-mobile-meta > div {
-  padding: 9px;
-  border: 1px solid #e2ebe5;
-  border-radius: 11px;
-  background: #f8fbf9;
-}
-
-.ot-mobile-meta span {
-  display: block;
-  color: #74847b;
-  font-size: 8.5px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.ot-mobile-meta strong {
-  display: block;
-  margin-top: 4px;
-  color: #263d30;
-  font-size: 10.5px;
-}
-
-.ot-latest-box {
-  margin-top: 12px;
-  padding: 11px;
-  border: 1px solid #dde8e1;
-  border-radius: 11px;
-  background: #f6faf7;
-}
-
-.ot-latest-box > span {
-  color: #286d47;
-  font-size: 9px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.ot-latest-box p {
-  margin: 6px 0 0;
-  color: #40554a;
-  font-size: 10.5px;
-  line-height: 1.5;
-}
-
-.ot-latest-box small {
-  display: block;
-  margin-top: 6px;
-  color: #7a8981;
-  font-size: 9px;
-}
-
-.ot-requested-label {
-  margin-top: 10px;
-  padding: 8px;
-  border-radius: 9px;
-  background: #fff3df;
-  color: #9a6414;
-  font-size: 10px;
-  font-weight: 850;
-  text-align: center;
-}
-
-.ot-mobile-card footer {
+.ot-order-cell__icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 11px 15px 14px;
-  border-top: 1px solid #e5ece8;
-  background: #f8fbf9;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--ot-blue);
+  background: var(--ot-blue-soft);
 }
 
-.ot-mobile-card footer button {
-  min-height: 39px;
-  border: 1px solid #bfd1c5;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #265d3e;
+.ot-order-cell__content strong,
+.ot-order-cell__content span,
+.ot-order-cell__content small {
+  display: block;
+}
+
+.ot-order-cell__content strong {
+  max-width: 210px;
+  overflow: hidden;
   font-size: 10px;
-  font-weight: 850;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ot-order-cell__content span {
+  margin-top: 2px;
+  color: var(--ot-muted);
+  font-size: 8px;
+}
+
+.ot-order-cell__content small {
+  margin-top: 2px;
+  color: #9aa4b4;
+  font-size: 7px;
+}
+
+.ot-order-date-cell,
+.ot-date-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #4f5d72;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.ot-order-date-cell strong {
+  font-size: 8px;
+}
+
+.ot-material-cell {
+  max-width: 230px;
+  color: #455166;
+  font-size: 8px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.ot-type-cell {
+  min-width: 145px;
+}
+
+.ot-type-cell > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ot-type-cell strong {
+  font-size: 8px;
+}
+
+.ot-type-cell small {
+  display: block;
+  margin-top: 3px;
+  color: var(--ot-muted);
+  font-size: 7px;
+}
+
+.ot-order-type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 21px;
+  padding: 0 7px;
+  border-radius: 999px;
+  color: #3c59ad;
+  background: #eef3ff;
+  font-size: 7px;
+  font-weight: 900;
+}
+
+.ot-status-pill,
+.ot-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ot-status-pill i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ot-status-pill.is-yellow {
+  color: var(--ot-yellow);
+  background: var(--ot-yellow-soft);
+}
+
+.ot-status-pill.is-orange {
+  color: var(--ot-orange);
+  background: var(--ot-orange-soft);
+}
+
+.ot-status-pill.is-purple {
+  color: var(--ot-purple);
+  background: var(--ot-purple-soft);
+}
+
+.ot-status-pill.is-violet {
+  color: var(--ot-violet);
+  background: var(--ot-violet-soft);
+}
+
+.ot-status-pill.is-cyan {
+  color: var(--ot-cyan);
+  background: var(--ot-cyan-soft);
+}
+
+.ot-status-pill.is-blue {
+  color: var(--ot-blue);
+  background: var(--ot-blue-soft);
+}
+
+.ot-status-pill.is-indigo {
+  color: var(--ot-indigo);
+  background: var(--ot-indigo-soft);
+}
+
+.ot-status-pill.is-green {
+  color: var(--ot-green);
+  background: var(--ot-green-soft);
+}
+
+.ot-status-pill.is-teal {
+  color: var(--ot-teal);
+  background: var(--ot-teal-soft);
+}
+
+.ot-status-pill.is-red {
+  color: var(--ot-red);
+  background: var(--ot-red-soft);
+}
+
+.ot-status-pill.is-gray {
+  color: var(--ot-gray);
+  background: var(--ot-gray-soft);
+}
+
+.ot-progress-cell {
+  min-width: 95px;
+}
+
+.ot-progress-cell > div:first-child {
+  margin-bottom: 4px;
+  text-align: right;
+  font-size: 8px;
+}
+
+.ot-progress {
+  overflow: hidden;
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: #e9edf3;
+}
+
+.ot-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2b6df8, #19a87a);
+}
+
+.ot-health.is-healthy {
+  color: #14845f;
+  background: var(--ot-green-soft);
+}
+
+.ot-health.is-warning {
+  color: #9d6c00;
+  background: var(--ot-yellow-soft);
+}
+
+.ot-health.is-danger {
+  color: #b83d49;
+  background: var(--ot-red-soft);
+}
+
+.ot-health.is-neutral {
+  color: var(--ot-gray);
+  background: var(--ot-gray-soft);
+}
+
+.ot-open-row {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ot-line);
+  border-radius: 9px;
+  color: #59677c;
+  background: #fff;
+  cursor: pointer;
+}
+
+.ot-orders-table tbody tr:hover .ot-open-row {
+  color: #fff;
+  border-color: var(--ot-blue);
+  background: var(--ot-blue);
 }
 
 .ot-pagination {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 16px;
-  margin-top: 18px;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 17px;
+  border-top: 1px solid var(--ot-line);
+  background: #fafbfd;
+  color: var(--ot-muted);
+  font-size: 9px;
+}
+
+.ot-pagination > div {
+  display: flex;
+  gap: 7px;
 }
 
 .ot-pagination button {
-  min-height: 38px;
-  padding: 8px 14px;
-  border: 1px solid #c5d5cb;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #285f40;
-  cursor: pointer;
-  font-size: 10.5px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--ot-line);
+  border-radius: 8px;
+  padding: 0 9px;
+  background: #fff;
+  font-size: 8px;
   font-weight: 850;
+  cursor: pointer;
 }
 
-.ot-pagination span {
-  color: #5f7167;
-  font-size: 11px;
-  font-weight: 800;
+.ot-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.ot-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
+.ot-mobile-list {
+  display: none;
+}
+
+.ot-empty-state,
+.ot-detail-loading {
+  min-height: 330px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 18px;
-  background: rgba(12, 24, 17, 0.62);
-  backdrop-filter: blur(5px);
+  gap: 8px;
+  color: var(--ot-muted);
+  text-align: center;
 }
 
-.ot-modal-card,
-.ot-detail-modal {
-  width: min(1180px, 100%);
-  max-height: calc(100vh - 36px);
-  overflow: hidden;
-  border-radius: 20px;
-  background: #ffffff;
-  box-shadow: 0 28px 75px rgba(5, 15, 9, 0.35);
+.ot-empty-state strong,
+.ot-detail-loading strong {
+  color: var(--ot-ink);
+  font-size: 11px;
 }
 
-.ot-status-modal {
-  width: min(820px, 100%);
+.ot-empty-state span {
+  font-size: 9px;
 }
 
-.ot-modal-header,
-.ot-detail-header {
+.ot-loader {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e5eaf2;
+  border-top-color: var(--ot-blue);
+  border-radius: 50%;
+  animation: ot-spin 0.8s linear infinite;
+}
+
+.ot-loader--large {
+  width: 38px;
+  height: 38px;
+}
+
+.ot-detail {
+  width: 100%;
+  max-width: 1540px;
+  margin: 0 auto;
+}
+
+.ot-detail-nav {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  border-bottom: 1px solid #dce6df;
-  background: #173f2b;
-  color: #ffffff;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
-.ot-modal-header span,
-.ot-detail-header > div:first-child > span {
-  font-size: 9.5px;
+.ot-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: #3e4b61;
+  font-size: 9px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.ot-detail-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, #ffffff 0%, #f7faff 55%, #eff5ff 100%);
+}
+
+.ot-detail-hero__badges {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.ot-track-number {
+  color: var(--ot-blue);
+  font-size: 8px;
   font-weight: 900;
   letter-spacing: 0.07em;
 }
 
-.ot-modal-header h2,
-.ot-detail-header h2 {
-  margin: 5px 0 0;
-  font-size: 20px;
+.ot-order-type--hero {
+  min-height: 23px;
 }
 
-.ot-modal-header p,
-.ot-detail-header p {
-  margin: 5px 0 0;
-  color: #cfe1d7;
-  font-size: 10.5px;
+.ot-detail-hero h1 {
+  margin: 9px 0 0;
+  font-size: clamp(25px, 3vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
 }
 
-.ot-modal-header > button,
-.ot-detail-head-actions > button {
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+.ot-detail-hero__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+  color: var(--ot-muted);
+  font-size: 8px;
+}
+
+.ot-detail-hero__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ot-detail-hero__meta i {
+  color: #c0c8d5;
+}
+
+.ot-sales-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 11px;
+  padding: 7px 9px;
+  border: 1px solid #dfe7f5;
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  cursor: pointer;
-  font-size: 22px;
+  background: rgba(255, 255, 255, 0.78);
 }
 
-.ot-modal-body {
-  max-height: calc(100vh - 180px);
-  overflow-y: auto;
-  padding: 18px 20px;
-}
-
-.ot-form-grid {
+.ot-sales-owner__avatar {
+  width: 29px;
+  height: 29px;
   display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-  gap: 13px;
-}
-
-.ot-form-grid label,
-.ot-form-full {
-  display: block;
-}
-
-.ot-form-grid label > span,
-.ot-form-full > span {
-  display: block;
-  margin-bottom: 6px;
-  color: #50645a;
-  font-size: 10px;
-  font-weight: 850;
-}
-
-.ot-form-grid input,
-.ot-form-grid select,
-.ot-form-full textarea {
-  width: 100%;
-  min-height: 42px;
-  padding: 10px 11px;
-  border: 1px solid #cbd9d0;
-  border-radius: 10px;
-  outline: none;
-  background: #ffffff;
-  color: #20352a;
-  font-size: 11.5px;
-}
-
-.ot-form-full {
-  margin-top: 14px;
-}
-
-.ot-form-full textarea {
-  resize: vertical;
-  line-height: 1.5;
-}
-
-.ot-form-section {
-  margin-top: 16px;
-  padding: 14px;
-  border: 1px solid #dce7e0;
-  border-radius: 14px;
-  background: #f8fbf9;
-}
-
-.ot-section-title {
-  margin-bottom: 12px;
-}
-
-.ot-section-title strong,
-.ot-section-title small {
-  display: block;
-}
-
-.ot-section-title strong {
-  color: #234c35;
-  font-size: 12px;
-}
-
-.ot-section-title small {
-  margin-top: 4px;
-  color: #718179;
-  font-size: 9.5px;
-}
-
-.ot-upload-box {
-  margin-top: 14px;
-  padding: 13px;
-  border: 1px solid #dce7e0;
-  border-radius: 13px;
-  background: #fafcfb;
-}
-
-.ot-upload-box > div:first-child strong,
-.ot-upload-box > div:first-child small {
-  display: block;
-}
-
-.ot-upload-box > div:first-child strong {
-  color: #234d36;
-  font-size: 11.5px;
-}
-
-.ot-upload-box > div:first-child small {
-  margin-top: 4px;
-  color: #718179;
-  font-size: 9.5px;
-}
-
-.ot-upload-box > input {
-  margin-top: 10px;
-}
-
-.ot-selected-files {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 9px;
-}
-
-.ot-selected-files span {
-  max-width: 230px;
-  overflow: hidden;
-  padding: 6px 8px;
-  border-radius: 8px;
-  background: #eaf3ed;
-  color: #315b42;
-  font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ot-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 14px 20px;
-  border-top: 1px solid #dce6df;
-  background: #f8faf9;
-}
-
-.ot-modal-footer button,
-.ot-primary-button {
-  min-height: 40px;
-  padding: 9px 15px;
-  border: 1px solid #bdd0c3;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #275f40;
-  cursor: pointer;
-  font-size: 10.5px;
-  font-weight: 850;
-}
-
-.ot-primary-button {
-  border-color: #1d7143 !important;
-  background: #1d7143 !important;
-  color: #ffffff !important;
-}
-
-.ot-detail-head-actions {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.ot-detail-head-actions .ot-status-pill {
-  margin-top: 0;
-}
-
-.ot-detail-body {
-  display: grid;
-  grid-template-columns:
-    300px minmax(0, 1fr);
-  min-height: 0;
-  max-height: calc(100vh - 120px);
-}
-
-.ot-detail-sidebar {
-  overflow-y: auto;
-  padding: 14px;
-  border-right: 1px solid #dfe8e2;
-  background: #f5f9f6;
-}
-
-.ot-summary-card {
-  margin-bottom: 12px;
-  padding: 13px;
-  border: 1px solid #dce7e0;
-  border-radius: 13px;
-  background: #ffffff;
-}
-
-.ot-summary-card h3 {
-  margin: 0 0 11px;
-  color: #1e4b32;
-  font-size: 12px;
-}
-
-.ot-summary-card > div {
-  padding: 8px 0;
-  border-bottom: 1px solid #edf2ef;
-}
-
-.ot-summary-card > div:last-child {
-  border-bottom: none;
-}
-
-.ot-summary-card span,
-.ot-summary-card strong,
-.ot-summary-card small {
-  display: block;
-}
-
-.ot-summary-card span {
-  color: #728279;
-  font-size: 8.5px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.ot-summary-card strong {
-  margin-top: 4px;
-  color: #243a2f;
-  font-size: 10.5px;
-  line-height: 1.45;
-}
-
-.ot-summary-card small {
-  margin-top: 4px;
-  color: #819088;
-  font-size: 8.5px;
-}
-
-.ot-material-text {
-  margin: 0;
-  color: #40564a;
-  font-size: 10px;
-  line-height: 1.6;
-  white-space: pre-line;
-}
-
-.ot-detail-actions {
-  display: grid;
-  gap: 8px;
-}
-
-.ot-detail-actions button {
-  min-height: 40px;
-  border: 1px solid #bfd1c5;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #285e40;
-  cursor: pointer;
-  font-size: 10px;
-  font-weight: 850;
-}
-
-.ot-detail-main {
-  display: grid;
-  grid-template-rows:
-    minmax(260px, 0.9fr)
-    minmax(320px, 1.1fr);
-  min-height: 0;
-  overflow: hidden;
-}
-
-.ot-timeline-panel {
-  min-height: 0;
-  overflow-y: auto;
-  padding: 15px 18px;
-  border-bottom: 1px solid #dfe8e2;
-}
-
-.ot-timeline-panel > header {
-  margin-bottom: 13px;
-}
-
-.ot-timeline-panel > header strong,
-.ot-timeline-panel > header span {
-  display: block;
-}
-
-.ot-timeline-panel > header strong {
-  color: #1f4c33;
-  font-size: 13px;
-}
-
-.ot-timeline-panel > header span {
-  margin-top: 3px;
-  color: #75857c;
-  font-size: 9.5px;
-}
-
-.ot-timeline {
-  position: relative;
-  padding-left: 22px;
-}
-
-.ot-timeline::before {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 6px;
-  width: 2px;
-  background: #d8e5dc;
-  content: "";
-}
-
-.ot-timeline-item {
-  position: relative;
-  padding-bottom: 16px;
-}
-
-.ot-timeline-dot {
-  position: absolute;
-  top: 4px;
-  left: -21px;
-  z-index: 2;
-  width: 12px;
-  height: 12px;
-  border: 3px solid #ffffff;
-  border-radius: 50%;
-  background: #27804f;
-  box-shadow: 0 0 0 2px #bcd6c6;
-}
-
-.ot-timeline-content {
-  padding: 11px 12px;
-  border: 1px solid #dce7e0;
-  border-radius: 12px;
-  background: #ffffff;
-}
-
-.ot-timeline-title {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.ot-timeline-title strong {
-  color: #1f4d34;
-  font-size: 10.5px;
-}
-
-.ot-timeline-title time {
-  color: #7b8a82;
-  font-size: 8.5px;
-}
-
-.ot-timeline-content p {
-  margin: 7px 0 0;
-  color: #45594e;
-  font-size: 9.8px;
-  line-height: 1.5;
-}
-
-.ot-timeline-content > small {
-  display: block;
-  margin-top: 7px;
-  color: #7b8a82;
-  font-size: 8.5px;
-}
-
-.ot-timeline-files {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 8px;
-}
-
-.ot-timeline-files a {
-  padding: 6px 8px;
-  border-radius: 8px;
-  background: #edf5f0;
-  color: #286244;
-  font-size: 8.5px;
-  text-decoration: none;
-}
-
-.ot-chat-panel {
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  background: #f4f8f5;
-}
-
-.ot-chat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 11px 15px;
-  border-bottom: 1px solid #dfe8e2;
-  background: #ffffff;
-}
-
-.ot-chat-header strong,
-.ot-chat-header span {
-  display: block;
-}
-
-.ot-chat-header strong {
-  color: #1f4b32;
-  font-size: 12px;
-}
-
-.ot-chat-header div > span {
-  margin-top: 3px;
-  color: #75857c;
-  font-size: 9px;
-}
-
-.ot-chat-state {
-  padding: 6px 9px;
-  border-radius: 999px;
-  font-size: 8.5px;
-  font-weight: 900;
-}
-
-.ot-chat-state.open {
-  background: #e7f6ec;
-  color: #1d7042;
-}
-
-.ot-chat-state.closed {
-  background: #edf1ef;
-  color: #66766d;
-}
-
-.ot-chat-messages {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 13px;
-}
-
-.ot-load-more {
-  display: block;
-  margin: 0 auto 12px;
-  padding: 7px 10px;
-  border: 1px solid #bfd0c4;
+  place-items: center;
   border-radius: 9px;
-  background: #ffffff;
-  color: #2b6242;
-  font-size: 9px;
-  font-weight: 800;
+  color: var(--ot-blue);
+  background: var(--ot-blue-soft);
 }
 
-.ot-chat-empty {
-  display: flex;
-  min-height: 180px;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  color: #75857c;
-  text-align: center;
+.ot-sales-owner span,
+.ot-sales-owner strong,
+.ot-sales-owner small {
+  display: block;
 }
 
-.ot-chat-empty span {
-  font-size: 27px;
+.ot-sales-owner span {
+  color: #8d98aa;
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
 }
 
-.ot-chat-empty strong {
-  margin-top: 7px;
-  color: #30483a;
-  font-size: 11px;
-}
-
-.ot-chat-empty p {
-  max-width: 280px;
-  margin: 6px 0 0;
-  font-size: 9.5px;
-  line-height: 1.5;
-}
-
-.ot-message {
-  width: fit-content;
-  max-width: 78%;
-  margin-bottom: 11px;
-  padding: 10px 11px;
-  border: 1px solid #d9e5dd;
-  border-radius: 12px 12px 12px 3px;
-  background: #ffffff;
-}
-
-.ot-message.own {
-  margin-left: auto;
-  border-color: #bcd7c6;
-  border-radius: 12px 12px 3px 12px;
-  background: #eaf5ee;
-}
-
-.ot-message.system {
-  width: min(90%, 520px);
-  max-width: 90%;
-  margin-right: auto;
-  margin-left: auto;
-  border-style: dashed;
-  background: #f6f8f7;
-}
-
-.ot-message-meta {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-}
-
-.ot-message-meta strong {
-  color: #245438;
-  font-size: 9.5px;
-}
-
-.ot-message-meta span {
-  color: #77877f;
+.ot-sales-owner strong {
+  margin-top: 1px;
   font-size: 8px;
 }
 
-.ot-message-meta small {
-  margin-left: auto;
-  color: #829088;
-  font-size: 7.8px;
-}
-
-.ot-message-text {
-  margin: 7px 0 0;
-  color: #344b3e;
-  font-size: 10px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-}
-
-.ot-message-files {
-  display: grid;
-  gap: 8px;
-  margin-top: 9px;
-}
-
-.ot-message-image {
-  display: block;
-  overflow: hidden;
-  border-radius: 10px;
-}
-
-.ot-message-image img {
-  display: block;
-  width: 100%;
-  max-width: 320px;
-  max-height: 220px;
-  object-fit: cover;
-}
-
-.ot-message-audio {
-  padding: 8px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.75);
-}
-
-.ot-message-audio span {
-  display: block;
-  margin-bottom: 6px;
-  color: #315e43;
-  font-size: 8.5px;
-  font-weight: 850;
-}
-
-.ot-message-audio audio {
-  width: 100%;
-  min-width: 240px;
-  height: 34px;
-}
-
-.ot-message-video {
-  width: 100%;
-  max-width: 340px;
-  border-radius: 10px;
-}
-
-.ot-message-document {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.75);
-  color: #2c5f41;
-  text-decoration: none;
-}
-
-.ot-message-document > span {
-  font-size: 18px;
-}
-
-.ot-message-document strong,
-.ot-message-document small {
-  display: block;
-}
-
-.ot-message-document strong {
-  font-size: 9px;
-}
-
-.ot-message-document small {
-  margin-top: 3px;
-  color: #79887f;
-  font-size: 8px;
-}
-
-.ot-chat-composer {
-  padding: 11px 13px;
-  border-top: 1px solid #dce7e0;
-  background: #ffffff;
-}
-
-.ot-chat-composer textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #cbd9d0;
-  border-radius: 10px;
-  resize: vertical;
-  outline: none;
-  color: #253a2f;
-  font-size: 10px;
-  line-height: 1.5;
-}
-
-.ot-chat-tools {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-
-.ot-file-button {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 8px 10px;
-  border: 1px solid #bed0c3;
-  border-radius: 9px;
-  background: #ffffff;
-  color: #2d6343;
-  cursor: pointer;
-  font-size: 9px;
-  font-weight: 850;
-}
-
-.ot-file-button input {
-  display: none;
-}
-
-.ot-send-button {
-  margin-top: 9px;
-}
-
-.ot-chat-closed {
-  padding: 14px;
-  border-top: 1px solid #dce6df;
-  background: #f1f4f2;
-  color: #69786f;
-  font-size: 10px;
-  font-weight: 750;
-  text-align: center;
-}
-
-.ot-audio-recorder {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.ot-audio-button,
-.ot-audio-live button,
-.ot-audio-preview button {
-  min-height: 36px;
-  padding: 8px 10px;
-  border: 1px solid #bed0c3;
-  border-radius: 9px;
-  background: #ffffff;
-  color: #2d6343;
-  cursor: pointer;
-  font-size: 9px;
-  font-weight: 850;
-}
-
-.ot-audio-live {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #a63a3a;
-  font-size: 9px;
-}
-
-.ot-record-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #dc3d3d;
-  animation: ot-pulse 1s infinite;
-}
-
-@keyframes ot-pulse {
-  50% {
-    opacity: 0.35;
-  }
-}
-
-.ot-audio-preview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ot-audio-preview audio {
-  width: 260px;
-  height: 34px;
-}
-
-.ot-audio-error {
-  width: 100%;
-  color: #ad3636;
-  font-size: 8.5px;
-}
-
-@media screen and (max-width: 1100px) {
-  .ot-filter-panel {
-    grid-template-columns:
-      1fr 1fr 1fr;
-  }
-
-  .ot-filter-panel input {
-    grid-column: span 2;
-  }
-
-  .ot-detail-body {
-    grid-template-columns:
-      260px minmax(0, 1fr);
-  }
-}
-
-@media screen and (max-width: 900px) {
-  .ot-page {
-    min-height: 100dvh;
-  }
-
-  .ot-page-header {
-    min-height: 74px;
-    padding: 11px 13px;
-  }
-
-  .ot-page-title > button {
-    width: 36px;
-    height: 36px;
-  }
-
-  .ot-page-title h1 {
-    font-size: 19px;
-  }
-
-  .ot-page-title p {
-    display: none;
-  }
-
-  .ot-header-actions button:first-child {
-    display: none;
-  }
-
-  .ot-page-content {
-    padding: 13px;
-  }
-
-  .ot-summary-grid {
-    grid-template-columns:
-      repeat(9, 112px);
-    gap: 9px;
-  }
-
-  .ot-summary-grid button {
-    min-width: 112px;
-    padding: 12px;
-  }
-
-  .ot-filter-panel {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    padding: 10px;
-  }
-
-  .ot-filter-panel input {
-    grid-column: 1 / -1;
-  }
-
-  .ot-desktop-view {
-    display: none;
-  }
-
-  .ot-mobile-view {
-    display: grid;
-    gap: 12px;
-  }
-
-  .ot-detail-modal {
-    width: 100%;
-    height: calc(100dvh - 20px);
-    max-height: calc(100dvh - 20px);
-  }
-
-  .ot-detail-body {
-    display: block;
-    max-height: calc(100dvh - 104px);
-    overflow-y: auto;
-  }
-
-  .ot-detail-sidebar {
-    overflow: visible;
-    border-right: none;
-    border-bottom: 1px solid #dfe8e2;
-  }
-
-  .ot-detail-main {
-    display: block;
-    overflow: visible;
-  }
-
-  .ot-timeline-panel {
-    overflow: visible;
-  }
-
-  .ot-chat-panel {
-    min-height: 550px;
-  }
-
-  .ot-chat-messages {
-    min-height: 300px;
-  }
-
-  .ot-status-modal {
-    height: calc(100dvh - 20px);
-    max-height: calc(100dvh - 20px);
-  }
-
-  .ot-modal-body {
-    max-height: calc(100dvh - 150px);
-  }
-}
-
-@media screen and (max-width: 560px) {
-  .ot-filter-panel {
-    grid-template-columns: 1fr;
-  }
-
-  .ot-filter-panel input {
-    grid-column: auto;
-  }
-
-  .ot-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ot-modal-overlay {
-    padding: 0;
-  }
-
-  .ot-modal-card,
-  .ot-detail-modal,
-  .ot-status-modal {
-    height: 100dvh;
-    max-height: 100dvh;
-    border-radius: 0;
-  }
-
-  .ot-detail-body {
-    max-height: calc(100dvh - 91px);
-  }
-
-  .ot-modal-body {
-    max-height: calc(100dvh - 145px);
-  }
-
-  .ot-modal-header,
-  .ot-detail-header {
-    padding: 14px;
-  }
-
-  .ot-detail-header h2,
-  .ot-modal-header h2 {
-    font-size: 16px;
-  }
-
-  .ot-detail-head-actions {
-    flex-direction: column-reverse;
-    align-items: flex-end;
-  }
-
-  .ot-mobile-meta {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .ot-message {
-    max-width: 90%;
-  }
-
-  .ot-message-audio audio,
-  .ot-audio-preview audio {
-    min-width: 0;
-    width: 210px;
-  }
-
-  .ot-chat-tools {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .ot-audio-recorder {
-    width: 100%;
-  }
-
-  .ot-audio-button {
-    width: 100%;
-  }
-}
-
-/* =========================================================
-   PREMIUM ORDER TRACKING OVERRIDES
-   Desktop table, drill-down page, WhatsApp chat,
-   blue ticks, seen-by panel, audio recorder,
-   status update form and PWA layout.
-========================================================= */
-
-.ot-page,
-.ot-detail-page,
-.ot-status-update-modal,
-.ot-whatsapp-chat {
-  --ot-green-950: #10281b;
-  --ot-green-900: #163f2b;
-  --ot-green-800: #1f5f3d;
-  --ot-green-700: #237847;
-  --ot-green-600: #2b8351;
-  --ot-green-100: #e8f5ec;
-  --ot-green-50: #f4faf6;
-  --ot-blue-tick: #1689d0;
-  --ot-border: #d9e4dd;
-  --ot-muted: #74847b;
-  --ot-text: #21362a;
-  --ot-bg: #f3f7f4;
-  --ot-white: #ffffff;
-  --ot-danger: #b53c3c;
-  --ot-warning: #9a6519;
-}
-
-/* =========================================================
-   PREMIUM DESKTOP TABLE
-========================================================= */
-
-.ot-table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  border: 1px solid var(--ot-border);
-  border-radius: 18px;
-  background: #fff;
-  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07);
-}
-
-.ot-table {
-  width: 100%;
-  min-width: 1750px;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-}
-
-.ot-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  padding: 13px 11px;
-  border-right: 1px solid rgba(255,255,255,.1);
-  background: linear-gradient(180deg,#172437,#111d2d);
-  color: #fff;
-  text-align: left;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: .055em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.ot-table thead th:first-child {
-  border-top-left-radius: 17px;
-}
-
-.ot-table thead th:last-child {
-  border-top-right-radius: 17px;
-  border-right: none;
-}
-
-.ot-table thead th:nth-child(1) { width: 120px; }
-.ot-table thead th:nth-child(2) { width: 145px; }
-.ot-table thead th:nth-child(3) { width: 145px; }
-.ot-table thead th:nth-child(4) { width: 260px; }
-.ot-table thead th:nth-child(5) { width: 175px; }
-.ot-table thead th:nth-child(6) { width: 275px; }
-.ot-table thead th:nth-child(7) { width: 155px; }
-.ot-table thead th:nth-child(8) { width: 250px; }
-.ot-table thead th:nth-child(9) { width: 145px; }
-.ot-table thead th:nth-child(10) { width: 145px; }
-.ot-table thead th:nth-child(11) { width: 150px; }
-
-.ot-table-row {
-  outline: none;
-  cursor: pointer;
-  transition: background .18s ease, box-shadow .18s ease, opacity .18s ease;
-}
-
-.ot-table-row:nth-child(even) {
-  background: #fbfcfb;
-}
-
-.ot-table-row:hover,
-.ot-table-row:focus {
-  background: #eef9f2;
-  box-shadow: inset 4px 0 0 #24834f;
-}
-
-.ot-table-row.has-update-request {
-  background: #fff9ed;
-}
-
-.ot-table-row.has-update-request:hover,
-.ot-table-row.has-update-request:focus {
-  background: #fff4d8;
-  box-shadow: inset 4px 0 0 #d8901f;
-}
-
-.ot-table-row.is-opening {
-  opacity: .68;
-  pointer-events: none;
-}
-
-.ot-table td {
-  padding: 12px 10px;
-  border-right: 1px solid #e7ede9;
-  border-bottom: 1px solid #e3ebe6;
-  vertical-align: top;
-  color: #2a3b31;
-  font-size: 10px;
-  line-height: 1.42;
-  word-break: break-word;
-}
-
-.ot-table td:last-child {
-  border-right: none;
-}
-
-.ot-table td > strong,
-.ot-table td > span,
-.ot-table td > small {
-  display: block;
-}
-
-.ot-table td > strong {
-  color: #18271f;
-  font-size: 10.5px;
-  font-weight: 850;
-}
-
-.ot-table td > span {
-  margin-top: 4px;
-  color: #5f7167;
-  font-size: 9px;
-}
-
-.ot-table td > small {
-  margin-top: 5px;
-  color: #77877f;
-  font-size: 8px;
-}
-
-.ot-table-link {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #167041;
-  cursor: pointer;
-  font-size: 10.5px;
-  font-weight: 900;
-}
-
-.ot-table-link:hover {
-  text-decoration: underline;
-}
-
-.ot-material-cell span,
-.ot-latest-cell strong {
-  display: -webkit-box !important;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-}
-
-.ot-material-cell span {
-  -webkit-line-clamp: 5;
-  white-space: normal;
-}
-
-.ot-latest-cell strong {
-  -webkit-line-clamp: 4;
-}
-
-.ot-requested-badge {
-  display: inline-flex !important;
-  width: fit-content;
-  margin-top: 7px !important;
-  padding: 5px 7px;
-  border: 1px solid #f0c77e;
-  border-radius: 999px;
-  background: #fff4d9;
-  color: #956017 !important;
-  font-size: 7.5px !important;
-  font-weight: 900;
-}
-
-.ot-table-actions {
-  display: grid;
-  gap: 7px;
-}
-
-.ot-table-actions button {
-  min-height: 32px;
-  padding: 7px 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 8.5px;
-  font-weight: 900;
-}
-
-.ot-view-action {
-  border: 1px solid #1f7143;
-  background: #1f7143;
-  color: #fff;
-}
-
-.ot-request-action {
-  border: 1px solid #bdcec3;
-  background: #fff;
-  color: #315f45;
-}
-
-/* =========================================================
-   PREMIUM MOBILE CARDS
-========================================================= */
-
-.ot-mobile-card {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid #d7e3db;
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 14px 34px rgba(20,44,30,.08);
-}
-
-.ot-mobile-card.has-update-request {
-  border-color: #e6bd72;
-  background: linear-gradient(180deg,#fffdf8,#fff 42%);
-}
-
-.ot-mobile-card.is-opening {
-  opacity: .68;
-  pointer-events: none;
-}
-
-.ot-mobile-card-main {
-  position: relative;
-  display: block;
-  width: 100%;
-  padding: 16px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-}
-
-.ot-mobile-card-accent {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 5px;
-  background: linear-gradient(180deg,#227b49,#51a06d);
-}
-
-.ot-mobile-card.has-update-request .ot-mobile-card-accent {
-  background: linear-gradient(180deg,#d39228,#f1bd64);
-}
-
-.ot-mobile-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.ot-mobile-card-heading {
-  min-width: 0;
-  flex: 1;
-}
-
-.ot-mobile-card-code-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.ot-mobile-tracking-number {
-  color: #277248;
-  font-size: 9px;
-  font-weight: 950;
-  letter-spacing: .075em;
-}
-
-.ot-chat-mini-state {
-  padding: 4px 7px;
-  border-radius: 999px;
-  font-size: 7.5px;
-  font-weight: 900;
-}
-
-.ot-chat-mini-state.open {
-  background: #e7f6ec;
-  color: #1d7042;
-}
-
-.ot-chat-mini-state.closed {
-  background: #edf1ef;
-  color: #64736b;
-}
-
-.ot-mobile-card-heading h3 {
-  margin: 7px 0 0;
-  color: #14271c;
-  font-size: 16px;
-  font-weight: 900;
-}
-
-.ot-mobile-card-heading p,
-.ot-mobile-card-heading small {
-  display: block;
-  overflow-wrap: anywhere;
-}
-
-.ot-mobile-card-heading p {
-  margin: 6px 0 0;
-  color: #485d50;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.ot-mobile-card-heading small {
-  margin-top: 3px;
-  color: #75857c;
-  font-size: 9px;
-}
-
-.ot-mobile-card-primary-meta,
-.ot-mobile-date-strip,
-.ot-mobile-dispatch-strip {
-  display: grid;
-  gap: 8px;
-}
-
-.ot-mobile-card-primary-meta {
-  grid-template-columns: repeat(3,minmax(0,1fr));
-  margin-top: 14px;
-}
-
-.ot-mobile-date-strip,
-.ot-mobile-dispatch-strip {
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  margin-top: 8px;
-}
-
-.ot-mobile-card-primary-meta > div,
-.ot-mobile-date-strip > div,
-.ot-mobile-dispatch-strip > div {
-  padding: 10px;
-  border: 1px solid #e1eae4;
-  border-radius: 12px;
-  background: #f8fbf9;
-}
-
-.ot-mobile-card-primary-meta span,
-.ot-mobile-date-strip span,
-.ot-mobile-dispatch-strip span {
-  display: block;
-  color: #78877f;
-  font-size: 7.8px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.ot-mobile-card-primary-meta strong,
-.ot-mobile-date-strip strong,
-.ot-mobile-dispatch-strip strong {
-  display: block;
-  margin-top: 5px;
-  color: #263b2f;
-  font-size: 9.5px;
-  font-weight: 900;
-}
-
-.ot-mobile-material-box,
-.ot-mobile-latest-box {
-  margin-top: 10px;
-  padding: 12px;
-  border: 1px solid #dce7e0;
+.ot-sales-owner small {
+  margin-top: 1px;
+  color: var(--ot-muted);
+  font-size: 7px;
+}
+
+.ot-health-card {
+  min-width: 175px;
+  align-self: flex-start;
+  padding: 12px 14px;
   border-radius: 13px;
+  text-align: right;
 }
 
-.ot-mobile-material-box {
-  background: linear-gradient(180deg,#f9fcfa,#f4f8f5);
-}
-
-.ot-mobile-latest-box {
-  border-color: #cfe0d5;
-  background: linear-gradient(180deg,#eef8f2,#f8fbf9);
-}
-
-.ot-mobile-section-heading,
-.ot-mobile-latest-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.ot-mobile-section-heading span,
-.ot-mobile-latest-heading span {
-  color: #2c6d48;
-  font-size: 8.5px;
-  font-weight: 950;
-  text-transform: uppercase;
-}
-
-.ot-mobile-material-box p,
-.ot-mobile-latest-box p {
-  margin: 7px 0 0;
-  color: #40544a;
-  font-size: 9.5px;
-  line-height: 1.55;
-}
-
-.ot-mobile-request-banner {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 10px;
-  padding: 10px 11px;
-  border: 1px solid #efc477;
-  border-radius: 12px;
-  background: linear-gradient(180deg,#fff5df,#fff9ed);
-}
-
-.ot-mobile-open-hint {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
-  color: #276b46;
-  font-size: 8.5px;
-  font-weight: 850;
-}
-
-.ot-mobile-card-footer {
-  display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  gap: 8px;
-  padding: 11px 15px 14px;
-  border-top: 1px solid #e2ebe5;
-  background: #f7faf8;
-}
-
-.ot-mobile-card-footer button {
-  min-height: 40px;
-  border-radius: 10px;
-  font-size: 9px;
-  font-weight: 900;
-}
-
-.ot-mobile-open-button {
-  border: 1px solid #1f7143;
-  background: #1f7143;
-  color: #fff;
-}
-
-.ot-mobile-request-button {
-  border: 1px solid #bdcec3;
-  background: #fff;
-  color: #315f45;
-}
-
-/* =========================================================
-   DRILL-DOWN PAGE
-========================================================= */
-
-.ot-detail-page {
-  width: 100%;
-  min-height: 100vh;
-  background: #f2f6f3;
-}
-
-.ot-detail-page-header {
-  position: sticky;
-  top: 0;
-  z-index: 60;
-  display: flex;
-  min-height: 82px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 13px 20px;
-  border-bottom: 1px solid #d9e4dd;
-  background: rgba(255,255,255,.98);
-  backdrop-filter: blur(15px);
-}
-
-.ot-detail-page-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.ot-detail-back-button,
-.ot-detail-refresh-button {
-  min-height: 38px;
-  border: 1px solid #c8d8ce;
-  border-radius: 11px;
-  background: #fff;
-  color: #245f3e;
-  font-weight: 900;
-}
-
-.ot-detail-back-button {
-  width: 40px;
-  font-size: 18px;
-}
-
-.ot-detail-refresh-button {
-  padding: 8px 13px;
-  font-size: 10px;
-}
-
-.ot-detail-kicker {
+.ot-health-card span,
+.ot-health-card strong,
+.ot-health-card small {
   display: block;
-  color: #28744a;
-  font-size: 9px;
-  font-weight: 950;
-  letter-spacing: .075em;
 }
 
-.ot-detail-page-title h1 {
-  margin: 4px 0 0;
-  color: #14291d;
-  font-size: 22px;
-}
-
-.ot-detail-page-title p {
-  margin: 4px 0 0;
-  color: #6a7b72;
-  font-size: 10px;
-}
-
-.ot-detail-page-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.ot-detail-page-header-actions .ot-status-pill {
-  margin-top: 0;
-}
-
-.ot-detail-page-content {
-  display: grid;
-  grid-template-columns: minmax(0,1.35fr) minmax(340px,.65fr);
-  gap: 16px;
-  padding: 16px;
-  min-height: calc(100vh - 82px);
-}
-
-.ot-detail-info-column {
-  display: grid;
-  align-content: start;
-  gap: 12px;
-}
-
-.ot-detail-action-card,
-.ot-detail-info-card {
-  border: 1px solid #d9e4dd;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 10px 26px rgba(17,36,25,.05);
-}
-
-.ot-detail-action-card,
-.ot-detail-info-card {
-  padding: 14px;
-}
-
-.ot-detail-action-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.ot-detail-action-heading > div > span,
-.ot-detail-info-card > header span {
-  display: block;
-  color: #718179;
-  font-size: 8px;
+.ot-health-card span {
+  font-size: 7px;
   font-weight: 900;
-  letter-spacing: .06em;
+  letter-spacing: 0.08em;
 }
 
-.ot-detail-action-heading > div > strong {
-  display: block;
-  margin-top: 5px;
-  color: #173725;
+.ot-health-card strong {
+  margin-top: 2px;
   font-size: 15px;
 }
 
-.ot-detail-action-buttons {
+.ot-health-card small {
+  max-width: 175px;
+  margin-top: 2px;
+  font-size: 7px;
+  line-height: 1.4;
+}
+
+.ot-health-card.is-healthy {
+  color: #117653;
+  border: 1px solid #caeadc;
+  background: #effaf5;
+}
+
+.ot-health-card.is-warning {
+  color: #976800;
+  border: 1px solid #f1dc91;
+  background: #fff8e8;
+}
+
+.ot-health-card.is-danger {
+  color: #b53a46;
+  border: 1px solid #f3c8ce;
+  background: #fff1f3;
+}
+
+.ot-health-card.is-neutral {
+  color: #627086;
+  border: 1px solid #dfe4eb;
+  background: #f7f9fb;
+}
+
+.ot-current-banner {
+  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 13px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  margin-top: 4px;
+  padding: 12px 13px;
+  border: 1px solid #dce5f6;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
 }
 
-.ot-detail-action-buttons button {
-  min-height: 39px;
-  border: 1px solid #c2d2c8;
-  border-radius: 10px;
-  background: #fff;
-  color: #2b6042;
-  font-size: 9px;
+.ot-current-banner__icon {
+  width: 41px;
+  height: 41px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #fff;
+  background: linear-gradient(145deg, #3778ff, #1f58d9);
+  box-shadow: 0 9px 20px rgba(36, 104, 242, 0.18);
+}
+
+.ot-current-banner__content span,
+.ot-current-banner__content strong,
+.ot-current-banner__content small {
+  display: block;
+}
+
+.ot-current-banner__content span {
+  color: #8c97aa;
+  font-size: 7px;
   font-weight: 900;
+  letter-spacing: 0.08em;
 }
 
-.ot-detail-info-card > header h2 {
-  margin: 4px 0 0;
-  color: #183726;
+.ot-current-banner__content strong {
+  margin-top: 2px;
   font-size: 13px;
 }
 
-.ot-detail-info-grid {
-  display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  gap: 8px;
-  margin-top: 12px;
+.ot-current-banner__content small {
+  margin-top: 2px;
+  color: var(--ot-muted);
+  font-size: 8px;
 }
 
-.ot-detail-info-grid > div {
-  padding: 9px;
-  border: 1px solid #e2ebe5;
-  border-radius: 10px;
-  background: #f8fbf9;
+.ot-current-banner__progress {
+  min-width: 82px;
+  padding-left: 14px;
+  border-left: 1px solid var(--ot-line);
+  text-align: right;
 }
 
-.ot-detail-info-grid span {
+.ot-current-banner__progress strong {
   display: block;
-  color: #77877f;
-  font-size: 7.5px;
+  font-size: 21px;
+}
+
+.ot-current-banner__progress span {
+  color: #8b96a7;
+  font-size: 7px;
+  font-weight: 800;
+}
+
+.ot-journey-strip-card {
+  margin-top: 10px;
+  padding: 14px 16px 16px;
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, #ffffff, #fbfdff);
+}
+
+.ot-journey-strip__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.ot-journey-strip__head h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.ot-journey-strip__head > span {
+  color: var(--ot-muted);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.ot-journey-strip {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  overflow-x: auto;
+  padding: 2px 0 4px;
+}
+
+.ot-journey-node {
+  flex: 0 0 auto;
+  min-width: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.ot-journey-node__dot {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #dce2eb;
+  border-radius: 50%;
+  color: #9aa4b4;
+  background: #fff;
+  transition: 0.18s ease;
+}
+
+.ot-journey-node.is-completed .ot-journey-node__dot {
+  color: #fff;
+  border-color: var(--ot-green);
+  background: var(--ot-green);
+}
+
+.ot-journey-node.is-current .ot-journey-node__dot {
+  color: #fff;
+  border-color: var(--ot-blue);
+  background: var(--ot-blue);
+  box-shadow: 0 0 0 6px rgba(36, 104, 242, 0.11);
+}
+
+.ot-journey-node__text {
+  margin-top: 7px;
+}
+
+.ot-journey-node__text strong,
+.ot-journey-node__text span {
+  display: block;
+}
+
+.ot-journey-node__text strong {
+  font-size: 8px;
+}
+
+.ot-journey-node.is-current .ot-journey-node__text strong {
+  color: var(--ot-blue);
+}
+
+.ot-journey-node__text span {
+  margin-top: 2px;
+  color: #8d97a8;
+  font-size: 6px;
+  font-weight: 700;
+}
+
+.ot-journey-link {
+  flex: 1 1 40px;
+  min-width: 30px;
+  height: 29px;
+  display: flex;
+  align-items: center;
+}
+
+.ot-journey-link span {
+  width: 100%;
+  height: 2px;
+  background: #e4e9f0;
+}
+
+.ot-journey-link.is-completed span {
+  background: linear-gradient(90deg, var(--ot-green), #81ceb2);
+}
+
+.ot-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.ot-metric-card {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px;
+  border-radius: 13px;
+}
+
+.ot-metric-card__icon {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--ot-blue);
+  background: var(--ot-blue-soft);
+}
+
+.ot-metric-card span,
+.ot-metric-card strong,
+.ot-metric-card small {
+  display: block;
+}
+
+.ot-metric-card span {
+  color: #8b96a7;
+  font-size: 7px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-.ot-detail-info-grid strong {
-  display: block;
-  margin-top: 4px;
-  color: #273c31;
-  font-size: 9px;
-  overflow-wrap: anywhere;
-}
-
-.ot-detail-address-block {
-  margin-top: 10px;
-  padding: 10px;
-  border: 1px solid #e1eae4;
-  border-radius: 10px;
-  background: #fafcfb;
-}
-
-.ot-detail-address-block p,
-.ot-detail-material-text,
-.ot-detail-latest-update p {
-  margin: 6px 0 0;
-  color: #42574b;
-  font-size: 9px;
-  line-height: 1.6;
-  white-space: pre-line;
-}
-
-.ot-detail-timeline {
-  position: relative;
-  margin-top: 12px;
-  padding-left: 20px;
-}
-
-.ot-detail-timeline::before {
-  position: absolute;
-  top: 3px;
-  bottom: 4px;
-  left: 5px;
-  width: 2px;
-  background: #d9e5dd;
-  content: "";
-}
-
-.ot-detail-timeline-item {
-  position: relative;
-  padding-bottom: 13px;
-}
-
-.ot-detail-timeline-dot {
-  position: absolute;
-  top: 3px;
-  left: -20px;
-  width: 12px;
-  height: 12px;
-  border: 3px solid #fff;
-  border-radius: 50%;
-  background: #2b8351;
-  box-shadow: 0 0 0 2px #bfd8c8;
-}
-
-.ot-detail-timeline-content {
-  padding: 10px;
-  border: 1px solid #dfe8e2;
-  border-radius: 11px;
-  background: #fafcfb;
-}
-
-/* =========================================================
-   WHATSAPP CHAT
-========================================================= */
-
-.ot-whatsapp-chat {
-  position: relative;
-  display: flex;
-  min-height: calc(100vh - 114px);
-  max-height: calc(100vh - 114px);
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid #d7e2db;
-  border-radius: 18px;
-  background: #fff;
-  box-shadow: 0 14px 36px rgba(18,39,26,.08);
-}
-
-.ot-chat-header {
-  display: flex;
-  min-height: 72px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 11px 15px;
-  border-bottom: 1px solid #d5e0d9;
-  background: #f0f5f2;
-}
-
-.ot-chat-title-area {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 11px;
-}
-
-.ot-chat-group-avatar,
-.ot-message-avatar,
-.ot-seen-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: linear-gradient(145deg,#1f7545,#47a36b);
-  color: #fff;
-  font-weight: 900;
-}
-
-.ot-chat-group-avatar {
-  width: 43px;
-  height: 43px;
-  flex: 0 0 43px;
-  font-size: 12px;
-}
-
-.ot-chat-title-area strong,
-.ot-chat-title-area span,
-.ot-chat-title-area small {
-  display: block;
-}
-
-.ot-chat-title-area strong {
-  color: #183526;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.ot-chat-title-area span {
-  overflow: hidden;
+.ot-metric-card strong {
   margin-top: 2px;
-  color: #50655a;
-  font-size: 9.5px;
+  overflow: hidden;
+  font-size: 9px;
+  white-space: nowrap;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.ot-chat-title-area small {
-  margin-top: 2px;
-  color: #7b8982;
-  font-size: 8px;
-}
-
-.ot-chat-background {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  background:
-    linear-gradient(rgba(239,235,226,.91),rgba(239,235,226,.91)),
-    radial-gradient(circle at 12px 12px,rgba(37,104,68,.09) 2px,transparent 2.5px);
-  background-size: auto,32px 32px;
-}
-
-.ot-chat-messages {
-  height: 100%;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 15px 14px 18px;
-  scroll-behavior: smooth;
-}
-
-.ot-message {
-  display: flex;
-  width: 100%;
-  max-width: none;
-  align-items: flex-end;
-  gap: 7px;
-  margin-bottom: 8px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-.ot-message.own {
-  justify-content: flex-end;
-  margin-left: 0;
-  background: transparent;
-}
-
-.ot-message.other {
-  justify-content: flex-start;
-}
-
-.ot-message-avatar {
-  width: 27px;
-  height: 27px;
-  flex: 0 0 27px;
-  margin-bottom: 3px;
-  font-size: 8px;
-}
-
-.ot-message-bubble {
-  position: relative;
-  width: fit-content;
-  min-width: 105px;
-  max-width: min(76%,540px);
-  padding: 8px 9px 5px;
-  border-radius: 8px;
-  box-shadow: 0 1px 1px rgba(17,35,24,.11);
-}
-
-.ot-message.other .ot-message-bubble {
-  border-top-left-radius: 2px;
-  background: #fff;
-}
-
-.ot-message.own .ot-message-bubble {
-  border-top-right-radius: 2px;
-  background: #d9fdd3;
-}
-
-.ot-message-bubble::before {
-  position: absolute;
-  top: 0;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  content: "";
-}
-
-.ot-message.other .ot-message-bubble::before {
-  left: -7px;
-  border-width: 0 8px 8px 0;
-  border-color: transparent #fff transparent transparent;
-}
-
-.ot-message.own .ot-message-bubble::before {
-  right: -7px;
-  border-width: 0 0 8px 8px;
-  border-color: transparent transparent transparent #d9fdd3;
-}
-
-.ot-message-text {
-  margin: 3px 0 1px;
-  color: #17241d;
-  font-size: 10px;
-  line-height: 1.48;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-}
-
-.ot-message-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  margin-top: 2px;
-}
-
-.ot-message-footer time {
-  color: #6e7e76;
+.ot-metric-card small {
+  margin-top: 1px;
+  color: var(--ot-muted);
   font-size: 7px;
-  white-space: nowrap;
 }
 
-.ot-message-ticks {
-  border: 0;
-  background: transparent;
-  color: #66766e;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: -4px;
-  line-height: 1;
-}
-
-.ot-message-ticks.pending {
-  letter-spacing: normal;
-}
-
-.ot-message-ticks.seen,
-.ot-message-ticks.all-seen {
-  color: var(--ot-blue-tick);
-}
-
-button.ot-message-ticks {
-  cursor: pointer;
-}
-
-.ot-message-menu-wrap {
-  position: relative;
-  margin-left: auto;
-}
-
-.ot-message-menu-button {
-  width: 22px;
-  height: 18px;
-  border: 0;
-  background: transparent;
-  color: #60756a;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.ot-message-menu {
-  position: absolute;
-  top: 21px;
-  right: 0;
-  z-index: 30;
-  width: 170px;
-  overflow: hidden;
-  border: 1px solid #d7e1db;
-  border-radius: 9px;
-  background: #fff;
-  box-shadow: 0 10px 28px rgba(17,33,23,.2);
-}
-
-.ot-message-menu button {
-  display: block;
-  width: 100%;
-  padding: 10px 12px;
-  border: 0;
-  border-bottom: 1px solid #edf1ef;
-  background: #fff;
-  color: #334a3d;
-  font-size: 9px;
-  text-align: left;
-}
-
-.ot-message-menu button.delete {
-  color: #b43a3a;
-}
-
-.ot-system-message {
-  display: flex;
-  width: fit-content;
-  max-width: 82%;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  margin: 8px auto;
-  padding: 6px 9px;
-  border-radius: 7px;
-  background: #fff4c6;
-  color: #645d3f;
-  text-align: center;
-}
-
-.ot-message-files {
+.ot-detail-grid {
   display: grid;
-  gap: 5px;
-  margin-top: 5px;
+  grid-template-columns: minmax(0, 1.7fr) minmax(290px, 0.65fr);
+  gap: 10px;
+  margin-top: 10px;
 }
 
-.ot-message-image {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  border-radius: 7px;
-}
-
-.ot-message-image img {
-  display: block;
-  width: 100%;
-  max-width: 360px;
-  max-height: 270px;
-  object-fit: cover;
-}
-
-.ot-message-audio {
-  display: flex;
-  min-width: 270px;
-  align-items: center;
-  gap: 8px;
-  padding: 7px;
-  border-radius: 9px;
-  background: rgba(255,255,255,.48);
-}
-
-.ot-audio-message-icon {
-  display: flex;
-  width: 35px;
-  height: 35px;
-  flex: 0 0 35px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #1f7b48;
-}
-
-.ot-message-audio > div:last-child {
+.ot-detail-grid > main,
+.ot-detail-side {
   min-width: 0;
-  flex: 1;
 }
 
-.ot-message-audio audio {
+.ot-detail-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ot-timeline-card,
+.ot-side-card {
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.ot-section-heading,
+.ot-side-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--ot-line);
+  background: linear-gradient(180deg, #fff, #fbfcff);
+}
+
+.ot-section-heading h2,
+.ot-side-card__head h3 {
+  margin: 0;
+}
+
+.ot-section-heading h2 {
+  font-size: 15px;
+}
+
+.ot-section-heading p {
+  margin: 4px 0 0;
+  color: var(--ot-muted);
+  font-size: 8px;
+}
+
+.ot-side-card__head h3 {
+  font-size: 12px;
+}
+
+.ot-progress-summary {
+  text-align: right;
+}
+
+.ot-progress-summary strong {
   display: block;
-  width: 100%;
-  height: 32px;
-}
-
-.ot-message-document {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px;
-  border-radius: 7px;
-  background: rgba(255,255,255,.55);
-  color: #274f39;
-  text-decoration: none;
-}
-
-.ot-chat-composer {
-  position: relative;
-  z-index: 10;
-  padding: 8px 10px 9px;
-  border-top: 1px solid #d5dfd8;
-  background: #f0f2f1;
-}
-
-.ot-chat-file-preview {
-  display: flex;
-  gap: 7px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-}
-
-.ot-chat-compose-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 7px;
-}
-
-.ot-chat-attach-button,
-.ot-chat-send-button {
-  display: flex;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 50%;
-}
-
-.ot-chat-attach-button {
-  background: #fff;
-  color: #52665b;
-  font-size: 18px;
-}
-
-.ot-chat-attach-button input {
-  display: none;
-}
-
-.ot-chat-compose-row textarea {
-  min-height: 40px;
-  max-height: 110px;
-  flex: 1;
-  padding: 11px 14px;
-  border: 0;
-  border-radius: 20px;
-  outline: 0;
-  background: #fff;
-  color: #17251d;
-  font-size: 10px;
-  resize: none;
-}
-
-.ot-chat-send-button {
-  background: #1f7b48;
-  color: #fff;
   font-size: 17px;
 }
 
-.ot-chat-send-button:disabled {
-  background: #a9b9af;
+.ot-progress-summary span {
+  color: var(--ot-muted);
+  font-size: 7px;
 }
 
-/* =========================================================
-   SEEN BY + DELETE DIALOGS
-========================================================= */
+.ot-inline-error {
+  margin: 10px 14px 0;
+  padding: 8px 9px;
+  border-radius: 9px;
+  font-size: 8px;
+  font-weight: 800;
+}
 
-.ot-seen-overlay,
-.ot-delete-message-overlay {
+.ot-timeline {
+  padding: 12px 14px 15px;
+}
+
+.ot-timeline-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 9px;
+}
+
+.ot-timeline-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ot-timeline-dot {
+  z-index: 2;
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #dce2ea;
+  border-radius: 50%;
+  color: #8f99aa;
+  background: #fff;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.ot-timeline-row--completed .ot-timeline-dot {
+  color: #fff;
+  border-color: var(--ot-green);
+  background: var(--ot-green);
+}
+
+.ot-timeline-row--current .ot-timeline-dot {
+  color: #fff;
+  border-color: var(--ot-blue);
+  background: var(--ot-blue);
+  box-shadow: 0 0 0 5px rgba(36, 104, 242, 0.1);
+}
+
+.ot-timeline-line {
+  flex: 1;
+  width: 2px;
+  min-height: 105px;
+  background: #e8ecf2;
+}
+
+.ot-timeline-row--completed .ot-timeline-line {
+  background: linear-gradient(180deg, var(--ot-green), #c6e6da);
+}
+
+.ot-timeline-content {
+  min-width: 0;
+  margin-bottom: 10px;
+  padding: 11px;
+  border: 1px solid #edf0f4;
+  border-radius: 13px;
+  background: #fbfcfd;
+}
+
+.ot-timeline-row--current .ot-timeline-content {
+  border-color: #bdd0ff;
+  background: linear-gradient(180deg, #f7faff, #fff);
+  box-shadow: 0 9px 28px rgba(36, 104, 242, 0.07);
+}
+
+.ot-timeline-row--completed .ot-timeline-content {
+  background: #fbfefc;
+}
+
+.ot-timeline-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ot-milestone-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ot-milestone-title-row h3 {
+  margin: 0;
+  font-size: 11px;
+}
+
+.ot-target-day {
+  display: block;
+  margin-top: 3px;
+  color: #8a95a7;
+  font-size: 7px;
+  font-weight: 750;
+}
+
+.ot-done-now-btn {
+  flex: 0 0 auto;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 9px;
+  padding: 0 10px;
+  color: #fff;
+  background: linear-gradient(135deg, #188f67, #10a271);
+  box-shadow: 0 8px 18px rgba(21, 150, 107, 0.17);
+  font-size: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.ot-done-now-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ot-date-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.ot-date-box {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--ot-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.ot-date-box--estimated {
+  border-color: #d9e4fb;
+  background: #f8faff;
+}
+
+.ot-date-box--actual {
+  border-color: #cce9dc;
+  background: #f5fcf8;
+}
+
+.ot-date-box--waiting {
+  color: #7d889a;
+  background: #f9fafb;
+}
+
+.ot-date-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #8691a3;
+  font-size: 7px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ot-date-box strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ot-ink);
+  font-size: 9px;
+}
+
+.ot-date-box small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ot-muted);
+  font-size: 7px;
+}
+
+.ot-date-arrow {
+  text-align: center;
+  color: #a3acba;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.ot-small-edit {
+  margin-top: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  padding: 0;
+  color: #b97a00;
+  background: transparent;
+  font-size: 7px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.ot-performance-badge {
+  display: inline-flex;
+  margin-top: 7px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: 7px;
+  font-weight: 900;
+}
+
+.ot-performance-badge--early {
+  color: var(--ot-green);
+  background: var(--ot-green-soft);
+}
+
+.ot-performance-badge--late {
+  color: var(--ot-red);
+  background: var(--ot-red-soft);
+}
+
+.ot-performance-badge--ontime {
+  color: #596579;
+  background: var(--ot-gray-soft);
+}
+
+.ot-milestone-comment {
+  margin-top: 7px;
+  padding: 7px 8px;
+  border-left: 3px solid #bbcef9;
+  border-radius: 0 8px 8px 0;
+  color: #59667b;
+  background: #f7f9fe;
+  font-size: 7px;
+  line-height: 1.45;
+}
+
+.ot-side-card__body {
+  padding: 5px 12px 10px;
+}
+
+.ot-side-row {
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr);
+  gap: 7px;
+  padding: 8px 0;
+  border-bottom: 1px solid #edf1f5;
+  color: #748196;
+}
+
+.ot-side-row:last-child {
+  border-bottom: 0;
+}
+
+.ot-side-row__icon {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #738097;
+  background: #f3f6f9;
+}
+
+.ot-side-row span,
+.ot-side-row strong,
+.ot-side-row small {
+  display: block;
+}
+
+.ot-side-row span {
+  color: #8c97a8;
+  font-size: 6px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.ot-side-row strong {
+  margin-top: 2px;
+  color: var(--ot-ink);
+  font-size: 8px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.ot-side-row small {
+  margin-top: 1px;
+  color: var(--ot-muted);
+  font-size: 7px;
+}
+
+.ot-text-button {
+  border: 0;
+  padding: 0;
+  color: var(--ot-blue);
+  background: transparent;
+  font-size: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.ot-transport-summary {
+  padding: 10px;
+}
+
+.ot-transport-hero {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 11px;
+  color: #fff;
+  background: linear-gradient(135deg, #3476ed, #2156ca);
+}
+
+.ot-transport-hero > div {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.ot-transport-hero span,
+.ot-transport-hero strong {
+  display: block;
+}
+
+.ot-transport-hero span {
+  font-size: 6px;
+  font-weight: 900;
+  opacity: 0.78;
+}
+
+.ot-transport-hero strong {
+  margin-top: 2px;
+  font-size: 8px;
+}
+
+.ot-transport-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.ot-transport-grid > div {
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid var(--ot-line);
+  border-radius: 9px;
+  background: #fafbfd;
+}
+
+.ot-transport-grid span,
+.ot-transport-grid strong {
+  display: block;
+}
+
+.ot-transport-grid span {
+  color: #8d98aa;
+  font-size: 6px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ot-transport-grid strong {
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 7px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ot-transport-form {
+  padding: 10px;
+}
+
+.ot-transport-form label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.ot-transport-form label span {
+  display: block;
+  margin-bottom: 4px;
+  color: #59677c;
+  font-size: 7px;
+  font-weight: 900;
+}
+
+.ot-transport-form input,
+.ot-modal textarea,
+.ot-modal input {
+  width: 100%;
+  border: 1px solid var(--ot-line);
+  border-radius: 9px;
+  outline: 0;
+  padding: 8px 9px;
+  color: var(--ot-ink);
+  background: #fff;
+  font: inherit;
+  font-size: 9px;
+}
+
+.ot-transport-form input {
+  height: 34px;
+}
+
+.ot-save-transport {
+  width: 100%;
+  min-height: 35px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--ot-blue);
+  font-size: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.ot-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 3000;
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 18px;
-  background: rgba(13,25,18,.55);
-  backdrop-filter: blur(4px);
+  background: rgba(13, 22, 38, 0.5);
+  backdrop-filter: blur(7px);
 }
 
-.ot-seen-panel,
-.ot-delete-message-dialog {
-  width: min(430px,100%);
+.ot-modal {
+  width: min(520px, 100%);
   overflow: hidden;
-  border-radius: 15px;
+  border-radius: 18px;
   background: #fff;
-  box-shadow: 0 25px 65px rgba(8,18,11,.3);
+  box-shadow: 0 28px 90px rgba(18, 28, 46, 0.24);
 }
 
-.ot-seen-panel > header {
+.ot-modal__head {
   display: flex;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid #e0e8e3;
-}
-
-.ot-seen-content {
-  max-height: 360px;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.ot-seen-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px;
-  border-bottom: 1px solid #edf2ef;
-}
-
-.ot-seen-avatar {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  font-size: 9px;
-}
-
-.ot-seen-user > div:nth-child(2) {
-  min-width: 0;
-  flex: 1;
-}
-
-.ot-seen-user time {
-  color: #718078;
-  font-size: 7px;
-}
-
-.ot-delete-message-dialog {
-  max-width: 390px;
-  padding: 22px;
-  text-align: center;
-}
-
-.ot-delete-message-dialog button.delete {
-  border-color: #be3939;
-  background: #be3939;
-  color: #fff;
-}
-
-/* =========================================================
-   WHATSAPP AUDIO RECORDER
-========================================================= */
-
-.ot-audio-recorder {
-  width: 100%;
-}
-
-.ot-audio-record-button {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 9px 13px;
-  border: 1px solid #b9cdc0;
-  border-radius: 999px;
-  background: #fff;
-  color: #1e6540;
-  font-size: 10px;
-  font-weight: 850;
-}
-
-.ot-audio-recording-bar {
-  display: flex;
-  width: 100%;
-  min-height: 48px;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 9px;
-  border: 1px solid #cbdad1;
-  border-radius: 999px;
-  background: #f7faf8;
-}
-
-.ot-audio-cancel-button,
-.ot-audio-pause-button,
-.ot-audio-stop-button,
-.ot-audio-delete-button {
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.ot-audio-cancel-button,
-.ot-audio-delete-button {
-  border: 1px solid #efc5c5;
-  background: #fff1f1;
-  color: #b63232;
-}
-
-.ot-audio-pause-button {
-  border: 1px solid #c9d7cf;
-  background: #fff;
-  color: #315d45;
-}
-
-.ot-audio-stop-button {
-  border: 1px solid #1c7a47;
-  background: #1c7a47;
-  color: #fff;
-}
-
-.ot-audio-recording-status {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  align-items: center;
-  gap: 7px;
-}
-
-.ot-audio-recording-time {
-  margin-left: auto;
-  color: #60746a;
-  font-size: 9.5px;
-  font-weight: 900;
-}
-
-.ot-audio-record-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #df3737;
-  animation: ot-audio-pulse 1s infinite;
-}
-
-.ot-audio-record-dot.is-paused {
-  background: #df8a25;
-  animation: none;
-}
-
-@keyframes ot-audio-pulse {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .35; transform: scale(.82); }
-}
-
-.ot-audio-ready-card {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 9px;
-  padding: 9px;
-  border: 1px solid #bcd5c5;
-  border-radius: 15px;
-  background: #eaf5ee;
-}
-
-.ot-audio-ready-content {
-  min-width: 0;
-  flex: 1;
-}
-
-.ot-audio-ready-content audio {
-  display: block;
-  width: 100%;
-  height: 34px;
-}
-
-/* =========================================================
-   PREMIUM STATUS UPDATE MODAL
-========================================================= */
-
-.ot-status-update-overlay {
-  z-index: 2200;
-}
-
-.ot-status-update-modal {
-  width: min(980px,100%);
-  max-height: calc(100vh - 28px);
-  overflow: hidden;
-  border-radius: 20px;
-  background: #f4f7f5;
-  box-shadow: 0 28px 80px rgba(7,18,11,.38);
-}
-
-.ot-status-update-header {
-  display: grid;
-  grid-template-columns: minmax(0,1fr) auto auto;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
-  background: linear-gradient(135deg,#163f2b,#245b3d);
-  color: #fff;
-}
-
-.ot-status-update-title {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-}
-
-.ot-status-update-back,
-.ot-status-update-close {
-  width: 36px;
-  height: 36px;
-  border: 1px solid rgba(255,255,255,.25);
-  border-radius: 10px;
-  background: rgba(255,255,255,.1);
-  color: #fff;
-  font-size: 18px;
-}
-
-.ot-status-update-body {
-  max-height: calc(100vh - 160px);
-  overflow-y: auto;
-  padding: 14px;
-}
-
-.ot-status-form-card {
-  margin-bottom: 12px;
-  padding: 14px;
-  border: 1px solid #d9e4dd;
-  border-radius: 15px;
-  background: #fff;
-  box-shadow: 0 8px 22px rgba(17,36,25,.04);
-}
-
-.ot-status-card-heading {
-  display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--ot-line);
 }
 
-.ot-status-card-heading h3 {
-  margin: 4px 0 0;
-  color: #193727;
-  font-size: 13px;
+.ot-modal__head h3 {
+  margin: 0;
+  font-size: 15px;
 }
 
-.ot-status-card-heading p {
-  margin: 4px 0 0;
-  color: #74847b;
-  font-size: 8.5px;
-}
-
-.ot-status-option-grid {
-  display: grid;
-  grid-template-columns: repeat(4,minmax(0,1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.ot-status-option {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 8px;
-  padding: 9px;
-  border: 1px solid #d7e2db;
-  border-radius: 10px;
-  background: #fff;
-  color: #2c4437;
-  text-align: left;
-}
-
-.ot-status-option.selected {
-  border-color: #2b8351;
-  background: #edf8f1;
-  box-shadow: 0 0 0 3px rgba(43,131,81,.08);
-}
-
-.ot-status-option-marker {
-  display: inline-flex;
-  width: 18px;
-  height: 18px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #c9d7cf;
-  border-radius: 50%;
+.ot-modal__head p {
+  margin: 3px 0 0;
+  color: var(--ot-muted);
   font-size: 8px;
 }
 
-.ot-status-option.selected .ot-status-option-marker {
-  border-color: #2b8351;
-  background: #2b8351;
-  color: #fff;
-}
-
-.ot-status-form-grid {
+.ot-modal-close {
+  width: 31px;
+  height: 31px;
   display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.ot-status-field input,
-.ot-status-field select,
-.ot-status-comment-field textarea,
-.ot-status-full-select select {
-  width: 100%;
-  min-height: 40px;
-  padding: 9px 10px;
-  border: 1px solid #cddad2;
+  place-items: center;
+  border: 1px solid var(--ot-line);
   border-radius: 9px;
-  outline: 0;
   background: #fff;
-  color: #24382d;
-  font-size: 9.5px;
+  cursor: pointer;
 }
 
-.ot-status-comment-field textarea {
-  min-height: 110px;
-  resize: vertical;
+.ot-modal__body {
+  padding: 14px 16px;
 }
 
-.ot-status-file-dropzone {
-  display: flex;
-  width: 100%;
-  min-height: 110px;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 5px;
-  margin-top: 12px;
-  border: 1.5px dashed #b9ccbf;
-  border-radius: 12px;
-  background: #f9fcfa;
-  color: #2c6243;
+.ot-modal__body label {
+  display: block;
+  margin-bottom: 10px;
 }
 
-.ot-status-update-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 9px;
-  padding: 12px 16px;
-  border-top: 1px solid #d9e4dd;
-  background: #fff;
-}
-
-.ot-status-cancel-button,
-.ot-status-submit-button {
-  min-height: 39px;
-  padding: 9px 14px;
-  border-radius: 10px;
-  font-size: 9px;
+.ot-modal__body label > span {
+  display: block;
+  margin-bottom: 5px;
+  color: #536074;
+  font-size: 8px;
   font-weight: 900;
 }
 
-.ot-status-cancel-button {
-  border: 1px solid #c6d5cc;
-  background: #fff;
-  color: #355c45;
+.ot-date-input {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+  border: 1px solid var(--ot-line);
+  border-radius: 9px;
+  color: #7d899c;
 }
 
-.ot-status-submit-button {
-  border: 1px solid #1f7545;
-  background: #1f7545;
-  color: #fff;
+.ot-date-input input {
+  border: 0;
+  padding-left: 0;
 }
 
-/* =========================================================
-   RESPONSIVE
-========================================================= */
+.ot-modal-note {
+  padding: 9px 10px;
+  border: 1px solid #dce6fb;
+  border-radius: 9px;
+  color: #526178;
+  background: #f6f9ff;
+  font-size: 8px;
+  line-height: 1.45;
+}
 
-@media (max-width: 1200px) {
-  .ot-detail-page-content {
-    grid-template-columns: minmax(0,1.1fr) minmax(320px,.9fr);
+.ot-inline-error--modal {
+  margin: 9px 0 0;
+}
+
+.ot-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--ot-line);
+  background: #fafbfd;
+}
+
+@media (max-width: 1180px) {
+  .ot-detail-grid {
+    grid-template-columns: minmax(0, 1.45fr) 280px;
   }
 
-  .ot-status-option-grid {
-    grid-template-columns: repeat(3,minmax(0,1fr));
+  .ot-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 900px) {
-  .ot-detail-page {
-    height: 100dvh;
-    overflow: hidden;
+@media (max-width: 950px) {
+  .ot-detail-grid {
+    grid-template-columns: 1fr;
   }
 
-  .ot-detail-page-header {
-    min-height: 72px;
-    padding: 10px 12px;
+  .ot-detail-side {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
   }
 
-  .ot-detail-page-title h1 {
-    font-size: 17px;
+  .ot-search {
+    width: 360px;
   }
+}
 
-  .ot-detail-page-header-actions .ot-status-pill {
-    display: none !important;
-  }
-
-  .ot-detail-page-content {
-    display: block;
-    height: calc(100dvh - 72px);
-    overflow-y: auto;
+@media (max-width: 780px) {
+  .ot-page {
     padding: 0;
   }
 
-  .ot-detail-chat-column {
-    min-height: calc(100dvh - 72px);
+  .ot-page-head {
+    margin: 0;
+    padding: 13px;
+    border: 0;
+    border-bottom: 1px solid var(--ot-line);
+    border-radius: 0;
+    box-shadow: none;
   }
 
-  .ot-whatsapp-chat {
-    min-height: calc(100dvh - 72px);
-    max-height: calc(100dvh - 72px);
+  .ot-page-head p {
+    display: none;
+  }
+
+  .ot-list-card {
     border: 0;
     border-radius: 0;
     box-shadow: none;
   }
 
-  .ot-detail-info-column {
+  .ot-list-toolbar {
+    display: block;
     padding: 12px;
   }
 
-  .ot-status-option-grid {
-    grid-template-columns: repeat(2,minmax(0,1fr));
+  .ot-search {
+    width: 100%;
+    margin-top: 9px;
+  }
+
+  .ot-filters {
+    overflow-x: auto;
+    padding: 8px 11px;
+  }
+
+  .ot-filter-label {
+    display: none;
+  }
+
+  .ot-filters select {
+    flex: 0 0 auto;
+    min-width: 125px;
+  }
+
+  .ot-table-wrap {
+    display: none;
+  }
+
+  .ot-mobile-list {
+    display: block;
+    padding: 10px;
+  }
+
+  .ot-mobile-order {
+    width: 100%;
+    margin-bottom: 9px;
+    padding: 12px;
+    border: 1px solid var(--ot-line);
+    border-radius: 14px;
+    color: inherit;
+    text-align: left;
+    background: #fff;
+    box-shadow: 0 5px 18px rgba(34, 50, 78, 0.04);
+  }
+
+  .ot-mobile-order__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .ot-mobile-order__top small,
+  .ot-mobile-order__top strong,
+  .ot-mobile-order__top span {
+    display: block;
+  }
+
+  .ot-mobile-order__top small {
+    color: var(--ot-blue);
+    font-size: 7px;
+    font-weight: 900;
+  }
+
+  .ot-mobile-order__top strong {
+    margin-top: 3px;
+    font-size: 11px;
+  }
+
+  .ot-mobile-order__top span {
+    margin-top: 2px;
+    color: var(--ot-muted);
+    font-size: 7px;
+  }
+
+  .ot-mobile-order__date {
+    margin-top: 8px;
+    color: var(--ot-muted);
+    font-size: 7px;
+  }
+
+  .ot-mobile-order__material {
+    margin-top: 8px;
+    color: #4f5c72;
+    font-size: 8px;
+    font-weight: 750;
+  }
+
+  .ot-mobile-order__meta,
+  .ot-mobile-order__status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .ot-mobile-order__status {
+    justify-content: space-between;
+  }
+
+  .ot-mobile-order__meta span {
+    padding: 4px 7px;
+    border-radius: 999px;
+    color: #526077;
+    background: #f3f6fa;
+    font-size: 7px;
+    font-weight: 800;
+  }
+
+  .ot-progress--mobile {
+    margin-top: 9px;
+  }
+
+  .ot-mobile-order__dates {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-top: 9px;
+  }
+
+  .ot-mobile-order__dates > div {
+    padding: 7px 8px;
+    border-radius: 9px;
+    background: #f7f9fc;
+  }
+
+  .ot-mobile-order__dates span,
+  .ot-mobile-order__dates strong {
+    display: block;
+  }
+
+  .ot-mobile-order__dates span {
+    color: #8d98aa;
+    font-size: 6px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .ot-mobile-order__dates strong {
+    margin-top: 2px;
+    font-size: 8px;
+  }
+
+  .ot-detail-nav {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    min-height: 48px;
+    margin: 0;
+    padding: 0 11px;
+    border-bottom: 1px solid var(--ot-line);
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+  }
+
+  .ot-detail-hero {
+    border: 0;
+    border-radius: 0;
+    padding: 15px 12px;
+    box-shadow: none;
+  }
+
+  .ot-journey-strip-card,
+  .ot-metrics,
+  .ot-detail-grid {
+    margin-left: 9px;
+    margin-right: 9px;
+  }
+
+  .ot-detail-side {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 560px) {
-  .ot-mobile-card-primary-meta {
-    grid-template-columns: repeat(2,minmax(0,1fr));
+  .ot-page-head h1 {
+    font-size: 18px;
   }
 
-  .ot-mobile-card-primary-meta > div:last-child {
-    grid-column: 1 / -1;
+  .ot-page-head .ot-btn {
+    width: 37px;
+    min-width: 37px;
+    padding: 0;
+    font-size: 0;
   }
 
-  .ot-mobile-card-header {
-    flex-direction: column;
-  }
-
-  .ot-mobile-date-strip,
-  .ot-mobile-dispatch-strip,
-  .ot-mobile-card-footer {
+  .ot-detail-hero {
     grid-template-columns: 1fr;
   }
 
-  .ot-chat-header {
-    min-height: 62px;
-    padding: 8px 10px;
-  }
-
-  .ot-chat-title-area small,
-  .ot-chat-compose-help {
+  .ot-health-card {
     display: none;
   }
 
-  .ot-message-bubble {
-    max-width: 84%;
+  .ot-detail-hero h1 {
+    font-size: 22px;
   }
 
-  .ot-message-avatar {
-    display: none;
+  .ot-current-banner {
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .ot-message-audio {
-    min-width: 220px;
+  .ot-current-banner__progress {
+    grid-column: 1 / -1;
+    padding: 8px 0 0;
+    border-top: 1px solid var(--ot-line);
+    border-left: 0;
+    text-align: left;
   }
 
-  .ot-seen-overlay,
-  .ot-delete-message-overlay {
+  .ot-metrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+
+  .ot-journey-node {
+    min-width: 78px;
+  }
+
+  .ot-timeline {
+    padding: 11px 8px;
+  }
+
+  .ot-timeline-row {
+    grid-template-columns: 27px minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .ot-timeline-dot {
+    width: 25px;
+    height: 25px;
+  }
+
+  .ot-timeline-top {
+    display: block;
+  }
+
+  .ot-done-now-btn {
+    width: 100%;
+    margin-top: 8px;
+    justify-content: center;
+  }
+
+  .ot-date-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ot-date-arrow {
+    height: 12px;
+    transform: rotate(90deg);
+  }
+
+  .ot-modal-backdrop {
     align-items: flex-end;
     padding: 0;
   }
 
-  .ot-seen-panel,
-  .ot-delete-message-dialog {
+  .ot-modal {
     width: 100%;
-    border-radius: 18px 18px 0 0;
+    border-radius: 20px 20px 0 0;
   }
-
-  .ot-audio-record-button {
-    width: 100%;
-  }
-
-  .ot-audio-recording-bar {
-    border-radius: 14px;
-  }
-
-  .ot-audio-recording-status strong {
-    display: none;
-  }
-
-  .ot-status-update-overlay {
-    padding: 0;
-  }
-
-  .ot-status-update-modal {
-    width: 100%;
-    height: 100dvh;
-    max-height: 100dvh;
-    border-radius: 0;
-  }
-
-  .ot-status-update-header {
-    grid-template-columns: minmax(0,1fr) auto;
-    padding: 12px;
-  }
-
-  .ot-status-update-current {
-    display: none;
-  }
-
-  .ot-status-update-body {
-    max-height: calc(100dvh - 134px);
-    padding: 10px;
-  }
-
-  .ot-status-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ot-status-update-footer button {
-    flex: 1;
-  }
-}
-/* =========================================================
-PREMIUM CHAT UI OVERRIDES - ADD AT VERY END OF OrderTracking.css
-========================================================= */
-
-/* Move status timeline above chat */
-.ot-detail-page-content{
-    display:grid!important;
-    grid-template-columns:minmax(0,1.35fr) 360px;
-    gap:18px;
-}
-
-.ot-chat-status-strip{
-    position:sticky;
-    top:0;
-    z-index:25;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:12px 16px;
-    background:linear-gradient(180deg,#17482f,#1f6a44);
-    color:#fff;
-    border-bottom:1px solid rgba(255,255,255,.12);
-}
-
-.ot-chat-status-strip .ot-status-pill{
-    margin:0;
-    background:#fff!important;
-    color:#1f6a44!important;
-    font-weight:900;
-}
-
-.ot-chat-timeline-mini{
-    display:flex;
-    overflow-x:auto;
-    gap:12px;
-    padding:10px 14px;
-    background:#f6faf7;
-    border-bottom:1px solid #dce8e1;
-}
-
-.ot-chat-timeline-mini::-webkit-scrollbar{
-    height:6px;
-}
-
-.ot-chat-step{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    white-space:nowrap;
-    font-size:11px;
-    font-weight:700;
-}
-
-.ot-chat-step::before{
-    content:"";
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    background:#2d8b56;
-    box-shadow:0 0 0 3px #dff4e7;
-}
-
-/* WhatsApp bubbles */
-
-.ot-message-bubble{
-    max-width:72%!important;
-    border-radius:10px!important;
-    padding:8px 10px 6px!important;
-    box-shadow:0 2px 8px rgba(0,0,0,.08)!important;
-}
-
-.ot-message.own .ot-message-bubble{
-    background:#d9fdd3!important;
-}
-
-.ot-message.other .ot-message-bubble{
-    background:#fff!important;
-}
-
-.ot-message-text{
-    font-size:13px!important;
-    line-height:1.55!important;
-    color:#111!important;
-}
-
-.ot-message-footer{
-    margin-top:6px!important;
-}
-
-.ot-message-footer time{
-    font-size:10px!important;
-}
-
-.ot-message-ticks{
-    font-size:13px!important;
-}
-
-.ot-message-ticks.all-seen,
-.ot-message-ticks.seen{
-    color:#34b7f1!important;
-}
-
-/* Sender */
-
-.ot-message-meta strong{
-    font-size:11px!important;
-    color:#0f5132!important;
-}
-
-/* Audio */
-
-.ot-message-audio{
-    min-width:330px!important;
-    border-radius:16px!important;
-    background:#ecfff0!important;
-    border:1px solid #c8e7d0;
-    padding:10px!important;
-}
-
-.ot-message-audio audio{
-    height:42px!important;
-}
-
-.ot-audio-message-icon{
-    width:42px!important;
-    height:42px!important;
-    font-size:18px!important;
-}
-
-/* Composer */
-
-.ot-chat-composer{
-    background:#f0f2f5!important;
-    padding:12px!important;
-}
-
-.ot-chat-compose-row textarea{
-    min-height:46px!important;
-    border-radius:24px!important;
-    font-size:13px!important;
-    padding:12px 16px!important;
-}
-
-.ot-chat-send-button{
-    width:46px!important;
-    height:46px!important;
-    border-radius:50%!important;
-}
-
-/* Delete menu */
-
-.ot-message-menu{
-    border-radius:14px!important;
-}
-
-.ot-message-menu button{
-    font-size:12px!important;
-    padding:12px 14px!important;
-}
-
-/* Seen by dialog */
-
-.ot-seen-panel{
-    border-radius:18px!important;
-}
-
-.ot-seen-user{
-    padding:14px!important;
-}
-
-.ot-seen-avatar{
-    width:42px!important;
-    height:42px!important;
-    font-size:12px!important;
-}
-
-/* Update modal */
-
-.ot-status-update-modal{
-    border-radius:22px!important;
-}
-
-.ot-status-update-header{
-    background:linear-gradient(180deg,#15492f,#206a45)!important;
-}
-
-.ot-status-update-modal textarea{
-    min-height:130px!important;
-    font-size:14px!important;
-}
-
-.ot-upload-box{
-    border:2px dashed #b8d7c2!important;
-    border-radius:18px!important;
-}
-
-.ot-upload-box:hover{
-    background:#f7fcf8!important;
-}
-
-/* Mobile */
-
-@media(max-width:900px){
-
-.ot-message-bubble{
-max-width:88%!important;
-}
-
-.ot-message-audio{
-min-width:100%!important;
-}
-
 }
 
 /* =========================================================
-   FINAL ORDER TRACKING UI BALANCE FIX
-   ADDITIONAL OVERRIDES
-   PURPOSE:
-   - Make chat area larger
-   - Reduce oversized status/timeline section
-   - Improve message bubble readability
-   - Improve audio recorder and audio message UI
-   - Improve desktop and PWA balance
-   - Improve status modal spacing
+   ORIGINAL ETA -> REVISED ETA
+
+   Example:
+
+   Original
+   24 Jun 2026   <-- gray + strike through
+
+   Revised ETA
+   19 Aug 2026   <-- highlighted blue
 ========================================================= */
 
-/* =========================================================
-   1. DETAIL PAGE LAYOUT BALANCE
-========================================================= */
-
-.ot-detail-page-content {
-  grid-template-columns:
-    minmax(300px, 0.72fr)
-    minmax(0, 1.6fr) !important;
-  gap: 14px !important;
-  padding: 14px !important;
+.ot-estimate-revision {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  margin-top: 4px;
 }
 
-.ot-detail-info-column {
-  min-width: 0 !important;
-  gap: 10px !important;
+/* OLD / ORIGINAL DATE */
+
+.ot-estimate-original {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.ot-detail-chat-column {
-  min-width: 0 !important;
-  height: calc(100vh - 110px) !important;
+.ot-estimate-original span {
+  color: #9aa4b4;
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.ot-detail-action-card,
-.ot-detail-info-card {
-  border-radius: 14px !important;
-  box-shadow:
-    0 7px 20px rgba(20, 45, 29, 0.045) !important;
+.ot-estimate-original strong {
+  position: relative;
+
+  display: inline-block;
+
+  margin: 0;
+
+  color: #919bad;
+
+  font-size: 8px;
+  font-weight: 750;
+
+  text-decoration-line: line-through;
+  text-decoration-color: #a7b0be;
+  text-decoration-thickness: 1.5px;
+
+  opacity: 0.82;
 }
 
-.ot-detail-action-card,
-.ot-detail-info-card {
-  padding: 12px !important;
+/* NEW / CURRENT REVISED DATE */
+
+.ot-estimate-revised {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  padding-left: 11px;
 }
 
-.ot-detail-info-grid {
-  gap: 7px !important;
-  margin-top: 10px !important;
+.ot-estimate-revised::before {
+  content: "→";
+
+  position: absolute;
+  left: -3px;
+  bottom: 1px;
+
+  color: #9aa8bc;
+
+  font-size: 10px;
+  font-weight: 800;
 }
 
-.ot-detail-info-grid > div {
-  padding: 8px !important;
+.ot-estimate-revised span {
+  color: #2f6dea;
+
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.ot-detail-info-grid span {
-  font-size: 7px !important;
+.ot-estimate-revised strong {
+  margin: 0;
+
+  color: #1f5fd8;
+
+  font-size: 10px;
+  font-weight: 900;
 }
 
-.ot-detail-info-grid strong {
-  font-size: 9.5px !important;
-  line-height: 1.42 !important;
-}
+/* subtle revised indicator on estimated card */
 
-/* =========================================================
-   2. CHAT CONTAINER — MAKE CHAT THE MAIN FOCUS
-========================================================= */
+.ot-date-box--estimated:has(
+  .ot-estimate-revision
+) {
+  border-color: #bfd2ff;
 
-.ot-whatsapp-chat {
-  height: 100% !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  border-radius: 16px !important;
-  background: #ffffff !important;
-  box-shadow:
-    0 14px 34px rgba(20, 44, 30, 0.08),
-    0 2px 8px rgba(20, 44, 30, 0.04) !important;
-}
-
-.ot-chat-panel {
-  min-height: 0 !important;
-  height: 100% !important;
-  overflow: hidden !important;
-}
-
-/* =========================================================
-   3. COMPACT CHAT HEADER
-========================================================= */
-
-.ot-chat-header {
-  min-height: 58px !important;
-  padding: 8px 12px !important;
-  gap: 10px !important;
-  background:
-    linear-gradient(
-      180deg,
-      #f8fbf9 0%,
-      #f1f6f3 100%
-    ) !important;
-}
-
-.ot-chat-group-avatar {
-  width: 36px !important;
-  height: 36px !important;
-  flex: 0 0 36px !important;
-  font-size: 10px !important;
-}
-
-.ot-chat-title-area {
-  gap: 9px !important;
-}
-
-.ot-chat-title-area strong {
-  font-size: 11px !important;
-}
-
-.ot-chat-title-area span {
-  margin-top: 1px !important;
-  font-size: 9px !important;
-}
-
-.ot-chat-title-area small {
-  margin-top: 1px !important;
-  font-size: 7.5px !important;
-}
-
-.ot-chat-header-status {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  gap: 6px !important;
-  flex-wrap: wrap !important;
-}
-
-.ot-chat-header-status .ot-status-pill,
-.ot-chat-header-status .ot-chat-state {
-  margin: 0 !important;
-  padding: 5px 8px !important;
-  font-size: 7.8px !important;
-}
-
-/* =========================================================
-   4. COMPACT CURRENT STATUS SUMMARY
-========================================================= */
-
-.ot-chat-tracking-header {
-  flex: 0 0 auto !important;
-  border-bottom: 1px solid #dce7e0 !important;
-  background: #ffffff !important;
-}
-
-.ot-chat-status-strip {
-  display: grid !important;
-  grid-template-columns:
-    minmax(180px, 1fr)
-    minmax(0, 1.55fr) !important;
-  align-items: stretch !important;
-  gap: 8px !important;
-  padding: 8px 10px !important;
   background:
     linear-gradient(
       135deg,
-      #174a31 0%,
-      #226342 100%
-    ) !important;
+      #f8faff 0%,
+      #f2f7ff 100%
+    );
 }
 
-.ot-chat-status-main {
-  min-width: 0 !important;
-  padding: 8px 10px !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  border-radius: 10px !important;
-  background: rgba(255, 255, 255, 0.07) !important;
-}
+/* MOBILE */
 
-.ot-chat-status-label {
-  display: block !important;
-  color: #cde4d6 !important;
-  font-size: 6.8px !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.08em !important;
-}
+@media (max-width: 560px) {
+  .ot-estimate-revision {
+    align-items: flex-start;
+    gap: 6px 11px;
+  }
 
-.ot-chat-status-main > strong {
-  display: block !important;
-  margin-top: 3px !important;
-  color: #ffffff !important;
-  font-size: 13px !important;
-  line-height: 1.25 !important;
-}
+  .ot-estimate-original strong {
+    font-size: 8px;
+  }
 
-.ot-chat-status-main > small {
-  display: -webkit-box !important;
-  overflow: hidden !important;
-  margin-top: 4px !important;
-  color: #dcebe2 !important;
-  font-size: 8px !important;
-  line-height: 1.4 !important;
-  -webkit-box-orient: vertical !important;
-  -webkit-line-clamp: 2 !important;
-}
-
-.ot-chat-operational-summary {
-  display: grid !important;
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr)) !important;
-  gap: 7px !important;
-  min-width: 0 !important;
-}
-
-.ot-chat-summary-item {
-  min-width: 0 !important;
-  padding: 8px !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  border-radius: 10px !important;
-  background: rgba(255, 255, 255, 0.07) !important;
-}
-
-.ot-chat-summary-item > span {
-  display: block !important;
-  color: #cce2d4 !important;
-  font-size: 6.5px !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.05em !important;
-  text-transform: uppercase !important;
-}
-
-.ot-chat-summary-item > strong {
-  display: -webkit-box !important;
-  overflow: hidden !important;
-  margin-top: 3px !important;
-  color: #ffffff !important;
-  font-size: 8.5px !important;
-  line-height: 1.35 !important;
-  -webkit-box-orient: vertical !important;
-  -webkit-line-clamp: 2 !important;
-}
-
-.ot-chat-summary-item > small {
-  display: -webkit-box !important;
-  overflow: hidden !important;
-  margin-top: 3px !important;
-  color: #d2e6da !important;
-  font-size: 6.8px !important;
-  line-height: 1.35 !important;
-  -webkit-box-orient: vertical !important;
-  -webkit-line-clamp: 2 !important;
+  .ot-estimate-revised strong {
+    font-size: 9px;
+  }
 }
 
 /* =========================================================
-   5. COMPACT TIMELINE — PREVENT OVERSIZED STATUS AREA
+   REVISED ETA REASON
 ========================================================= */
 
-.ot-chat-timeline-heading {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 8px !important;
-  padding: 7px 10px 5px !important;
-  background: #f8fbf9 !important;
-}
-
-.ot-chat-timeline-heading > div > span {
-  display: block !important;
-  color: #2a744a !important;
-  font-size: 6.8px !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.07em !important;
-}
-
-.ot-chat-timeline-heading > div > strong {
-  display: block !important;
-  margin-top: 2px !important;
-  color: #1e3b2a !important;
-  font-size: 9px !important;
-}
-
-.ot-chat-timeline-heading > small {
-  color: #73827a !important;
-  font-size: 7px !important;
-  font-weight: 750 !important;
-}
-
-.ot-chat-timeline-mini {
-  display: flex !important;
-  gap: 5px !important;
-  overflow-x: auto !important;
-  padding: 5px 10px 8px !important;
-  background: #f8fbf9 !important;
-  scrollbar-width: thin !important;
-}
-
-.ot-chat-timeline-mini::-webkit-scrollbar {
-  height: 4px !important;
-}
-
-.ot-chat-step {
-  position: relative !important;
-  display: flex !important;
-  min-width: 82px !important;
-  max-width: 100px !important;
-  min-height: 38px !important;
-  align-items: center !important;
-  gap: 6px !important;
-  padding: 6px 7px !important;
-  border: 1px solid #dfe8e2 !important;
-  border-radius: 9px !important;
-  background: #ffffff !important;
-  box-shadow: none !important;
-  white-space: normal !important;
-}
-
-.ot-chat-step::before {
-  display: none !important;
-}
-
-.ot-chat-step-marker {
-  display: inline-flex !important;
-  width: 18px !important;
-  height: 18px !important;
-  flex: 0 0 18px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border: 1px solid #cbd8d0 !important;
-  border-radius: 50% !important;
-  background: #edf2ef !important;
-  color: #66776e !important;
-  font-size: 7px !important;
-  font-weight: 900 !important;
-}
-
-.ot-chat-step > div {
-  min-width: 0 !important;
-}
-
-.ot-chat-step strong {
-  display: block !important;
-  color: #53645b !important;
-  font-size: 7.5px !important;
-  line-height: 1.2 !important;
-}
-
-.ot-chat-step small {
-  display: block !important;
-  margin-top: 2px !important;
-  color: #849089 !important;
-  font-size: 6.2px !important;
-}
-
-.ot-chat-step.completed {
-  border-color: #c7ddce !important;
-  background: #f1f8f3 !important;
-}
-
-.ot-chat-step.completed .ot-chat-step-marker {
-  border-color: #2c8653 !important;
-  background: #2c8653 !important;
-  color: #ffffff !important;
-}
-
-.ot-chat-step.completed strong {
-  color: #286244 !important;
-}
-
-.ot-chat-step.active {
-  border-color: #e8b95e !important;
-  background: #fff9e9 !important;
-  box-shadow: 0 0 0 2px rgba(217, 153, 36, 0.08) !important;
-}
-
-.ot-chat-step.active .ot-chat-step-marker {
-  border-color: #d5901e !important;
-  background: #d5901e !important;
-  color: #ffffff !important;
-}
-
-.ot-chat-step.active strong {
-  color: #875812 !important;
-}
-
-.ot-chat-step.pending {
-  opacity: 0.68 !important;
-}
-
-/* =========================================================
-   6. MESSAGE AREA — LARGER AND MORE READABLE
-========================================================= */
-
-.ot-chat-background {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  background:
-    linear-gradient(
-      rgba(238, 234, 225, 0.88),
-      rgba(238, 234, 225, 0.88)
-    ),
-    radial-gradient(
-      circle at 12px 12px,
-      rgba(54, 103, 75, 0.06) 1.5px,
-      transparent 2px
-    ) !important;
-  background-size: auto, 30px 30px !important;
-}
-
-.ot-chat-messages {
-  height: 100% !important;
-  min-height: 0 !important;
-  padding: 14px 18px 18px !important;
-}
-
-.ot-message {
-  margin-bottom: 10px !important;
-  gap: 8px !important;
-}
-
-.ot-message-avatar {
-  width: 30px !important;
-  height: 30px !important;
-  flex: 0 0 30px !important;
-  font-size: 8.5px !important;
-}
-
-.ot-message-bubble {
-  min-width: 125px !important;
-  max-width: min(72%, 620px) !important;
-  padding: 9px 11px 6px !important;
-  border-radius: 10px !important;
-  box-shadow:
-    0 1px 1px rgba(17, 35, 24, 0.12),
-    0 2px 7px rgba(17, 35, 24, 0.05) !important;
-}
-
-.ot-message.other .ot-message-bubble {
-  border-top-left-radius: 3px !important;
-  background: #ffffff !important;
-}
-
-.ot-message.own .ot-message-bubble {
-  border-top-right-radius: 3px !important;
-  background: #d9fdd3 !important;
-}
-
-.ot-message-topline {
-  min-height: 16px !important;
-}
-
-.ot-message-topline > div:first-child strong {
-  color: #167144 !important;
-  font-size: 9.5px !important;
-}
-
-.ot-message-topline > div:first-child span {
-  margin-left: 6px !important;
-  font-size: 7.5px !important;
-}
-
-.ot-message-text {
-  margin-top: 4px !important;
-  color: #15241b !important;
-  font-size: 12px !important;
-  line-height: 1.55 !important;
-}
-
-.ot-message-footer {
-  gap: 5px !important;
-  margin-top: 5px !important;
-}
-
-.ot-message-footer time {
-  font-size: 8px !important;
-}
-
-.ot-message-ticks {
-  font-size: 12px !important;
-}
-
-.ot-message-ticks.seen,
-.ot-message-ticks.all-seen {
-  color: #1689d0 !important;
-}
-
-/* =========================================================
-   7. SYSTEM / STATUS MESSAGES
-========================================================= */
-
-.ot-system-message {
-  display: grid !important;
-  grid-template-columns: auto minmax(0, 1fr) !important;
-  align-items: center !important;
-  gap: 8px !important;
-  width: min(90%, 520px) !important;
-  max-width: 520px !important;
-  padding: 8px 10px !important;
-  border: 1px solid #e4d58e !important;
-  border-radius: 10px !important;
-  background: #fff9dc !important;
-  color: #5f5737 !important;
-  text-align: left !important;
-}
-
-.ot-system-message.status-update {
-  border-color: #bcdcc7 !important;
-  background: #eef8f1 !important;
-}
-
-.ot-system-message.update-request {
-  border-color: #efc878 !important;
-  background: #fff4dd !important;
-}
-
-.ot-system-message-icon {
-  display: inline-flex !important;
-  width: 26px !important;
-  height: 26px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 50% !important;
-  background: #2d8050 !important;
-  color: #ffffff !important;
-  font-size: 9px !important;
-  font-weight: 900 !important;
-}
-
-.ot-system-message.update-request
-  .ot-system-message-icon {
-  background: #cc851e !important;
-}
-
-.ot-system-message-content strong,
-.ot-system-message-content span,
-.ot-system-message-content small {
-  display: block !important;
-}
-
-.ot-system-message-content strong {
-  color: #294331 !important;
-  font-size: 8.5px !important;
-}
-
-.ot-system-message-content span {
-  margin-top: 2px !important;
-  color: #4e6055 !important;
-  font-size: 8px !important;
-  line-height: 1.4 !important;
-}
-
-.ot-system-message-content small {
-  margin-top: 3px !important;
-  color: #7c877f !important;
-  font-size: 6.8px !important;
-}
-
-/* =========================================================
-   8. AUDIO MESSAGE — IMPROVED WIDTH AND BALANCE
-========================================================= */
-
-.ot-message-audio {
-  min-width: 320px !important;
-  max-width: 430px !important;
-  gap: 10px !important;
-  padding: 9px 10px !important;
-  border: 1px solid rgba(38, 112, 67, 0.14) !important;
-  border-radius: 13px !important;
-  background: rgba(255, 255, 255, 0.58) !important;
-}
-
-.ot-audio-message-icon {
-  width: 40px !important;
-  height: 40px !important;
-  flex: 0 0 40px !important;
-  font-size: 16px !important;
-}
-
-.ot-message-audio span {
-  margin-bottom: 4px !important;
-  font-size: 8.5px !important;
-}
-
-.ot-message-audio audio {
-  width: 100% !important;
-  height: 36px !important;
-}
-
-/* =========================================================
-   9. CHAT COMPOSER — STICKY AND CLEAN
-========================================================= */
-
-.ot-chat-composer {
-  flex: 0 0 auto !important;
-  padding: 9px 11px 8px !important;
-  border-top: 1px solid #d7e1db !important;
-  background: #f0f2f1 !important;
-}
-
-.ot-chat-compose-row {
-  gap: 8px !important;
-}
-
-.ot-chat-attach-button,
-.ot-chat-send-button {
-  width: 44px !important;
-  height: 44px !important;
-  flex: 0 0 44px !important;
-}
-
-.ot-chat-compose-row textarea {
-  min-height: 44px !important;
-  max-height: 110px !important;
-  padding: 12px 15px !important;
-  border: 1px solid transparent !important;
-  border-radius: 22px !important;
-  font-size: 11.5px !important;
-  line-height: 1.45 !important;
-}
-
-.ot-chat-compose-row textarea:focus {
-  border-color: #b9d4c3 !important;
-  box-shadow: 0 0 0 3px rgba(37, 117, 69, 0.08) !important;
-}
-
-.ot-chat-send-button {
-  background: #1f7b48 !important;
-  color: #ffffff !important;
-  box-shadow: 0 5px 13px rgba(31, 123, 72, 0.18) !important;
-}
-
-.ot-chat-compose-help {
-  margin-top: 3px !important;
-  padding-left: 52px !important;
-  font-size: 6.5px !important;
-}
-
-/* =========================================================
-   10. AUDIO RECORDER — COMPACT AND PREMIUM
-========================================================= */
-
-.ot-chat-audio-area {
-  margin-bottom: 6px !important;
-}
-
-.ot-audio-record-button {
-  min-height: 36px !important;
-  padding: 7px 11px !important;
-  font-size: 8.5px !important;
-}
-
-.ot-audio-recording-bar {
-  min-height: 44px !important;
-  padding: 5px 7px !important;
-}
-
-.ot-audio-cancel-button,
-.ot-audio-pause-button,
-.ot-audio-stop-button,
-.ot-audio-delete-button {
-  width: 32px !important;
-  height: 32px !important;
-  flex: 0 0 32px !important;
-}
-
-.ot-audio-recording-status strong {
-  font-size: 8.5px !important;
-}
-
-.ot-audio-recording-time {
-  font-size: 8.5px !important;
-}
-
-.ot-audio-ready-card {
-  padding: 7px 8px !important;
-  border-radius: 12px !important;
-}
-
-.ot-audio-ready-heading {
-  margin-bottom: 4px !important;
-}
-
-.ot-audio-ready-heading > span {
-  width: 28px !important;
-  height: 28px !important;
-  flex: 0 0 28px !important;
-}
-
-.ot-audio-ready-heading strong {
-  font-size: 8.5px !important;
-}
-
-.ot-audio-ready-heading small {
-  font-size: 7.5px !important;
-}
-
-.ot-audio-ready-content audio {
-  height: 32px !important;
-}
-
-/* =========================================================
-   11. STATUS UPDATE MODAL — REDUCE OVERSIZED FORM
-========================================================= */
-
-.ot-status-update-modal {
-  width: min(880px, 100%) !important;
-  border-radius: 18px !important;
-}
-
-.ot-status-update-header {
-  padding: 12px 15px !important;
-}
-
-.ot-status-update-title h2 {
-  font-size: 16px !important;
-}
-
-.ot-status-update-title p {
-  font-size: 8.5px !important;
-}
-
-.ot-status-update-body {
-  padding: 11px !important;
-}
-
-.ot-status-form-card {
-  margin-bottom: 9px !important;
-  padding: 11px !important;
-  border-radius: 12px !important;
-}
-
-.ot-status-card-heading h3 {
-  font-size: 11.5px !important;
-}
-
-.ot-status-card-heading p {
-  font-size: 7.8px !important;
-}
-
-.ot-status-option-grid {
-  grid-template-columns:
-    repeat(5, minmax(0, 1fr)) !important;
-  gap: 6px !important;
-  margin-top: 9px !important;
-}
-
-.ot-status-option {
-  min-height: 38px !important;
-  gap: 5px !important;
-  padding: 7px !important;
-  border-radius: 8px !important;
-}
-
-.ot-status-option-marker {
-  width: 16px !important;
-  height: 16px !important;
-  flex: 0 0 16px !important;
-}
-
-.ot-status-option strong {
-  font-size: 7.5px !important;
-}
-
-.ot-status-form-grid {
-  gap: 8px !important;
-  margin-top: 9px !important;
-}
-
-.ot-status-field > span,
-.ot-status-comment-field > span,
-.ot-status-full-select > span {
-  margin-bottom: 4px !important;
-  font-size: 8px !important;
-}
-
-.ot-status-field input,
-.ot-status-field select,
-.ot-status-comment-field textarea,
-.ot-status-full-select select {
-  min-height: 37px !important;
-  padding: 8px 9px !important;
-  font-size: 9px !important;
-}
-
-.ot-status-comment-field textarea {
-  min-height: 86px !important;
-}
-
-.ot-status-file-dropzone {
-  min-height: 82px !important;
-  margin-top: 9px !important;
-}
-
-.ot-status-audio-section {
-  margin-top: 9px !important;
-  padding: 9px !important;
-}
-
-.ot-status-update-footer {
-  padding: 9px 12px !important;
-}
-
-.ot-status-cancel-button,
-.ot-status-submit-button {
-  min-height: 36px !important;
-  padding: 8px 12px !important;
-  font-size: 8.5px !important;
-}
-
-/* =========================================================
-   12. SEEN-BY AND DELETE DIALOG POLISH
-========================================================= */
-
-.ot-seen-panel,
-.ot-delete-message-dialog {
-  border-radius: 16px !important;
-}
-
-.ot-seen-panel > header {
-  padding: 12px 14px !important;
-}
-
-.ot-seen-content {
-  padding: 6px !important;
-}
-
-.ot-seen-user {
-  padding: 9px 10px !important;
-}
-
-.ot-seen-avatar {
-  width: 36px !important;
-  height: 36px !important;
-  flex: 0 0 36px !important;
-  font-size: 9px !important;
-}
-
-.ot-seen-user strong {
-  font-size: 9px !important;
-}
-
-.ot-seen-user span,
-.ot-seen-user time {
-  font-size: 7px !important;
-}
-
-.ot-delete-message-dialog {
-  padding: 18px !important;
-}
-
-.ot-delete-message-dialog h3 {
-  font-size: 14px !important;
-}
-
-.ot-delete-message-dialog p {
-  font-size: 8.5px !important;
-}
-
-/* =========================================================
-   13. TABLET AND PWA
-========================================================= */
-
-@media screen and (max-width: 1200px) {
-  .ot-detail-page-content {
-    grid-template-columns:
-      minmax(280px, 0.8fr)
-      minmax(0, 1.4fr) !important;
-  }
-
-  .ot-status-option-grid {
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr)) !important;
-  }
-}
-
-@media screen and (max-width: 900px) {
-  .ot-detail-page-content {
-    display: flex !important;
-    height: calc(100dvh - 72px) !important;
-    flex-direction: column !important;
-    overflow-y: auto !important;
-  }
-
-  .ot-detail-info-column {
-    order: 2 !important;
-    padding: 10px !important;
-  }
-
-  .ot-detail-chat-column {
-    order: 1 !important;
-    width: 100% !important;
-    height: calc(100dvh - 72px) !important;
-    min-height: calc(100dvh - 72px) !important;
-  }
-
-  .ot-whatsapp-chat {
-    height: 100% !important;
-    border-radius: 0 !important;
-  }
-
-  .ot-chat-status-strip {
-    grid-template-columns: 1fr !important;
-  }
-
-  .ot-chat-operational-summary {
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr)) !important;
-  }
-
-  .ot-status-option-grid {
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr)) !important;
-  }
-}
-
-@media screen and (max-width: 560px) {
-  .ot-chat-header {
-    min-height: 56px !important;
-    padding: 7px 9px !important;
-  }
-
-  .ot-chat-header-status {
-    gap: 4px !important;
-  }
-
-  .ot-chat-header-status .ot-chat-state {
-    display: none !important;
-  }
-
-  .ot-chat-status-strip {
-    gap: 6px !important;
-    padding: 7px 8px !important;
-  }
-
-  .ot-chat-operational-summary {
-    grid-template-columns:
-      repeat(3, minmax(90px, 1fr)) !important;
-    overflow-x: auto !important;
-  }
-
-  .ot-chat-summary-item {
-    min-width: 90px !important;
-  }
-
-  .ot-chat-timeline-heading {
-    padding: 6px 8px 4px !important;
-  }
-
-  .ot-chat-timeline-mini {
-    padding: 4px 8px 7px !important;
-  }
-
-  .ot-chat-step {
-    min-width: 76px !important;
-    min-height: 35px !important;
-    padding: 5px 6px !important;
-  }
-
-  .ot-chat-messages {
-    padding: 10px 8px 14px !important;
-  }
-
-  .ot-message-bubble {
-    max-width: 88% !important;
-    padding: 8px 9px 5px !important;
-  }
-
-  .ot-message-text {
-    font-size: 11px !important;
-  }
-
-  .ot-message-avatar {
-    display: none !important;
-  }
-
-  .ot-message-audio {
-    min-width: 240px !important;
-    max-width: 100% !important;
-  }
-
-  .ot-chat-composer {
-    padding: 7px 8px !important;
-  }
-
-  .ot-chat-attach-button,
-  .ot-chat-send-button {
-    width: 42px !important;
-    height: 42px !important;
-    flex: 0 0 42px !important;
-  }
-
-  .ot-status-update-modal {
-    width: 100% !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    border-radius: 0 !important;
-  }
-
-  .ot-status-option-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .ot-status-form-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-/* =========================================================
-   ORDER TRACKING STATUS MODAL — FINAL FIX
-   ADD AT THE ABSOLUTE END OF OrderTrackingPage.css
-   PURPOSE:
-   - Keep submit footer always visible
-   - Make only modal body scroll
-   - Prevent footer from being clipped
-   - Improve spacing and visual hierarchy
-========================================================= */
-
-.ot-status-update-overlay {
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 18px !important;
-  overflow: hidden !important;
-}
-
-.ot-status-update-modal-fixed {
-  display: grid !important;
-  grid-template-rows: auto minmax(0, 1fr) auto !important;
-  width: min(920px, 100%) !important;
-  height: min(860px, calc(100dvh - 36px)) !important;
-  max-height: calc(100dvh - 36px) !important;
-  overflow: hidden !important;
-  border: 1px solid rgba(213, 225, 217, 0.92) !important;
-  border-radius: 20px !important;
-  background: #f4f7f5 !important;
-  box-shadow:
-    0 30px 90px rgba(8, 20, 12, 0.36),
-    0 8px 24px rgba(8, 20, 12, 0.18) !important;
-}
-
-.ot-status-update-header {
-  position: relative !important;
-  z-index: 3 !important;
-  min-height: 96px !important;
-  padding: 15px 18px !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
-  background:
-    linear-gradient(
-      135deg,
-      #15472e 0%,
-      #1e6540 100%
-    ) !important;
-}
-
-.ot-status-update-title {
-  min-width: 0 !important;
-}
-
-.ot-status-update-title > div {
-  min-width: 0 !important;
-}
-
-.ot-status-update-title h2 {
-  max-width: 600px !important;
-  overflow: hidden !important;
-  margin-top: 5px !important;
-  color: #ffffff !important;
-  font-size: 18px !important;
-  line-height: 1.25 !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-.ot-status-update-title p {
-  margin-top: 5px !important;
-  color: #d5e7dc !important;
-  font-size: 9px !important;
-}
-
-.ot-status-update-back,
-.ot-status-update-close {
-  flex: 0 0 38px !important;
-  width: 38px !important;
-  height: 38px !important;
-  border-radius: 11px !important;
-}
-
-.ot-status-update-current {
-  display: flex !important;
-  align-items: flex-end !important;
-  flex-direction: column !important;
-  gap: 4px !important;
-}
-
-.ot-status-update-current > span {
-  margin: 0 !important;
-  color: #d6e8dd !important;
-  font-size: 8px !important;
-}
-
-.ot-status-update-current .ot-status-pill {
-  margin: 0 !important;
-  padding: 6px 10px !important;
-  font-size: 8px !important;
-}
-
-.ot-status-update-scroll-area {
-  min-height: 0 !important;
-  max-height: none !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain !important;
-  padding: 14px 16px 18px !important;
-  scrollbar-gutter: stable !important;
-}
-
-.ot-status-update-scroll-area::-webkit-scrollbar {
-  width: 8px !important;
-}
-
-.ot-status-update-scroll-area::-webkit-scrollbar-track {
-  background: transparent !important;
-}
-
-.ot-status-update-scroll-area::-webkit-scrollbar-thumb {
-  border: 2px solid transparent !important;
-  border-radius: 999px !important;
-  background: #b8c9be !important;
-  background-clip: padding-box !important;
-}
-
-.ot-status-form-card {
-  margin-bottom: 12px !important;
-  padding: 14px !important;
-  border: 1px solid #d9e4dd !important;
-  border-radius: 15px !important;
-  background: #ffffff !important;
-  box-shadow:
-    0 8px 22px rgba(17, 36, 25, 0.04) !important;
-}
-
-.ot-status-card-heading {
-  align-items: flex-start !important;
-}
-
-.ot-status-card-heading > div:first-child {
-  min-width: 0 !important;
-}
-
-.ot-status-card-heading > div:first-child > span {
-  display: inline-flex !important;
-  align-items: center !important;
-  padding: 4px 7px !important;
-  border-radius: 999px !important;
-  background: #eaf5ee !important;
-  color: #246f46 !important;
-  font-size: 7px !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.06em !important;
-}
-
-.ot-status-card-heading h3 {
-  margin-top: 7px !important;
-  font-size: 14px !important;
-  line-height: 1.25 !important;
-}
-
-.ot-status-card-heading p {
-  margin-top: 4px !important;
-  font-size: 8.5px !important;
-  line-height: 1.45 !important;
-}
-
-.ot-status-option-grid {
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr)) !important;
-  gap: 8px !important;
-}
-
-.ot-status-option {
-  min-height: 42px !important;
-  padding: 8px !important;
-}
-
-.ot-status-option strong {
-  font-size: 8px !important;
-  line-height: 1.25 !important;
-}
-
-.ot-status-form-grid {
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr)) !important;
-  gap: 11px !important;
-}
-
-.ot-status-field > span,
-.ot-status-comment-field > span,
-.ot-status-full-select > span {
-  margin-bottom: 6px !important;
-  color: #41564a !important;
-  font-size: 8.5px !important;
-  font-weight: 900 !important;
-}
-
-.ot-status-field input,
-.ot-status-field select,
-.ot-status-comment-field textarea,
-.ot-status-full-select select {
-  min-height: 42px !important;
-  padding: 10px 11px !important;
-  border: 1px solid #c9d8cf !important;
-  border-radius: 10px !important;
-  background: #ffffff !important;
-  color: #23372c !important;
-  font-size: 10px !important;
-}
-
-.ot-status-field input:focus,
-.ot-status-field select:focus,
-.ot-status-comment-field textarea:focus,
-.ot-status-full-select select:focus {
-  border-color: #2b7d4f !important;
-  box-shadow: 0 0 0 3px rgba(43, 125, 79, 0.1) !important;
-}
-
-.ot-status-comment-field textarea {
-  min-height: 118px !important;
-  resize: vertical !important;
-}
-
-.ot-status-audio-section {
-  padding: 12px !important;
-  border-radius: 12px !important;
-  background: #f7faf8 !important;
-}
-
-.ot-status-media-heading {
-  align-items: flex-start !important;
-}
-
-.ot-status-media-heading strong {
-  font-size: 10px !important;
-}
-
-.ot-status-media-heading span {
-  font-size: 8px !important;
-}
-
-.ot-status-file-dropzone {
-  min-height: 105px !important;
-  border: 1.5px dashed #afc8b8 !important;
-  border-radius: 14px !important;
-  background:
-    linear-gradient(
-      180deg,
-      #fbfdfc 0%,
-      #f5faf7 100%
-    ) !important;
-}
-
-.ot-status-file-dropzone:hover:not(:disabled) {
-  border-color: #2c8050 !important;
-  background: #f0f8f3 !important;
-}
-
-.ot-status-submit-summary {
-  margin-bottom: 0 !important;
-  padding: 12px !important;
-  border: 1px solid #c9ddd0 !important;
-  border-radius: 13px !important;
-  background:
-    linear-gradient(
-      180deg,
-      #eef8f2 0%,
-      #f7fbf8 100%
-    ) !important;
-}
-
-.ot-status-submit-summary > div {
-  min-width: 0 !important;
-}
-
-.ot-status-submit-summary .ot-status-pill {
-  margin-top: 5px !important;
-}
-
-.ot-status-update-footer-sticky {
-  position: relative !important;
-  z-index: 4 !important;
-  display: flex !important;
-  min-height: 70px !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  gap: 10px !important;
-  padding: 13px 16px !important;
-  border-top: 1px solid #d5e1da !important;
-  background:
-    rgba(255, 255, 255, 0.98) !important;
-  box-shadow:
-    0 -8px 22px rgba(17, 36, 25, 0.07) !important;
-  backdrop-filter: blur(12px) !important;
-}
-
-.ot-status-cancel-button,
-.ot-status-submit-button {
-  min-height: 42px !important;
-  padding: 10px 16px !important;
-  border-radius: 11px !important;
-  font-size: 9.5px !important;
-  font-weight: 900 !important;
-}
-
-.ot-status-cancel-button {
-  border: 1px solid #bdcec3 !important;
-  background: #ffffff !important;
-  color: #315f45 !important;
-}
-
-.ot-status-submit-button {
-  min-width: 180px !important;
-  justify-content: center !important;
-  border: 1px solid #1f7545 !important;
-  background:
-    linear-gradient(
-      180deg,
-      #237c4a 0%,
-      #1b673d 100%
-    ) !important;
-  color: #ffffff !important;
-  box-shadow:
-    0 8px 18px rgba(31, 117, 69, 0.2) !important;
-}
-
-.ot-status-submit-button:hover:not(:disabled) {
-  transform: translateY(-1px) !important;
-  box-shadow:
-    0 10px 22px rgba(31, 117, 69, 0.25) !important;
-}
-
-.ot-status-submit-button:disabled,
-.ot-status-cancel-button:disabled {
-  opacity: 0.58 !important;
-  cursor: not-allowed !important;
-}
-
-/* =========================================================
-   MOBILE / PWA
-========================================================= */
-
-@media screen and (max-width: 900px) {
-  .ot-status-update-overlay {
-    padding: 0 !important;
-  }
-
-  .ot-status-update-modal-fixed {
-    width: 100% !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    border-radius: 0 !important;
-  }
-
-  .ot-status-update-header {
-    min-height: 84px !important;
-    padding: 11px 12px !important;
-  }
-
-  .ot-status-update-title h2 {
-    max-width: 58vw !important;
-    font-size: 15px !important;
-  }
-
-  .ot-status-update-scroll-area {
-    padding: 10px !important;
-  }
-
-  .ot-status-option-grid {
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr)) !important;
-  }
-
-  .ot-status-update-footer-sticky {
-    min-height: 66px !important;
-    padding:
-      10px
-      max(10px, env(safe-area-inset-right))
-      max(10px, env(safe-area-inset-bottom))
-      max(10px, env(safe-area-inset-left)) !important;
-  }
-}
-
-@media screen and (max-width: 560px) {
-  .ot-status-update-current {
-    display: none !important;
-  }
-
-  .ot-status-update-header {
-    grid-template-columns:
-      minmax(0, 1fr) auto !important;
-  }
-
-  .ot-status-option-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .ot-status-form-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .ot-status-submit-summary {
-    grid-template-columns: 1fr !important;
-  }
-
-  .ot-status-update-footer-sticky {
-    display: grid !important;
-    grid-template-columns:
-      minmax(0, 0.8fr)
-      minmax(0, 1.2fr) !important;
-  }
-
-  .ot-status-cancel-button,
-  .ot-status-submit-button {
-    width: 100% !important;
-    min-width: 0 !important;
-    padding: 9px 10px !important;
-  }
-}
-/* =========================================================
-   ORDER TRACKING DIALOGS + MATERIAL VISIBILITY
-   ADD AT THE ABSOLUTE END OF OrderTrackingPage.css
-========================================================= */
-
-/* =========================================================
-   MESSAGE INFORMATION MODAL
-========================================================= */
-
-.ot-seen-overlay,
-.ot-delete-message-overlay {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 99999 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 20px !important;
-  background: rgba(11, 24, 16, 0.58) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-}
-
-.ot-seen-panel {
-  width: min(460px, 100%) !important;
-  max-height: min(620px, calc(100dvh - 40px)) !important;
-  overflow: hidden !important;
-  border: 1px solid #d8e4dc !important;
-  border-radius: 20px !important;
-  background: #ffffff !important;
-  box-shadow:
-    0 30px 90px rgba(8, 18, 11, 0.34),
-    0 8px 24px rgba(8, 18, 11, 0.16) !important;
-}
-
-.ot-seen-panel > header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 14px !important;
-  padding: 18px 20px !important;
-  border-bottom: 1px solid #e2ebe5 !important;
-  background:
-    linear-gradient(
-      180deg,
-      #f8fbf9 0%,
-      #f1f6f3 100%
-    ) !important;
-}
-
-.ot-seen-panel > header > div {
-  min-width: 0 !important;
-}
-
-.ot-seen-panel > header span {
-  display: block !important;
-  color: #2c7a4d !important;
-  font-size: 8px !important;
-  font-weight: 950 !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase !important;
-}
-
-.ot-seen-panel > header h3 {
-  margin: 5px 0 0 !important;
-  color: #183626 !important;
-  font-size: 19px !important;
-  font-weight: 900 !important;
-  line-height: 1.2 !important;
-}
-
-.ot-seen-panel > header button {
-  display: inline-flex !important;
-  width: 36px !important;
-  height: 36px !important;
-  flex: 0 0 36px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border: 1px solid #cfddd4 !important;
-  border-radius: 50% !important;
-  background: #ffffff !important;
-  color: #3d5949 !important;
-  cursor: pointer !important;
-  font-size: 20px !important;
-  line-height: 1 !important;
-  transition:
-    transform 0.16s ease,
-    background 0.16s ease !important;
-}
-
-.ot-seen-panel > header button:hover {
-  transform: rotate(5deg) scale(1.04) !important;
-  background: #eef6f1 !important;
-}
-
-.ot-seen-content {
-  max-height: 430px !important;
-  overflow-y: auto !important;
-  padding: 10px !important;
-  background: #ffffff !important;
-}
-
-.ot-seen-empty {
-  display: flex !important;
-  min-height: 150px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 26px 22px !important;
-  border: 1px dashed #cddbd2 !important;
-  border-radius: 14px !important;
-  background: #f8fbf9 !important;
-  color: #64766c !important;
-  font-size: 12px !important;
-  line-height: 1.6 !important;
-  text-align: center !important;
-}
-
-.ot-seen-user {
-  display: grid !important;
-  grid-template-columns: auto minmax(0, 1fr) auto !important;
-  align-items: center !important;
-  gap: 12px !important;
-  padding: 12px !important;
-  border-bottom: 1px solid #edf2ef !important;
-  border-radius: 12px !important;
-  background: #ffffff !important;
-}
-
-.ot-seen-user:hover {
-  background: #f7faf8 !important;
-}
-
-.ot-seen-avatar {
-  display: flex !important;
-  width: 42px !important;
-  height: 42px !important;
-  flex: 0 0 42px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 50% !important;
-  background:
-    linear-gradient(
-      145deg,
-      #1f7545 0%,
-      #4da66f 100%
-    ) !important;
-  color: #ffffff !important;
-  font-size: 11px !important;
-  font-weight: 900 !important;
-}
-
-.ot-seen-user > div:nth-child(2) {
-  min-width: 0 !important;
-}
-
-.ot-seen-user strong,
-.ot-seen-user span {
-  display: block !important;
-}
-
-.ot-seen-user strong {
-  color: #263d30 !important;
-  font-size: 11px !important;
-  font-weight: 900 !important;
-}
-
-.ot-seen-user span {
-  margin-top: 3px !important;
-  color: #74837b !important;
-  font-size: 8px !important;
-  font-weight: 750 !important;
-}
-
-.ot-seen-user time {
-  color: #6e7d75 !important;
-  font-size: 8px !important;
-  text-align: right !important;
-  white-space: nowrap !important;
-}
-
-.ot-seen-panel > footer {
-  padding: 12px 18px !important;
-  border-top: 1px solid #e2ebe5 !important;
-  background: #f7faf8 !important;
-  color: #5d7065 !important;
-  font-size: 9px !important;
-  font-weight: 750 !important;
-}
-
-/* =========================================================
-   DELETE MESSAGE DIALOG
-========================================================= */
-
-.ot-delete-message-dialog {
-  width: min(420px, 100%) !important;
-  padding: 24px !important;
-  border: 1px solid #e3e9e5 !important;
-  border-radius: 22px !important;
-  background: #ffffff !important;
-  box-shadow:
-    0 30px 90px rgba(8, 18, 11, 0.34),
-    0 8px 24px rgba(8, 18, 11, 0.16) !important;
-  text-align: center !important;
-}
-
-.ot-delete-message-icon {
-  display: flex !important;
-  width: 58px !important;
-  height: 58px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  margin: 0 auto !important;
-  border-radius: 18px !important;
-  background:
-    linear-gradient(
-      180deg,
-      #fff1f1 0%,
-      #ffe7e7 100%
-    ) !important;
-  font-size: 24px !important;
-}
-
-.ot-delete-message-dialog h3 {
-  margin: 16px 0 0 !important;
-  color: #24382d !important;
-  font-size: 20px !important;
-  font-weight: 900 !important;
-  line-height: 1.25 !important;
-}
-
-.ot-delete-message-dialog p {
-  max-width: 320px !important;
-  margin: 8px auto 0 !important;
-  color: #6b7a72 !important;
-  font-size: 11px !important;
-  line-height: 1.6 !important;
-}
-
-.ot-delete-message-dialog > div:last-child {
-  display: grid !important;
-  grid-template-columns: 1fr 1.35fr !important;
-  gap: 10px !important;
-  margin-top: 20px !important;
-}
-
-.ot-delete-message-dialog button {
-  min-height: 42px !important;
-  padding: 10px 14px !important;
-  border: 1px solid #cbd8d0 !important;
-  border-radius: 11px !important;
-  background: #ffffff !important;
-  color: #3d5548 !important;
-  cursor: pointer !important;
-  font-size: 10px !important;
-  font-weight: 900 !important;
-  transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease !important;
-}
-
-.ot-delete-message-dialog button:hover:not(:disabled) {
-  transform: translateY(-1px) !important;
-}
-
-.ot-delete-message-dialog button.delete {
-  border-color: #b93535 !important;
-  background:
-    linear-gradient(
-      180deg,
-      #ca4444 0%,
-      #ae3030 100%
-    ) !important;
-  color: #ffffff !important;
-  box-shadow:
-    0 8px 18px rgba(190, 57, 57, 0.18) !important;
-}
-
-.ot-delete-message-dialog button:disabled {
-  opacity: 0.58 !important;
-  cursor: not-allowed !important;
-}
-
-/* =========================================================
-   MATERIAL INFORMATION CARD
-========================================================= */
-
-.ot-detail-material-text {
-  display: block !important;
-  max-height: 270px !important;
-  overflow-y: auto !important;
-  margin: 12px 0 0 !important;
-  padding: 14px !important;
-  border: 1px solid #d8e5dc !important;
-  border-radius: 12px !important;
-  background:
-    linear-gradient(
-      180deg,
-      #f9fcfa 0%,
-      #f4f8f5 100%
-    ) !important;
-  color: #2f4638 !important;
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    monospace !important;
-  font-size: 10px !important;
-  line-height: 1.7 !important;
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
-}
-
-.ot-detail-material-text:empty::before {
-  content: "Material details are not available for this order." !important;
-  color: #7d8b83 !important;
-  font-family: inherit !important;
-}
-
-/* =========================================================
-   MOBILE
-========================================================= */
-
-@media screen and (max-width: 560px) {
-  .ot-seen-overlay,
-  .ot-delete-message-overlay {
-    align-items: flex-end !important;
-    padding: 0 !important;
-  }
-
-  .ot-seen-panel,
-  .ot-delete-message-dialog {
-    width: 100% !important;
-    max-height: 86dvh !important;
-    border-radius: 22px 22px 0 0 !important;
-  }
-
-  .ot-delete-message-dialog {
-    padding:
-      22px
-      18px
-      max(18px, env(safe-area-inset-bottom)) !important;
-  }
-
-  .ot-delete-message-dialog > div:last-child {
-    grid-template-columns: 1fr !important;
-  }
-
-  .ot-seen-user {
-    grid-template-columns: auto minmax(0, 1fr) !important;
-  }
+.ot-eta-revision-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
 
-  .ot-seen-user time {
-    grid-column: 2 !important;
-    text-align: left !important;
-  }
-}
-/* =========================================================
-   FINAL ORDER TRACKING PWA SCROLL FIX
-   Header remains fixed.
-   Everything below the header scrolls.
-   ADD AT ABSOLUTE END OF OrderTrackingPage.css
-========================================================= */
-
-@media screen and (max-width: 900px) {
-  html,
-  body,
-  #root {
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 100% !important;
-    overflow: hidden !important;
-  }
-
-  /*
-   * Dashboard viewport shell.
-   */
-  .dashboard.pwa-module-orderToDispatch {
-    width: 100% !important;
-
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    max-height: 100dvh !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    overflow: hidden !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .dashboard-layout {
-    display: flex !important;
-
-    width: 100% !important;
-
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    max-height: 100dvh !important;
-
-    overflow: hidden !important;
-  }
-
-  /*
-   * Dashboard main area.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .main {
-    position: relative !important;
-
-    display: flex !important;
-    flex: 1 1 auto !important;
-    flex-direction: column !important;
-
-    width: 100% !important;
-
-    height: 100dvh !important;
-    min-height: 0 !important;
-    max-height: 100dvh !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    overflow: hidden !important;
-
-    background: #f3f6f4 !important;
-  }
-
-  /*
-   * Order Tracking application shell.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .main
-    > .ot-page {
-    display: flex !important;
-    flex: 1 1 auto !important;
-    flex-direction: column !important;
-
-    width: 100% !important;
-
-    height: 100% !important;
-    min-height: 0 !important;
-    max-height: 100% !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    overflow: hidden !important;
-
-    background: #f3f6f4 !important;
-  }
-
-  /*
-   * Fixed module header.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-page-header {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-
-    z-index: 40 !important;
-
-    display: flex !important;
-    flex: 0 0 auto !important;
-
-    width: 100% !important;
-    min-height: 64px !important;
-
-    margin: 0 !important;
-
-    background: #ffffff !important;
-
-    box-shadow:
-      0 1px 0 rgba(25, 65, 42, 0.08),
-      0 5px 18px rgba(25, 65, 42, 0.05) !important;
-  }
-
-  /*
-   * This becomes the ONLY vertical scroll container.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-page-content {
-    position: relative !important;
-
-    display: block !important;
-    flex: 1 1 auto !important;
-
-    width: 100% !important;
-
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-
-    margin: 0 !important;
-
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-
-    overscroll-behavior-y: contain !important;
-    touch-action: pan-y !important;
-    -webkit-overflow-scrolling: touch !important;
-
-    padding:
-      12px
-      10px
-      calc(
-        42px +
-        env(safe-area-inset-bottom)
-      ) !important;
-
-    scrollbar-width: thin !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-page-content::-webkit-scrollbar {
-    width: 4px !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-page-content::-webkit-scrollbar-track {
-    background: transparent !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-page-content::-webkit-scrollbar-thumb {
-    border-radius: 999px !important;
-    background: #aebfb4 !important;
-  }
-
-  /*
-   * Summary cards scroll horizontally only.
-   * They must not become a vertical scroll container.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-summary-grid {
-    display: flex !important;
-    flex: 0 0 auto !important;
-
-    width: 100% !important;
-
-    gap: 8px !important;
-
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-
-    padding-bottom: 7px !important;
-
-    touch-action: pan-x pan-y !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-summary-grid
-    > button {
-    flex: 0 0 94px !important;
-    min-width: 94px !important;
-  }
-
-  /*
-   * Filter panel must remain natural height.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-filter-panel {
-    display: grid !important;
-    flex: 0 0 auto !important;
-
-    width: 100% !important;
-
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-
-    overflow: visible !important;
-  }
-
-  /*
-   * Mobile records container.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-view {
-    display: block !important;
-
-    width: 100% !important;
-
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-
-    overflow: visible !important;
-
-    padding-bottom: 10px !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card {
-    display: block !important;
-    flex: 0 0 auto !important;
-
-    width: 100% !important;
-
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-
-    margin-bottom: 12px !important;
-
-    overflow: visible !important;
-  }
-
-  /*
-   * Prevent any list section from locking scrolling.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-desktop-view,
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-view,
-  .dashboard.pwa-module-orderToDispatch
-    .ot-table-wrap,
-  .dashboard.pwa-module-orderToDispatch
-    .ot-page-state {
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
+  margin-top: 6px;
+  padding: 6px 8px;
 
-    overflow: visible !important;
-  }
-
-  /*
-   * Pagination remains inside the scroll area.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-pagination {
-    position: relative !important;
-    bottom: auto !important;
-
-    flex: 0 0 auto !important;
-
-    width: 100% !important;
-
-    margin:
-      8px
-      0
-      calc(
-        20px +
-        env(safe-area-inset-bottom)
-      ) !important;
-  }
+  background: #fff8e8;
+  border-left: 2px solid #e7a318;
+  border-radius: 0 6px 6px 0;
 }
-/* =========================================================
-   ORDER TRACKING PWA — FULL WIDTH + COMPACT PREMIUM CARD
-   ADD AT THE ABSOLUTE END OF OrderTrackingPage.css
-========================================================= */
-
-/* =========================================================
-   ORDER TRACKING PWA — PREMIUM MOBILE CARD
-   Add at absolute end of OrderTrackingPage.css
-========================================================= */
-
-@media screen and (max-width: 900px) {
-  .dashboard:has(.ot-page)
-    .ot-page {
-    display: flex !important;
-    flex-direction: column !important;
-
-    width: 100% !important;
-
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    max-height: 100dvh !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    overflow: hidden !important;
-
-    background: #f2f6f3 !important;
-  }
-
-  /* =======================================================
-     MODULE HEADER
-  ======================================================= */
-
-  .dashboard:has(.ot-page)
-    .ot-page-header {
-    position: relative !important;
-    z-index: 100 !important;
-
-    display: flex !important;
-    flex: 0 0 auto !important;
-
-    width: 100% !important;
-    min-height: 66px !important;
-
-    align-items: center !important;
-    justify-content: space-between !important;
-
-    margin: 0 !important;
-    padding:
-      calc(10px + env(safe-area-inset-top))
-      12px
-      10px !important;
-
-    border: 0 !important;
-    border-radius: 0 0 18px 18px !important;
-
-    background:
-      linear-gradient(
-        135deg,
-        #123b28 0%,
-        #1e6541 100%
-      ) !important;
-
-    color: #ffffff !important;
-
-    box-shadow:
-      0 12px 28px rgba(18, 59, 40, 0.18) !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-page-title {
-    display: flex !important;
-    min-width: 0 !important;
-    align-items: center !important;
-    gap: 10px !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-page-title
-    > button {
-    display: inline-flex !important;
-
-    width: 38px !important;
-    height: 38px !important;
-    flex: 0 0 38px !important;
-
-    align-items: center !important;
-    justify-content: center !important;
-
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 13px !important;
-
-    background: rgba(255, 255, 255, 0.12) !important;
-    color: #ffffff !important;
-
-    font-size: 20px !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-page-title
-    span {
-    display: block !important;
-
-    color: #bce4ca !important;
-
-    font-size: 8px !important;
-    font-weight: 900 !important;
-    letter-spacing: 0.08em !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-page-title
-    h1 {
-    margin: 2px 0 0 !important;
-
-    color: #ffffff !important;
-
-    font-size: 19px !important;
-    font-weight: 950 !important;
-    line-height: 1.15 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-page-title
-    p {
-    display: none !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-header-actions
-    button:first-child {
-    display: none !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-header-actions
-    button {
-    min-height: 38px !important;
-    padding: 8px 12px !important;
-
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
-    border-radius: 13px !important;
-
-    background: rgba(255, 255, 255, 0.12) !important;
-    color: #ffffff !important;
-
-    font-size: 10px !important;
-    font-weight: 900 !important;
-  }
-
-  /* =======================================================
-     SCROLL CONTAINER
-  ======================================================= */
-
-  .dashboard:has(.ot-page)
-    .ot-page-content {
-    flex: 1 1 0 !important;
-
-    width: 100% !important;
-
-    height: 0 !important;
-    min-height: 0 !important;
-
-    margin: 0 !important;
-    padding:
-      10px
-      8px
-      calc(28px + env(safe-area-inset-bottom)) !important;
-
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-
-    overscroll-behavior-y: contain !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-
-  /* =======================================================
-     KPI STRIP
-  ======================================================= */
-
-  .dashboard:has(.ot-page)
-    .ot-summary-grid {
-    display: flex !important;
-
-    gap: 7px !important;
-
-    margin: 0 0 10px !important;
-    padding: 0 0 5px !important;
-
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-summary-grid
-    > button {
-    flex: 0 0 88px !important;
-
-    min-width: 88px !important;
-    min-height: 64px !important;
-
-    padding: 10px !important;
-
-    border: 1px solid #dce7df !important;
-    border-radius: 15px !important;
-
-    background: #ffffff !important;
-
-    box-shadow:
-      0 6px 16px rgba(21, 65, 40, 0.06) !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-summary-grid
-    > button
-    span {
-    color: #728178 !important;
-
-    font-size: 8px !important;
-    font-weight: 900 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-summary-grid
-    > button
-    strong {
-    display: block !important;
-
-    margin-top: 7px !important;
-
-    color: #183c28 !important;
-
-    font-size: 18px !important;
-    font-weight: 950 !important;
-  }
 
-  /* =======================================================
-     FILTER PANEL
-  ======================================================= */
+.ot-eta-revision-reason__label {
+  flex-shrink: 0;
 
-  .dashboard:has(.ot-page)
-    .ot-filter-panel {
-    display: grid !important;
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
-
-    gap: 7px !important;
-
-    margin: 0 0 10px !important;
-    padding: 9px !important;
-
-    border: 1px solid #dbe6df !important;
-    border-radius: 16px !important;
-
-    background: #ffffff !important;
-
-    box-shadow:
-      0 6px 16px rgba(21, 65, 40, 0.05) !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-filter-panel
-    input {
-    grid-column: 1 / -1 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-filter-panel
-    button {
-    grid-column: 1 / -1 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-filter-panel
-    input,
-  .dashboard:has(.ot-page)
-    .ot-filter-panel
-    select,
-  .dashboard:has(.ot-page)
-    .ot-filter-panel
-    button {
-    min-height: 39px !important;
-
-    padding: 9px 10px !important;
-
-    border: 1px solid #d6e2da !important;
-    border-radius: 11px !important;
-
-    background: #f9fbfa !important;
-    color: #283d31 !important;
-
-    font-size: 10px !important;
-    font-weight: 750 !important;
-  }
-
-  /* =======================================================
-     PREMIUM TRACKING CARD
-  ======================================================= */
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-view {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card {
-    width: 100% !important;
-
-    margin: 0 0 11px !important;
-
-    border: 1px solid #d9e5dd !important;
-    border-left: 4px solid #248251 !important;
-    border-radius: 18px !important;
-
-    background: #ffffff !important;
-
-    box-shadow:
-      0 10px 24px rgba(20, 57, 35, 0.08) !important;
-
-    overflow: hidden !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main {
-    width: 100% !important;
-
-    padding: 12px !important;
-
-    text-align: left !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main
-    > header {
-    display: flex !important;
-
-    align-items: flex-start !important;
-    justify-content: space-between !important;
-
-    gap: 10px !important;
-
-    margin: 0 0 10px !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main
-    > header
-    > div {
-    min-width: 0 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main
-    > header
-    > div
-    > span {
-    color: #27804f !important;
-
-    font-size: 8px !important;
-    font-weight: 950 !important;
-    letter-spacing: 0.06em !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main
-    h3 {
-    margin: 4px 0 3px !important;
-
-    color: #1b3024 !important;
-
-    font-size: 15px !important;
-    font-weight: 950 !important;
-    line-height: 1.25 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main
-    header
-    p {
-    margin: 0 !important;
-
-    color: #65756c !important;
-
-    font-size: 9px !important;
-    font-weight: 750 !important;
-    line-height: 1.4 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main
-    .ot-status-pill {
-    flex: 0 0 auto !important;
-
-    padding: 6px 8px !important;
-
-    font-size: 8px !important;
-  }
-
-  /* =======================================================
-     ORDER META
-  ======================================================= */
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-meta {
-    display: grid !important;
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
-
-    gap: 7px !important;
-
-    margin-top: 9px !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-meta
-    > div {
-    min-height: 50px !important;
-
-    padding: 9px !important;
-
-    border: 1px solid #e0e8e3 !important;
-    border-radius: 12px !important;
-
-    background:
-      linear-gradient(
-        180deg,
-        #fafcfb 0%,
-        #f5f8f6 100%
-      ) !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-meta
-    span {
-    display: block !important;
-
-    color: #7b8981 !important;
-
-    font-size: 7px !important;
-    font-weight: 950 !important;
-    letter-spacing: 0.04em !important;
-    text-transform: uppercase !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-meta
-    strong {
-    display: block !important;
-
-    margin-top: 5px !important;
-
-    color: #293c31 !important;
-
-    font-size: 10px !important;
-    font-weight: 900 !important;
-    line-height: 1.35 !important;
-  }
-
-  /* =======================================================
-     MATERIAL SNAPSHOT
-  ======================================================= */
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    :is(
-      .ot-material-preview,
-      .ot-mobile-material,
-      .ot-material-box
-    ) {
-    margin-top: 8px !important;
-    padding: 10px !important;
-
-    border: 1px solid #cfe1d5 !important;
-    border-radius: 12px !important;
-
-    background:
-      linear-gradient(
-        135deg,
-        #edf8f1 0%,
-        #f8fbf9 100%
-      ) !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    :is(
-      .ot-material-preview,
-      .ot-mobile-material,
-      .ot-material-box
-    )
-    span {
-    color: #257449 !important;
-
-    font-size: 7px !important;
-    font-weight: 950 !important;
-    text-transform: uppercase !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    :is(
-      .ot-material-preview,
-      .ot-mobile-material,
-      .ot-material-box
-    )
-    p {
-    display: -webkit-box !important;
-
-    overflow: hidden !important;
-
-    margin: 6px 0 0 !important;
-
-    color: #344a3c !important;
-
-    font-size: 9px !important;
-    font-weight: 750 !important;
-    line-height: 1.5 !important;
-
-    -webkit-box-orient: vertical !important;
-    -webkit-line-clamp: 2 !important;
-  }
-
-  /* =======================================================
-     LATEST FACTORY UPDATE
-  ======================================================= */
-
-  .dashboard:has(.ot-page)
-    .ot-latest-box {
-    margin-top: 8px !important;
-    padding: 10px !important;
-
-    border: 1px solid #d3e2d8 !important;
-    border-radius: 12px !important;
-
-    background:
-      linear-gradient(
-        135deg,
-        #f4faf6 0%,
-        #eef6f1 100%
-      ) !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-latest-box
-    > span {
-    display: block !important;
-
-    color: #28774b !important;
-
-    font-size: 7px !important;
-    font-weight: 950 !important;
-    letter-spacing: 0.04em !important;
-    text-transform: uppercase !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-latest-box
-    p {
-    display: -webkit-box !important;
-
-    overflow: hidden !important;
-
-    margin: 5px 0 0 !important;
-
-    color: #304438 !important;
-
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    line-height: 1.45 !important;
-
-    -webkit-box-orient: vertical !important;
-    -webkit-line-clamp: 2 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-latest-box
-    small {
-    display: block !important;
-
-    margin-top: 6px !important;
-
-    color: #6e7e75 !important;
-
-    font-size: 8px !important;
-    font-weight: 750 !important;
-    line-height: 1.4 !important;
-  }
-
-  /* =======================================================
-     ACTION BUTTONS
-  ======================================================= */
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    > footer {
-    display: grid !important;
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
-
-    gap: 7px !important;
-
-    padding: 9px 11px 11px !important;
-
-    border-top: 1px solid #e1eae4 !important;
-
-    background: #fafcfb !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    > footer
-    button {
-    min-height: 39px !important;
-
-    padding: 9px 10px !important;
-
-    border-radius: 11px !important;
-
-    font-size: 9px !important;
-    font-weight: 950 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    > footer
-    button:first-child {
-    border: 1px solid #b9d1c1 !important;
-
-    background: #ffffff !important;
-    color: #246f46 !important;
-  }
-
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    > footer
-    button:last-child {
-    border: 1px solid #26794a !important;
-
-    background:
-      linear-gradient(
-        180deg,
-        #2c8452 0%,
-        #226c43 100%
-      ) !important;
-
-    color: #ffffff !important;
-
-    box-shadow:
-      0 6px 14px rgba(35, 111, 68, 0.18) !important;
-  }
+  color: #b77900;
+  font-size: 7px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
-/* =========================================================
-   ORDER TRACKING PWA — FINAL COMPACT CARD FIX
-   Mobile only
-   - Removes duplicate green lines
-   - Hides non-essential information
-   - Makes cards shorter and faster to scan
-========================================================= */
-
-@media screen and (max-width: 900px) {
-  /* =======================================================
-     REMOVE DUPLICATE GREEN LINES
-  ======================================================= */
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card {
-    border-left: 0 !important;
-    box-shadow:
-      0 8px 22px rgba(23, 62, 39, 0.08) !important;
-  }
-
-  /*
-   * Some earlier CSS may add another green line
-   * through ::before or ::after.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card::before,
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card::after,
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card-main::before,
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card-main::after,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card::before,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card::after,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main::before,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main::after {
-    display: none !important;
-    content: none !important;
-  }
-
-  /*
-   * Use one small green top indicator instead
-   * of two full-height green lines.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card {
-    position: relative !important;
-    border: 1px solid #d9e5dd !important;
-    border-radius: 17px !important;
-    overflow: hidden !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card
-    > .ot-mobile-card-main,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    > .ot-mobile-card-main {
-    border-top: 3px solid #278151 !important;
-  }
-
-  /* =======================================================
-     HIDE LATEST FACTORY UPDATE
-  ======================================================= */
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card
-    .ot-latest-box,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    .ot-latest-box {
-    display: none !important;
-  }
-
-  /* =======================================================
-     HIDE EXPECTED READY AND EXPECTED DISPATCH
-
-     Based on your mobile card order:
-     1. Sales Person
-     2. Source Plant
-     3. Priority
-     4. Expected Ready
-     5. Expected Dispatch
-     6. Transporter
-     7. Dispatch Date
-  ======================================================= */
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-meta
-    > div:nth-child(4),
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-meta
-    > div:nth-child(5),
-  .dashboard:has(.ot-page)
-    .ot-mobile-meta
-    > div:nth-child(4),
-  .dashboard:has(.ot-page)
-    .ot-mobile-meta
-    > div:nth-child(5) {
-    display: none !important;
-  }
-
-  /* =======================================================
-     HIDE DISPATCH DATE ON PWA
-  ======================================================= */
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-meta
-    > div:nth-child(7),
-  .dashboard:has(.ot-page)
-    .ot-mobile-meta
-    > div:nth-child(7) {
-    display: none !important;
-  }
-
-  /* =======================================================
-     HIDE TAP INSTRUCTION
-  ======================================================= */
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card
-    .ot-card-open-hint,
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card
-    .ot-mobile-open-hint,
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card
-    .ot-card-tap-hint,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    .ot-card-open-hint,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    .ot-mobile-open-hint,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    .ot-card-tap-hint {
-    display: none !important;
-  }
-
-  /*
-   * Fallback when the tap instruction is the last
-   * direct small element inside the card button.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card-main
-    > small:last-child,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main
-    > small:last-child {
-    display: none !important;
-  }
-
-  /* =======================================================
-     COMPACT REMAINING META INFORMATION
-  ======================================================= */
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-meta,
-  .dashboard:has(.ot-page)
-    .ot-mobile-meta {
-    display: grid !important;
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
-    gap: 6px !important;
-    margin-top: 8px !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-meta
-    > div,
-  .dashboard:has(.ot-page)
-    .ot-mobile-meta
-    > div {
-    min-height: 44px !important;
-    padding: 8px !important;
-    border: 1px solid #e0e9e3 !important;
-    border-radius: 11px !important;
-    background: #f8faf9 !important;
-  }
-
-  /*
-   * Priority may occupy the full row when it is
-   * the only remaining item after sales person and plant.
-   */
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-meta
-    > div:nth-child(3),
-  .dashboard:has(.ot-page)
-    .ot-mobile-meta
-    > div:nth-child(3) {
-    grid-column: 1 / -1 !important;
-    min-height: 40px !important;
-  }
-
-  /* =======================================================
-     COMPACT MATERIAL CARD
-  ======================================================= */
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card
-    :is(
-      .ot-material-preview,
-      .ot-mobile-material,
-      .ot-material-box
-    ),
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    :is(
-      .ot-material-preview,
-      .ot-mobile-material,
-      .ot-material-box
-    ) {
-    margin-top: 7px !important;
-    padding: 9px !important;
-    border-radius: 11px !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card
-    :is(
-      .ot-material-preview,
-      .ot-mobile-material,
-      .ot-material-box
-    )
-    p,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    :is(
-      .ot-material-preview,
-      .ot-mobile-material,
-      .ot-material-box
-    )
-    p {
-    margin-top: 5px !important;
-    font-size: 8.5px !important;
-    line-height: 1.4 !important;
-    -webkit-line-clamp: 2 !important;
-  }
-
-  /* =======================================================
-     SMALLER CARD FOOTER
-  ======================================================= */
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card
-    > footer,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    > footer {
-    gap: 6px !important;
-    padding: 8px 10px 10px !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card
-    > footer
-    button,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card
-    > footer
-    button {
-    min-height: 36px !important;
-    padding: 8px !important;
-    border-radius: 10px !important;
-    font-size: 8.5px !important;
-  }
-
-  /* =======================================================
-     REDUCE TOTAL CARD HEIGHT
-  ======================================================= */
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card-main,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main {
-    padding: 10px !important;
-  }
-
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card-main
-    > header,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main
-    > header {
-    margin-bottom: 6px !important;
-  }
 
-  .dashboard.pwa-module-orderToDispatch
-    .ot-mobile-card-main
-    h3,
-  .dashboard:has(.ot-page)
-    .ot-mobile-card-main
-    h3 {
-    margin: 3px 0 2px !important;
-    font-size: 14px !important;
-  }
+.ot-eta-revision-reason__text {
+  color: #596579;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1.4;
 }

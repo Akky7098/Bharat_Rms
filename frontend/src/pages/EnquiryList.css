@@ -4077,3 +4077,948 @@
     border: 1px solid #b91c1c !important;
   }
 }
+
+/* =========================================================
+   LOST ENQUIRY REASON DONUT
+   COMPACT PRODUCTION VERSION
+   REPLACE OLD LOST REASON CSS WITH THIS
+========================================================= */
+
+.lost-reason-chart-card {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: minmax(175px, 0.55fr) minmax(0, 1.45fr);
+  gap: 10px;
+  align-items: center;
+
+  margin: 0 0 8px;
+  padding: 9px 12px;
+
+  min-height: 155px;
+
+  border: 1px solid #fecaca;
+  border-radius: 15px;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(220, 38, 38, 0.06),
+      transparent 32%
+    ),
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #fffafa
+    );
+
+  box-shadow:
+    0 6px 16px
+    rgba(127, 29, 29, 0.06);
+}
+
+
+/* =========================================================
+   LEFT TITLE AREA
+========================================================= */
+
+.lost-reason-chart-head {
+  min-width: 0;
+}
+
+.lost-reason-chart-head > div > span {
+  display: block;
+
+  color: #dc2626;
+
+  font-size: 7.5px;
+  font-weight: 950;
+
+  letter-spacing: 0.09em;
+}
+
+.lost-reason-chart-head > div > strong {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #7f1d1d;
+
+  font-size: 14px;
+  line-height: 1.15;
+
+  font-weight: 950;
+}
+
+.lost-reason-chart-head > div > p {
+  margin: 3px 0 0;
+
+  color: #64748b;
+
+  font-size: 8.5px;
+  line-height: 1.3;
+
+  font-weight: 700;
+}
+
+
+/* LOST TOTAL BADGE */
+
+.lost-reason-chart-head > b {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-width: 42px;
+  height: 25px;
+
+  margin-top: 6px;
+  padding: 0 9px;
+
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+
+  background: #fee2e2;
+
+  color: #991b1b;
+
+  font-size: 12px;
+  font-weight: 950;
+}
+
+
+/* =========================================================
+   CHART + LEGEND
+========================================================= */
+
+.lost-reason-chart-layout {
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    155px
+    minmax(0, 1fr);
+
+  gap: 10px;
+
+  align-items: center;
+}
+
+
+/* =========================================================
+   SMALL DONUT
+========================================================= */
+
+.lost-reason-donut-wrap {
+  position: relative;
+
+  width: 155px;
+  height: 145px;
+}
+
+
+/* =========================================================
+   DONUT CENTER
+========================================================= */
+
+.lost-reason-donut-center {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  transform:
+    translate(-50%, -50%);
+
+  pointer-events: none;
+
+  text-align: center;
+}
+
+.lost-reason-donut-center strong {
+  display: block;
+
+  color: #7f1d1d;
+
+  font-size: 18px;
+  line-height: 1;
+
+  font-weight: 950;
+}
+
+.lost-reason-donut-center span {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #b91c1c;
+
+  font-size: 7px;
+  font-weight: 950;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.05em;
+}
+
+
+/* =========================================================
+   DONUT SLICE
+========================================================= */
+
+.lost-reason-chart-slice {
+  cursor: pointer;
+  outline: none;
+
+  transition:
+    opacity 0.15s ease,
+    filter 0.15s ease;
+}
+
+.lost-reason-chart-slice:hover {
+  opacity: 0.82;
+
+  filter:
+    drop-shadow(
+      0 2px 3px
+      rgba(127, 29, 29, 0.25)
+    );
+}
+
+
+/* =========================================================
+   COMPACT LEGEND
+========================================================= */
+
+.lost-reason-chart-legend {
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 5px;
+}
+
+
+/* LEGEND BUTTON */
+
+.lost-reason-chart-legend button {
+  min-width: 0;
+  min-height: 37px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 5px 7px;
+
+  border: 1px solid #fee2e2;
+  border-radius: 9px;
+
+  background: rgba(
+    255,
+    255,
+    255,
+    0.92
+  );
+
+  font-family: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.lost-reason-chart-legend button:hover {
+  transform:
+    translateY(-1px);
+
+  border-color: #ef4444;
+
+  background: #fff7f7;
+
+  box-shadow:
+    0 4px 10px
+    rgba(127, 29, 29, 0.08);
+}
+
+
+/* =========================================================
+   COLOUR DOT
+========================================================= */
+
+.lost-reason-legend-dot {
+  width: 8px;
+  min-width: 8px;
+
+  height: 8px;
+
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 0 1px
+    rgba(127, 29, 29, 0.08);
+}
+
+
+/* =========================================================
+   LEGEND TEXT
+========================================================= */
+
+.lost-reason-chart-legend button > div {
+  min-width: 0;
+}
+
+.lost-reason-chart-legend strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: #7f1d1d;
+
+  font-size: 8.5px;
+  line-height: 1.1;
+
+  font-weight: 900;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lost-reason-chart-legend small {
+  display: block;
+
+  margin-top: 1px;
+
+  color: #64748b;
+
+  font-size: 7.5px;
+
+  line-height: 1.1;
+
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.lost-reason-chart-empty {
+  min-height: 65px;
+
+  display: grid;
+
+  place-items: center;
+
+  border: 1px dashed #fecaca;
+  border-radius: 10px;
+
+  background: #fffafa;
+
+  color: #991b1b;
+
+  font-size: 9px;
+  font-weight: 850;
+}
+
+
+/* =========================================================
+   DESKTOP RESPONSIVE
+========================================================= */
+
+@media (
+  max-width: 1250px
+) and (
+  min-width: 901px
+) {
+
+  .lost-reason-chart-card {
+    grid-template-columns:
+      160px
+      minmax(0, 1fr);
+  }
+
+  .lost-reason-chart-layout {
+    grid-template-columns:
+      140px
+      minmax(0, 1fr);
+
+    gap: 8px;
+  }
+
+  .lost-reason-donut-wrap {
+    width: 140px;
+    height: 135px;
+  }
+
+  .lost-reason-chart-legend {
+    gap: 4px;
+  }
+}
+
+
+/* =========================================================
+   PWA / MOBILE
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .lost-reason-chart-card.mobile {
+    display: block;
+
+    min-height: 0;
+
+    margin: 0 0 10px;
+
+    padding: 10px;
+
+    border-radius: 17px;
+
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(220, 38, 38, 0.08),
+        transparent 32%
+      ),
+      linear-gradient(
+        180deg,
+        #ffffff,
+        #fffafa
+      );
+
+    box-shadow:
+      0 6px 16px
+      rgba(127, 29, 29, 0.06);
+  }
+
+
+  /* HEADER */
+
+  .lost-reason-chart-card.mobile
+  .lost-reason-chart-head {
+
+    display: flex;
+
+    justify-content:
+      space-between;
+
+    gap: 8px;
+
+    align-items:
+      flex-start;
+  }
+
+
+  .lost-reason-chart-card.mobile
+  .lost-reason-chart-head > b {
+
+    flex: 0 0 auto;
+
+    margin-top: 0;
+  }
+
+
+  /* CHART LAYOUT */
+
+  .lost-reason-chart-card.mobile
+  .lost-reason-chart-layout {
+
+    display: grid;
+
+    grid-template-columns:
+      125px
+      minmax(0, 1fr);
+
+    gap: 8px;
+
+    margin-top: 4px;
+  }
+
+
+  /* MOBILE DONUT */
+
+  .lost-reason-chart-card.mobile
+  .lost-reason-donut-wrap {
+
+    width: 125px;
+    height: 125px;
+  }
+
+
+  /* LEGEND */
+
+  .lost-reason-chart-card.mobile
+  .lost-reason-chart-legend {
+
+    grid-template-columns:
+      1fr;
+
+    gap: 4px;
+  }
+
+
+  .lost-reason-chart-card.mobile
+  .lost-reason-chart-legend button {
+
+    min-height: 29px;
+
+    padding: 4px 6px;
+  }
+
+
+  .lost-reason-chart-card.mobile
+  .lost-reason-chart-legend button:hover {
+
+    transform: none;
+
+    box-shadow: none;
+  }
+
+
+  .lost-reason-chart-card.mobile
+  .lost-reason-chart-legend button:active {
+
+    transform:
+      scale(0.985);
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 390px) {
+
+  .lost-reason-chart-card.mobile
+  .lost-reason-chart-layout {
+
+    grid-template-columns:
+      110px
+      minmax(0, 1fr);
+  }
+
+
+  .lost-reason-chart-card.mobile
+  .lost-reason-donut-wrap {
+
+    width: 110px;
+    height: 115px;
+  }
+}
+
+/* =========================================================
+   LOST REASON ANALYSIS
+   FINAL INSIGHT-FOCUSED PREMIUM VERSION
+   SAME HEIGHT / BIGGER DONUT / TIGHT REASONS
+========================================================= */
+
+@media (min-width: 901px) {
+
+  .lost-reason-chart-card {
+    display: grid !important;
+
+    grid-template-columns:
+      185px
+      128px
+      660px !important;
+
+    justify-content: start !important;
+    align-items: center !important;
+
+    column-gap: 10px !important;
+
+    width: 100% !important;
+
+    height: 104px !important;
+    min-height: 104px !important;
+    max-height: 104px !important;
+
+    padding: 6px 12px !important;
+    margin: 0 0 8px !important;
+
+    box-sizing: border-box !important;
+
+    overflow: hidden !important;
+
+    border: 1px solid #fecaca !important;
+    border-radius: 17px !important;
+
+    background:
+      radial-gradient(
+        circle at 28% 50%,
+        rgba(220, 38, 38, 0.055),
+        transparent 20%
+      ),
+      linear-gradient(
+        135deg,
+        #ffffff,
+        #fffafa
+      ) !important;
+
+    box-shadow:
+      0 7px 18px rgba(127, 29, 29, 0.055) !important;
+  }
+
+
+  /* =====================================================
+     LEFT TITLE
+  ===================================================== */
+
+  .lost-reason-chart-head {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+
+    min-width: 0 !important;
+  }
+
+  .lost-reason-chart-head > div > span {
+    display: block !important;
+
+    color: #dc2626 !important;
+
+    font-size: 6.5px !important;
+    line-height: 1 !important;
+
+    font-weight: 950 !important;
+
+    letter-spacing: 0.11em !important;
+  }
+
+  .lost-reason-chart-head > div > strong {
+    display: block !important;
+
+    margin-top: 3px !important;
+
+    color: #7f1d1d !important;
+
+    font-size: 13.5px !important;
+    line-height: 1.05 !important;
+
+    font-weight: 950 !important;
+  }
+
+  .lost-reason-chart-head > div > p {
+    margin: 3px 0 0 !important;
+
+    color: #64748b !important;
+
+    font-size: 7px !important;
+    line-height: 1.15 !important;
+
+    font-weight: 750 !important;
+
+    white-space: nowrap !important;
+  }
+
+  .lost-reason-chart-head > b {
+    display: inline-flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    align-self: flex-start !important;
+
+    min-width: 38px !important;
+    height: 21px !important;
+
+    margin-top: 5px !important;
+    padding: 0 8px !important;
+
+    border: 1px solid #fca5a5 !important;
+    border-radius: 999px !important;
+
+    background:
+      linear-gradient(
+        135deg,
+        #fee2e2,
+        #fff1f2
+      ) !important;
+
+    color: #991b1b !important;
+
+    font-size: 10px !important;
+    font-weight: 950 !important;
+  }
+
+
+  /* =====================================================
+     REMOVE OLD NESTED LAYOUT
+  ===================================================== */
+
+  .lost-reason-chart-layout {
+    display: contents !important;
+  }
+
+
+  /* =====================================================
+     BIGGER DONUT IN SAME HEIGHT
+  ===================================================== */
+
+  .lost-reason-donut-wrap {
+    grid-column: 2 !important;
+
+    position: relative !important;
+
+    width: 118px !important;
+    height: 96px !important;
+
+    min-width: 118px !important;
+    min-height: 96px !important;
+
+    max-width: 118px !important;
+    max-height: 96px !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    margin: 0 !important;
+
+    overflow: hidden !important;
+  }
+
+  .lost-reason-donut-wrap
+  .recharts-responsive-container,
+
+  .lost-reason-donut-wrap
+  .recharts-wrapper,
+
+  .lost-reason-donut-wrap svg {
+    width: 118px !important;
+    height: 96px !important;
+
+    max-width: 118px !important;
+    max-height: 96px !important;
+  }
+
+
+  .lost-reason-donut-center {
+    position: absolute !important;
+
+    top: 50% !important;
+    left: 50% !important;
+
+    transform: translate(-50%, -50%) !important;
+
+    text-align: center !important;
+
+    pointer-events: none !important;
+  }
+
+  .lost-reason-donut-center strong {
+    display: block !important;
+
+    color: #7f1d1d !important;
+
+    font-size: 14px !important;
+    line-height: 1 !important;
+
+    font-weight: 950 !important;
+  }
+
+  .lost-reason-donut-center span {
+    display: block !important;
+
+    margin-top: 1px !important;
+
+    color: #b91c1c !important;
+
+    font-size: 5px !important;
+    line-height: 1 !important;
+
+    font-weight: 950 !important;
+  }
+
+
+  /* =====================================================
+     REASONS - TIGHT TO DONUT
+  ===================================================== */
+
+  .lost-reason-chart-legend {
+    grid-column: 3 !important;
+
+    width: 660px !important;
+    max-width: 660px !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+      repeat(3, 210px) !important;
+
+    gap: 5px 7px !important;
+
+    justify-content: start !important;
+    align-content: center !important;
+  }
+
+
+  /* =====================================================
+     COMPACT REASON PILL
+  ===================================================== */
+
+  .lost-reason-chart-legend button {
+    width: 210px !important;
+
+    min-width: 210px !important;
+    max-width: 210px !important;
+
+    height: 29px !important;
+    min-height: 29px !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    gap: 5px !important;
+
+    padding: 0 7px !important;
+
+    margin: 0 !important;
+
+    box-sizing: border-box !important;
+
+    border: 1px solid #fee2e2 !important;
+    border-radius: 9px !important;
+
+    background:
+      linear-gradient(
+        180deg,
+        #ffffff,
+        #fffafa
+      ) !important;
+
+    cursor: pointer !important;
+
+    box-shadow:
+      0 2px 5px rgba(127, 29, 29, 0.025) !important;
+  }
+
+  .lost-reason-chart-legend button:hover {
+    transform: translateY(-1px) !important;
+
+    border-color: #ef4444 !important;
+
+    background: #ffffff !important;
+
+    box-shadow:
+      0 5px 11px rgba(127, 29, 29, 0.07) !important;
+  }
+
+
+  /* DOT */
+
+  .lost-reason-legend-dot {
+    width: 7px !important;
+    min-width: 7px !important;
+    height: 7px !important;
+
+    flex: 0 0 7px !important;
+
+    border-radius: 50% !important;
+  }
+
+
+  /* NAME + VALUE SAME LINE */
+
+  .lost-reason-chart-legend button > div {
+    min-width: 0 !important;
+
+    flex: 1 !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    gap: 6px !important;
+  }
+
+  .lost-reason-chart-legend strong {
+    min-width: 0 !important;
+
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+
+    color: #7f1d1d !important;
+
+    font-size: 7.5px !important;
+    line-height: 1 !important;
+
+    font-weight: 950 !important;
+  }
+
+  .lost-reason-chart-legend small {
+    flex-shrink: 0 !important;
+
+    margin: 0 !important;
+
+    color: #64748b !important;
+
+    font-size: 6.5px !important;
+    line-height: 1 !important;
+
+    font-weight: 850 !important;
+
+    white-space: nowrap !important;
+  }
+}
+
+
+/* =========================================================
+   MEDIUM DESKTOP
+========================================================= */
+
+@media (max-width: 1250px) and (min-width: 901px) {
+
+  .lost-reason-chart-card {
+    grid-template-columns:
+      165px
+      110px
+      560px !important;
+
+    column-gap: 8px !important;
+  }
+
+  .lost-reason-chart-legend {
+    width: 560px !important;
+    max-width: 560px !important;
+
+    grid-template-columns:
+      repeat(3, 180px) !important;
+  }
+
+  .lost-reason-chart-legend button {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+  }
+
+  .lost-reason-donut-wrap,
+  .lost-reason-donut-wrap
+  .recharts-responsive-container,
+  .lost-reason-donut-wrap
+  .recharts-wrapper,
+  .lost-reason-donut-wrap svg {
+    width: 106px !important;
+    max-width: 106px !important;
+
+    height: 92px !important;
+    max-height: 92px !important;
+  }
+}

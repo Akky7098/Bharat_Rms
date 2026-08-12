@@ -53,8 +53,10 @@ const [refreshing, setRefreshing] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [paymentModal, setPaymentModal] = useState(null);
-const [selectedDispatchDetail, setSelectedDispatchDetail] = useState(null);
+  const [commitmentModal, setCommitmentModal] = useState(null);
+  const [selectedDispatchDetail, setSelectedDispatchDetail] = useState(null);
   const [paymentUpdating, setPaymentUpdating] = useState(false);
+  const [commitmentUpdating, setCommitmentUpdating] = useState(false);
   const [showPwaFilters, setShowPwaFilters] = useState(false);
   const [activeInsight, setActiveInsight] = useState("");
 
@@ -64,6 +66,11 @@ const [selectedDispatchDetail, setSelectedDispatchDetail] = useState(null);
     paymentBillPdf: null,
     dispatchStatus: "dispatched",
     internalRemark: "",
+  });
+
+  const [commitmentForm, setCommitmentForm] = useState({
+    revisedPaymentDueDate: "",
+    revisedPaymentRemark: "",
   });
 
 const [filters, setFilters] = useState({
@@ -103,6 +110,48 @@ const [filters, setFilters] = useState({
   const year = d.getFullYear();
 
   return `${day}-${month}-${year}`;
+};
+
+
+    const formatDateInput = (date) => {
+  if (!date) return "";
+
+  const value = new Date(date);
+
+  if (Number.isNaN(value.getTime())) {
+    return "";
+  }
+
+  const year = value.getFullYear();
+  const month = String(
+    value.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    value.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const getEffectivePaymentDueDate = (
+  item
+) => {
+  return (
+    item?.revisedPaymentDueDate ||
+    item?.paymentDueDate ||
+    null
+  );
+};
+
+const getDueDateTrackingRemark = (
+  item
+) => {
+  return (
+    item?.revisedPaymentRemark ||
+    item?.paymentRemark ||
+    ""
+  );
 };
 
   const formatCurrency = (value) => {
@@ -345,21 +394,29 @@ const loadDispatches = useCallback(async () => {
     });
   };
 
+  const resetCommitmentForm = () => {
+    setCommitmentForm({
+      revisedPaymentDueDate: "",
+      revisedPaymentRemark: "",
+    });
+  };
+
   const openDispatchDetail = (dispatch) => {
-  if (!dispatch) return;
-  setSelectedDispatchDetail(dispatch);
-};
+    if (!dispatch) return;
+    setSelectedDispatchDetail(dispatch);
+  };
 
-const closeDispatchDetail = () => {
-  setSelectedDispatchDetail(null);
-};
+  const closeDispatchDetail = () => {
+    setSelectedDispatchDetail(null);
+  };
 
-const stopRowClick = (e) => {
-  e.stopPropagation();
-};
+  const stopRowClick = (e) => {
+    e.stopPropagation();
+  };
 
-const openPaymentModal = (dispatch) => {
+  const openPaymentModal = (dispatch) => {
     setPaymentModal(dispatch);
+
     setPaymentForm({
       amount: "",
       remark: "",
@@ -375,6 +432,21 @@ const openPaymentModal = (dispatch) => {
     resetPaymentForm();
   };
 
+  const openCommitmentModal = (dispatch) => {
+    setCommitmentModal(dispatch);
+
+    setCommitmentForm({
+      revisedPaymentDueDate: "",
+      revisedPaymentRemark: "",
+    });
+  };
+
+  const closeCommitmentModal = () => {
+    if (commitmentUpdating) return;
+    setCommitmentModal(null);
+    resetCommitmentForm();
+  };
+
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
 
@@ -386,14 +458,18 @@ const openPaymentModal = (dispatch) => {
     const statusChanged =
       paymentForm.dispatchStatus !==
         (paymentModal.dispatchStatus || "dispatched") ||
-      paymentForm.internalRemark !== (paymentModal.internalRemark || "");
+      paymentForm.internalRemark !==
+        (paymentModal.internalRemark || "");
 
     if (!hasPayment && !statusChanged) {
       alert("Please update payment or dispatch status");
       return;
     }
 
-    if (hasPayment && amount > Number(paymentModal.pendingAmount || 0)) {
+    if (
+      hasPayment &&
+      amount > Number(paymentModal.pendingAmount || 0)
+    ) {
       alert("Payment amount cannot be greater than pending amount");
       return;
     }
@@ -424,6 +500,7 @@ const openPaymentModal = (dispatch) => {
           {
             amount,
             remark: paymentForm.remark,
+            paymentRemark: paymentForm.remark,
           },
           paymentForm.paymentBillPdf
         );
@@ -438,11 +515,83 @@ const openPaymentModal = (dispatch) => {
 
       alert("Dispatch updated successfully.");
       closePaymentModal();
-      loadDispatches();
+      await loadDispatches();
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to update dispatch");
+      alert(
+        error.response?.data?.message ||
+          "Failed to update dispatch"
+      );
     } finally {
       setPaymentUpdating(false);
+    }
+  };
+
+  const handleCommitmentSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!commitmentModal?._id) return;
+
+    const revisedPaymentDueDate = String(
+      commitmentForm.revisedPaymentDueDate || ""
+    ).trim();
+
+    const revisedPaymentRemark = String(
+      commitmentForm.revisedPaymentRemark || ""
+    ).trim();
+
+    if (commitmentModal.paymentStatus === "paid") {
+      alert(
+        "Payment date cannot be revised because this invoice is already paid."
+      );
+      return;
+    }
+
+    if (!revisedPaymentDueDate) {
+      alert("Please select the revised payment due date.");
+      return;
+    }
+
+    if (!revisedPaymentRemark) {
+      alert("Payment revision remark is required.");
+      return;
+    }
+
+    const currentEffectiveDate = formatDateInput(
+      getEffectivePaymentDueDate(commitmentModal)
+    );
+
+    if (
+      currentEffectiveDate &&
+      revisedPaymentDueDate <= currentEffectiveDate
+    ) {
+      alert(
+        "Revised payment due date must be later than the current payment due date."
+      );
+      return;
+    }
+
+    try {
+      setCommitmentUpdating(true);
+
+      await updateDispatchPayment(
+        commitmentModal._id,
+        {
+          revisedPaymentDueDate,
+          revisedPaymentRemark,
+        },
+        null
+      );
+
+      alert("Revised payment commitment updated successfully.");
+      closeCommitmentModal();
+      await loadDispatches();
+    } catch (error) {
+      alert(
+        error.response?.data?.message ||
+          "Failed to update payment commitment"
+      );
+    } finally {
+      setCommitmentUpdating(false);
     }
   };
 
@@ -999,7 +1148,43 @@ const renderInsights = (mode = "desktop") => {
                       <PwaInfo label="Quantity" value={formatQty(item.dispatchQty)} />
                       <PwaInfo label="Paid" value={formatCurrency(item.paidAmount)} />
                       <PwaInfo label="Pending" value={formatCurrency(item.pendingAmount)} />
-                      <PwaInfo label="Due Date" value={formatDate(item.paymentDueDate)} />
+                      <div className="ios-dispatch-info-box">
+  <span>
+    Due Date / Commitment
+  </span>
+
+  <strong>
+    {formatDate(
+      getEffectivePaymentDueDate(
+        item
+      )
+    )}
+  </strong>
+
+  {item.revisedPaymentDueDate && (
+    <small className="ios-revised-due-text">
+      Original:{" "}
+      {formatDate(
+        item.paymentDueDate
+      )}
+    </small>
+  )}
+
+  {getDueDateTrackingRemark(
+    item
+  ) && (
+    <small
+      className="ios-due-remark"
+      title={getDueDateTrackingRemark(
+        item
+      )}
+    >
+      {getDueDateTrackingRemark(
+        item
+      )}
+    </small>
+  )}
+</div>
                       <PwaInfo label="Status" value={formatStatus(item.dispatchStatus)} />
                       <PwaInfo label="Email" value={item.contactPersonEmail || "-"} full />
                     </div>
@@ -1014,13 +1199,24 @@ const renderInsights = (mode = "desktop") => {
 
                       <div className="ios-dispatch-actions">
                         {canManageItem(item) && (
-                          <button
-                            type="button"
-                            className="ios-dispatch-edit-btn"
-                            onClick={() => openPaymentModal(item)}
-                          >
-                            Edit Dispatch
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              className="ios-dispatch-edit-btn"
+                              onClick={() => openPaymentModal(item)}
+                            >
+                              Update Payment
+                            </button>
+
+                            <button
+                              type="button"
+                              className="ios-dispatch-commitment-btn"
+                              onClick={() => openCommitmentModal(item)}
+                              disabled={item.paymentStatus === "paid"}
+                            >
+                              Revise Due Date
+                            </button>
+                          </>
                         )}
 
                         {canDeleteDispatch && (
@@ -1198,7 +1394,7 @@ const renderInsights = (mode = "desktop") => {
                 <th>Qty</th>
                 <th>Invoice Value</th>
                 <th>Payment</th>
-                <th>Due Date</th>
+                <th>Due Date / Commitment</th>
                 <th>Documents</th>
                 <th>Status</th>
                 <th>Action</th>
@@ -1267,7 +1463,51 @@ const renderInsights = (mode = "desktop") => {
                         </div>
                       </td>
 
-                      <td>{formatDate(item.paymentDueDate)}</td>
+                      <td>
+  <div className="dispatch-due-tracking">
+    <strong>
+      {formatDate(
+        getEffectivePaymentDueDate(
+          item
+        )
+      )}
+    </strong>
+
+    {item.revisedPaymentDueDate && (
+      <>
+        <small className="dispatch-original-due">
+          Original:{" "}
+          {formatDate(
+            item.paymentDueDate
+          )}
+        </small>
+
+        <small className="dispatch-revised-due">
+          Revised:{" "}
+          {formatDate(
+            item
+              .revisedPaymentDueDate
+          )}
+        </small>
+      </>
+    )}
+
+    {getDueDateTrackingRemark(
+      item
+    ) && (
+      <span
+        className="dispatch-due-remark"
+        title={getDueDateTrackingRemark(
+          item
+        )}
+      >
+        {getDueDateTrackingRemark(
+          item
+        )}
+      </span>
+    )}
+  </div>
+</td>
                       <td onClick={stopRowClick}>{renderDocuments(item)}</td>
 
                       <td>
@@ -1278,13 +1518,24 @@ const renderInsights = (mode = "desktop") => {
 <td onClick={stopRowClick}>
   <div className="dispatch-action-group">
                           {canManageItem(item) && (
-                            <button
-                              type="button"
-                              className="dispatch-edit-btn"
-                              onClick={() => openPaymentModal(item)}
-                            >
-                              Edit
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                className="dispatch-edit-btn"
+                                onClick={() => openPaymentModal(item)}
+                              >
+                                Update Payment
+                              </button>
+
+                              <button
+                                type="button"
+                                className="dispatch-commitment-btn"
+                                onClick={() => openCommitmentModal(item)}
+                                disabled={item.paymentStatus === "paid"}
+                              >
+                                Revise Due Date
+                              </button>
+                            </>
                           )}
 
                           {canDeleteDispatch && (
@@ -1351,14 +1602,18 @@ const renderInsights = (mode = "desktop") => {
           <div className="dispatch-payment-card">
             <div className="dispatch-form-header">
               <div>
-                <h2>Manage Dispatch</h2>
+                <h2>Manage Payment</h2>
                 <p>
                   Invoice {paymentModal.invoiceNumber} · Pending{" "}
                   {formatCurrency(paymentModal.pendingAmount)}
                 </p>
               </div>
 
-              <button type="button" onClick={closePaymentModal} disabled={paymentUpdating}>
+              <button
+                type="button"
+                onClick={closePaymentModal}
+                disabled={paymentUpdating}
+              >
                 ×
               </button>
             </div>
@@ -1391,7 +1646,10 @@ const renderInsights = (mode = "desktop") => {
                         dispatchStatus: e.target.value,
                       }))
                     }
-                    disabled={paymentUpdating || paymentModal?.dispatchStatus === "delivered"}
+                    disabled={
+                      paymentUpdating ||
+                      paymentModal?.dispatchStatus === "delivered"
+                    }
                   >
                     <option value="dispatched">Dispatched</option>
                     <option value="delivered">Delivered</option>
@@ -1467,14 +1725,131 @@ const renderInsights = (mode = "desktop") => {
                   Cancel
                 </button>
 
-                <button type="submit" className="dispatch-submit" disabled={paymentUpdating}>
-                  {paymentUpdating ? "Updating..." : "Save Changes"}
+                <button
+                  type="submit"
+                  className="dispatch-submit"
+                  disabled={paymentUpdating}
+                >
+                  {paymentUpdating ? "Updating..." : "Save Payment Changes"}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {commitmentModal && (
+        <div className="dispatch-modal-overlay">
+          <div className="dispatch-payment-card dispatch-commitment-card">
+            <div className="dispatch-form-header">
+              <div>
+                <h2>Revise Payment Due Date</h2>
+                <p>
+                  Invoice {commitmentModal.invoiceNumber} · Current Due{" "}
+                  {formatDate(
+                    getEffectivePaymentDueDate(commitmentModal)
+                  )}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeCommitmentModal}
+                disabled={commitmentUpdating}
+              >
+                ×
+              </button>
+            </div>
+
+            <form className="dispatch-form" onSubmit={handleCommitmentSubmit}>
+              <div className="dispatch-grid">
+                <div className="dispatch-field">
+                  <label>Original Payment Due Date</label>
+                  <input
+                    value={formatDate(commitmentModal.paymentDueDate)}
+                    disabled
+                    readOnly
+                  />
+                </div>
+
+                <div className="dispatch-field">
+                  <label>Current Effective Due Date</label>
+                  <input
+                    value={formatDate(
+                      getEffectivePaymentDueDate(commitmentModal)
+                    )}
+                    disabled
+                    readOnly
+                  />
+                </div>
+
+                <div className="dispatch-field dispatch-full">
+                  <label>
+                    Revised Payment Due Date{" "}
+                    <span className="dispatch-required">*</span>
+                  </label>
+
+                  <input
+                    type="date"
+                    value={commitmentForm.revisedPaymentDueDate}
+                    min={formatDateInput(
+                      getEffectivePaymentDueDate(commitmentModal)
+                    )}
+                    onChange={(e) =>
+                      setCommitmentForm((prev) => ({
+                        ...prev,
+                        revisedPaymentDueDate: e.target.value,
+                      }))
+                    }
+                    disabled={commitmentUpdating}
+                  />
+                </div>
+
+                <div className="dispatch-field dispatch-full">
+                  <label>
+                    Revised Payment Remark{" "}
+                    <span className="dispatch-required">*</span>
+                  </label>
+
+                  <textarea
+                    value={commitmentForm.revisedPaymentRemark}
+                    onChange={(e) =>
+                      setCommitmentForm((prev) => ({
+                        ...prev,
+                        revisedPaymentRemark: e.target.value,
+                      }))
+                    }
+                    placeholder="Example: Customer confirmed payment on 05 August due to internal approval delay"
+                    disabled={commitmentUpdating}
+                  />
+                </div>
+              </div>
+
+              <div className="dispatch-actions">
+                <button
+                  type="button"
+                  className="dispatch-cancel"
+                  onClick={closeCommitmentModal}
+                  disabled={commitmentUpdating}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="dispatch-submit dispatch-commitment-submit"
+                  disabled={commitmentUpdating}
+                >
+                  {commitmentUpdating
+                    ? "Updating..."
+                    : "Update Payment Commitment"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
@@ -1505,8 +1880,43 @@ function DispatchDetailModal({
     ["Invoice Value", formatCurrency(item.invoiceValue)],
     ["Paid Amount", formatCurrency(item.paidAmount)],
     ["Pending Amount", formatCurrency(item.pendingAmount)],
-    ["Payment Due Date", formatDate(item.paymentDueDate)],
-    ["Payment Status", formatStatus(paymentStatus)],
+    [
+  "Original Payment Due Date",
+  formatDate(
+    item.paymentDueDate
+  ),
+],
+
+[
+  "Effective Payment Due Date",
+  formatDate(
+    item.revisedPaymentDueDate ||
+      item.paymentDueDate
+  ),
+],
+
+[
+  "Revised Payment Due Date",
+  item.revisedPaymentDueDate
+    ? formatDate(
+        item
+          .revisedPaymentDueDate
+      )
+    : "-",
+],
+
+[
+  "Revised Payment Remark",
+  item.revisedPaymentRemark ||
+    "-",
+],
+
+[
+  "Payment Status",
+  formatStatus(
+    paymentStatus
+  ),
+],
     ["Dispatch Status", formatStatus(item.dispatchStatus)],
     ["Internal Remark", item.internalRemark],
   ];
@@ -1542,7 +1952,11 @@ function DispatchDetailModal({
             <div
               key={label}
               className={`dispatch-detail-item ${
-                ["Internal Remark", "Company"].includes(label)
+                [
+  "Internal Remark",
+  "Company",
+  "Revised Payment Remark",
+].includes(label)
                   ? "dispatch-detail-wide"
                   : ""
               }`}

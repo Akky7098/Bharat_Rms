@@ -3556,3 +3556,209 @@
 .mis-week-progress {
     margin-bottom: 12px !important;
 }
+
+/* =========================================================
+   NEW MIS RULE - 10 / 15 / 25 / 20 / 30
+   ADD THIS BLOCK AT THE ABSOLUTE END OF DashboardHome.css
+========================================================= */
+
+/* Desktop MIS header summary pills */
+.mis-header-pills {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mis-new-customer-pill {
+  background: linear-gradient(135deg, #fff1f2, #ffe4e6) !important;
+  color: #be123c !important;
+  border-color: #fda4af !important;
+  box-shadow: 0 10px 22px rgba(190, 18, 60, 0.12) !important;
+}
+
+/* Five MIS weightage items */
+.mis-weightage-summary-items {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+.mis-weightage-summary-item.rose {
+  background: #fff1f2;
+  border-color: #e11d48;
+  color: #be123c;
+}
+
+/* Highlight new-customer target because it carries 30% */
+.mis-new-customer-target {
+  background: linear-gradient(135deg, #fff1f2, #ffffff) !important;
+  border-color: #fda4af !important;
+}
+
+.mis-new-customer-target span {
+  color: #be123c !important;
+}
+
+.mis-new-customer-target b {
+  color: #9f1239 !important;
+}
+
+/* Keep the production MIS cards balanced with the added metric */
+.mis-target-grid-new-rule,
+.mis-week-target-grid-new-rule {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.mis-employee-stats-new-rule {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+/* Mobile summary pills */
+.ios-mis-summary-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ios-mis-summary-pills .ios-total-pill {
+  margin-bottom: 0 !important;
+}
+
+.ios-total-pill-new-customer {
+  background: #fff1f2 !important;
+  color: #be123c !important;
+  border-color: #fecdd3 !important;
+}
+
+/* Fifth weightage item on mobile */
+.ios-mis-weightage-summary-item.rose {
+  border-left: 4px solid #fb7185;
+}
+
+/* Mobile target-vs-done layout for all five MIS rules */
+.ios-mis-rule-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.ios-mis-rule-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ios-mis-rule-row > div,
+.ios-mis-rule-row > .mis-metric-drill {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 62px !important;
+  box-sizing: border-box !important;
+  padding: 10px !important;
+  border-radius: 15px !important;
+}
+
+.ios-mis-rule-row > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.ios-mis-rule-row > div span {
+  display: block;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ios-mis-rule-row > div b {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 950;
+  word-break: break-word;
+}
+
+.ios-mis-rule-row > .mis-metric-drill {
+  background: #ecfdf5 !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+.ios-mis-rule-row > .mis-metric-drill span {
+  color: #166534 !important;
+}
+
+.ios-mis-rule-row > .mis-metric-drill b {
+  color: #14532d !important;
+}
+
+.ios-mis-rule-row.new-customer > div {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.ios-mis-rule-row.new-customer > div span {
+  color: #be123c;
+}
+
+.ios-mis-rule-row.new-customer > div b {
+  color: #9f1239;
+}
+
+.ios-mis-rule-row.new-customer > .mis-metric-drill {
+  background: #fff1f2 !important;
+  border-color: #fda4af !important;
+}
+
+.ios-mis-rule-row.new-customer > .mis-metric-drill span,
+.ios-mis-rule-row.new-customer > .mis-metric-drill b {
+  color: #9f1239 !important;
+}
+
+/* Responsive protection for five desktop weightage boxes */
+@media screen and (max-width: 1350px) and (min-width: 901px) {
+  .mis-weightage-summary-items {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media screen and (max-width: 1050px) and (min-width: 901px) {
+  .mis-weightage-summary-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .mis-header {
+    align-items: flex-start !important;
+  }
+
+  .mis-header-pills {
+    justify-content: flex-start;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .ios-mis-weightage-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ios-score-stats-five {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  .ios-mis-rule-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ios-score-stats-five {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

@@ -64,6 +64,19 @@ const orderTypeOptions = [
   { value: "special_economic_zone", label: "Special Economic Zone" },
 ];
 
+const trackingOrderTypeOptions = [
+  {
+    value: "N.H.O.",
+    label: "N.H.O.",
+    description: "Mill / manufacturing process tracking",
+  },
+  {
+    value: "H.O.",
+    label: "H.O.",
+    description: "Cutting + machining process tracking",
+  },
+];
+
 const formatLabel = (value = "") =>
   String(value).replaceAll("_", " ").toUpperCase();
 
@@ -283,6 +296,7 @@ const getFileName = (fileObj) => {
 
 const initialForm = {
   orderType: "domestic",
+  trackingOrderType: "N.H.O.",
   companyName: "",
   companyAddress: "",
   gstinNumber: "",
@@ -404,6 +418,16 @@ const [enquiryLookup, setEnquiryLookup] = useState({
     ]);
     addIf(["order value", "value", "amount"], ["orderValue"]);
     addIf(["order type", "domestic", "international", "sez"], ["orderType"]);
+    addIf(
+  [
+    "tracking order type",
+    "h.o",
+    "h.o.",
+    "n.h.o",
+    "n.h.o.",
+  ],
+  ["trackingOrderType"]
+);
     addIf(["po number", "po no", "po"], ["poNumber", "customerPOFile"]);
     addIf(["feasibility", "feasibility report"], ["feasibilityReportFile"]);
     addIf(["po as per quotation", "quotation"], ["poAsPerQuotation"]);
@@ -487,12 +511,23 @@ const [enquiryLookup, setEnquiryLookup] = useState({
       ...initialForm,
 
       orderType: resolveOptionValue(
-        getFirstFromOrder(editOrder, ["orderType"]),
-        orderTypeOptions.map((item) => item.value),
-        "domestic"
-      ),
+  getFirstFromOrder(editOrder, ["orderType"]),
+  orderTypeOptions.map((item) => item.value),
+  "domestic"
+),
 
-      companyName: getFirstFromOrder(editOrder, ["companyName"]),
+trackingOrderType: resolveOptionValue(
+  getFirstFromOrder(
+    editOrder,
+    ["trackingOrderType"]
+  ),
+  trackingOrderTypeOptions.map(
+    (item) => item.value
+  ),
+  "N.H.O."
+),
+
+companyName: getFirstFromOrder(editOrder, ["companyName"]),
       companyAddress: getFirstFromOrder(editOrder, ["companyAddress"]),
       gstinNumber: getFirstFromOrder(editOrder, ["gstinNumber", "gstNumber"]),
 
@@ -670,6 +705,13 @@ supplyFinish: getFirstFromOrder(
   }, [isEditMode, holdComment, revisionFields]);
 
   const isDomesticOrder = form.orderType === "domestic";
+  const isHOOrder =
+  form.trackingOrderType ===
+  "H.O.";
+
+const isNHOOrder =
+  form.trackingOrderType ===
+  "N.H.O.";
   const isPaymentApproved = form.isPaymentTermsApprovedByManagement === "true";
   const isOtherPaymentTerms = form.paymentTerms === "other";
   const isOtherSupplyCondition = form.supplyCondition === "other";
@@ -777,6 +819,10 @@ const checkEnquiryNumber = async (numberValue = form.enquiryNumber) => {
 
     const requiredFields = [
       ["orderType", "Order type is required"],
+      [
+  "trackingOrderType",
+  "H.O. / N.H.O. selection is required",
+],
       ["companyName", "Company name is required"],
       ["companyAddress", "Company address is required"],
       ["poNumber", "PO number is required"],
@@ -806,6 +852,15 @@ const checkEnquiryNumber = async (numberValue = form.enquiryNumber) => {
         newErrors[field] = message;
       }
     });
+
+    if (
+  !["H.O.", "N.H.O."].includes(
+    form.trackingOrderType
+  )
+) {
+  newErrors.trackingOrderType =
+    "Please select H.O. or N.H.O.";
+}
 
     if (isDomesticOrder) {
       if (!form.gstinNumber.trim()) {
@@ -1016,7 +1071,9 @@ if (name === "enquiryNumber") {
   const buildPayload = () => {
     return {
       orderType: form.orderType || "domestic",
-
+       trackingOrderType:
+      form.trackingOrderType ||
+      "N.H.O.",
       companyName: form.companyName.trim(),
       companyAddress: form.companyAddress.trim(),
       gstinNumber: isDomesticOrder ? form.gstinNumber.trim() : "",
@@ -1288,6 +1345,70 @@ setIsSubmitting(true);
             </small>
             {errorText("orderType")}
           </div>
+
+          <div
+  className={fieldClass(
+    "trackingOrderType",
+    "tracking-order-type-field"
+  )}
+  {...refProp("trackingOrderType")}
+>
+  <label>
+    {mandatoryLabel(
+      "Tracking Order Type"
+    )}
+  </label>
+
+  <div className="tracking-order-type-selector">
+    {trackingOrderTypeOptions.map(
+      (item) => (
+        <label
+          key={item.value}
+          className={`tracking-order-type-option ${
+            form.trackingOrderType ===
+            item.value
+              ? "is-selected"
+              : ""
+          }`}
+        >
+          <input
+            type="radio"
+            name="trackingOrderType"
+            value={item.value}
+            checked={
+              form.trackingOrderType ===
+              item.value
+            }
+            onChange={handleChange}
+          />
+
+          <span className="tracking-order-type-radio" />
+
+          <span className="tracking-order-type-content">
+            <strong>
+              {item.label}
+            </strong>
+
+            <small>
+              {item.description}
+            </small>
+          </span>
+        </label>
+      )
+    )}
+  </div>
+
+  <small className="auto-hint">
+    N.H.O. follows the selected
+    supply-condition production
+    timeline. H.O. follows cutting
+    and machining.
+  </small>
+
+  {errorText(
+    "trackingOrderType"
+  )}
+</div>
 
           <div
             className={fieldClass("companyName")}
@@ -1836,6 +1957,25 @@ setIsSubmitting(true);
               ))}
             </select>
             {errorText("supplyCondition")}
+            {isHOOrder && (
+  <small className="tracking-supply-hint tracking-supply-hint--ho">
+    H.O. selected — Order Tracking
+    will use Planning → Cutting →
+    Machining → Dispatch. This
+    supply condition will remain on
+    the Sales Order but will not
+    determine its tracking timeline.
+  </small>
+)}
+
+{isNHOOrder && (
+  <small className="tracking-supply-hint tracking-supply-hint--nho">
+    N.H.O. selected — this supply
+    condition will automatically
+    determine the production
+    tracking timeline after approval.
+  </small>
+)}
           </div>
 
           {isOtherSupplyCondition && (

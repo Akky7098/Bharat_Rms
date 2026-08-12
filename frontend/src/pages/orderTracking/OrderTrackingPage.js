@@ -6,1251 +6,713 @@ import React, {
 } from "react";
 
 import {
-  closeOrderTrackingChat,
-  deleteOrderTrackingMessage,
-  getOrderTrackingById,
-  getOrderTrackingDashboard,
-  getOrderTrackingList,
-  getOrderTrackingMessages,
-  markOrderTrackingMessagesRead,
-  reopenOrderTrackingChat,
-  requestOrderTrackingUpdate,
-  sendOrderTrackingMessage,
-  syncApprovedSalesOrders,
-  updateOrderTrackingStatus,
-} from "../../services/orderTrackingService";
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  PackageSearch,
+  RefreshCw,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
 
 import {
-  PRIORITY_OPTIONS,
-  STATUS_OPTIONS,
-  canSyncTracking,
-  getStoredUser,
-  unwrapApiData,
-} from "./orderTrackingUtils";
+  getOrderTrackingById,
+  getOrderTrackingList,
+  syncApprovedSalesOrders,
+} from "../../services/orderTrackingService";
 
-import OrderTrackingCard from "./components/OrderTrackingCard";
 import OrderTrackingTable from "./components/OrderTrackingTable";
-import OrderTrackingDetailPage from "./components/OrderTrackingDetailPage";
-import OrderTrackingStatusModal from "./components/OrderTrackingStatusModal";
+import OrderTrackingDetail from "./components/OrderTrackingDetail";
 
-import "./OrderTrackingPage.css";
+import "./orderTrackingPage.css";
 
-const initialFilters = {
-  search: "",
-  status: "",
-  priority: "",
-  updateRequested: "",
-  page: 1,
-  limit: 30,
+const PAGE_SIZE = 25;
+
+const getTrackingIdFromUrl = () => {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("tracking") || "";
 };
 
-const SUMMARY_CARDS = [
-  {
-    key: "total",
-    label: "Total Orders",
-  },
-  {
-    key: "planning",
-    label: "Planning",
-  },
-  {
-    key: "cutting_started",
-    label: "Under Cutting",
-  },
-  {
-    key: "machining_started",
-    label: "Under Machining",
-  },
-  {
-    key: "ready_for_dispatch",
-    label: "Ready",
-  },
-  {
-    key: "dispatched",
-    label: "Dispatched",
-  },
-  {
-    key: "in_transit",
-    label: "In Transit",
-  },
-  {
-    key: "delivered",
-    label: "Delivered",
-  },
-  {
-    key: "updateRequested",
-    label: "Update Requested",
-  },
-];
+const setTrackingIdInUrl = (trackingId) => {
+  const url = new URL(window.location.href);
+
+  if (trackingId) {
+    url.searchParams.set("tracking", trackingId);
+  } else {
+    url.searchParams.delete("tracking");
+  }
+
+  window.history.pushState({}, "", url);
+};
+
+const normalizeListResponse = (response) => {
+  const payload = response?.data || {};
+
+  const items = Array.isArray(payload.items)
+    ? [...payload.items].sort((a, b) => {
+        const aDate = new Date(
+          a.approvedAt ||
+            a.createdAt ||
+            a.updatedAt ||
+            0
+        ).getTime();
+
+        const bDate = new Date(
+          b.approvedAt ||
+            b.createdAt ||
+            b.updatedAt ||
+            0
+        ).getTime();
+
+        return bDate - aDate;
+      })
+    : [];
+
+  return {
+    items,
+    pagination:
+      payload.pagination || {
+        page: 1,
+        limit: PAGE_SIZE,
+        total: 0,
+        totalPages: 1,
+      },
+  };
+};
+
+const normalizeDetailResponse = (response) =>
+  response?.data || null;
 
 const OrderTrackingPage = () => {
-  const user = getStoredUser();
-
-  /* =========================================================
-     LIST AND DASHBOARD STATE
-  ========================================================= */
-
-  const [summary, setSummary] =
-    useState({});
-
-  const [records, setRecords] =
-    useState([]);
-
-  const [filters, setFilters] =
-    useState(initialFilters);
-
-  const [pagination, setPagination] =
-    useState({
-      page: 1,
-      limit: 30,
-      total: 0,
-      totalPages: 1,
-    });
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [refreshing, setRefreshing] =
-    useState(false);
-
-  const [syncing, setSyncing] =
-    useState(false);
-
   const [
-    requestingTrackingId,
-    setRequestingTrackingId,
-  ] = useState("");
-
-  /* =========================================================
-     SELECTED ORDER / DRILL-DOWN STATE
-  ========================================================= */
+    selectedTrackingId,
+    setSelectedTrackingId,
+  ] = useState(getTrackingIdFromUrl());
 
   const [
     selectedTracking,
     setSelectedTracking,
   ] = useState(null);
 
-  const [
-    openingTrackingId,
-    setOpeningTrackingId,
-  ] = useState("");
-
-  const [statusOpen, setStatusOpen] =
-    useState(false);
-
-  const [
-    statusSaving,
-    setStatusSaving,
-  ] = useState(false);
-
-  /* =========================================================
-     CHAT STATE
-  ========================================================= */
-
-  const [messages, setMessages] =
+  const [trackings, setTrackings] =
     useState([]);
 
-  const [
-    messagePagination,
-    setMessagePagination,
-  ] = useState({
-    page: 1,
-    limit: 50,
-    total: 0,
-    totalPages: 1,
-  });
+  const [pagination, setPagination] =
+    useState({
+      page: 1,
+      limit: PAGE_SIZE,
+      total: 0,
+      totalPages: 1,
+    });
+
+  const [search, setSearch] =
+    useState("");
+
+  const [status, setStatus] =
+    useState("");
+
+  const [orderType, setOrderType] =
+    useState("");
 
   const [
-    messagesLoading,
-    setMessagesLoading,
+    processType,
+    setProcessType,
+  ] = useState("");
+
+  const [
+    loadingList,
+    setLoadingList,
+  ] = useState(true);
+
+  const [
+    loadingDetail,
+    setLoadingDetail,
   ] = useState(false);
 
   const [
-    messageSending,
-    setMessageSending,
+    refreshing,
+    setRefreshing,
   ] = useState(false);
 
-  const [
-  deletingMessageId,
-  setDeletingMessageId,
-] = useState("");
+  const [error, setError] =
+    useState("");
 
-  /* =========================================================
-     CLEAN API FILTERS
-  ========================================================= */
+  const isDetailView = Boolean(
+    selectedTrackingId
+  );
 
-  const cleanParams = useMemo(() => {
-    const params = {};
+  const listQuery = useMemo(
+    () => ({
+      page: pagination.page || 1,
+      limit: PAGE_SIZE,
+      search:
+        search.trim() || undefined,
+      status: status || undefined,
+      orderType:
+        orderType || undefined,
+      processType:
+        processType || undefined,
+    }),
+    [
+      pagination.page,
+      search,
+      status,
+      orderType,
+      processType,
+    ]
+  );
 
-    Object.entries(filters).forEach(
-      ([key, value]) => {
-        if (
-          value !== "" &&
-          value !== null &&
-          value !== undefined
-        ) {
-          params[key] = value;
+  const fetchList = useCallback(
+    async ({
+      page,
+      silent = false,
+    } = {}) => {
+      try {
+        if (!silent) {
+          setLoadingList(true);
         }
+
+        setError("");
+
+        const response =
+          await getOrderTrackingList({
+            ...listQuery,
+            page:
+              page ||
+              listQuery.page,
+          });
+
+        const normalized =
+          normalizeListResponse(
+            response
+          );
+
+        setTrackings(
+          normalized.items
+        );
+
+        setPagination(
+          normalized.pagination
+        );
+      } catch (err) {
+        setError(
+          err?.message ||
+            "Failed to load order tracking"
+        );
+      } finally {
+        setLoadingList(false);
       }
-    );
+    },
+    [listQuery]
+  );
 
-    return params;
-  }, [filters]);
+  const fetchDetail = useCallback(
+    async (
+      trackingId,
+      {
+        silent = false,
+      } = {}
+    ) => {
+      if (!trackingId) {
+        return;
+      }
 
-  /* =========================================================
-     DASHBOARD SUMMARY
-  ========================================================= */
+      try {
+        if (!silent) {
+          setLoadingDetail(true);
+        }
 
-  const loadSummary = useCallback(
-    async () => {
-      const response =
-        await getOrderTrackingDashboard();
+        setError("");
 
-      const payload =
-        unwrapApiData(response) || {};
+        const response =
+          await getOrderTrackingById(
+            trackingId
+          );
 
-      setSummary(payload);
+        setSelectedTracking(
+          normalizeDetailResponse(
+            response
+          )
+        );
+      } catch (err) {
+        setError(
+          err?.message ||
+            "Failed to load order tracking details"
+        );
+      } finally {
+        setLoadingDetail(false);
+      }
     },
     []
   );
 
-  /* =========================================================
-     TRACKING LIST
-  ========================================================= */
+  useEffect(() => {
+    const onPopState = () => {
+      const trackingId =
+        getTrackingIdFromUrl();
 
-  const loadRecords = useCallback(
-    async () => {
-      const response =
-        await getOrderTrackingList(
-          cleanParams
-        );
-
-      const payload =
-        unwrapApiData(response) || {};
-
-      setRecords(
-        Array.isArray(payload.data)
-          ? payload.data
-          : []
+      setSelectedTrackingId(
+        trackingId
       );
 
-      setPagination(
-        payload.pagination || {
-          page: 1,
-          limit: 30,
-          total: 0,
-          totalPages: 1,
-        }
-      );
-    },
-    [cleanParams]
-  );
-
-  /* =========================================================
-     LOAD COMPLETE LIST SCREEN
-  ========================================================= */
-
-  const loadAll = useCallback(
-    async (
-      showRefresh = false
-    ) => {
-      try {
-        if (showRefresh) {
-          setRefreshing(true);
-        } else {
-          setLoading(true);
-        }
-
-        await Promise.all([
-          loadSummary(),
-          loadRecords(),
-        ]);
-      } catch (error) {
-        alert(
-          error?.response?.data
-            ?.message ||
-            "Failed to load order tracking."
-        );
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
+      if (!trackingId) {
+        setSelectedTracking(null);
       }
-    },
-    [loadRecords, loadSummary]
-  );
+    };
+
+    window.addEventListener(
+      "popstate",
+      onPopState
+    );
+
+    return () => {
+      window.removeEventListener(
+        "popstate",
+        onPopState
+      );
+    };
+  }, []);
 
   useEffect(() => {
-    loadAll();
-  }, [loadAll]);
-
-  /* =========================================================
-     LOAD CHAT MESSAGES
-  ========================================================= */
-
-  const loadMessages = async (
-    trackingId,
-    page = 1,
-    append = false
-  ) => {
-    try {
-      setMessagesLoading(true);
-
-      const response =
-        await getOrderTrackingMessages(
-          trackingId,
-          {
-            page,
-            limit: 50,
-          }
-        );
-
-      const payload =
-        unwrapApiData(response) || {};
-
-      const nextMessages =
-        Array.isArray(payload.data)
-          ? payload.data
-          : [];
-
-      setMessages((previous) => {
-        if (!append) {
-          return nextMessages;
-        }
-
-        return [
-          ...nextMessages,
-          ...previous,
-        ];
-      });
-
-      setMessagePagination(
-        payload.pagination || {
-          page,
-          limit: 50,
-          total: 0,
-          totalPages: 1,
-        }
+    if (selectedTrackingId) {
+      fetchDetail(
+        selectedTrackingId
       );
 
-      try {
-        await markOrderTrackingMessagesRead(
-          trackingId
-        );
-      } catch (readError) {
-        console.error(
-          "MARK ORDER TRACKING MESSAGES READ ERROR:",
-          readError
-        );
-      }
-    } catch (error) {
-      alert(
-        error?.response?.data
-          ?.message ||
-          "Failed to load messages."
-      );
-    } finally {
-      setMessagesLoading(false);
+      return undefined;
     }
+
+    const timer =
+      window.setTimeout(() => {
+        fetchList({
+          page: 1,
+        });
+      }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    selectedTrackingId,
+    search,
+    status,
+    orderType,
+    processType,
+    fetchDetail,
+    fetchList,
+  ]);
+
+  const openTracking = (
+    trackingId
+  ) => {
+    setTrackingIdInUrl(
+      trackingId
+    );
+
+    setSelectedTrackingId(
+      trackingId
+    );
+
+    setSelectedTracking(null);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
-  /* =========================================================
-     REFRESH SELECTED TRACKING RECORD
-  ========================================================= */
+  const closeTracking = () => {
+    setTrackingIdInUrl("");
 
-  const refreshSelectedTracking =
-    async (trackingId) => {
-      const response =
-        await getOrderTrackingById(
-          trackingId
-        );
+    setSelectedTrackingId("");
 
-      const payload =
-        unwrapApiData(response) || {};
+    setSelectedTracking(null);
 
-      const tracking =
-        payload.tracking ||
-        payload;
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
-      setSelectedTracking(
-        tracking
-      );
-
-      return tracking;
-    };
-
-  /* =========================================================
-     OPEN FULL DRILL-DOWN PAGE
-  ========================================================= */
-
-  const openTracking = async (
-    tracking
-  ) => {
-    if (!tracking?._id) {
-      return;
-    }
-
+  const refreshList = async () => {
     try {
-      setOpeningTrackingId(
-        tracking._id
-      );
-
-      setMessages([]);
+      setRefreshing(true);
+      setError("");
 
       /*
-       * Immediately show selected row data,
-       * then replace it with complete API data.
+       * First discover any newly-approved Sales Orders.
+       * No orderType/supplyCondition body is required.
        */
-      setSelectedTracking(tracking);
+      await syncApprovedSalesOrders();
 
-      await Promise.all([
-        refreshSelectedTracking(
-          tracking._id
-        ),
-
-        loadMessages(
-          tracking._id,
-          1,
-          false
-        ),
-      ]);
-    } catch (error) {
-      setSelectedTracking(null);
-      setMessages([]);
-
-      alert(
-        error?.response?.data
-          ?.message ||
-          "Failed to open order tracking."
+      /*
+       * Then reload the latest tracking list.
+       */
+      await fetchList({
+        page:
+          pagination.page || 1,
+        silent: true,
+      });
+    } catch (err) {
+      setError(
+        err?.message ||
+          "Failed to sync order tracking"
       );
     } finally {
-      setOpeningTrackingId("");
+      setRefreshing(false);
     }
   };
 
-  /* =========================================================
-     CLOSE DRILL-DOWN AND RETURN TO TABLE
-  ========================================================= */
+  const refreshDetail = async () => {
+    if (!selectedTrackingId) {
+      return;
+    }
 
-  const closeTrackingDetails =
-    async () => {
-      setSelectedTracking(null);
-      setMessages([]);
-      setStatusOpen(false);
-
-      setMessagePagination({
-        page: 1,
-        limit: 50,
-        total: 0,
-        totalPages: 1,
-      });
-
-      await loadAll(true);
-    };
-
-  /* =========================================================
-     REQUEST UPDATE
-  ========================================================= */
-
-  const handleRequestUpdate =
-    async (tracking) => {
-      if (!tracking?._id) {
-        return;
-      }
-
-      try {
-        setRequestingTrackingId(
-          tracking._id
-        );
-
-        await requestOrderTrackingUpdate(
-          tracking._id
-        );
-
-        if (
-          selectedTracking?._id ===
-          tracking._id
-        ) {
-          await Promise.all([
-            refreshSelectedTracking(
-              tracking._id
-            ),
-
-            loadMessages(
-              tracking._id,
-              1,
-              false
-            ),
-          ]);
-        }
-
-        await loadAll(true);
-      } catch (error) {
-        alert(
-          error?.response?.data
-            ?.message ||
-            "Failed to request update."
-        );
-      } finally {
-        setRequestingTrackingId(
-          ""
-        );
-      }
-    };
-
-  /* =========================================================
-     UPDATE ORDER STATUS
-  ========================================================= */
-
-  const handleStatusSubmit =
-    async (payload, files) => {
-      if (!selectedTracking?._id) {
-        return;
-      }
-
-      const trackingId =
-        selectedTracking._id;
-
-      try {
-        setStatusSaving(true);
-
-        await updateOrderTrackingStatus(
-          trackingId,
-          payload,
-          files
-        );
-
-        setStatusOpen(false);
-
-        await Promise.all([
-          refreshSelectedTracking(
-            trackingId
-          ),
-
-          loadMessages(
-            trackingId,
-            1,
-            false
-          ),
-
-          loadAll(true),
-        ]);
-      } catch (error) {
-        alert(
-          error?.response?.data
-            ?.message ||
-            "Failed to update status."
-        );
-      } finally {
-        setStatusSaving(false);
-      }
-    };
-
-  /* =========================================================
-     SEND CHAT / AUDIO / FILE MESSAGE
-  ========================================================= */
-
-  const handleSendMessage =
-    async (payload, files) => {
-      if (!selectedTracking?._id) {
-        return;
-      }
-
-      const trackingId =
-        selectedTracking._id;
-
-      try {
-        setMessageSending(true);
-
-        await sendOrderTrackingMessage(
-          trackingId,
-          payload,
-          files
-        );
-
-        await Promise.all([
-          loadMessages(
-            trackingId,
-            1,
-            false
-          ),
-
-          refreshSelectedTracking(
-            trackingId
-          ),
-
-          loadAll(true),
-        ]);
-      } catch (error) {
-        alert(
-          error?.response?.data
-            ?.message ||
-            "Failed to send message."
-        );
-      } finally {
-        setMessageSending(false);
-      }
-    };
-
-    /* =========================================================
-   DELETE CHAT MESSAGE FOR EVERYONE
-========================================================= */
-
-const handleDeleteMessage = async (
-  messageId
-) => {
-  if (
-    !selectedTracking?._id ||
-    !messageId
-  ) {
-    return;
-  }
-
-  const trackingId =
-    selectedTracking._id;
-
-  try {
-    setDeletingMessageId(
-      messageId
-    );
-
-    await deleteOrderTrackingMessage(
-      trackingId,
-      messageId
-    );
-
-    await Promise.all([
-      loadMessages(
-        trackingId,
-        1,
-        false
-      ),
-
-      refreshSelectedTracking(
-        trackingId
-      ),
-    ]);
-  } catch (error) {
-    alert(
-      error?.response?.data
-        ?.message ||
-        "Failed to delete message."
-    );
-  } finally {
-    setDeletingMessageId("");
-  }
-};
-
-
-  /* =========================================================
-     LOAD OLDER CHAT MESSAGES
-  ========================================================= */
-
-  const handleLoadOlderMessages =
-    async () => {
-      if (!selectedTracking?._id) {
-        return;
-      }
-
-      const currentPage = Number(
-        messagePagination.page || 1
-      );
-
-      const totalPages = Number(
-        messagePagination.totalPages ||
-          1
-      );
-
-      const nextPage =
-        currentPage + 1;
-
-      if (nextPage > totalPages) {
-        return;
-      }
-
-      await loadMessages(
-        selectedTracking._id,
-        nextPage,
-        true
-      );
-    };
-
-  /* =========================================================
-     CLOSE CHAT
-  ========================================================= */
-
-  const handleCloseChat =
-    async () => {
-      if (!selectedTracking?._id) {
-        return;
-      }
-
-      const trackingId =
-        selectedTracking._id;
-
-      try {
-        await closeOrderTrackingChat(
-          trackingId
-        );
-
-        await Promise.all([
-          refreshSelectedTracking(
-            trackingId
-          ),
-
-          loadMessages(
-            trackingId,
-            1,
-            false
-          ),
-
-          loadAll(true),
-        ]);
-      } catch (error) {
-        alert(
-          error?.response?.data
-            ?.message ||
-            "Failed to close chat."
-        );
-      }
-    };
-
-  /* =========================================================
-     REOPEN CHAT
-  ========================================================= */
-
-  const handleReopenChat =
-    async () => {
-      if (!selectedTracking?._id) {
-        return;
-      }
-
-      const trackingId =
-        selectedTracking._id;
-
-      try {
-        await reopenOrderTrackingChat(
-          trackingId
-        );
-
-        await Promise.all([
-          refreshSelectedTracking(
-            trackingId
-          ),
-
-          loadMessages(
-            trackingId,
-            1,
-            false
-          ),
-
-          loadAll(true),
-        ]);
-      } catch (error) {
-        alert(
-          error?.response?.data
-            ?.message ||
-            "Failed to reopen chat."
-        );
-      }
-    };
-
-  /* =========================================================
-     SYNC EXISTING APPROVED SALES ORDERS
-  ========================================================= */
-
-  const handleSync = async () => {
     try {
-      setSyncing(true);
+      setRefreshing(true);
+      setError("");
 
-      const response =
-        await syncApprovedSalesOrders();
-
-      const payload =
-        unwrapApiData(response) || {};
-
-      alert(
-        `Sync completed. ${
-          payload.createdCount || 0
-        } new tracking record(s) created.`
+      await fetchDetail(
+        selectedTrackingId,
+        {
+          silent: true,
+        }
       );
-
-      await loadAll(true);
-    } catch (error) {
-      alert(
-        error?.response?.data
-          ?.message ||
-          "Failed to sync approved orders."
+    } catch (err) {
+      setError(
+        err?.message ||
+          "Failed to refresh tracking details"
       );
     } finally {
-      setSyncing(false);
+      setRefreshing(false);
     }
   };
 
-  /* =========================================================
-     FILTERS
-  ========================================================= */
-
-  const handleFilterChange = (
-    event
-  ) => {
-    const { name, value } =
-      event.target;
-
-    setFilters((previous) => ({
-      ...previous,
-      [name]: value,
-      page: 1,
-    }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      ...initialFilters,
-    });
-  };
-
-  /* =========================================================
-     SUMMARY CARD FILTER
-  ========================================================= */
-
-  const handleSummaryClick = (
-    card
-  ) => {
-    if (card.key === "total") {
-      clearFilters();
-      return;
-    }
-
-    if (
-      card.key ===
-      "updateRequested"
-    ) {
-      setFilters({
-        ...initialFilters,
-        updateRequested: "true",
-      });
-
-      return;
-    }
-
-    setFilters({
-      ...initialFilters,
-      status: card.key,
-    });
-  };
-
-  /* =========================================================
-     DASHBOARD BACK
-  ========================================================= */
-
-  const goBack = () => {
-    if (
-      window.__goDashboardHome
-    ) {
-      window.__goDashboardHome();
-      return;
-    }
-
-    window.location.href =
-      "/dashboard#dashboard";
-  };
-
-  /* =========================================================
-     FULL DRILL-DOWN PAGE
-  ========================================================= */
-
-  if (selectedTracking) {
+  if (isDetailView) {
     return (
-      <>
-        <OrderTrackingDetailPage
-  tracking={selectedTracking}
-  messages={messages}
-  messagesLoading={
-    messagesLoading
-  }
-  messagesSending={
-    messageSending
-  }
-  deletingMessageId={
-    deletingMessageId
-  }
-          opening={
-            openingTrackingId ===
-            selectedTracking._id
+      <div className="ot-page">
+        {error ? (
+          <div className="ot-alert ot-alert--error">
+            <AlertCircle size={17} />
+            <span>{error}</span>
+          </div>
+        ) : null}
+
+        <OrderTrackingDetail
+          tracking={
+            selectedTracking
           }
-          requestingUpdate={
-            requestingTrackingId ===
-            selectedTracking._id
+          loading={
+            loadingDetail
           }
-          hasMoreMessages={
-            Number(
-              messagePagination.page ||
-                1
-            ) <
-            Number(
-              messagePagination
-                .totalPages || 1
-            )
+          refreshing={
+            refreshing
           }
           onBack={
-            closeTrackingDetails
+            closeTracking
           }
-          onRefresh={async () => {
-            await Promise.all([
-              refreshSelectedTracking(
-                selectedTracking._id
-              ),
-
-              loadMessages(
-                selectedTracking._id,
-                1,
-                false
-              ),
-            ]);
-          }}
-          onOpenStatus={() =>
-            setStatusOpen(true)
+          onRefresh={
+            refreshDetail
           }
-          onRequestUpdate={() =>
-            handleRequestUpdate(
-              selectedTracking
-            )
-          }
-          onLoadMoreMessages={
-            handleLoadOlderMessages
-          }
-          onSendMessage={
-  handleSendMessage
-}
-onDeleteMessage={
-  handleDeleteMessage
-}
-onCloseChat={
-  handleCloseChat
-}
-onReopenChat={
-  handleReopenChat
-}
-/>
-
-        <OrderTrackingStatusModal
-          open={statusOpen}
-          tracking={selectedTracking}
-          saving={statusSaving}
-          onClose={() =>
-            setStatusOpen(false)
-          }
-          onSubmit={
-            handleStatusSubmit
+          onUpdated={
+            refreshDetail
           }
         />
-      </>
+      </div>
     );
   }
-
-  /* =========================================================
-     MAIN LIST PAGE
-  ========================================================= */
 
   return (
     <div className="ot-page">
-      <header className="ot-page-header">
-        <div className="ot-page-title">
-          <button
-            type="button"
-            onClick={goBack}
-            aria-label="Back to dashboard"
-          >
-            ←
-          </button>
+      <section className="ot-page-head">
+        <div>
+          <span className="ot-eyebrow">
+            DISPATCH CONTROL CENTER
+          </span>
 
-          <div>
-            <span>
-              FACTORY VISIBILITY
-            </span>
+          <h1>
+            Order Tracking
+          </h1>
 
-            <h1>
-              Order Tracking
-            </h1>
+          <p>
+            Latest approved orders first —
+            with live production,
+            inspection and dispatch status.
+          </p>
+        </div>
 
-            <p>
-              Sales order status, factory
-              updates, chat, audio and files
-            </p>
+        <button
+          type="button"
+          className="ot-btn ot-btn--secondary"
+          onClick={
+            refreshList
+          }
+          disabled={
+            refreshing
+          }
+        >
+          <RefreshCw
+            size={16}
+            className={
+              refreshing
+                ? "ot-spin"
+                : ""
+            }
+          />
+
+          Refresh & Sync
+        </button>
+      </section>
+
+      {error ? (
+        <div className="ot-alert ot-alert--error">
+          <AlertCircle size={17} />
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      <section className="ot-list-card">
+        <div className="ot-list-toolbar">
+          <div className="ot-list-title">
+            <div className="ot-list-title__icon">
+              <PackageSearch
+                size={20}
+              />
+            </div>
+
+            <div>
+              <span className="ot-eyebrow">
+                LIVE ORDERS
+              </span>
+
+              <h2>
+                {pagination.total || 0}
+                {" "}
+                Orders
+              </h2>
+            </div>
+          </div>
+
+          <div className="ot-search">
+            <Search size={17} />
+
+            <input
+              value={search}
+              onChange={(event) =>
+                setSearch(
+                  event.target.value
+                )
+              }
+              placeholder="Search customer, PO, SO, material..."
+            />
           </div>
         </div>
 
-        <div className="ot-header-actions">
-          {canSyncTracking(user) && (
-            <button
-              type="button"
-              onClick={handleSync}
-              disabled={syncing}
-            >
-              {syncing
-                ? "Syncing..."
-                : "Sync Approved Orders"}
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() =>
-              loadAll(true)
-            }
-            disabled={refreshing}
-          >
-            {refreshing
-              ? "Refreshing..."
-              : "Refresh"}
-          </button>
-        </div>
-      </header>
-
-      <main className="ot-page-content">
-        <section className="ot-summary-grid">
-          {SUMMARY_CARDS.map(
-            (card) => (
-              <button
-                type="button"
-                key={card.key}
-                onClick={() =>
-                  handleSummaryClick(
-                    card
-                  )
-                }
-              >
-                <span>
-                  {card.label}
-                </span>
-
-                <strong>
-                  {Number(
-                    summary[
-                      card.key
-                    ] || 0
-                  ).toLocaleString(
-                    "en-IN"
-                  )}
-                </strong>
-              </button>
-            )
-          )}
-        </section>
-
-        <section className="ot-filter-panel">
-          <input
-            name="search"
-            value={filters.search}
-            onChange={
-              handleFilterChange
-            }
-            placeholder="Search company, PO, SO, tracking number, plant or material..."
-          />
+        <div className="ot-filters">
+          <div className="ot-filter-label">
+            <SlidersHorizontal
+              size={14}
+            />
+            Filters
+          </div>
 
           <select
-            name="status"
-            value={filters.status}
-            onChange={
-              handleFilterChange
+            value={status}
+            onChange={(event) =>
+              setStatus(
+                event.target.value
+              )
             }
           >
             <option value="">
               All Statuses
             </option>
-
-            {STATUS_OPTIONS.map(
-              (option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
-                  {option.label}
-                </option>
-              )
-            )}
+            <option value="planning">
+              Planning
+            </option>
+            <option value="under_casting">
+              Under Casting
+            </option>
+            <option value="rolling_planning">
+              Rolling Planning
+            </option>
+            <option value="rolling">
+              Rolling
+            </option>
+            <option value="forging_planning">
+              Forging Planning
+            </option>
+            <option value="forging">
+              Forging
+            </option>
+            <option value="pit_cooling">
+              Pit Cooling
+            </option>
+            <option value="inspection">
+              Inspection
+            </option>
+            <option value="annealing">
+              Annealing
+            </option>
+            <option value="normalizing">
+              Normalizing
+            </option>
+            <option value="quenching">
+              Quenching
+            </option>
+            <option value="tempering">
+              Tempering
+            </option>
+            <option value="end_cutting_mill_inspection">
+              Mill Inspection
+            </option>
+            <option value="bharat_inspection">
+              Bharat Inspection
+            </option>
+            <option value="cutting">
+              Cutting
+            </option>
+            <option value="machining">
+              Machining
+            </option>
+            <option value="ready_for_dispatch">
+              Ready for Dispatch
+            </option>
+            <option value="loading">
+              Loading
+            </option>
+            <option value="shipped">
+              Shipped
+            </option>
+            <option value="out_for_delivery">
+              Out for Delivery
+            </option>
+            <option value="delivered">
+              Delivered
+            </option>
           </select>
 
           <select
-            name="priority"
-            value={filters.priority}
-            onChange={
-              handleFilterChange
-            }
-          >
-            {PRIORITY_OPTIONS.map(
-              (option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
-                  {option.label}
-                </option>
+            value={orderType}
+            onChange={(event) =>
+              setOrderType(
+                event.target.value
               )
-            )}
-          </select>
-
-          <select
-            name="updateRequested"
-            value={
-              filters.updateRequested
-            }
-            onChange={
-              handleFilterChange
             }
           >
             <option value="">
-              All Update Requests
+              H.O. + N.H.O.
             </option>
-
-            <option value="true">
-              Update Requested
+            <option value="H.O.">
+              H.O.
             </option>
-
-            <option value="false">
-              No Request
+            <option value="N.H.O.">
+              N.H.O.
             </option>
           </select>
 
-          <button
-            type="button"
-            onClick={clearFilters}
+          <select
+            value={processType}
+            onChange={(event) =>
+              setProcessType(
+                event.target.value
+              )
+            }
           >
-            Clear
-          </button>
-        </section>
+            <option value="">
+              All Processes
+            </option>
+            <option value="AS_ROLLED">
+              As Rolled
+            </option>
+            <option value="AS_FORGED">
+              As Forged
+            </option>
+            <option value="AS_ROLLED_ANNEALED_NORMALIZED">
+              Rolled + A/N
+            </option>
+            <option value="AS_FORGED_ANNEALED_NORMALIZED">
+              Forged + A/N
+            </option>
+            <option value="AS_ROLLED_QT">
+              Rolled + Q&T
+            </option>
+            <option value="AS_FORGED_QT">
+              Forged + Q&T
+            </option>
+            <option value="H_O">
+              H.O.
+            </option>
+          </select>
+        </div>
 
-        {loading ? (
-          <div className="ot-page-state">
-            <div className="ot-loader" />
-
-            <strong>
-              Loading order tracking...
-            </strong>
-          </div>
-        ) : records.length === 0 ? (
-          <div className="ot-page-state">
-            <span>📦</span>
-
-            <strong>
-              No tracking records found
-            </strong>
-
-            <p>
-              Clear filters or sync
-              approved sales orders.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="ot-desktop-view">
-              <OrderTrackingTable
-                records={records}
-                requestingId={
-                  requestingTrackingId
-                }
-                openingId={
-                  openingTrackingId
-                }
-                onOpen={
-                  openTracking
-                }
-                onRequestUpdate={
-                  handleRequestUpdate
-                }
-              />
-            </div>
-
-            <div className="ot-mobile-view">
-              {records.map(
-                (tracking) => (
-                  <OrderTrackingCard
-                    key={tracking._id}
-                    tracking={
-                      tracking
-                    }
-                    opening={
-                      openingTrackingId ===
-                      tracking._id
-                    }
-                    requesting={
-                      requestingTrackingId ===
-                      tracking._id
-                    }
-                    onOpen={
-                      openTracking
-                    }
-                    onRequestUpdate={
-                      handleRequestUpdate
-                    }
-                  />
-                )
-              )}
-            </div>
-          </>
-        )}
+        <OrderTrackingTable
+          items={trackings}
+          loading={loadingList}
+          onOpen={
+            openTracking
+          }
+        />
 
         <div className="ot-pagination">
-          <button
-            type="button"
-            disabled={
-              Number(
-                pagination.page || 1
-              ) <= 1
-            }
-            onClick={() =>
-              setFilters(
-                (previous) => ({
-                  ...previous,
-                  page:
-                    Number(
-                      pagination.page ||
-                        1
-                    ) - 1,
-                })
-              )
-            }
-          >
-            Previous
-          </button>
-
           <span>
             Page{" "}
-            {pagination.page || 1} of{" "}
-            {pagination.totalPages ||
-              1}
+            <strong>
+              {pagination.page || 1}
+            </strong>{" "}
+            of{" "}
+            <strong>
+              {pagination.totalPages || 1}
+            </strong>
           </span>
 
-          <button
-            type="button"
-            disabled={
-              Number(
-                pagination.page || 1
-              ) >=
-              Number(
-                pagination.totalPages ||
-                  1
-              )
-            }
-            onClick={() =>
-              setFilters(
-                (previous) => ({
-                  ...previous,
-                  page:
-                    Number(
-                      pagination.page ||
-                        1
-                    ) + 1,
+          <div>
+            <button
+              type="button"
+              disabled={
+                (pagination.page || 1) <= 1
+              }
+              onClick={() =>
+                fetchList({
+                  page: Math.max(
+                    (pagination.page || 1) - 1,
+                    1
+                  ),
                 })
-              )
-            }
-          >
-            Next
-          </button>
+              }
+            >
+              <ChevronLeft
+                size={15}
+              />
+              Previous
+            </button>
+
+            <button
+              type="button"
+              disabled={
+                (pagination.page || 1) >=
+                (pagination.totalPages || 1)
+              }
+              onClick={() =>
+                fetchList({
+                  page: Math.min(
+                    (pagination.page || 1) + 1,
+                    pagination.totalPages || 1
+                  ),
+                })
+              }
+            >
+              Next
+              <ChevronRight
+                size={15}
+              />
+            </button>
+          </div>
         </div>
-      </main>
+      </section>
     </div>
   );
 };
 
 export default OrderTrackingPage;
+

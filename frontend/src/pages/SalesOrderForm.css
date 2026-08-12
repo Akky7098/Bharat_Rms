@@ -1327,3 +1327,169 @@ textarea[name="sizeGradeQuantityRate"] {
   font-weight: 700;
   word-break: break-word;
 }
+/* =========================================================
+   H.O. / N.H.O. TRACKING ORDER TYPE
+========================================================= */
+
+.tracking-order-type-field {
+  position: relative;
+}
+
+.tracking-order-type-selector {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.tracking-order-type-option {
+  position: relative;
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 11px;
+  border: 1px solid #dfe5ec;
+  border-radius: 11px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.tracking-order-type-option:hover {
+  border-color: #bcc8d8;
+  background: #fbfcfe;
+}
+
+.tracking-order-type-option.is-selected {
+  border-color: #2563eb;
+  background:
+    linear-gradient(
+      145deg,
+      #f5f8ff,
+      #eef4ff
+    );
+  box-shadow:
+    0 0 0 3px
+      rgba(37, 99, 235, 0.07);
+}
+
+.tracking-order-type-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tracking-order-type-radio {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #bcc5d2;
+  border-radius: 50%;
+  background: #fff;
+  transition: 0.18s ease;
+}
+
+.tracking-order-type-option.is-selected
+  .tracking-order-type-radio {
+  border-color: #2563eb;
+}
+
+.tracking-order-type-option.is-selected
+  .tracking-order-type-radio::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #2563eb;
+}
+
+.tracking-order-type-content {
+  min-width: 0;
+}
+
+.tracking-order-type-content strong {
+  display: block;
+  color: #172033;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.tracking-order-type-content small {
+  display: block;
+  margin-top: 3px;
+  color: #7b8797;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.tracking-order-type-option.is-selected
+  .tracking-order-type-content strong {
+  color: #1d4ed8;
+}
+
+/* =========================================================
+   SUPPLY CONDITION TRACKING INFORMATION
+========================================================= */
+
+.tracking-supply-hint {
+  display: block;
+  margin-top: 7px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.tracking-supply-hint--ho {
+  color: #8a4b12;
+  border: 1px solid #f2d4ac;
+  background: #fff8ed;
+}
+
+.tracking-supply-hint--nho {
+  color: #2550a5;
+  border: 1px solid #cbd9fb;
+  background: #f3f7ff;
+}
+
+/* =========================================================
+   H.O. / N.H.O. ERROR STATE
+========================================================= */
+
+.sales-form-group.has-error
+  .tracking-order-type-selector {
+  padding: 3px;
+  border-radius: 13px;
+  background:
+    rgba(220, 38, 38, 0.035);
+}
+
+.sales-form-group.has-error
+  .tracking-order-type-option {
+  border-color: #efb5b5;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 640px) {
+  .tracking-order-type-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .tracking-order-type-option {
+    min-height: 60px;
+  }
+}
