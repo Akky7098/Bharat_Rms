@@ -139,58 +139,112 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
   return runWithChromiumLock("SALES_ORDER_PDF", async () => {
     const html = salesOrderTemplate(salesOrder);
 
-    let page;
+    let page = null;
+    let browser = null;
+
+    /*
+     * true only when THIS PDF function launches
+     * its own temporary Chromium.
+     *
+     * If we are using WhatsApp Chromium,
+     * this stays false so WhatsApp browser is NEVER closed.
+     */
+    let temporaryBrowserStarted = false;
 
     const {
       getWhatsappBrowser,
       pauseWhatsappHealthForPdf,
       resumeWhatsappHealthAfterPdf,
-      ensureWhatsappConnected,
     } = require("../util/whatsappClient");
 
     try {
+      /*
+       * Pause WhatsApp health/restart logic while PDF
+       * is using Chromium resources.
+       *
+       * This prevents health cron from trying to launch
+       * WhatsApp Chromium at the same time.
+       */
       pauseWhatsappHealthForPdf();
 
-      let whatsappBrowser = getWhatsappBrowser();
+      const whatsappBrowser = getWhatsappBrowser();
 
-      /*
-       * Normally PDF should reuse the Chromium already
-       * running for WhatsApp.
-       *
-       * If Chromium has silently crashed/disconnected,
-       * automatically recover WhatsApp Chromium first.
-       */
+      /* =====================================================
+         OPTION 1:
+         WHATSAPP CHROMIUM IS AVAILABLE
+
+         Keep existing production behavior.
+      ===================================================== */
+
       if (
-        !whatsappBrowser ||
-        !whatsappBrowser.isConnected()
+        whatsappBrowser &&
+        whatsappBrowser.isConnected()
       ) {
         console.log(
-          "PDF detected disconnected WhatsApp Chromium. Attempting recovery..."
+          "PDF USING EXISTING WHATSAPP CHROMIUM"
         );
 
-        await ensureWhatsappConnected({
-          forceRecovery: true,
+        browser = whatsappBrowser;
+      }
+
+      /* =====================================================
+         OPTION 2:
+         WHATSAPP CHROMIUM IS NOT AVAILABLE
+
+         PDF must NOT depend on WhatsApp.
+
+         Start ONE temporary Puppeteer browser only
+         for this PDF job and close it immediately afterward.
+      ===================================================== */
+
+      else {
+        console.log(
+          "WHATSAPP CHROMIUM NOT AVAILABLE"
+        );
+
+        console.log(
+          "PDF STARTING TEMPORARY CHROMIUM"
+        );
+
+        /*
+         * Keep the Chromium setup independent from
+         * WhatsApp authentication/session.
+         *
+         * We deliberately DO NOT use the WhatsApp
+         * user-data-dir here.
+         */
+        browser = await puppeteer.launch({
+          headless: true,
+
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--disable-background-timer-throttling",
+            "--disable-renderer-backgrounding",
+            "--disable-features=TranslateUI",
+            "--disable-ipc-flooding-protection",
+            "--single-process",
+            "--no-zygote",
+            "--no-first-run",
+          ],
         });
 
-        whatsappBrowser = getWhatsappBrowser();
-      }
+        temporaryBrowserStarted = true;
 
-      /*
-       * Recovery must result in a real connected
-       * Puppeteer browser before continuing.
-       */
-      if (
-        !whatsappBrowser ||
-        !whatsappBrowser.isConnected()
-      ) {
-        throw new Error(
-          "WhatsApp Chromium recovery failed. PDF generation cannot continue."
+        console.log(
+          "PDF TEMPORARY CHROMIUM STARTED"
         );
       }
 
-      console.log("PDF USING WHATSAPP CHROMIUM");
+      /* =====================================================
+         PDF PAGE
+      ===================================================== */
 
-      page = await whatsappBrowser.newPage();
+      page = await browser.newPage();
 
       await page.setContent(html, {
         waitUntil: "domcontentloaded",
@@ -200,7 +254,9 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
       await page.emulateMediaType("screen");
 
       try {
-        await page.evaluateHandle("document.fonts.ready");
+        await page.evaluateHandle(
+          "document.fonts.ready"
+        );
       } catch (error) {
         console.log(
           "PDF font wait skipped:",
@@ -216,6 +272,7 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
         format: "A4",
         printBackground: true,
         preferCSSPageSize: true,
+
         margin: {
           top: "8mm",
           right: "8mm",
@@ -224,10 +281,58 @@ const generateSalesOrderPdfBuffer = async (salesOrder) => {
         },
       });
 
+      console.log(
+        "PDF GENERATED SUCCESSFULLY"
+      );
+
       return pdfBuffer;
+    } catch (error) {
+      console.log(
+        "PDF GENERATION CHROMIUM ERROR =>",
+        error.message
+      );
+
+      throw error;
     } finally {
+      /* =====================================================
+         CLOSE ONLY PDF PAGE
+      ===================================================== */
+
       if (page) {
-        await page.close().catch(() => {});
+        await page.close().catch((error) => {
+          console.log(
+            "PDF PAGE CLOSE WARNING =>",
+            error.message
+          );
+        });
+      }
+
+      /* =====================================================
+         IMPORTANT
+
+         Close Chromium ONLY if PDF launched it.
+
+         Never close WhatsApp Chromium.
+      ===================================================== */
+
+      if (
+        temporaryBrowserStarted &&
+        browser
+      ) {
+        console.log(
+          "PDF CLOSING TEMPORARY CHROMIUM"
+        );
+
+        await browser.close().catch((error) => {
+          console.log(
+            "PDF TEMPORARY CHROMIUM CLOSE WARNING =>",
+            error.message
+          );
+        });
+
+        console.log(
+          "PDF TEMPORARY CHROMIUM CLOSED"
+        );
       }
 
       resumeWhatsappHealthAfterPdf();

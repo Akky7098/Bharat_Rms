@@ -472,35 +472,20 @@ const sendPaymentReminderEmail = async (
     dispatch.contactPersonEmail,
   ]);
 
-  /*
+    /*
    * CC ONLY:
-   * 1. Info
-   * 2. Concerned Salesperson
-   * 3. Finance
+   * Concerned / created salesperson.
    *
+   * No info.
+   * No finance.
+   * No sales ID.
    * No admin.
    * No super admin.
    * No old notification CC list.
-   * No sales@bharatspecialsteels.com.
    */
   const cc = cleanEmails([
-  dispatch.salesPersonEmail,
-  "finance@bharatspecialsteels.com",
-]).filter(
-  (email) =>
-    ![
-      "info@bharatspecialsteels.com",
-      "sales@bharatspecialsteels.com",
-      process.env.ADMIN_EMAIL
-        ?.trim()
-        .toLowerCase(),
-      process.env.SUPER_ADMIN_EMAIL
-        ?.trim()
-        .toLowerCase(),
-    ]
-      .filter(Boolean)
-      .includes(email)
-);
+    dispatch.salesPersonEmail,
+  ]);
 
   if (!to.length) {
     throw new Error(

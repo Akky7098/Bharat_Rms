@@ -754,13 +754,11 @@ const buildPaymentUpdateTemplate = (dispatch, payment) => {
 
 const sendDispatchCreatedEmail = async (dispatch) => {
   const to = dispatch.contactPersonEmail;
-  const cc = cleanEmails(dispatch.notificationEmail?.cc || []);
   const attachments = getDispatchAttachments(dispatch);
 
   const mail = await transporter.sendMail({
     from: `"${COMPANY.name}" <${process.env.ADMIN_EMAIL}>`,
     to,
-    cc,
     subject: `Dispatch Confirmation | Invoice ${
       dispatch.invoiceNumber
     } | ${dispatch.companyName}`,
@@ -774,15 +772,9 @@ const sendDispatchCreatedEmail = async (dispatch) => {
 const sendPaymentUpdateEmail = async (dispatch, payment) => {
   const to = dispatch.contactPersonEmail;
 
-  const cc = cleanEmails([
-    dispatch.salesPersonEmail,
-    ...(dispatch.notificationEmail?.cc || []),
-  ]);
-
   const mail = await transporter.sendMail({
     from: `"${COMPANY.name}" <${process.env.ADMIN_EMAIL}>`,
     to,
-    cc,
     subject: `Re: Payment Update | Invoice ${
       dispatch.invoiceNumber
     } | ${dispatch.companyName}`,
