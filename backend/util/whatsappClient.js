@@ -37,6 +37,169 @@ const sleep = (ms) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 /* =========================================================
+   LIGHTWEIGHT PROCESS DIAGNOSTICS
+
+   Read-only diagnostics.
+   Does NOT kill/restart any process.
+========================================================= */
+
+const readProcStatusValue = (pid, key) => {
+  try {
+    const status = fs.readFileSync(
+      `/proc/${pid}/status`,
+      "utf8"
+    );
+
+    const line = status
+      .split("\n")
+      .find((item) =>
+        item.startsWith(`${key}:`)
+      );
+
+    return line
+      ? line.split(":").slice(1).join(":").trim()
+      : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const getWhatsappChromiumProcessStats = () => {
+  try {
+    const procEntries = fs
+      .readdirSync("/proc")
+      .filter((name) => /^\d+$/.test(name));
+
+    let chromiumProcesses = 0;
+    let chromiumThreads = 0;
+    const chromiumPids = [];
+
+    procEntries.forEach((entry) => {
+      const pid = Number(entry);
+
+      try {
+        const cmdline = fs
+          .readFileSync(
+            `/proc/${pid}/cmdline`,
+            "utf8"
+          )
+          .replace(/\0/g, " ");
+
+        if (
+          !cmdline ||
+          !(
+            cmdline.includes("chrome") ||
+            cmdline.includes("chromium") ||
+            cmdline.includes("headless_shell")
+          )
+        ) {
+          return;
+        }
+
+        /*
+         * Count only Bharat WhatsApp Chromium/profile.
+         */
+        if (
+          !cmdline.includes(
+            "session-bharat-rms-company-whatsapp"
+          ) &&
+          !cmdline.includes(
+            whatsappSessionPath
+          )
+        ) {
+          return;
+        }
+
+        chromiumProcesses += 1;
+        chromiumPids.push(pid);
+
+        const threadsRaw =
+          readProcStatusValue(pid, "Threads");
+
+        const threads = Number(
+          String(threadsRaw || "0").split(/\s+/)[0]
+        );
+
+        if (Number.isFinite(threads)) {
+          chromiumThreads += threads;
+        }
+      } catch (error) {
+        // Process may disappear while /proc is being read.
+      }
+    });
+
+    return {
+      chromiumProcesses,
+      chromiumThreads,
+      chromiumPids,
+    };
+  } catch (error) {
+    return {
+      chromiumProcesses: null,
+      chromiumThreads: null,
+      chromiumPids: [],
+    };
+  }
+};
+
+const logWhatsappDiagnostics = (
+  label,
+  client = whatsappClient
+) => {
+  try {
+    const browser =
+      client?.pupBrowser || null;
+
+    const browserConnected = Boolean(
+      browser?.isConnected?.()
+    );
+
+    const browserPid =
+      browser?.process?.()?.pid || null;
+
+    const nodeThreadsRaw =
+      readProcStatusValue(
+        process.pid,
+        "Threads"
+      );
+
+    const nodeThreads = Number(
+      String(nodeThreadsRaw || "0").split(/\s+/)[0]
+    );
+
+    const chromium =
+      getWhatsappChromiumProcessStats();
+
+    console.log(
+      `WHATSAPP DIAGNOSTICS [${label}] =>`,
+      {
+        nodePid: process.pid,
+        nodeThreads:
+          Number.isFinite(nodeThreads)
+            ? nodeThreads
+            : null,
+        browserConnected,
+        browserPid,
+        chromiumProcesses:
+          chromium.chromiumProcesses,
+        chromiumThreads:
+          chromium.chromiumThreads,
+        chromiumPids:
+          chromium.chromiumPids,
+        isReady,
+        isInitializing,
+        isRestarting,
+      }
+    );
+  } catch (error) {
+    console.log(
+      `WHATSAPP DIAGNOSTICS [${label}] FAILED =>`,
+      error.message
+    );
+  }
+};
+
+/* =========================================================
    SESSION FOLDER
 ========================================================= */
 
@@ -200,31 +363,77 @@ const initWhatsappClient = () => {
       dataPath: whatsappSessionPath,
     }),
 
-    webVersionCache: {
-      type: "local",
-      path: whatsappCachePath,
-    },
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT configure webVersionCache here.
+     *
+     * Production logs showed whatsapp-web.js failing while
+     * reading the WhatsApp Web response body:
+     *
+     * ProtocolError:
+     * Could not load response body for this request.
+     *
+     * LocalAuth remains unchanged.
+     */
 
     puppeteer: {
-  headless: true,
+      headless: true,
 
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--disable-extensions",
-    "--disable-background-networking",
-    "--disable-background-timer-throttling",
-    "--disable-renderer-backgrounding",
-    "--disable-features=TranslateUI",
-    "--disable-ipc-flooding-protection",
-    "--no-first-run",
-  ],
-},
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--disable-extensions",
+        "--disable-background-networking",
+        "--disable-background-timer-throttling",
+        "--disable-renderer-backgrounding",
+        "--disable-features=TranslateUI",
+        "--disable-ipc-flooding-protection",
+        "--no-first-run",
+      ],
+    },
   });
 
+  /*
+   * =========================================================
+   * PRODUCTION FIX
+   *
+   * whatsapp-web.js may install an internal response listener
+   * through initWebVersionCache().
+   *
+   * The production stack trace showed that response path
+   * throwing "Could not load response body".
+   *
+   * Bypass ONLY optional web-version caching.
+   *
+   * WhatsApp Web still loads normally.
+   * LocalAuth/session remains unchanged.
+   * =========================================================
+   */
+
+  if (
+    typeof currentClient.initWebVersionCache ===
+    "function"
+  ) {
+    currentClient.initWebVersionCache =
+      async () => {
+        console.log(
+          "WHATSAPP WEB VERSION CACHE BYPASSED"
+        );
+      };
+  }
+
   whatsappClient = currentClient;
+
+  console.log(
+    "WHATSAPP CLIENT CREATED =>",
+    {
+      nodePid: process.pid,
+      timestamp: new Date().toISOString(),
+    }
+  );
 
   /* ---------------------------------------------------------
      QR
@@ -240,6 +449,11 @@ const initWhatsappClient = () => {
     latestQr = qr;
 
     console.log("Scan WhatsApp QR:");
+
+    logWhatsappDiagnostics(
+      "QR_RECEIVED",
+      currentClient
+    );
 
     qrcode.generate(qr, {
       small: true,
@@ -265,6 +479,11 @@ const initWhatsappClient = () => {
         "WhatsApp session saved at:",
         whatsappSessionPath
       );
+
+      logWhatsappDiagnostics(
+        "AUTHENTICATED",
+        currentClient
+      );
     }
   );
 
@@ -284,7 +503,67 @@ const initWhatsappClient = () => {
     console.log(
       "WhatsApp client is ready"
     );
+
+    logWhatsappDiagnostics(
+      "READY",
+      currentClient
+    );
+
+    /*
+     * Attach direct Puppeteer browser disconnect diagnostic.
+     */
+    try {
+      const browser =
+        currentClient.pupBrowser;
+
+      if (
+        browser &&
+        !browser.__bharatDisconnectDiagnosticAttached
+      ) {
+        browser.__bharatDisconnectDiagnosticAttached =
+          true;
+
+        browser.once(
+          "disconnected",
+          () => {
+            console.log(
+              "WHATSAPP PUPPETEER BROWSER DISCONNECTED EVENT"
+            );
+
+            logWhatsappDiagnostics(
+              "BROWSER_DISCONNECTED_EVENT",
+              currentClient
+            );
+          }
+        );
+      }
+    } catch (error) {
+      console.log(
+        "WhatsApp browser diagnostic hook warning =>",
+        error.message
+      );
+    }
   });
+
+  /* ---------------------------------------------------------
+     STATE CHANGE DIAGNOSTIC
+  --------------------------------------------------------- */
+
+  currentClient.on(
+    "change_state",
+    (state) => {
+      if (
+        whatsappClient !== currentClient
+      ) {
+        return;
+      }
+
+      console.log(
+        "WhatsApp state changed =>",
+        state
+      );
+    }
+  );
 
   /* ---------------------------------------------------------
      AUTH FAILURE
@@ -304,6 +583,11 @@ const initWhatsappClient = () => {
       console.log(
         "WhatsApp auth failed:",
         msg
+      );
+
+      logWhatsappDiagnostics(
+        "AUTH_FAILURE",
+        currentClient
       );
 
       /*
@@ -333,6 +617,11 @@ const initWhatsappClient = () => {
       isInitializing = false;
       latestQr = null;
 
+      logWhatsappDiagnostics(
+        `DISCONNECTED:${reason}`,
+        currentClient
+      );
+
       /*
        * Remove stale global reference.
        */
@@ -355,8 +644,21 @@ const initWhatsappClient = () => {
      INITIALIZE
   --------------------------------------------------------- */
 
+  console.log(
+    "WHATSAPP INITIALIZE START =>",
+    {
+      nodePid: process.pid,
+      timestamp: new Date().toISOString(),
+    }
+  );
+
   currentClient
     .initialize()
+    .then(() => {
+      console.log(
+        "WHATSAPP INITIALIZE PROMISE RESOLVED"
+      );
+    })
     .catch(async (error) => {
       /*
        * Ignore errors belonging to an old client.
@@ -373,9 +675,19 @@ const initWhatsappClient = () => {
         error.message
       );
 
+      console.log(
+        "WHATSAPP INITIALIZE ERROR STACK =>",
+        error.stack || "NO_STACK"
+      );
+
       isReady = false;
       isInitializing = false;
       latestQr = null;
+
+      logWhatsappDiagnostics(
+        `INITIALIZE_ERROR:${error.message}`,
+        currentClient
+      );
 
       if (whatsappClient === currentClient) {
         whatsappClient = null;
@@ -481,7 +793,14 @@ const forceCheckWhatsappStatus = async () => {
 
     const state = await whatsappClient
       .getState()
-      .catch(() => null);
+      .catch((error) => {
+        console.log(
+          "WhatsApp getState warning =>",
+          error.message
+        );
+
+        return null;
+      });
 
     if (state === "CONNECTED") {
       isReady = true;
@@ -610,6 +929,11 @@ const restartWhatsappClient = async () => {
     "WhatsApp controlled restart started"
   );
 
+  logWhatsappDiagnostics(
+    "BEFORE_CONTROLLED_RESTART",
+    whatsappClient
+  );
+
   const oldClient = whatsappClient;
 
   whatsappClient = null;
@@ -650,6 +974,11 @@ const restartWhatsappClient = async () => {
     console.log(
       "WhatsApp controlled restart error:",
       error.message
+    );
+
+    console.log(
+      "WHATSAPP CONTROLLED RESTART STACK =>",
+      error.stack || "NO_STACK"
     );
 
     return false;
@@ -696,6 +1025,11 @@ const destroyWhatsappClient = async () => {
 
   try {
     if (clientToDestroy) {
+      logWhatsappDiagnostics(
+        "BEFORE_DESTROY",
+        clientToDestroy
+      );
+
       await safeDestroyClient(
         clientToDestroy
       );
