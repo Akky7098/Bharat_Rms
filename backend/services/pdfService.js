@@ -135,104 +135,234 @@ const formatDate = (date) => {
    If Chromium silently dies, recover it automatically.
 ========================================================= */
 
-const generateSalesOrderPdfBuffer = async (salesOrder) => {
-  return runWithChromiumLock("SALES_ORDER_PDF", async () => {
-    const html = salesOrderTemplate(salesOrder);
+/* =========================================================
+   SALES ORDER HTML -> PDF
 
-    let page;
+   IMPORTANT:
+   PDF generation is completely independent from WhatsApp.
 
-    const {
-      getWhatsappBrowser,
-      pauseWhatsappHealthForPdf,
-      resumeWhatsappHealthAfterPdf,
-      ensureWhatsappConnected,
-    } = require("../util/whatsappClient");
+   Flow:
+   1. Ensure Puppeteer-compatible Chromium exists.
+   2. Launch ONE temporary Chromium.
+   3. Generate PDF.
+   4. Close page.
+   5. Close Chromium.
 
-    try {
-      pauseWhatsappHealthForPdf();
+   chromiumLock ensures two users cannot start Chromium
+   simultaneously on Hostinger shared hosting.
+========================================================= */
 
-      let whatsappBrowser = getWhatsappBrowser();
-
-      /*
-       * Normally PDF should reuse the Chromium already
-       * running for WhatsApp.
-       *
-       * If Chromium has silently crashed/disconnected,
-       * automatically recover WhatsApp Chromium first.
-       */
-      if (
-        !whatsappBrowser ||
-        !whatsappBrowser.isConnected()
-      ) {
-        console.log(
-          "PDF detected disconnected WhatsApp Chromium. Attempting recovery..."
+const generateSalesOrderPdfBuffer = async (
+  salesOrder
+) => {
+  return runWithChromiumLock(
+    "SALES_ORDER_PDF",
+    async () => {
+      const html =
+        salesOrderTemplate(
+          salesOrder
         );
 
-        await ensureWhatsappConnected({
-          forceRecovery: true,
-        });
-
-        whatsappBrowser = getWhatsappBrowser();
-      }
-
-      /*
-       * Recovery must result in a real connected
-       * Puppeteer browser before continuing.
-       */
-      if (
-        !whatsappBrowser ||
-        !whatsappBrowser.isConnected()
-      ) {
-        throw new Error(
-          "WhatsApp Chromium recovery failed. PDF generation cannot continue."
-        );
-      }
-
-      console.log("PDF USING WHATSAPP CHROMIUM");
-
-      page = await whatsappBrowser.newPage();
-
-      await page.setContent(html, {
-        waitUntil: "domcontentloaded",
-        timeout: 120000,
-      });
-
-      await page.emulateMediaType("screen");
+      let browser = null;
+      let page = null;
 
       try {
-        await page.evaluateHandle("document.fonts.ready");
+        /*
+         * Make absolutely sure the Puppeteer-compatible
+         * Chromium exists before attempting launch.
+         *
+         * This also solves:
+         *
+         * "Could not find expected browser locally.
+         * Run npm install to download the correct
+         * Chromium browser."
+         */
+        const executablePath =
+          await ensureChromium();
+
+        if (
+          !executablePath ||
+          !fs.existsSync(
+            executablePath
+          )
+        ) {
+          throw new Error(
+            "PDF Chromium executable is unavailable."
+          );
+        }
+
+        console.log(
+          "PDF CHROMIUM START =>",
+          executablePath
+        );
+
+        /*
+         * This browser exists ONLY for this PDF.
+         *
+         * It is NOT WhatsApp Chromium.
+         */
+        browser =
+          await puppeteer.launch({
+            executablePath,
+
+            headless: true,
+
+            args: [
+              "--no-sandbox",
+              "--disable-setuid-sandbox",
+              "--disable-dev-shm-usage",
+              "--disable-gpu",
+              "--disable-extensions",
+              "--disable-background-networking",
+              "--disable-background-timer-throttling",
+              "--disable-renderer-backgrounding",
+              "--disable-features=TranslateUI",
+              "--disable-ipc-flooding-protection",
+
+              /*
+               * This PDF browser lives only for a few
+               * seconds, so low-process mode is useful
+               * on Hostinger.
+               */
+              "--single-process",
+              "--no-zygote",
+
+              "--no-first-run",
+            ],
+          });
+
+        if (
+          !browser ||
+          !browser.isConnected()
+        ) {
+          throw new Error(
+            "PDF Chromium failed to start."
+          );
+        }
+
+        page =
+          await browser.newPage();
+
+        await page.setContent(
+          html,
+          {
+            waitUntil:
+              "domcontentloaded",
+
+            timeout:
+              120000,
+          }
+        );
+
+        await page.emulateMediaType(
+          "screen"
+        );
+
+        try {
+          await page.evaluateHandle(
+            "document.fonts.ready"
+          );
+        } catch (error) {
+          console.log(
+            "PDF font wait skipped:",
+            error.message
+          );
+        }
+
+        await new Promise(
+          (resolve) =>
+            setTimeout(
+              resolve,
+              500
+            )
+        );
+
+        const pdfBuffer =
+          await page.pdf({
+            format:
+              "A4",
+
+            printBackground:
+              true,
+
+            preferCSSPageSize:
+              true,
+
+            margin: {
+              top:
+                "8mm",
+
+              right:
+                "8mm",
+
+              bottom:
+                "8mm",
+
+              left:
+                "8mm",
+            },
+          });
+
+        if (
+          !pdfBuffer ||
+          pdfBuffer.length === 0
+        ) {
+          throw new Error(
+            "PDF generation returned an empty file."
+          );
+        }
+
+        console.log(
+          "SALES ORDER PDF BUFFER GENERATED SUCCESSFULLY"
+        );
+
+        return pdfBuffer;
       } catch (error) {
         console.log(
-          "PDF font wait skipped:",
+          "SALES ORDER PDF BUFFER FAILED =>",
           error.message
         );
+
+        /*
+         * Re-throw.
+         *
+         * CRITICAL:
+         * The Sales Order controller must receive this error
+         * and rollback/not create the Sales Order.
+         */
+        throw error;
+      } finally {
+        /*
+         * Close page first.
+         */
+        if (page) {
+          await page
+            .close()
+            .catch(
+              () => {}
+            );
+        }
+
+        /*
+         * ALWAYS close PDF Chromium.
+         *
+         * This is what prevents permanent Chromium
+         * processes/threads on shared hosting.
+         */
+        if (browser) {
+          await browser
+            .close()
+            .catch(
+              () => {}
+            );
+
+          console.log(
+            "PDF CHROMIUM CLOSED"
+          );
+        }
       }
-
-      await new Promise((resolve) =>
-        setTimeout(resolve, 500)
-      );
-
-      const pdfBuffer = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        preferCSSPageSize: true,
-        margin: {
-          top: "8mm",
-          right: "8mm",
-          bottom: "8mm",
-          left: "8mm",
-        },
-      });
-
-      return pdfBuffer;
-    } finally {
-      if (page) {
-        await page.close().catch(() => {});
-      }
-
-      resumeWhatsappHealthAfterPdf();
     }
-  });
+  );
 };
 
 

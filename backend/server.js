@@ -20,12 +20,26 @@ const startEnquiryDelayNotificationCron =
 const startSalesDailyInsightCron =
   require("./cron/salesDailyInsightCron");
 
+/*
+ * =========================================================
+ * WHATSAPP DISABLED
+ *
+ * WhatsApp Web requires a permanent Chromium process.
+ * On current shared hosting this is not reliable.
+ *
+ * Keep files/code in project for future VPS/API migration,
+ * but DO NOT initialize Chromium from this backend.
+ * =========================================================
+ */
+
+/*
 const startWhatsappHealthCron =
   require("./cron/whatsappHealthCron");
 
 const {
   initWhatsappClient,
 } = require("./util/whatsappClient");
+*/
 
 const startSalesOrderApprovalReminderCron =
   require("./cron/salesOrderApprovalReminderCron");
@@ -70,7 +84,7 @@ const startApp = async () => {
         `Server running on port ${PORT}`
       );
 
-      console.log("hii")
+      console.log("hii");
 
       if (
         process.env
@@ -81,7 +95,13 @@ const startApp = async () => {
           "Starting background jobs..."
         );
 
-        initWhatsappClient();
+        /*
+         * =====================================================
+         * WHATSAPP DISABLED
+         * =====================================================
+         */
+
+        // initWhatsappClient();
 
         /*
          * Runs every day at 11:00 AM IST.
@@ -89,6 +109,7 @@ const startApp = async () => {
          * This starts only the normal scheduled job.
          * It does not run forceAllOverdue.
          */
+
         startPaymentReminderCron();
 
         startAttendanceCron();
@@ -103,7 +124,12 @@ const startApp = async () => {
 
         // startSalesDailyInsightCron();
 
-        startWhatsappHealthCron();
+        /*
+         * WhatsApp health cron must stay disabled
+         * while WhatsApp Chromium is disabled.
+         */
+
+        // startWhatsappHealthCron();
 
         console.log(
           "All enabled background jobs started."
