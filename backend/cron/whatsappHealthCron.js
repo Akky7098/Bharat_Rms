@@ -186,3 +186,5 @@ const startWhatsappHealthCron =
 
 module.exports =
   startWhatsappHealthCron;
+
+  console.log("push check")
