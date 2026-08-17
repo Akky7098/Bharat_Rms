@@ -1217,27 +1217,36 @@ const initWhatsappClient =
          */
 
         puppeteer: {
-          headless: true,
+  headless: true,
 
-          /*
-           * IMPORTANT:
-           * --single-process and --no-zygote remain removed.
-           */
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-extensions",
+    "--disable-background-networking",
+    "--disable-background-timer-throttling",
+    "--disable-renderer-backgrounding",
+    "--disable-features=TranslateUI",
+    "--disable-ipc-flooding-protection",
 
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--disable-extensions",
-            "--disable-background-networking",
-            "--disable-background-timer-throttling",
-            "--disable-renderer-backgrounding",
-            "--disable-features=TranslateUI",
-            "--disable-ipc-flooding-protection",
-            "--no-first-run",
-          ],
-        },
+    /*
+     * IMPORTANT FOR HOSTINGER SHARED HOSTING
+     *
+     * We now have an account-wide singleton lock, so only
+     * ONE Passenger worker can launch WhatsApp Chromium.
+     *
+     * These two flags keep that one Chromium in the
+     * low-process mode required by the 120 process/thread
+     * Hostinger limit.
+     */
+    "--single-process",
+    "--no-zygote",
+
+    "--no-first-run",
+  ],
+},
       });
 
     /*
