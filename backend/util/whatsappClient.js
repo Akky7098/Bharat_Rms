@@ -204,9 +204,6 @@ const safeUnlink = (
 
 /* =========================================================
    PID CHECK
-
-   signal 0 does not kill process.
-   It only checks whether the PID exists.
 ========================================================= */
 
 const isPidAlive = (pid) => {
@@ -260,10 +257,6 @@ const isOwnerHeartbeatFresh =
       return false;
     }
 
-    /*
-     * If PID no longer exists,
-     * the owner is definitely dead.
-     */
     if (
       !isPidAlive(
         lock.pid
@@ -404,10 +397,6 @@ const writeSharedWhatsappStatus =
 
 /* =========================================================
    OWNERSHIP ACQUISITION
-
-   "wx" means create exclusively.
-   If another worker already owns the file,
-   this call fails with EEXIST.
 ========================================================= */
 
 const tryAcquireWhatsappOwnership =
@@ -492,30 +481,18 @@ const tryAcquireWhatsappOwnership =
         }
       };
 
-    /*
-     * First attempt.
-     */
     if (
       attemptAcquire()
     ) {
       return true;
     }
 
-    /*
-     * Existing owner is healthy.
-     */
     if (
       hasActiveWhatsappOwner()
     ) {
       return false;
     }
 
-    /*
-     * Existing lock is stale.
-     *
-     * Delete stale ownership metadata,
-     * then compete again atomically.
-     */
     console.log(
       "WHATSAPP STALE OWNER LOCK DETECTED"
     );
@@ -644,9 +621,6 @@ const releaseWhatsappOwnership =
 
 /* =========================================================
    RESTART REQUEST
-
-   Allows /restart-page to work even when HTTP
-   request lands on a NON-OWNER Passenger worker.
 ========================================================= */
 
 const queueRestartRequest =
@@ -869,10 +843,6 @@ const getWhatsappChromiumProcessStats =
               return;
             }
 
-            /*
-             * Only Chromium using
-             * Bharat WhatsApp session.
-             */
             if (
               !cmdline.includes(
                 whatsappSessionPath
@@ -1119,16 +1089,10 @@ const isWhatsappBrowserAlive =
 
 /* =========================================================
    INITIALIZE
-
-   ONLY ONE PASSENGER PROCESS MAY ENTER HERE
-   AS THE WHATSAPP OWNER.
 ========================================================= */
 
 const initWhatsappClient =
   () => {
-    /*
-     * Acquire cross-process ownership first.
-     */
     if (
       !isWhatsappOwner
     ) {
@@ -1211,46 +1175,46 @@ const initWhatsappClient =
           }),
 
         /*
-         * Keep web version cache disabled because
-         * production previously showed response-body
-         * ProtocolError in that optional cache path.
+         * Only the owner Passenger worker reaches here.
+         * If WhatsApp detects another web session,
+         * allow this controlled client to take over.
          */
+        takeoverOnConflict:
+          true,
+
+        takeoverTimeoutMs:
+          10000,
 
         puppeteer: {
-  headless: true,
+          headless: true,
 
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--disable-extensions",
-    "--disable-background-networking",
-    "--disable-background-timer-throttling",
-    "--disable-renderer-backgrounding",
-    "--disable-features=TranslateUI",
-    "--disable-ipc-flooding-protection",
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--disable-background-timer-throttling",
+            "--disable-renderer-backgrounding",
+            "--disable-features=TranslateUI",
+            "--disable-ipc-flooding-protection",
 
-    /*
-     * IMPORTANT FOR HOSTINGER SHARED HOSTING
-     *
-     * We now have an account-wide singleton lock, so only
-     * ONE Passenger worker can launch WhatsApp Chromium.
-     *
-     * These two flags keep that one Chromium in the
-     * low-process mode required by the 120 process/thread
-     * Hostinger limit.
-     */
-    "--single-process",
-    "--no-zygote",
+            /*
+             * Shared-hosting resource control.
+             */
+            "--single-process",
+            "--no-zygote",
 
-    "--no-first-run",
-  ],
-},
+            "--no-first-run",
+          ],
+        },
       });
 
     /*
-     * Bypass whatsapp-web.js optional response cache.
+     * Keep this bypass because the production
+     * logs previously failed in the optional
+     * whatsapp-web.js response-cache path.
      */
     if (
       typeof currentClient
@@ -1285,9 +1249,9 @@ const initWhatsappClient =
       }
     );
 
-    /* ---------------------------------------------------------
+    /* =====================================================
        QR
-    --------------------------------------------------------- */
+    ===================================================== */
 
     currentClient.on(
       "qr",
@@ -1302,6 +1266,11 @@ const initWhatsappClient =
         isReady =
           false;
 
+        /*
+         * Browser initialized far enough to
+         * produce QR; it is no longer simply
+         * "initializing".
+         */
         isInitializing =
           false;
 
@@ -1330,15 +1299,16 @@ const initWhatsappClient =
         qrcode.generate(
           qr,
           {
-            small: true,
+            small:
+              true,
           }
         );
       }
     );
 
-    /* ---------------------------------------------------------
+    /* =====================================================
        AUTHENTICATED
-    --------------------------------------------------------- */
+    ===================================================== */
 
     currentClient.on(
       "authenticated",
@@ -1350,15 +1320,25 @@ const initWhatsappClient =
           return;
         }
 
+        isReady =
+          false;
+
         console.log(
           "WhatsApp authenticated"
         );
 
+        /*
+         * Authentication is not READY yet.
+         * Keep QR shared until READY finishes.
+         */
         writeSharedWhatsappStatus(
           "AUTHENTICATED",
           {
             ready:
               false,
+
+            qr:
+              latestQr,
           }
         );
 
@@ -1369,9 +1349,9 @@ const initWhatsappClient =
       }
     );
 
-    /* ---------------------------------------------------------
+    /* =====================================================
        READY
-    --------------------------------------------------------- */
+    ===================================================== */
 
     currentClient.on(
       "ready",
@@ -1389,6 +1369,9 @@ const initWhatsappClient =
         isInitializing =
           false;
 
+        /*
+         * Only READY clears QR.
+         */
         latestQr =
           null;
 
@@ -1397,6 +1380,9 @@ const initWhatsappClient =
           {
             ready:
               true,
+
+            qr:
+              null,
           }
         );
 
@@ -1457,9 +1443,9 @@ const initWhatsappClient =
       }
     );
 
-    /* ---------------------------------------------------------
-       STATE
-    --------------------------------------------------------- */
+    /* =====================================================
+       STATE CHANGE
+    ===================================================== */
 
     currentClient.on(
       "change_state",
@@ -1478,9 +1464,9 @@ const initWhatsappClient =
       }
     );
 
-    /* ---------------------------------------------------------
+    /* =====================================================
        AUTH FAILURE
-    --------------------------------------------------------- */
+    ===================================================== */
 
     currentClient.on(
       "auth_failure",
@@ -1507,6 +1493,9 @@ const initWhatsappClient =
             ready:
               false,
 
+            qr:
+              null,
+
             error:
               String(
                 msg ||
@@ -1527,9 +1516,9 @@ const initWhatsappClient =
       }
     );
 
-    /* ---------------------------------------------------------
+    /* =====================================================
        DISCONNECTED
-    --------------------------------------------------------- */
+    ===================================================== */
 
     currentClient.on(
       "disconnected",
@@ -1563,6 +1552,9 @@ const initWhatsappClient =
             ready:
               false,
 
+            qr:
+              null,
+
             error:
               String(
                 reason ||
@@ -1589,9 +1581,9 @@ const initWhatsappClient =
       }
     );
 
-    /* ---------------------------------------------------------
+    /* =====================================================
        INITIALIZE
-    --------------------------------------------------------- */
+    ===================================================== */
 
     console.log(
       "WHATSAPP INITIALIZE START =>",
@@ -1616,6 +1608,10 @@ const initWhatsappClient =
         async (
           error
         ) => {
+          /*
+           * Ignore errors belonging to an
+           * obsolete client object.
+           */
           if (
             whatsappClient &&
             whatsappClient !==
@@ -1624,9 +1620,15 @@ const initWhatsappClient =
             return;
           }
 
+          const errorMessage =
+            String(
+              error?.message ||
+                ""
+            );
+
           console.log(
             "WhatsApp initialize error:",
-            error.message
+            errorMessage
           );
 
           console.log(
@@ -1641,6 +1643,90 @@ const initWhatsappClient =
           isInitializing =
             false;
 
+          logWhatsappDiagnostics(
+            `INITIALIZE_ERROR:${errorMessage}`,
+            currentClient
+          );
+
+          /* =================================================
+             CHECK IF BROWSER IS ACTUALLY STILL ALIVE
+          ================================================= */
+
+          const browserStillAlive =
+            (() => {
+              try {
+                return Boolean(
+                  currentClient
+                    ?.pupBrowser
+                    ?.isConnected
+                    ?.()
+                );
+              } catch (
+                browserCheckError
+              ) {
+                return false;
+              }
+            })();
+
+          /*
+           * WhatsApp Web may navigate/reload while
+           * whatsapp-web.js is injecting JavaScript.
+           *
+           * These errors can therefore occur even
+           * though the actual Chromium browser is alive.
+           */
+          const isRecoverableNavigationError =
+            errorMessage.includes(
+              "Execution context was destroyed"
+            ) ||
+            errorMessage.includes(
+              "Navigating frame was detached"
+            ) ||
+            errorMessage.includes(
+              "Cannot find context with specified id"
+            );
+
+          if (
+            browserStillAlive &&
+            isRecoverableNavigationError
+          ) {
+            console.log(
+              "WHATSAPP INITIALIZE NAVIGATION ERROR RECOVERABLE - BROWSER KEPT ALIVE"
+            );
+
+            writeSharedWhatsappStatus(
+              latestQr
+                ? "QR_REQUIRED"
+                : "WAITING_FOR_WHATSAPP",
+              {
+                ready:
+                  false,
+
+                qr:
+                  latestQr,
+
+                error:
+                  errorMessage,
+              }
+            );
+
+            /*
+             * DO NOT:
+             *
+             * destroy Chromium
+             * clear LocalAuth
+             * clear owner lock
+             * start another browser
+             *
+             * Health cron will wait instead.
+             */
+            return;
+          }
+
+          /* =================================================
+             ACTUAL FATAL INITIALIZE ERROR
+          ================================================= */
+
           latestQr =
             null;
 
@@ -1650,14 +1736,12 @@ const initWhatsappClient =
               ready:
                 false,
 
-              error:
-                error.message,
-            }
-          );
+              qr:
+                null,
 
-          logWhatsappDiagnostics(
-            `INITIALIZE_ERROR:${error.message}`,
-            currentClient
+              error:
+                errorMessage,
+            }
           );
 
           if (
@@ -1674,12 +1758,11 @@ const initWhatsappClient =
 
           /*
            * IMPORTANT:
-           * ownership is NOT released.
            *
-           * This prevents another Passenger worker
-           * from immediately launching another Chromium.
+           * Ownership intentionally remains.
            *
-           * Owner health cron will retry later.
+           * Another Passenger worker therefore cannot
+           * immediately create another Chromium process.
            */
         }
       );
@@ -1689,8 +1772,6 @@ const initWhatsappClient =
 
 /* =========================================================
    GET CLIENT
-
-   Non-owner worker NEVER starts another Chromium.
 ========================================================= */
 
 const getWhatsappClient =
@@ -1714,9 +1795,6 @@ const getWhatsappClient =
       return initWhatsappClient();
     }
 
-    /*
-     * Attempt ownership only if there is no healthy owner.
-     */
     if (
       !hasActiveWhatsappOwner()
     ) {
@@ -1728,17 +1806,14 @@ const getWhatsappClient =
 
 /* =========================================================
    STATUS
-
-   Owner reads live state.
-   Other Passenger workers read shared status.json.
 ========================================================= */
 
 const forceCheckWhatsappStatus =
   async () => {
     try {
       /*
-       * Non-owner worker:
-       * never touch Chromium.
+       * Non-owner Passenger worker reads
+       * shared status only.
        */
       if (
         !isWhatsappOwner
@@ -1869,6 +1944,35 @@ const forceCheckWhatsappStatus =
             }
           );
 
+      /*
+       * These are pairing states,
+       * not browser failure states.
+       */
+      if (
+        state ===
+          "UNPAIRED" ||
+        state ===
+          "UNPAIRED_IDLE"
+      ) {
+        isReady =
+          false;
+
+        writeSharedWhatsappStatus(
+          "QR_REQUIRED",
+          {
+            ready:
+              false,
+
+            qr:
+              latestQr,
+          }
+        );
+
+        return (
+          readSharedWhatsappStatus()
+        );
+      }
+
       if (
         state ===
         "CONNECTED"
@@ -1876,11 +1980,46 @@ const forceCheckWhatsappStatus =
         isReady =
           true;
 
+        latestQr =
+          null;
+
         writeSharedWhatsappStatus(
           "CONNECTED",
           {
             ready:
               true,
+
+            qr:
+              null,
+          }
+        );
+
+        return (
+          readSharedWhatsappStatus()
+        );
+      }
+
+      /*
+       * If getState itself failed while browser still
+       * exists, do not immediately call it dead.
+       */
+      if (
+        state === null &&
+        isWhatsappBrowserAlive()
+      ) {
+        isReady =
+          false;
+
+        writeSharedWhatsappStatus(
+          latestQr
+            ? "QR_REQUIRED"
+            : "WAITING_FOR_WHATSAPP",
+          {
+            ready:
+              false,
+
+            qr:
+              latestQr,
           }
         );
 
@@ -1898,6 +2037,9 @@ const forceCheckWhatsappStatus =
         {
           ready:
             false,
+
+          qr:
+            latestQr,
         }
       );
 
@@ -1919,7 +2061,7 @@ const forceCheckWhatsappStatus =
           error.message,
 
         qr:
-          null,
+          latestQr,
 
         ownerPid:
           getOwnerLock()
@@ -1946,8 +2088,6 @@ const isWhatsappReady =
 
 /* =========================================================
    QR
-
-   Works from any Passenger worker.
 ========================================================= */
 
 const getLatestQr =
@@ -1967,8 +2107,6 @@ const getLatestQr =
 
 /* =========================================================
    GET BROWSER
-
-   Only owner process has browser object.
 ========================================================= */
 
 const getWhatsappBrowser =
@@ -2000,17 +2138,13 @@ const restartWhatsappClient =
     options = {}
   ) => {
     /*
-     * Request landed on non-owner worker.
+     * Non-owner worker cannot restart Chromium.
      *
-     * Queue it for owner.
+     * Queue restart for owner.
      */
     if (
       !isWhatsappOwner
     ) {
-      /*
-       * No living owner:
-       * this worker may take ownership.
-       */
       if (
         !hasActiveWhatsappOwner()
       ) {
@@ -2022,10 +2156,6 @@ const restartWhatsappClient =
         ) {
           return queueRestartRequest();
         }
-
-        /*
-         * We are now the owner.
-         */
       } else {
         return queueRestartRequest();
       }
@@ -2123,6 +2253,10 @@ const restartWhatsappClient =
         );
       }
 
+      /*
+       * Give Chromium/profile lock a moment
+       * to disappear before creating the next browser.
+       */
       await sleep(
         3000
       );
@@ -2179,9 +2313,8 @@ const ensureWhatsappConnected =
     }
 
     /*
-     * Important:
-     * a non-owner worker cannot access owner's
-     * Puppeteer Client object.
+     * A non-owner Passenger worker cannot access
+     * another worker's Puppeteer object.
      */
     if (
       !isWhatsappOwner ||
@@ -2201,9 +2334,6 @@ const ensureWhatsappConnected =
 
 const destroyWhatsappClient =
   async () => {
-    /*
-     * Only owner can destroy Chromium.
-     */
     if (
       !isWhatsappOwner
     ) {
@@ -2239,6 +2369,9 @@ const destroyWhatsappClient =
         {
           ready:
             false,
+
+          qr:
+            null,
         }
       );
 
@@ -2255,10 +2388,6 @@ const destroyWhatsappClient =
 
 /* =========================================================
    PROCESS EXIT
-
-   Graceful cleanup only.
-   SIGKILL cannot run JS cleanup, therefore stale heartbeat
-   detection handles hard termination.
 ========================================================= */
 
 const gracefulOwnershipCleanup =
