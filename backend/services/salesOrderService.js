@@ -1,6 +1,6 @@
 const SalesOrder = require("../model/salesOrderModel");
 const pdfService = require("./pdfService");
-const whatsappApprovalService = require("./whatsappApprovalService");
+//const whatsappApprovalService = require("./whatsappApprovalService");
 const mongoose = require("mongoose");
 const finalApprovalService = require("./finalApprovalService");
 const crypto = require("crypto");
@@ -758,6 +758,10 @@ const createSalesOrder = async (
        WHATSAPP
     ===================================================== */
 
+    /*
+     * WHATSAPP TEMPORARILY DISABLED.
+     * Restore this block when alternate WhatsApp integration is ready.
+     *
     setImmediate(() => {
       enqueueWhatsapp(
         async () => {
@@ -797,6 +801,7 @@ const createSalesOrder = async (
         }
       );
     });
+    */
 
     /* =====================================================
        RETURN
@@ -1337,6 +1342,10 @@ const updateSalesOrder = async (
 
     await updatedOrder.save();
 
+    /*
+     * WHATSAPP TEMPORARILY DISABLED.
+     * Restore this block when alternate WhatsApp integration is ready.
+     *
     setImmediate(() => {
       enqueueWhatsapp(async () => {
         const freshOrder = await SalesOrder.findById(updatedOrder._id);
@@ -1365,6 +1374,7 @@ const updateSalesOrder = async (
         }
       });
     });
+    */
 
     return updatedOrder;
   } catch (error) {
@@ -1540,7 +1550,8 @@ const approveSalesOrderByAdmin = async (salesOrderId, loggedInAdmin) => {
       },
     });
 
-    runAdminApprovalBackgroundTasks(salesOrder.constructor, salesOrder._id);
+    // WHATSAPP TEMPORARILY DISABLED.
+    // runAdminApprovalBackgroundTasks(salesOrder.constructor, salesOrder._id);
 
     return salesOrder;
   } catch (error) {
@@ -1607,11 +1618,12 @@ const rejectSalesOrderByAdmin = async (
       },
     });
 
-    runAdminRejectBackgroundTasks(
-      salesOrder.constructor,
-      salesOrder._id,
-      rejectionComment
-    );
+    // WHATSAPP TEMPORARILY DISABLED.
+    // runAdminRejectBackgroundTasks(
+    //   salesOrder.constructor,
+    //   salesOrder._id,
+    //   rejectionComment
+    // );
 
     return salesOrder;
   } catch (error) {
@@ -1690,6 +1702,10 @@ const approveSalesOrderByManager = async (salesOrderId, loggedInManager) => {
     },
   });
 
+  /*
+   * WHATSAPP TEMPORARILY DISABLED.
+   * Restore this block when alternate WhatsApp integration is ready.
+   *
   setImmediate(() => {
     enqueueWhatsapp(async () => {
       const freshOrder = await SalesOrder.findById(approvedOrder._id).populate(
@@ -1718,6 +1734,7 @@ const approveSalesOrderByManager = async (salesOrderId, loggedInManager) => {
       }
     });
   });
+  */
 
   return approvedOrder;
 };
@@ -1798,6 +1815,10 @@ const rejectSalesOrderByManager = async (
       },
     });
 
+    /*
+     * WHATSAPP TEMPORARILY DISABLED.
+     * Restore this block when alternate WhatsApp integration is ready.
+     *
     setImmediate(() => {
       enqueueWhatsapp(async () => {
         const freshOrder = await SalesOrder.findById(salesOrder._id).populate(
@@ -1829,6 +1850,7 @@ const rejectSalesOrderByManager = async (
         }
       });
     });
+    */
 
     return salesOrder;
   } catch (error) {
