@@ -23,6 +23,8 @@ const mtcRoutes = require("./routes/mtcRoutes");
 const supportTicketRoutes = require("./routes/supportTicketRoutes");
 const enquiryLookupRoutes = require("./routes/enquiryLookupRoutes");
 const itSupportRoutes = require("./routes/itSupportRoutes");
+const baileysStatusRoutes =
+  require("./routes/baileysStatusRoutes");
 const orderTrackingRoutes = require(
   "./routes/orderTrackingRoutes"
 );
@@ -244,6 +246,10 @@ app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/mtc", mtcRoutes);
 app.use("/api/enquiry-lookup", enquiryLookupRoutes);
 app.use("/api/it-support", itSupportRoutes);
+app.use(
+  "/api/baileys",
+  baileysStatusRoutes
+);
 app.use(
   "/api/order-tracking",
   orderTrackingRoutes

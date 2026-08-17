@@ -20,15 +20,21 @@ const startEnquiryDelayNotificationCron =
 const startSalesDailyInsightCron =
   require("./cron/salesDailyInsightCron");
 
+/* =========================================================
+   BAILEYS WHATSAPP
+========================================================= */
+
+const {
+  initBaileysClient,
+} = require("./util/baileysClient");
+
 /*
  * =========================================================
- * WHATSAPP DISABLED
+ * OLD WHATSAPP WEB DISABLED
  *
- * WhatsApp Web requires a permanent Chromium process.
- * On current shared hosting this is not reliable.
- *
- * Keep files/code in project for future VPS/API migration,
- * but DO NOT initialize Chromium from this backend.
+ * WhatsApp Web requires permanent Chromium/Puppeteer.
+ * Keep the code in the project for rollback/reference,
+ * but do not initialize it.
  * =========================================================
  */
 
@@ -56,6 +62,10 @@ const PORT =
 
 let booted = false;
 
+/* =========================================================
+   START APPLICATION
+========================================================= */
+
 const startApp = async () => {
   if (booted) {
     console.log(
@@ -68,78 +78,143 @@ const startApp = async () => {
   booted = true;
 
   try {
+    /* =====================================================
+       DATABASE
+    ===================================================== */
+
     await connectDB();
+
+    /* =====================================================
+       ROOT HEALTH ROUTE
+    ===================================================== */
 
     app.get("/", (req, res) => {
       res.send("Backend is running");
     });
+
+    /* =====================================================
+       HTTP + SOCKET SERVER
+    ===================================================== */
 
     const server =
       http.createServer(app);
 
     initSocket(server);
 
-    server.listen(PORT, () => {
-      console.log(
-        `Server running on port ${PORT}`
-      );
+    /* =====================================================
+       LISTEN
+    ===================================================== */
 
-      console.log("hii");
-
-      if (
-        process.env
-          .ENABLE_BACKGROUND_JOBS ===
-        "true"
-      ) {
+    server.listen(
+      PORT,
+      () => {
         console.log(
-          "Starting background jobs..."
+          `Server running on port ${PORT}`
         );
 
-        /*
-         * =====================================================
-         * WHATSAPP DISABLED
-         * =====================================================
-         */
+        console.log("hii");
 
-        // initWhatsappClient();
+        /* =================================================
+           BACKGROUND JOBS
+        ================================================= */
 
-        /*
-         * Runs every day at 11:00 AM IST.
-         *
-         * This starts only the normal scheduled job.
-         * It does not run forceAllOverdue.
-         */
+        if (
+          process.env
+            .ENABLE_BACKGROUND_JOBS ===
+          "true"
+        ) {
+          console.log(
+            "Starting background jobs..."
+          );
 
-        startPaymentReminderCron();
+          /* ===============================================
+             OLD WHATSAPP WEB
 
-        startAttendanceCron();
+             DISABLED.
+             DO NOT START CHROMIUM.
+          =============================================== */
 
-        startSalesOrderApprovalReminderCron();
+          // initWhatsappClient();
 
-        startAttendanceSummaryCron();
+          /* ===============================================
+             NEW BAILEYS WHATSAPP
 
-        startAttendanceNotificationCron();
+             No Chromium.
+             No Puppeteer.
+             Lightweight WhatsApp WebSocket connection.
 
-        startEnquiryDelayNotificationCron();
+             Do not await here because the HTTP server and
+             other cron jobs should continue starting even
+             if WhatsApp is temporarily unavailable.
+          =============================================== */
 
-        // startSalesDailyInsightCron();
+          initBaileysClient()
+            .catch(
+              (error) => {
+                console.log(
+                  "BAILEYS STARTUP FAILED =>",
+                  error.message
+                );
+              }
+            );
 
-        /*
-         * WhatsApp health cron must stay disabled
-         * while WhatsApp Chromium is disabled.
-         */
+          /* ===============================================
+             PAYMENT REMINDER CRON
 
-        // startWhatsappHealthCron();
+             Runs every day at 11:00 AM IST.
+             Existing normal scheduled job only.
+          =============================================== */
 
-        console.log(
-          "All enabled background jobs started."
-        );
-      } else {
-        console.log(
-          "Background jobs disabled."
-        );
+          startPaymentReminderCron();
+
+          /* ===============================================
+             ATTENDANCE CRONS
+          =============================================== */
+
+          startAttendanceCron();
+
+          startAttendanceSummaryCron();
+
+          startAttendanceNotificationCron();
+
+          /* ===============================================
+             SALES ORDER APPROVAL REMINDER
+          =============================================== */
+
+          startSalesOrderApprovalReminderCron();
+
+          /* ===============================================
+             ENQUIRY DELAY NOTIFICATIONS
+          =============================================== */
+
+          startEnquiryDelayNotificationCron();
+
+          /* ===============================================
+             OPTIONAL DAILY SALES INSIGHT
+          =============================================== */
+
+          // startSalesDailyInsightCron();
+
+          /* ===============================================
+             OLD WHATSAPP WEB HEALTH CRON
+
+             Must remain disabled.
+             Baileys manages its connection/reconnect through
+             connection.update inside baileysClient.js.
+          =============================================== */
+
+          // startWhatsappHealthCron();
+
+          console.log(
+            "All enabled background jobs started."
+          );
+        } else {
+          console.log(
+            "Background jobs disabled."
+          );
+        }
       }
-    });
+    );
   } catch (error) {
     booted = false;
 
@@ -151,5 +226,9 @@ const startApp = async () => {
     process.exit(1);
   }
 };
+
+/* =========================================================
+   BOOT
+========================================================= */
 
 startApp();
