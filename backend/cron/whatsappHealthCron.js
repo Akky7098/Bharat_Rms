@@ -1,148 +1,188 @@
-const cron = require("node-cron");
+const cron =
+  require("node-cron");
 
 const {
   forceCheckWhatsappStatus,
   restartWhatsappClient,
   isWhatsappHealthPausedForPdf,
-} = require("../util/whatsappClient");
+  isWhatsappProcessOwner,
+  hasActiveWhatsappOwner,
+} =
+  require("../util/whatsappClient");
 
 let started = false;
-let healthCheckRunning = false;
 
-const startWhatsappHealthCron = () => {
-  if (started) {
-    console.log(
-      "WhatsApp health cron already started"
-    );
+let healthCheckRunning =
+  false;
 
-    return;
-  }
+const startWhatsappHealthCron =
+  () => {
+    if (started) {
+      console.log(
+        "WhatsApp health cron already started"
+      );
 
-  started = true;
+      return;
+    }
 
-  cron.schedule(
-    "*/5 * * * *",
-    async () => {
-      /*
-       * Prevent overlapping cron executions.
-       */
-      if (healthCheckRunning) {
-        console.log(
-          "WhatsApp health check skipped: previous check still running"
-        );
+    started = true;
 
-        return;
-      }
-
-      healthCheckRunning = true;
-
-      try {
+    cron.schedule(
+      "*/5 * * * *",
+      async () => {
+        /*
+         * Prevent overlap inside THIS Node worker.
+         */
         if (
-          isWhatsappHealthPausedForPdf()
+          healthCheckRunning
         ) {
           console.log(
-            "WhatsApp health check skipped: PDF generation running"
+            "WhatsApp health check skipped: previous check still running"
           );
 
           return;
         }
 
-        const status =
-          await forceCheckWhatsappStatus();
+        healthCheckRunning =
+          true;
 
-        console.log(
-          `WhatsApp health check: ready=${status.ready}, state=${status.state}`
-        );
+        try {
+          /*
+           * ------------------------------------------------------
+           * CROSS-PROCESS PROTECTION
+           *
+           * If this Passenger worker is not WhatsApp owner and
+           * another healthy owner exists, this worker must NEVER
+           * restart Chromium.
+           * ------------------------------------------------------
+           */
 
-        /*
-         * Healthy.
-         */
-        if (status.ready) {
-          return;
-        }
+          if (
+            !isWhatsappProcessOwner() &&
+            hasActiveWhatsappOwner()
+          ) {
+            const status =
+              await forceCheckWhatsappStatus();
 
-        /*
-         * NEVER interfere while normal startup
-         * is still running.
-         */
-        if (
-          status.state === "INITIALIZING" ||
-          status.state === "RESTARTING" ||
-          status.state === "PDF_GENERATION_RUNNING"
-        ) {
-          return;
-        }
+            console.log(
+              `WhatsApp health check handled by owner process: ready=${status.ready}, state=${status.state}, ownerPid=${status.ownerPid || "-"}`
+            );
 
-        /*
-         * QR means session/user action is required.
-         * Restarting Chromium repeatedly won't help.
-         */
-        if (
-          status.state === "QR_REQUIRED" ||
-          status.state === "UNPAIRED"
-        ) {
+            return;
+          }
+
+          if (
+            isWhatsappHealthPausedForPdf()
+          ) {
+            console.log(
+              "WhatsApp health check skipped: PDF generation running"
+            );
+
+            return;
+          }
+
+          const status =
+            await forceCheckWhatsappStatus();
+
           console.log(
-            "WhatsApp QR/auth action required. Restart skipped."
-          );
-
-          return;
-        }
-
-        /*
-         * These states indicate Chromium/client
-         * genuinely needs a controlled restart.
-         */
-        const restartStates = [
-          "NO_CLIENT",
-          "BROWSER_DISCONNECTED",
-          "DISCONNECTED",
-          "NOT_CONNECTED",
-          "TIMEOUT",
-        ];
-
-        if (
-          restartStates.includes(
-            status.state
-          )
-        ) {
-          console.log(
-            `WhatsApp unhealthy (${status.state}). Controlled restart requested.`
+            `WhatsApp health check: ready=${status.ready}, state=${status.state}, ownerPid=${status.ownerPid || "-"}`
           );
 
           /*
-           * IMPORTANT:
-           *
-           * Do not await WhatsApp becoming ready.
-           *
-           * restartWhatsappClient() only does bounded
-           * cleanup + one new initialization.
+           * Healthy.
            */
-          restartWhatsappClient()
-            .catch((error) => {
-              console.log(
-                "WhatsApp background restart failed:",
-                error.message
-              );
-            });
-        }
-      } catch (error) {
-        console.error(
-          "WhatsApp health cron failed:",
-          error.message
-        );
-      } finally {
-        healthCheckRunning = false;
-      }
-    },
-    {
-      timezone: "Asia/Kolkata",
-    }
-  );
+          if (
+            status.ready
+          ) {
+            return;
+          }
 
-  console.log(
-    "WhatsApp health cron scheduled"
-  );
-};
+          /*
+           * Do nothing during controlled startup.
+           */
+          if (
+            status.state ===
+              "INITIALIZING" ||
+            status.state ===
+              "RESTARTING" ||
+            status.state ===
+              "PDF_GENERATION_RUNNING"
+          ) {
+            return;
+          }
+
+          /*
+           * QR/user authentication needed.
+           *
+           * Never keep restarting Chromium.
+           */
+          if (
+            status.state ===
+              "QR_REQUIRED" ||
+            status.state ===
+              "UNPAIRED"
+          ) {
+            console.log(
+              "WhatsApp QR/auth action required. Restart skipped."
+            );
+
+            return;
+          }
+
+          const restartStates =
+            [
+              "NO_OWNER",
+              "NO_CLIENT",
+              "BROWSER_DISCONNECTED",
+              "DISCONNECTED",
+              "NOT_CONNECTED",
+              "TIMEOUT",
+              "INITIALIZE_ERROR",
+              "RESTART_ERROR",
+              "DESTROYED",
+            ];
+
+          if (
+            restartStates.includes(
+              status.state
+            )
+          ) {
+            console.log(
+              `WhatsApp unhealthy (${status.state}). Controlled restart requested.`
+            );
+
+            restartWhatsappClient()
+              .catch(
+                (
+                  error
+                ) => {
+                  console.log(
+                    "WhatsApp background restart failed:",
+                    error.message
+                  );
+                }
+              );
+          }
+        } catch (error) {
+          console.error(
+            "WhatsApp health cron failed:",
+            error.message
+          );
+        } finally {
+          healthCheckRunning =
+            false;
+        }
+      },
+      {
+        timezone:
+          "Asia/Kolkata",
+      }
+    );
+
+    console.log(
+      "WhatsApp health cron scheduled"
+    );
+  };
 
 module.exports =
   startWhatsappHealthCron;
