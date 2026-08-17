@@ -1186,29 +1186,32 @@ const initWhatsappClient =
           10000,
 
         puppeteer: {
-          headless: true,
+  headless: true,
 
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--disable-extensions",
-            "--disable-background-networking",
-            "--disable-background-timer-throttling",
-            "--disable-renderer-backgrounding",
-            "--disable-features=TranslateUI",
-            "--disable-ipc-flooding-protection",
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-extensions",
+    "--disable-background-networking",
+    "--disable-background-timer-throttling",
+    "--disable-renderer-backgrounding",
+    "--disable-features=TranslateUI",
+    "--disable-ipc-flooding-protection",
 
-            /*
-             * Shared-hosting resource control.
-             */
-            "--single-process",
-            "--no-zygote",
+    /*
+     * Shared-hosting resource control.
+     *
+     * Do not force all Chromium work into one process.
+     * Limit renderer/raster work instead.
+     */
+    "--renderer-process-limit=1",
+    "--num-raster-threads=1",
 
-            "--no-first-run",
-          ],
-        },
+    "--no-first-run",
+  ],
+},
       });
 
     /*
