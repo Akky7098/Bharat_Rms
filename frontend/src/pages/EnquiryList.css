@@ -5022,3 +5022,1077 @@
     max-height: 92px !important;
   }
 }
+/* ==========================================================
+   FINAL LOST ANALYSIS / REMARK OVERRIDES
+   ADD AT VERY END OF EnquiryList.css
+========================================================== */
+
+/* ==========================================================
+   DESKTOP: REAL STANDARD-SIZE DONUT + LARGE REASON TEXT
+========================================================== */
+
+@media (min-width: 901px) {
+  .lost-reason-chart-card {
+    display: grid !important;
+    grid-template-columns:
+      220px
+      220px
+      minmax(0, 1fr) !important;
+
+    align-items: center !important;
+    gap: 16px !important;
+
+    width: 100% !important;
+
+    min-height: 180px !important;
+    height: 180px !important;
+    max-height: 180px !important;
+
+    padding: 12px 18px !important;
+    margin: 0 0 12px !important;
+
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+
+    border:
+      1px solid
+      #fecaca !important;
+
+    border-radius:
+      18px !important;
+
+    background:
+      radial-gradient(
+        circle at 34% 50%,
+        rgba(220, 38, 38, 0.08),
+        transparent 22%
+      ),
+      linear-gradient(
+        135deg,
+        #ffffff 0%,
+        #fffafa 100%
+      ) !important;
+
+    box-shadow:
+      0 8px 22px
+      rgba(127, 29, 29, 0.06) !important;
+  }
+
+  /* ======================================================
+     LEFT TITLE
+  ====================================================== */
+
+  .lost-reason-chart-head {
+    display: flex !important;
+    flex-direction: column !important;
+
+    align-items:
+      flex-start !important;
+
+    justify-content:
+      center !important;
+
+    min-width:
+      0 !important;
+  }
+
+  .lost-reason-chart-head
+    > div
+    > span {
+    display:
+      block !important;
+
+    color:
+      #dc2626 !important;
+
+    font-size:
+      9px !important;
+
+    line-height:
+      1 !important;
+
+    font-weight:
+      950 !important;
+
+    letter-spacing:
+      0.12em !important;
+  }
+
+  .lost-reason-chart-head
+    > div
+    > strong {
+    display:
+      block !important;
+
+    margin-top:
+      6px !important;
+
+    color:
+      #7f1d1d !important;
+
+    font-size:
+      18px !important;
+
+    line-height:
+      1.05 !important;
+
+    font-weight:
+      950 !important;
+  }
+
+  .lost-reason-chart-head
+    > div
+    > p {
+    margin:
+      7px 0 0 !important;
+
+    color:
+      #64748b !important;
+
+    font-size:
+      9px !important;
+
+    line-height:
+      1.35 !important;
+
+    font-weight:
+      700 !important;
+  }
+
+  .lost-reason-chart-head
+    > b {
+    display:
+      inline-flex !important;
+
+    align-items:
+      center !important;
+
+    justify-content:
+      center !important;
+
+    min-width:
+      52px !important;
+
+    height:
+      32px !important;
+
+    margin-top:
+      12px !important;
+
+    padding:
+      0 12px !important;
+
+    border:
+      1px solid
+      #fca5a5 !important;
+
+    border-radius:
+      999px !important;
+
+    background:
+      #fff1f2 !important;
+
+    color:
+      #b91c1c !important;
+
+    font-size:
+      14px !important;
+
+    font-weight:
+      950 !important;
+  }
+
+  /* ======================================================
+     ALLOW CHILDREN TO USE MAIN GRID
+  ====================================================== */
+
+  .lost-reason-chart-layout {
+    display:
+      contents !important;
+  }
+
+  /* ======================================================
+     ACTUAL LARGE DONUT AREA
+
+     THIS IS WHAT STOPS OLD CSS FROM
+     SHRINKING THE PIE.
+  ====================================================== */
+
+  .lost-reason-donut-wrap {
+    position:
+      relative !important;
+
+    width:
+      220px !important;
+
+    height:
+      172px !important;
+
+    min-width:
+      220px !important;
+
+    min-height:
+      172px !important;
+
+    display:
+      flex !important;
+
+    align-items:
+      center !important;
+
+    justify-content:
+      center !important;
+
+    margin:
+      0 !important;
+
+    overflow:
+      visible !important;
+  }
+
+  .lost-reason-donut-wrap
+    .recharts-responsive-container,
+  .lost-reason-donut-wrap
+    .recharts-wrapper,
+  .lost-reason-donut-wrap
+    svg {
+    width:
+      220px !important;
+
+    height:
+      172px !important;
+
+    max-width:
+      220px !important;
+
+    max-height:
+      172px !important;
+  }
+
+  /* ======================================================
+     CENTER VALUE
+  ====================================================== */
+
+  .lost-reason-donut-center {
+    position:
+      absolute !important;
+
+    top:
+      50% !important;
+
+    left:
+      50% !important;
+
+    transform:
+      translate(
+        -50%,
+        -50%
+      ) !important;
+
+    pointer-events:
+      none !important;
+
+    text-align:
+      center !important;
+  }
+
+  .lost-reason-donut-center
+    strong {
+    display:
+      block !important;
+
+    color:
+      #7f1d1d !important;
+
+    font-size:
+      25px !important;
+
+    line-height:
+      1 !important;
+
+    font-weight:
+      950 !important;
+
+    letter-spacing:
+      -0.04em !important;
+  }
+
+  .lost-reason-donut-center
+    span {
+    display:
+      block !important;
+
+    margin-top:
+      3px !important;
+
+    color:
+      #b91c1c !important;
+
+    font-size:
+      8px !important;
+
+    line-height:
+      1 !important;
+
+    font-weight:
+      950 !important;
+
+    text-transform:
+      uppercase !important;
+
+    letter-spacing:
+      0.09em !important;
+  }
+
+  /* ======================================================
+     REASON TABS
+  ====================================================== */
+
+  .lost-reason-chart-legend {
+    width:
+      100% !important;
+
+    min-width:
+      0 !important;
+
+    display:
+      grid !important;
+
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      ) !important;
+
+    gap:
+      9px 10px !important;
+
+    align-content:
+      center !important;
+  }
+
+  .lost-reason-chart-legend
+    button {
+    width:
+      100% !important;
+
+    min-width:
+      0 !important;
+
+    min-height:
+      46px !important;
+
+    padding:
+      0 11px !important;
+
+    display:
+      grid !important;
+
+    grid-template-columns:
+      10px
+      minmax(0, 1fr)
+      auto !important;
+
+    align-items:
+      center !important;
+
+    column-gap:
+      8px !important;
+
+    border:
+      1px solid
+      #fee2e2 !important;
+
+    border-radius:
+      11px !important;
+
+    background:
+      rgba(
+        255,
+        255,
+        255,
+        0.96
+      ) !important;
+
+    box-shadow:
+      0 3px 8px
+      rgba(
+        127,
+        29,
+        29,
+        0.035
+      ) !important;
+
+    cursor:
+      pointer !important;
+
+    text-align:
+      left !important;
+
+    transition:
+      transform
+        0.15s ease,
+      border-color
+        0.15s ease,
+      background
+        0.15s ease,
+      box-shadow
+        0.15s ease !important;
+  }
+
+  .lost-reason-chart-legend
+    button:hover {
+    transform:
+      translateY(
+        -1px
+      ) !important;
+
+    border-color:
+      #fca5a5 !important;
+
+    background:
+      #fff7f7 !important;
+
+    box-shadow:
+      0 5px 12px
+      rgba(
+        127,
+        29,
+        29,
+        0.08
+      ) !important;
+  }
+
+  .lost-reason-legend-dot {
+    width:
+      10px !important;
+
+    height:
+      10px !important;
+
+    min-width:
+      10px !important;
+
+    border-radius:
+      50% !important;
+  }
+
+  /* ======================================================
+     BIG RED REASON NAME
+  ====================================================== */
+
+  .lost-reason-chart-legend
+    button
+    > strong {
+    min-width:
+      0 !important;
+
+    display:
+      block !important;
+
+    overflow:
+      hidden !important;
+
+    text-overflow:
+      ellipsis !important;
+
+    white-space:
+      nowrap !important;
+
+    color:
+      #991b1b !important;
+
+    font-size:
+      11px !important;
+
+    line-height:
+      1.15 !important;
+
+    font-weight:
+      950 !important;
+  }
+
+  /* ======================================================
+     COUNT + PERCENTAGE TOGETHER
+  ====================================================== */
+
+  .lost-reason-legend-value {
+    display:
+      inline-flex !important;
+
+    align-items:
+      center !important;
+
+    justify-content:
+      flex-end !important;
+
+    gap:
+      5px !important;
+
+    white-space:
+      nowrap !important;
+  }
+
+  .lost-reason-legend-value
+    b {
+    color:
+      #475569 !important;
+
+    font-size:
+      10px !important;
+
+    line-height:
+      1 !important;
+
+    font-weight:
+      950 !important;
+  }
+
+  .lost-reason-legend-value
+    i {
+    padding-left:
+      5px !important;
+
+    border-left:
+      1px solid
+      #e2e8f0 !important;
+
+    color:
+      #94a3b8 !important;
+
+    font-size:
+      9px !important;
+
+    line-height:
+      1 !important;
+
+    font-weight:
+      850 !important;
+
+    font-style:
+      normal !important;
+  }
+}
+
+/* ==========================================================
+   LOST STATUS + REMARK IN DESKTOP TABLE
+========================================================== */
+
+.enquiry-lost-status {
+  min-width:
+    150px;
+
+  max-width:
+    230px;
+
+  text-decoration:
+    none !important;
+}
+
+.enquiry-lost-status-top {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    4px;
+
+  text-decoration:
+    none !important;
+}
+
+.enquiry-lost-status-main,
+.enquiry-lost-status-reason {
+  color:
+    #ffffff;
+
+  font-size:
+    10px;
+
+  line-height:
+    1.2;
+
+  font-weight:
+    950;
+
+  text-decoration:
+    none !important;
+}
+
+.enquiry-lost-status-separator {
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.7
+    );
+
+  font-weight:
+    900;
+
+  text-decoration:
+    none !important;
+}
+
+.enquiry-lost-status-remark {
+  margin-top:
+    6px;
+
+  padding:
+    7px 8px;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.28
+    );
+
+  border-radius:
+    7px;
+
+  background:
+    rgba(
+      127,
+      29,
+      29,
+      0.25
+    );
+
+  text-decoration:
+    none !important;
+}
+
+.enquiry-lost-status-remark
+  > span {
+  display:
+    block;
+
+  margin-bottom:
+    3px;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.75
+    );
+
+  font-size:
+    7px;
+
+  line-height:
+    1;
+
+  font-weight:
+    950;
+
+  letter-spacing:
+    0.08em;
+
+  text-transform:
+    uppercase;
+
+  text-decoration:
+    none !important;
+}
+
+.enquiry-lost-status-remark
+  p {
+  margin:
+    0;
+
+  color:
+    #ffffff;
+
+  font-size:
+    9px;
+
+  line-height:
+    1.4;
+
+  font-weight:
+    750;
+
+  word-break:
+    normal;
+
+  overflow-wrap:
+    anywhere;
+
+  text-decoration:
+    none !important;
+}
+
+/*
+ * Existing production CSS gives
+ * lost rows line-through.
+ *
+ * Do not strike the new insight.
+ */
+
+.enquiry-table
+  tbody
+  tr.row-lost
+  td
+  .enquiry-lost-status,
+.enquiry-table
+  tbody
+  tr.row-lost
+  td
+  .enquiry-lost-status
+  * {
+  text-decoration:
+    none !important;
+}
+
+/* ==========================================================
+   ENQUIRY DETAIL MODAL LOST REMARK
+========================================================== */
+
+.enquiry-detail-lost-remark {
+  margin-top:
+    11px;
+
+  padding-top:
+    11px;
+
+  border-top:
+    1px solid
+    #fecdd3;
+}
+
+.enquiry-detail-lost-remark
+  span {
+  display:
+    block;
+
+  color:
+    #be123c;
+
+  font-size:
+    10px;
+
+  font-weight:
+    950;
+
+  letter-spacing:
+    0.06em;
+
+  text-transform:
+    uppercase;
+}
+
+.enquiry-detail-lost-remark
+  p {
+  margin:
+    5px 0 0;
+
+  color:
+    #7f1d1d;
+
+  font-size:
+    13px;
+
+  line-height:
+    1.5;
+
+  font-weight:
+    750;
+
+  overflow-wrap:
+    anywhere;
+}
+
+/* ==========================================================
+   PWA LOST REASON + REMARK
+========================================================== */
+
+.ios-enquiry-lost-insight {
+  display:
+    block;
+}
+
+.ios-enquiry-lost-title {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    10px;
+}
+
+.ios-enquiry-lost-title
+  span {
+  color:
+    #b91c1c;
+
+  font-size:
+    10px;
+
+  font-weight:
+    900;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    0.05em;
+}
+
+.ios-enquiry-lost-title
+  strong {
+  color:
+    #7f1d1d;
+
+  font-size:
+    13px;
+
+  font-weight:
+    950;
+
+  text-align:
+    right;
+}
+
+.ios-enquiry-lost-remark {
+  margin-top:
+    9px;
+
+  padding-top:
+    9px;
+
+  border-top:
+    1px solid
+    #fecaca;
+}
+
+.ios-enquiry-lost-remark
+  span {
+  display:
+    block;
+
+  color:
+    #b91c1c;
+
+  font-size:
+    9px;
+
+  font-weight:
+    900;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    0.05em;
+}
+
+.ios-enquiry-lost-remark
+  p {
+  margin:
+    4px 0 0;
+
+  color:
+    #7f1d1d;
+
+  font-size:
+    12px;
+
+  line-height:
+    1.45;
+
+  font-weight:
+    750;
+
+  overflow-wrap:
+    anywhere;
+}
+
+/* ==========================================================
+   MOBILE DONUT
+========================================================== */
+
+@media (max-width: 900px) {
+  .lost-reason-chart-card.mobile
+    .lost-reason-chart-layout {
+    grid-template-columns:
+      155px
+      minmax(0, 1fr) !important;
+
+    gap:
+      10px !important;
+
+    align-items:
+      center !important;
+  }
+
+  .lost-reason-chart-card.mobile
+    .lost-reason-donut-wrap {
+    width:
+      155px !important;
+
+    min-width:
+      155px !important;
+
+    height:
+      150px !important;
+  }
+
+  .lost-reason-chart-card.mobile
+    .lost-reason-donut-wrap
+    .recharts-responsive-container,
+  .lost-reason-chart-card.mobile
+    .lost-reason-donut-wrap
+    .recharts-wrapper,
+  .lost-reason-chart-card.mobile
+    .lost-reason-donut-wrap
+    svg {
+    width:
+      155px !important;
+
+    height:
+      150px !important;
+
+    max-width:
+      155px !important;
+
+    max-height:
+      150px !important;
+  }
+
+  .lost-reason-chart-card.mobile
+    .lost-reason-chart-legend {
+    display:
+      grid !important;
+
+    grid-template-columns:
+      1fr !important;
+
+    gap:
+      6px !important;
+  }
+
+  .lost-reason-chart-card.mobile
+    .lost-reason-chart-legend
+    button {
+    min-height:
+      36px !important;
+
+    display:
+      grid !important;
+
+    grid-template-columns:
+      9px
+      minmax(0, 1fr)
+      auto !important;
+
+    align-items:
+      center !important;
+
+    gap:
+      7px !important;
+
+    padding:
+      0 8px !important;
+  }
+
+  .lost-reason-chart-card.mobile
+    .lost-reason-chart-legend
+    button
+    > strong {
+    overflow:
+      hidden !important;
+
+    text-overflow:
+      ellipsis !important;
+
+    white-space:
+      nowrap !important;
+
+    color:
+      #991b1b !important;
+
+    font-size:
+      10px !important;
+
+    font-weight:
+      950 !important;
+  }
+
+  .lost-reason-chart-card.mobile
+    .lost-reason-legend-value {
+    display:
+      inline-flex !important;
+
+    align-items:
+      center !important;
+
+    gap:
+      4px !important;
+
+    white-space:
+      nowrap !important;
+  }
+}
+
+/* ==========================================================
+   SMALL PHONE
+========================================================== */
+
+@media (max-width: 390px) {
+  .lost-reason-chart-card.mobile
+    .lost-reason-chart-layout {
+    grid-template-columns:
+      135px
+      minmax(0, 1fr) !important;
+  }
+
+  .lost-reason-chart-card.mobile
+    .lost-reason-donut-wrap {
+    width:
+      135px !important;
+
+    min-width:
+      135px !important;
+
+    height:
+      135px !important;
+  }
+
+  .lost-reason-chart-card.mobile
+    .lost-reason-donut-wrap
+    .recharts-responsive-container,
+  .lost-reason-chart-card.mobile
+    .lost-reason-donut-wrap
+    .recharts-wrapper,
+  .lost-reason-chart-card.mobile
+    .lost-reason-donut-wrap
+    svg {
+    width:
+      135px !important;
+
+    height:
+      135px !important;
+
+    max-width:
+      135px !important;
+
+    max-height:
+      135px !important;
+  }
+}

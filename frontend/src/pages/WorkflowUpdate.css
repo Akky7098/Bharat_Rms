@@ -698,3 +698,206 @@
     color: #111827 !important;
   }
 }
+
+/* ==========================================================
+   LOST ENQUIRY DETAIL REMARK
+   FINAL PRODUCTION OVERRIDES
+========================================================== */
+
+.workflow-lost-detail-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 12px;
+  box-sizing: border-box;
+}
+
+.workflow-lost-detail-field label,
+.ios-workflow-lost-detail label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.workflow-required {
+  color: #dc2626;
+  font-weight: 800;
+}
+
+/* ==========================================================
+   DESKTOP TEXTAREA
+========================================================== */
+
+.workflow-lost-detail-field textarea {
+  width: 100%;
+  min-height: 105px;
+  box-sizing: border-box;
+  resize: vertical;
+
+  padding: 12px 13px 25px;
+
+  border: 1px solid #d9dee7;
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.workflow-lost-detail-field textarea::placeholder {
+  color: #969eaa;
+}
+
+.workflow-lost-detail-field textarea:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.1);
+
+  background: #ffffff;
+}
+
+.workflow-lost-detail-field textarea:disabled {
+  cursor: not-allowed;
+  background: #f5f6f8;
+  color: #7c8491;
+}
+
+/* ==========================================================
+   CHARACTER COUNT
+========================================================== */
+
+.workflow-lost-detail-count {
+  display: block;
+  width: 100%;
+
+  margin-top: 5px;
+
+  text-align: right;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  color: #8a93a3;
+}
+
+/* ==========================================================
+   IOS / PWA
+========================================================== */
+
+.ios-workflow-lost-detail {
+  position: relative;
+  width: 100%;
+  margin-top: 14px;
+  box-sizing: border-box;
+}
+
+.ios-workflow-lost-detail textarea {
+  width: 100%;
+  min-height: 112px;
+
+  box-sizing: border-box;
+
+  resize: none;
+
+  padding:
+    13px
+    14px
+    25px;
+
+  border:
+    1px solid
+    #e1e6ed;
+
+  border-radius:
+    14px;
+
+  background:
+    #f8fafc;
+
+  font-family:
+    inherit;
+
+  font-size:
+    14px;
+
+  line-height:
+    1.5;
+
+  outline:
+    none;
+
+  -webkit-appearance:
+    none;
+
+  appearance:
+    none;
+
+  transition:
+    border-color
+      0.2s ease,
+    background
+      0.2s ease,
+    box-shadow
+      0.2s ease;
+}
+
+.ios-workflow-lost-detail textarea::placeholder {
+  color: #9199a6;
+}
+
+.ios-workflow-lost-detail textarea:focus {
+  background:
+    #ffffff;
+
+  border-color:
+    #2563eb;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.08);
+}
+
+.ios-workflow-lost-detail textarea:disabled {
+  background:
+    #f1f3f6;
+
+  color:
+    #8b929c;
+
+  cursor:
+    not-allowed;
+}
+
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media (max-width: 768px) {
+  .workflow-lost-detail-field textarea,
+  .ios-workflow-lost-detail textarea {
+    /*
+     * 16px prevents iOS Safari automatic zoom
+     * when textarea receives focus.
+     */
+    font-size: 16px;
+  }
+
+  .ios-workflow-lost-detail textarea {
+    min-height: 105px;
+  }
+}

@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { getAllEnquiries, getLostEnquiryReasons } from "../services/enquiryService";
+import {
+  getAllEnquiries,
+  getLostEnquiryReasons,
+} from "../services/enquiryService";
 import { getSalesPersons } from "../services/salesOrderService";
+
 import "./EnquiryList.css";
+
 import EnquiryForm from "./EnquiryForm";
 import WorkflowUpdate from "./WorkflowUpdate";
 
@@ -20,11 +25,20 @@ const LOST_REASON_COLORS = [
   "#fca5a5",
 ];
 
+/* =========================================================
+   DATE HELPERS
+========================================================= */
 
 const formatDateInputValue = (date) => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 };
@@ -32,7 +46,6 @@ const formatDateInputValue = (date) => {
 const getDefaultThreeMonthRange = () => {
   const today = new Date();
 
-  // Includes the current month plus the previous two full months.
   const fromDate = new Date(
     today.getFullYear(),
     today.getMonth() - 2,
@@ -40,136 +53,322 @@ const getDefaultThreeMonthRange = () => {
   );
 
   return {
-    fromDate: formatDateInputValue(fromDate),
-    toDate: formatDateInputValue(today),
+    fromDate:
+      formatDateInputValue(fromDate),
+
+    toDate:
+      formatDateInputValue(today),
   };
 };
 
-const EnquiryList = ({ dashboardFilters }) => {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+/* =========================================================
+   ENQUIRY LIST
+========================================================= */
 
-  const [enquiries, setEnquiries] = useState([]);
-  const [salesPersons, setSalesPersons] = useState([]);
-  const [lostReasonSummary, setLostReasonSummary] = useState({
+const EnquiryList = ({
+  dashboardFilters,
+}) => {
+  /* =======================================================
+     USER
+  ======================================================= */
+
+  const user =
+    JSON.parse(
+      localStorage.getItem("user") ||
+        "{}"
+    );
+
+  const isAdmin =
+    user?.role === "admin" ||
+    user?.role === "super_admin";
+
+  /* =======================================================
+     STATE
+  ======================================================= */
+
+  const [
+    enquiries,
+    setEnquiries,
+  ] = useState([]);
+
+  const [
+    salesPersons,
+    setSalesPersons,
+  ] = useState([]);
+
+  const [
+    lostReasonSummary,
+    setLostReasonSummary,
+  ] = useState({
     totalLost: 0,
     reasons: [],
   });
-  const [showForm, setShowForm] = useState(false);
-  const [showWorkflow, setShowWorkflow] = useState(false);
-  const [selectedEnquiry, setSelectedEnquiry] = useState(null);
-  const [selectedEnquiryDetail, setSelectedEnquiryDetail] = useState(null);
-  const [iosRefreshing, setIosRefreshing] = useState(false);
-  const [showIosFilters, setShowIosFilters] = useState(false);
- const [summary, setSummary] = useState({
-  totalEnquiries: 0,
-  feasibleEnquiries: 0,
-  notFeasibleEnquiries: 0,
-  quotationDoneEnquiries: 0,
-  wonEnquiries: 0,
-  lostEnquiries: 0,
-  pendingEnquiries: 0,
-});
 
-  const [pagination, setPagination] = useState({
+  const [
+    showForm,
+    setShowForm,
+  ] = useState(false);
+
+  const [
+    showWorkflow,
+    setShowWorkflow,
+  ] = useState(false);
+
+  const [
+    selectedEnquiry,
+    setSelectedEnquiry,
+  ] = useState(null);
+
+  const [
+    selectedEnquiryDetail,
+    setSelectedEnquiryDetail,
+  ] = useState(null);
+
+  const [
+    iosRefreshing,
+    setIosRefreshing,
+  ] = useState(false);
+
+  const [
+    showIosFilters,
+    setShowIosFilters,
+  ] = useState(false);
+
+  const [
+    summary,
+    setSummary,
+  ] = useState({
+    totalEnquiries: 0,
+    feasibleEnquiries: 0,
+    notFeasibleEnquiries: 0,
+    quotationDoneEnquiries: 0,
+    wonEnquiries: 0,
+    lostEnquiries: 0,
+    pendingEnquiries: 0,
+  });
+
+  const [
+    pagination,
+    setPagination,
+  ] = useState({
     currentPage: 1,
     totalPages: 1,
     totalRecords: 0,
     limit: 30,
   });
 
-const [filters, setFilters] = useState(() => {
-  const defaultRange = getDefaultThreeMonthRange();
+  /* =======================================================
+     FILTERS
+  ======================================================= */
 
-  return {
-    page: 1,
-    limit: 30,
-    salesPersonId: dashboardFilters?.salesPersonId || "",
+  const [
+    filters,
+    setFilters,
+  ] = useState(() => {
+    const defaultRange =
+      getDefaultThreeMonthRange();
 
-    // Dashboard drill-down dates get priority.
-    // Otherwise, show the latest 3 months by default.
-    fromDate:
-      dashboardFilters?.fromDate || defaultRange.fromDate,
+    return {
+      page: 1,
+      limit: 30,
 
-    toDate:
-      dashboardFilters?.toDate || defaultRange.toDate,
+      salesPersonId:
+        dashboardFilters
+          ?.salesPersonId || "",
 
-    companyName: dashboardFilters?.companyName || "",
-    enquiryNumber: dashboardFilters?.enquiryNumber || "",
-    status: dashboardFilters?.status || "all",
-    grade: dashboardFilters?.grade || "",
-    leadType: dashboardFilters?.leadType || "",
-    lostReason: dashboardFilters?.lostReason || "",
-    reason: dashboardFilters?.reason || "",
-    view: dashboardFilters?.view || "",
-    weekNo: dashboardFilters?.weekNo || "",
-  };
-});
+      fromDate:
+        dashboardFilters?.fromDate ||
+        defaultRange.fromDate,
 
-  const fetchEnquiries = useCallback(async () => {
-    try {
-      const cleanFilters = {};
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) cleanFilters[key] = filters[key];
-      });
+      toDate:
+        dashboardFilters?.toDate ||
+        defaultRange.toDate,
 
-      const response = await getAllEnquiries(cleanFilters);
-      setEnquiries(response.data || []);
-setSummary(response.summary || {});
-      setPagination(
-        response.pagination || {
-          currentPage: 1,
-          totalPages: 1,
-          totalRecords: 0,
-          limit: 30,
+      companyName:
+        dashboardFilters
+          ?.companyName || "",
+
+      enquiryNumber:
+        dashboardFilters
+          ?.enquiryNumber || "",
+
+      status:
+        dashboardFilters?.status ||
+        "all",
+
+      grade:
+        dashboardFilters?.grade || "",
+
+      leadType:
+        dashboardFilters
+          ?.leadType || "",
+
+      lostReason:
+        dashboardFilters
+          ?.lostReason || "",
+
+      reason:
+        dashboardFilters?.reason || "",
+
+      view:
+        dashboardFilters?.view || "",
+
+      weekNo:
+        dashboardFilters?.weekNo || "",
+    };
+  });
+
+  /* =======================================================
+     FETCH ENQUIRIES
+  ======================================================= */
+
+  const fetchEnquiries =
+    useCallback(
+      async () => {
+        try {
+          const cleanFilters = {};
+
+          Object.keys(
+            filters
+          ).forEach((key) => {
+            if (filters[key]) {
+              cleanFilters[key] =
+                filters[key];
+            }
+          });
+
+          const response =
+            await getAllEnquiries(
+              cleanFilters
+            );
+
+          setEnquiries(
+            response.data || []
+          );
+
+          setSummary(
+            response.summary || {}
+          );
+
+          setPagination(
+            response.pagination || {
+              currentPage: 1,
+              totalPages: 1,
+              totalRecords: 0,
+              limit: 30,
+            }
+          );
+        } catch (error) {
+          console.log(error);
+
+          alert(
+            error.response?.data
+              ?.message ||
+              "Failed to load enquiries"
+          );
         }
-      );
-    } catch (error) {
-      console.log(error);
-      alert(error.response?.data?.message || "Failed to load enquiries");
-    }
-  }, [filters]);
+      },
+      [filters]
+    );
 
-  const fetchLostReasonSummary = useCallback(async () => {
-    try {
-      const params = {};
+  /* =======================================================
+     LOST REASON SUMMARY
+  ======================================================= */
 
-      if (filters.fromDate) params.fromDate = filters.fromDate;
-      if (filters.toDate) params.toDate = filters.toDate;
-      if (isAdmin && filters.salesPersonId) {
-        params.salesPersonId = filters.salesPersonId;
-      }
+  const fetchLostReasonSummary =
+    useCallback(
+      async () => {
+        try {
+          const params = {};
 
-      const response = await getLostEnquiryReasons(params);
-      const result =
-        response?.data?.data ||
-        response?.data ||
-        response ||
-        {};
+          if (
+            filters.fromDate
+          ) {
+            params.fromDate =
+              filters.fromDate;
+          }
 
-      setLostReasonSummary({
-        totalLost: Number(result?.totalLost || 0),
-        reasons: Array.isArray(result?.reasons) ? result.reasons : [],
-      });
-    } catch (error) {
-      console.log(error);
-      setLostReasonSummary({
-        totalLost: 0,
-        reasons: [],
-      });
-    }
-  }, [filters.fromDate, filters.toDate, filters.salesPersonId, isAdmin]);
+          if (
+            filters.toDate
+          ) {
+            params.toDate =
+              filters.toDate;
+          }
 
-   const fetchSalesPersons = useCallback(async () => {
-    try {
-      const data = await getSalesPersons();
-      setSalesPersons(data || []);
-    } catch (error) {
-      console.log(error);
-    }
-  }, []);
+          if (
+            isAdmin &&
+            filters.salesPersonId
+          ) {
+            params.salesPersonId =
+              filters.salesPersonId;
+          }
 
-  
+          const response =
+            await getLostEnquiryReasons(
+              params
+            );
+
+          const result =
+            response?.data?.data ||
+            response?.data ||
+            response ||
+            {};
+
+          setLostReasonSummary({
+            totalLost:
+              Number(
+                result?.totalLost ||
+                  0
+              ),
+
+            reasons:
+              Array.isArray(
+                result?.reasons
+              )
+                ? result.reasons
+                : [],
+          });
+        } catch (error) {
+          console.log(error);
+
+          setLostReasonSummary({
+            totalLost: 0,
+            reasons: [],
+          });
+        }
+      },
+      [
+        filters.fromDate,
+        filters.toDate,
+        filters.salesPersonId,
+        isAdmin,
+      ]
+    );
+
+  /* =======================================================
+     SALES PERSONS
+  ======================================================= */
+
+  const fetchSalesPersons =
+    useCallback(
+      async () => {
+        try {
+          const data =
+            await getSalesPersons();
+
+          setSalesPersons(
+            data || []
+          );
+        } catch (error) {
+          console.log(error);
+        }
+      },
+      []
+    );
+
+  /* =======================================================
+     EFFECTS
+  ======================================================= */
 
   useEffect(() => {
     fetchEnquiries();
@@ -177,390 +376,902 @@ setSummary(response.summary || {});
 
   useEffect(() => {
     fetchLostReasonSummary();
-  }, [fetchLostReasonSummary]);
+  }, [
+    fetchLostReasonSummary,
+  ]);
 
   useEffect(() => {
-    if (isAdmin) fetchSalesPersons();
-  }, [isAdmin, fetchSalesPersons]);
-
-  const iosRefreshAll = async () => {
-    try {
-      setIosRefreshing(true);
-      await Promise.all([
-        fetchEnquiries(),
-        fetchLostReasonSummary(),
-      ]);
-    } finally {
-      setIosRefreshing(false);
+    if (isAdmin) {
+      fetchSalesPersons();
     }
-  };
+  }, [
+    isAdmin,
+    fetchSalesPersons,
+  ]);
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
+  /* =======================================================
+     PWA REFRESH
+  ======================================================= */
 
-    setFilters((prev) => {
-      const updated = { ...prev, [name]: value };
+  const iosRefreshAll =
+    async () => {
+      try {
+        setIosRefreshing(true);
 
-      if (name === "fromDate") {
-        updated.toDate = "";
+        await Promise.all([
+          fetchEnquiries(),
+          fetchLostReasonSummary(),
+        ]);
+      } finally {
+        setIosRefreshing(false);
       }
+    };
 
-      return updated;
-    });
-  };
+  /* =======================================================
+     FILTER HANDLERS
+  ======================================================= */
+
+  const handleFilterChange =
+    (e) => {
+      const {
+        name,
+        value,
+      } = e.target;
+
+      setFilters(
+        (prev) => {
+          const updated = {
+            ...prev,
+            [name]: value,
+          };
+
+          if (
+            name ===
+            "fromDate"
+          ) {
+            updated.toDate =
+              "";
+          }
+
+          return updated;
+        }
+      );
+    };
 
   const applyFilters = () => {
     if (
       filters.fromDate &&
       filters.toDate &&
-      new Date(filters.toDate) < new Date(filters.fromDate)
+      new Date(
+        filters.toDate
+      ) <
+        new Date(
+          filters.fromDate
+        )
     ) {
-      alert("End date cannot be before start date");
+      alert(
+        "End date cannot be before start date"
+      );
+
       return;
     }
 
-    setFilters((prev) => ({
-      ...prev,
-      page: 1,
-    }));
+    setFilters(
+      (prev) => ({
+        ...prev,
+        page: 1,
+      })
+    );
   };
 
- const clearFilters = () => {
-  const defaultRange = getDefaultThreeMonthRange();
+  const clearFilters = () => {
+    const defaultRange =
+      getDefaultThreeMonthRange();
 
-  setFilters({
-    page: 1,
-    limit: 30,
-    salesPersonId: "",
-    fromDate: defaultRange.fromDate,
-    toDate: defaultRange.toDate,
-    companyName: "",
-    enquiryNumber: "",
-    status: "all",
-    grade: "",
-    leadType: "",
-    lostReason: "",
-    reason: "",
-    view: "",
-    weekNo: "",
-  });
-};
+    setFilters({
+      page: 1,
+      limit: 30,
+      salesPersonId: "",
+      fromDate:
+        defaultRange.fromDate,
+      toDate:
+        defaultRange.toDate,
+      companyName: "",
+      enquiryNumber: "",
+      status: "all",
+      grade: "",
+      leadType: "",
+      lostReason: "",
+      reason: "",
+      view: "",
+      weekNo: "",
+    });
+  };
+
+  /* =======================================================
+     PAGINATION
+  ======================================================= */
 
   const nextPage = () => {
-    if (pagination.currentPage < pagination.totalPages) {
-      setFilters((prev) => ({
-        ...prev,
-        page: Number(prev.page) + 1,
-      }));
+    if (
+      pagination.currentPage <
+      pagination.totalPages
+    ) {
+      setFilters(
+        (prev) => ({
+          ...prev,
+
+          page:
+            Number(
+              prev.page
+            ) + 1,
+        })
+      );
     }
   };
 
   const prevPage = () => {
-    if (pagination.currentPage > 1) {
-      setFilters((prev) => ({
-        ...prev,
-        page: Number(prev.page) - 1,
-      }));
+    if (
+      pagination.currentPage >
+      1
+    ) {
+      setFilters(
+        (prev) => ({
+          ...prev,
+
+          page:
+            Number(
+              prev.page
+            ) - 1,
+        })
+      );
     }
   };
 
   const renderPages = () => {
     const pages = [];
-    const total = pagination.totalPages || 1;
-    const current = pagination.currentPage || 1;
 
-    for (let i = 1; i <= total; i++) {
+    const total =
+      pagination.totalPages ||
+      1;
+
+    const current =
+      pagination.currentPage ||
+      1;
+
+    for (
+      let i = 1;
+      i <= total;
+      i++
+    ) {
       if (
         i === 1 ||
         i === total ||
-        (i >= current - 1 && i <= current + 1)
+        (
+          i >= current - 1 &&
+          i <= current + 1
+        )
       ) {
         pages.push(
           <button
             key={i}
-            className={i === current ? "active" : ""}
-            onClick={() => setFilters((prev) => ({ ...prev, page: i }))}
+            className={
+              i === current
+                ? "active"
+                : ""
+            }
+            onClick={() =>
+              setFilters(
+                (prev) => ({
+                  ...prev,
+                  page: i,
+                })
+              )
+            }
             type="button"
           >
             {i}
           </button>
         );
-      } else if (i === current - 2 || i === current + 2) {
-        pages.push(<span key={i}>...</span>);
+      } else if (
+        i === current - 2 ||
+        i === current + 2
+      ) {
+        pages.push(
+          <span key={i}>
+            ...
+          </span>
+        );
       }
     }
 
     return pages;
   };
 
-  const openEnquiryDetail = (enquiry) => {
-  if (!enquiry) return;
-  setSelectedEnquiryDetail(enquiry);
-};
+  /* =======================================================
+     MODALS
+  ======================================================= */
 
-const closeEnquiryDetail = () => {
-  setSelectedEnquiryDetail(null);
-};
+  const openEnquiryDetail =
+    (enquiry) => {
+      if (!enquiry) return;
 
-const stopRowClick = (e) => {
-  e.stopPropagation();
-};
-
-const openWorkflowModal = (enquiry) => {
-    setSelectedEnquiry(enquiry);
-    setShowWorkflow(true);
-  };
-
-  const openNewEnquiry = () => {
-    setShowForm(true);
-  };
-
-  const goDashboardModules = () => {
-    if (window.__goDashboardHome) {
-      window.__goDashboardHome();
-    } else {
-      window.location.href = "/dashboard#dashboard";
-    }
-  };
-
-  const formatDate = (date) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString("en-GB");
-  };
-
-  const formatDateTime = (date) => {
-    if (!date) return "-";
-
-    return new Date(date).toLocaleString("en-GB", {
-      timeZone: "Asia/Kolkata",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: true,
-    });
-  };
-
-  const formatEnumLabel = (value) => {
-    if (!value) return "-";
-
-    return String(value)
-      .replaceAll("_or_", " / ")
-      .replaceAll("_", " ")
-      .split(" ")
-      .map((word) =>
-        word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : ""
-      )
-      .join(" ");
-  };
-
-  const formatSupplyCondition = (enquiry) => {
-    if (enquiry.supplyCondition === "other") {
-      return enquiry.otherSupplyConditions || "Other";
-    }
-
-    return formatEnumLabel(enquiry.supplyCondition);
-  };
-
-  const formatSizeText = (value) => {
-    if (!value) return "-";
-
-    const parts = String(value)
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-
-    return parts.map((item, index) => (
-      <React.Fragment key={index}>
-        {item}
-        {index !== parts.length - 1 && (
-          <>
-            ,
-            <br />
-          </>
-        )}
-      </React.Fragment>
-    ));
-  };
-
-  const isOverdue = (planDate, completed) => {
-    if (!planDate) return false;
-    return !completed && new Date() > new Date(planDate);
-  };
-
-  const getSizePdfUrl = (enquiry) => {
-    const fileUrl = enquiry?.sizePdf?.fileUrl;
-    if (!fileUrl) return "";
-
-    if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
-      return fileUrl;
-    }
-
-    return `${API_BASE_URL}${fileUrl}`;
-  };
-
-  const getRowClass = (enquiry) => {
-    const meta = getStatusMeta(enquiry);
-
-    if (meta.key === "lost") return "row-lost";
-    if (meta.key === "won") return "row-won";
-    if (meta.key === "not_feasible") return "row-not-feasible";
-    if (meta.key === "delayed") return "row-overdue";
-    if (meta.key === "quotation") return "row-quotation";
-    if (meta.key === "feasible") return "row-feasible";
-    if (meta.key === "closure") return "row-closure";
-
-    return "";
-  };
-
-  const getStatusMeta = (enquiry) => {
-    const closureStatus = enquiry.closure?.status;
-    const feasibilityStatus = enquiry.feasibility?.status;
-
-    const feasibilityCompleted = enquiry.feasibility?.completed === true;
-    const quotationCompleted = enquiry.quotation?.completed === true;
-    const closureCompleted = enquiry.closure?.completed === true;
-
-    const feasibilityOverdue = isOverdue(
-      enquiry.feasibility?.planDate,
-      feasibilityCompleted
-    );
-
-    const quotationOverdue = isOverdue(
-      enquiry.quotation?.planDate,
-      quotationCompleted
-    );
-
-    const closureOverdue = isOverdue(
-      enquiry.closure?.planDate,
-      closureCompleted
-    );
-
-    if (closureStatus === "lost") {
-      return { label: "Lost", color: "#dc2626", bg: "#fee2e2", key: "lost" };
-    }
-
-    if (closureStatus === "won") {
-      return { label: "Won", color: "#15803d", bg: "#dcfce7", key: "won" };
-    }
-
-    if (feasibilityStatus === "not_feasible") {
-      return {
-        label: "Not Feasible",
-        color: "#b91c1c",
-        bg: "#fee2e2",
-        key: "not_feasible",
-      };
-    }
-
-    if (feasibilityOverdue || quotationOverdue || closureOverdue) {
-      return {
-        label: "Delayed",
-        color: "#ea580c",
-        bg: "#ffedd5",
-        key: "delayed",
-      };
-    }
-
-    if (quotationCompleted) {
-      return {
-        label: "Quotation Done",
-        color: "#166534",
-        bg: "#dcfce7",
-        key: "quotation",
-      };
-    }
-
-    if (feasibilityCompleted) {
-      return {
-        label: "Feasible",
-        color: "#2563eb",
-        bg: "#dbeafe",
-        key: "feasible",
-      };
-    }
-
-    if (closureCompleted) {
-      return {
-        label: "Closure Done",
-        color: "#7c3aed",
-        bg: "#ede9fe",
-        key: "closure",
-      };
-    }
-
-    return {
-      label: "Active",
-      color: "#0f766e",
-      bg: "#ccfbf1",
-      key: "active",
+      setSelectedEnquiryDetail(
+        enquiry
+      );
     };
+
+  const closeEnquiryDetail =
+    () => {
+      setSelectedEnquiryDetail(
+        null
+      );
+    };
+
+  const stopRowClick =
+    (e) => {
+      e.stopPropagation();
+    };
+
+  const openWorkflowModal =
+    (enquiry) => {
+      setSelectedEnquiry(
+        enquiry
+      );
+
+      setShowWorkflow(true);
+    };
+
+  const openNewEnquiry =
+    () => {
+      setShowForm(true);
+    };
+
+  const goDashboardModules =
+    () => {
+      if (
+        window.__goDashboardHome
+      ) {
+        window.__goDashboardHome();
+      } else {
+        window.location.href =
+          "/dashboard#dashboard";
+      }
+    };
+
+  /* =======================================================
+     FORMATTERS
+  ======================================================= */
+
+  const formatDate = (
+    date
+  ) => {
+    if (!date) return "-";
+
+    return new Date(
+      date
+    ).toLocaleDateString(
+      "en-GB"
+    );
   };
 
+  const formatDateTime =
+    (date) => {
+      if (!date) return "-";
 
-  const stickyColSpan = isAdmin ? 4 : 3;
-  const totalColSpan = isAdmin ? 25 : 24;
+      return new Date(
+        date
+      ).toLocaleString(
+        "en-GB",
+        {
+          timeZone:
+            "Asia/Kolkata",
+
+          day:
+            "2-digit",
+
+          month:
+            "2-digit",
+
+          year:
+            "numeric",
+
+          hour:
+            "2-digit",
+
+          minute:
+            "2-digit",
+
+          second:
+            "2-digit",
+
+          hour12:
+            true,
+        }
+      );
+    };
+
+  const formatEnumLabel =
+    (value) => {
+      if (!value) {
+        return "-";
+      }
+
+      return String(
+        value
+      )
+        .replaceAll(
+          "_or_",
+          " / "
+        )
+        .replaceAll(
+          "_",
+          " "
+        )
+        .split(" ")
+        .map(
+          (word) =>
+            word
+              ? word
+                  .charAt(0)
+                  .toUpperCase() +
+                word
+                  .slice(1)
+                  .toLowerCase()
+              : ""
+        )
+        .join(" ");
+    };
+
+  /* =======================================================
+     LOST REASON HELPERS
+  ======================================================= */
+
+  const getLostReasonLabel =
+    (enquiry) => {
+      if (
+        enquiry?.closure
+          ?.status !== "lost"
+      ) {
+        return "";
+      }
+
+      return formatEnumLabel(
+        enquiry?.closure
+          ?.lostRemark
+      );
+    };
+
+  const getLostReasonDetail =
+    (enquiry) => {
+      if (
+        enquiry?.closure
+          ?.status !== "lost"
+      ) {
+        return "";
+      }
+
+      const reason =
+        enquiry?.closure
+          ?.lostRemark;
+
+      /*
+       * Existing Others:
+       * lostRemarkOtherText
+       *
+       * New standard reasons:
+       * lostRemarkText
+       */
+      if (
+        reason === "others"
+      ) {
+        return (
+          enquiry?.closure
+            ?.lostRemarkOtherText ||
+          enquiry?.closure
+            ?.lostRemarkText ||
+          ""
+        );
+      }
+
+      return (
+        enquiry?.closure
+          ?.lostRemarkText ||
+        ""
+      );
+    };
+
+  const formatSupplyCondition =
+    (enquiry) => {
+      if (
+        enquiry.supplyCondition ===
+        "other"
+      ) {
+        return (
+          enquiry
+            .otherSupplyConditions ||
+          "Other"
+        );
+      }
+
+      return formatEnumLabel(
+        enquiry.supplyCondition
+      );
+    };
+
+  const formatSizeText =
+    (value) => {
+      if (!value) {
+        return "-";
+      }
+
+      const parts =
+        String(value)
+          .split(",")
+          .map(
+            (item) =>
+              item.trim()
+          )
+          .filter(Boolean);
+
+      return parts.map(
+        (
+          item,
+          index
+        ) => (
+          <React.Fragment
+            key={index}
+          >
+            {item}
+
+            {index !==
+              parts.length -
+                1 && (
+              <>
+                ,
+                <br />
+              </>
+            )}
+          </React.Fragment>
+        )
+      );
+    };
+
+  /* =======================================================
+     STATUS HELPERS
+  ======================================================= */
+
+  const isOverdue = (
+    planDate,
+    completed
+  ) => {
+    if (!planDate) {
+      return false;
+    }
+
+    return (
+      !completed &&
+      new Date() >
+        new Date(planDate)
+    );
+  };
+
+  const getSizePdfUrl =
+    (enquiry) => {
+      const fileUrl =
+        enquiry?.sizePdf
+          ?.fileUrl;
+
+      if (!fileUrl) {
+        return "";
+      }
+
+      if (
+        fileUrl.startsWith(
+          "http://"
+        ) ||
+        fileUrl.startsWith(
+          "https://"
+        )
+      ) {
+        return fileUrl;
+      }
+
+      return `${API_BASE_URL}${fileUrl}`;
+    };
+
+  const getRowClass =
+    (enquiry) => {
+      const meta =
+        getStatusMeta(
+          enquiry
+        );
+
+      if (
+        meta.key ===
+        "lost"
+      ) {
+        return "row-lost";
+      }
+
+      if (
+        meta.key === "won"
+      ) {
+        return "row-won";
+      }
+
+      if (
+        meta.key ===
+        "not_feasible"
+      ) {
+        return "row-not-feasible";
+      }
+
+      if (
+        meta.key ===
+        "delayed"
+      ) {
+        return "row-overdue";
+      }
+
+      if (
+        meta.key ===
+        "quotation"
+      ) {
+        return "row-quotation";
+      }
+
+      if (
+        meta.key ===
+        "feasible"
+      ) {
+        return "row-feasible";
+      }
+
+      if (
+        meta.key ===
+        "closure"
+      ) {
+        return "row-closure";
+      }
+
+      return "";
+    };
+
+  const getStatusMeta =
+    (enquiry) => {
+      const closureStatus =
+        enquiry.closure
+          ?.status;
+
+      const feasibilityStatus =
+        enquiry.feasibility
+          ?.status;
+
+      const feasibilityCompleted =
+        enquiry.feasibility
+          ?.completed ===
+        true;
+
+      const quotationCompleted =
+        enquiry.quotation
+          ?.completed ===
+        true;
+
+      const closureCompleted =
+        enquiry.closure
+          ?.completed ===
+        true;
+
+      const feasibilityOverdue =
+        isOverdue(
+          enquiry.feasibility
+            ?.planDate,
+          feasibilityCompleted
+        );
+
+      const quotationOverdue =
+        isOverdue(
+          enquiry.quotation
+            ?.planDate,
+          quotationCompleted
+        );
+
+      const closureOverdue =
+        isOverdue(
+          enquiry.closure
+            ?.planDate,
+          closureCompleted
+        );
+
+      if (
+        closureStatus ===
+        "lost"
+      ) {
+        return {
+          label: "Lost",
+          color: "#dc2626",
+          bg: "#fee2e2",
+          key: "lost",
+        };
+      }
+
+      if (
+        closureStatus ===
+        "won"
+      ) {
+        return {
+          label: "Won",
+          color: "#15803d",
+          bg: "#dcfce7",
+          key: "won",
+        };
+      }
+
+      if (
+        feasibilityStatus ===
+        "not_feasible"
+      ) {
+        return {
+          label:
+            "Not Feasible",
+
+          color:
+            "#b91c1c",
+
+          bg:
+            "#fee2e2",
+
+          key:
+            "not_feasible",
+        };
+      }
+
+      if (
+        feasibilityOverdue ||
+        quotationOverdue ||
+        closureOverdue
+      ) {
+        return {
+          label:
+            "Delayed",
+
+          color:
+            "#ea580c",
+
+          bg:
+            "#ffedd5",
+
+          key:
+            "delayed",
+        };
+      }
+
+      if (
+        quotationCompleted
+      ) {
+        return {
+          label:
+            "Quotation Done",
+
+          color:
+            "#166534",
+
+          bg:
+            "#dcfce7",
+
+          key:
+            "quotation",
+        };
+      }
+
+      if (
+        feasibilityCompleted
+      ) {
+        return {
+          label:
+            "Feasible",
+
+          color:
+            "#2563eb",
+
+          bg:
+            "#dbeafe",
+
+          key:
+            "feasible",
+        };
+      }
+
+      if (
+        closureCompleted
+      ) {
+        return {
+          label:
+            "Closure Done",
+
+          color:
+            "#7c3aed",
+
+          bg:
+            "#ede9fe",
+
+          key:
+            "closure",
+        };
+      }
+
+      return {
+        label: "Active",
+        color: "#0f766e",
+        bg: "#ccfbf1",
+        key: "active",
+      };
+    };
+
+  /* =======================================================
+     SUMMARY
+  ======================================================= */
+
+  const stickyColSpan =
+    isAdmin ? 4 : 3;
+
+  const totalColSpan =
+    isAdmin ? 25 : 24;
+
   const enquirySummaryCards = [
-  {
-    label: "Total Enquiries",
-    value: summary.totalEnquiries || 0,
-    status: "all",
-    className: "total",
-  },
-  {
-    label: "Feasible Enquiries",
-    value: summary.feasibleEnquiries || 0,
-    status: "feasible",
-    className: "feasible",
-  },
-  {
-    label: "Quotation Done",
-    value: summary.quotationDoneEnquiries || 0,
-    status: "quotation_done",
-    className: "quotation",
-  },
-  {
-    label: "Won Enquiries",
-    value: summary.wonEnquiries || 0,
-    status: "won",
-    className: "won",
-  },
-  {
-    label: "Lost Enquiries",
-    value: summary.lostEnquiries || 0,
-    status: "lost",
-    className: "lost",
-  },
-  {
-    label: "Pending",
-    value: summary.pendingEnquiries || 0,
-    status: "pending",
-    className: "pending",
-  },
-];
+    {
+      label:
+        "Total Enquiries",
 
-const handleStatusCardClick = (status) => {
-  setFilters((prev) => ({
-    ...prev,
-    page: 1,
-    status: prev.status === status && status !== "all" ? "all" : status,
-  }));
-};
+      value:
+        summary
+          .totalEnquiries ||
+        0,
 
-const handleLostReasonDrillDown = (reason) => {
-  if (!reason) return;
+      status:
+        "all",
 
-  setFilters((prev) => ({
-    ...prev,
-    page: 1,
-    status: "lost",
-    lostReason: reason,
-  }));
-};
+      className:
+        "total",
+    },
+
+    {
+      label:
+        "Feasible Enquiries",
+
+      value:
+        summary
+          .feasibleEnquiries ||
+        0,
+
+      status:
+        "feasible",
+
+      className:
+        "feasible",
+    },
+
+    {
+      label:
+        "Quotation Done",
+
+      value:
+        summary
+          .quotationDoneEnquiries ||
+        0,
+
+      status:
+        "quotation_done",
+
+      className:
+        "quotation",
+    },
+
+    {
+      label:
+        "Won Enquiries",
+
+      value:
+        summary
+          .wonEnquiries ||
+        0,
+
+      status:
+        "won",
+
+      className:
+        "won",
+    },
+
+    {
+      label:
+        "Lost Enquiries",
+
+      value:
+        summary
+          .lostEnquiries ||
+        0,
+
+      status:
+        "lost",
+
+      className:
+        "lost",
+    },
+
+    {
+      label:
+        "Pending",
+
+      value:
+        summary
+          .pendingEnquiries ||
+        0,
+
+      status:
+        "pending",
+
+      className:
+        "pending",
+    },
+  ];
+
+  const handleStatusCardClick =
+    (status) => {
+      setFilters(
+        (prev) => ({
+          ...prev,
+
+          page: 1,
+
+          status:
+            prev.status ===
+              status &&
+            status !== "all"
+              ? "all"
+              : status,
+        })
+      );
+    };
+
+  const handleLostReasonDrillDown =
+    (reason) => {
+      if (!reason) {
+        return;
+      }
+
+      setFilters(
+        (prev) => ({
+          ...prev,
+
+          page: 1,
+
+          status:
+            "lost",
+
+          lostReason:
+            reason,
+        })
+      );
+    };
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
   return (
-    <div className={`enquiry-page-root ${isAdmin ? "admin-view" : "user-view"}`}>
+    <div
+      className={`enquiry-page-root ${
+        isAdmin
+          ? "admin-view"
+          : "user-view"
+      }`}
+    >
+      {/* ===================================================
+          PWA / MOBILE
+      =================================================== */}
+
       <div className="enquiry-pwa-shell">
         <div className="ios-enquiry-page">
           <div className="ios-enquiry-header">
@@ -568,22 +1279,35 @@ const handleLostReasonDrillDown = (reason) => {
               <button
                 type="button"
                 className="ios-enquiry-back"
-                onClick={goDashboardModules}
+                onClick={
+                  goDashboardModules
+                }
               >
                 ‹
               </button>
 
               <div className="ios-enquiry-title-box">
-                <h2>Enquiry Sheet</h2>
-                <p>{pagination.totalRecords || 0} enquiry record(s)</p>
+                <h2>
+                  Enquiry Sheet
+                </h2>
+
+                <p>
+                  {pagination.totalRecords ||
+                    0}{" "}
+                  enquiry record(s)
+                </p>
               </div>
 
               <button
                 type="button"
                 className={`ios-enquiry-refresh ${
-                  iosRefreshing ? "spinning" : ""
+                  iosRefreshing
+                    ? "spinning"
+                    : ""
                 }`}
-                onClick={iosRefreshAll}
+                onClick={
+                  iosRefreshAll
+                }
               >
                 ↻
               </button>
@@ -593,7 +1317,12 @@ const handleLostReasonDrillDown = (reason) => {
               <button
                 type="button"
                 className="ios-enquiry-filter-btn"
-                onClick={() => setShowIosFilters((prev) => !prev)}
+                onClick={() =>
+                  setShowIosFilters(
+                    (prev) =>
+                      !prev
+                  )
+                }
               >
                 Filter
               </button>
@@ -601,391 +1330,836 @@ const handleLostReasonDrillDown = (reason) => {
               <button
                 type="button"
                 className="ios-enquiry-new-btn"
-                onClick={openNewEnquiry}
+                onClick={
+                  openNewEnquiry
+                }
               >
                 + New
               </button>
             </div>
 
             <div className="ios-enquiry-legend-row">
-              <IosLegend label="Delayed" color="#ea580c" />
-              <IosLegend label="Feasible" color="#2563eb" />
-              <IosLegend label="Won" color="#15803d" />
-              <IosLegend label="Lost" color="#dc2626" />
+              <IosLegend
+                label="Delayed"
+                color="#ea580c"
+              />
+
+              <IosLegend
+                label="Feasible"
+                color="#2563eb"
+              />
+
+              <IosLegend
+                label="Won"
+                color="#15803d"
+              />
+
+              <IosLegend
+                label="Lost"
+                color="#dc2626"
+              />
             </div>
           </div>
 
           <div className="ios-enquiry-content">
-  <LostReasonDonut
-    data={lostReasonSummary?.reasons || []}
-    totalLost={lostReasonSummary?.totalLost || 0}
-    onReasonClick={handleLostReasonDrillDown}
-    mobile
-  />
-
-  {showIosFilters && (
-    <div className="ios-enquiry-filter-overlay">
-      <div className="ios-enquiry-filter-card">
-        <div className="ios-enquiry-filter-head">
-          <div>
-            <h3>Filters</h3>
-            <p>Filter enquiry records</p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowIosFilters(false)}
-          >
-            ×
-          </button>
-        </div>
-
-        {isAdmin && (
-          <div className="ios-enquiry-field">
-            <label>Sales Person</label>
-            <select
-              name="salesPersonId"
-              value={filters.salesPersonId}
-              onChange={handleFilterChange}
-            >
-              <option value="">All Sales Persons</option>
-              {salesPersons.map((person) => (
-                <option key={person._id} value={person._id}>
-                  {person.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="ios-enquiry-date-grid">
-          <div className="ios-enquiry-field">
-            <label>Start Date</label>
-            <input
-              type="date"
-              name="fromDate"
-              value={filters.fromDate}
-              onChange={handleFilterChange}
-            />
-          </div>
-
-          <div className="ios-enquiry-field">
-            <label>End Date</label>
-            <input
-              type="date"
-              name="toDate"
-              value={filters.toDate}
-              min={filters.fromDate || ""}
-              disabled={!filters.fromDate}
-              onChange={handleFilterChange}
-            />
-          </div>
-        </div>
-
-        <div className="ios-enquiry-filter-actions">
-          <button
-            type="button"
-            onClick={() => {
-              applyFilters();
-              setShowIosFilters(false);
-            }}
-          >
-            Apply
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              clearFilters();
-              setShowIosFilters(false);
-            }}
-          >
-            Clear
-          </button>
-        </div>
-      </div>
-    </div>
-  )}
-
-  {enquiries.length === 0 ? (
-    <div className="ios-enquiry-empty">
-      <strong>No enquiries found</strong>
-      <p>Use filters or refresh to check latest records.</p>
-    </div>
-  ) : (
-    enquiries.map((enquiry) => {
-      const meta = getStatusMeta(enquiry);
-      const sizePdfUrl = getSizePdfUrl(enquiry);
-
-      return (
-       <div
-  key={enquiry._id}
-  className="ios-enquiry-card enquiry-click-row"
-  onClick={() => openEnquiryDetail(enquiry)}
->
-          <div className="ios-enquiry-card-top">
-            <div>
-              <h4>{enquiry.companyName || "-"}</h4>
-              <p>
-                {enquiry.enquiryNumber || "-"} ·{" "}
-                {formatDate(enquiry.createdAt)}
-              </p>
-            </div>
-
-            <span
-              className="ios-enquiry-status-pill"
-              style={{
-                background: meta.bg,
-                color: meta.color,
-              }}
-            >
-              {meta.label}
-            </span>
-          </div>
-
-          <div className="ios-enquiry-tags">
-            <span>{formatEnumLabel(enquiry.productCategory)}</span>
-            <span>{enquiry.grade || "-"}</span>
-            <span>{enquiry.quantityInKg || 0} Kg</span>
-          </div>
-
-          <div className="ios-enquiry-detail-box">
-            {isAdmin && (
-              <IosInfo
-                label="Sales Person"
-                value={enquiry.salesPersonId?.name || "-"}
-              />
-            )}
-
-            <IosInfo label="Customer" value={enquiry.customerName || "-"} />
-            <IosInfo label="Contact" value={enquiry.customerContactNo || "-"} />
-            <IosInfo label="Email" value={enquiry.customerEmailId || "-"} />
-            <IosInfo
-              label="Shape / Size"
-              value={`${formatEnumLabel(enquiry.shape)} / ${
-                enquiry.size || "-"
-              }`}
-            />
-            <IosInfo label="Supply" value={formatSupplyCondition(enquiry)} />
-            <IosInfo label="Mode" value={formatEnumLabel(enquiry.modeOfEnquiry)} />
-          </div>
-
-          <div className="ios-enquiry-workflow-box">
-            <IosStep
-              title="Feasibility"
-              plan={formatDateTime(enquiry.feasibility?.planDate)}
-              actual={formatDateTime(enquiry.feasibility?.actualDate)}
-              status={formatEnumLabel(enquiry.feasibility?.status)}
+            <LostReasonDonut
+              data={
+                lostReasonSummary
+                  ?.reasons ||
+                []
+              }
+              totalLost={
+                lostReasonSummary
+                  ?.totalLost ||
+                0
+              }
+              onReasonClick={
+                handleLostReasonDrillDown
+              }
+              mobile
             />
 
-            <IosStep
-              title="Quotation"
-              plan={formatDateTime(enquiry.quotation?.planDate)}
-              actual={formatDateTime(enquiry.quotation?.actualDate)}
-              status={enquiry.quotation?.completed ? "Done" : "Pending"}
-            />
+            {showIosFilters && (
+              <div className="ios-enquiry-filter-overlay">
+                <div className="ios-enquiry-filter-card">
+                  <div className="ios-enquiry-filter-head">
+                    <div>
+                      <h3>
+                        Filters
+                      </h3>
 
-            <IosStep
-              title="Closure"
-              plan={formatDateTime(enquiry.closure?.planDate)}
-              actual={formatDateTime(enquiry.closure?.actualDate)}
-              status={formatEnumLabel(enquiry.closure?.status)}
-            />
-          </div>
+                      <p>
+                        Filter enquiry
+                        records
+                      </p>
+                    </div>
 
-          {enquiry.closure?.status === "lost" &&
-            enquiry.closure?.lostRemark && (
-              <div className="ios-enquiry-lost-box">
-                Lost Reason:{" "}
-                {enquiry.closure.lostRemark === "others"
-                  ? enquiry.closure.lostRemarkOtherText || "-"
-                  : formatEnumLabel(enquiry.closure.lostRemark)}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowIosFilters(
+                          false
+                        )
+                      }
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  {isAdmin && (
+                    <div className="ios-enquiry-field">
+                      <label>
+                        Sales Person
+                      </label>
+
+                      <select
+                        name="salesPersonId"
+                        value={
+                          filters.salesPersonId
+                        }
+                        onChange={
+                          handleFilterChange
+                        }
+                      >
+                        <option value="">
+                          All Sales
+                          Persons
+                        </option>
+
+                        {salesPersons.map(
+                          (
+                            person
+                          ) => (
+                            <option
+                              key={
+                                person._id
+                              }
+                              value={
+                                person._id
+                              }
+                            >
+                              {
+                                person.name
+                              }
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="ios-enquiry-date-grid">
+                    <div className="ios-enquiry-field">
+                      <label>
+                        Start Date
+                      </label>
+
+                      <input
+                        type="date"
+                        name="fromDate"
+                        value={
+                          filters.fromDate
+                        }
+                        onChange={
+                          handleFilterChange
+                        }
+                      />
+                    </div>
+
+                    <div className="ios-enquiry-field">
+                      <label>
+                        End Date
+                      </label>
+
+                      <input
+                        type="date"
+                        name="toDate"
+                        value={
+                          filters.toDate
+                        }
+                        min={
+                          filters.fromDate ||
+                          ""
+                        }
+                        disabled={
+                          !filters.fromDate
+                        }
+                        onChange={
+                          handleFilterChange
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="ios-enquiry-filter-actions">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        applyFilters();
+
+                        setShowIosFilters(
+                          false
+                        );
+                      }}
+                    >
+                      Apply
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearFilters();
+
+                        setShowIosFilters(
+                          false
+                        );
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
-          <div className="ios-enquiry-action-bottom" onClick={stopRowClick}>
-            {sizePdfUrl && (
-              <a
-                href={sizePdfUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="ios-enquiry-secondary-btn"
-              >
-                Size PDF
-              </a>
+            {enquiries.length ===
+            0 ? (
+              <div className="ios-enquiry-empty">
+                <strong>
+                  No enquiries found
+                </strong>
+
+                <p>
+                  Use filters or
+                  refresh to check
+                  latest records.
+                </p>
+              </div>
+            ) : (
+              enquiries.map(
+                (enquiry) => {
+                  const meta =
+                    getStatusMeta(
+                      enquiry
+                    );
+
+                  const sizePdfUrl =
+                    getSizePdfUrl(
+                      enquiry
+                    );
+
+                  return (
+                    <div
+                      key={
+                        enquiry._id
+                      }
+                      className="ios-enquiry-card enquiry-click-row"
+                      onClick={() =>
+                        openEnquiryDetail(
+                          enquiry
+                        )
+                      }
+                    >
+                      <div className="ios-enquiry-card-top">
+                        <div>
+                          <h4>
+                            {enquiry.companyName ||
+                              "-"}
+                          </h4>
+
+                          <p>
+                            {enquiry.enquiryNumber ||
+                              "-"}{" "}
+                            ·{" "}
+                            {formatDate(
+                              enquiry.createdAt
+                            )}
+                          </p>
+                        </div>
+
+                        <span
+                          className="ios-enquiry-status-pill"
+                          style={{
+                            background:
+                              meta.bg,
+
+                            color:
+                              meta.color,
+                          }}
+                        >
+                          {
+                            meta.label
+                          }
+                        </span>
+                      </div>
+
+                      <div className="ios-enquiry-tags">
+                        <span>
+                          {formatEnumLabel(
+                            enquiry.productCategory
+                          )}
+                        </span>
+
+                        <span>
+                          {enquiry.grade ||
+                            "-"}
+                        </span>
+
+                        <span>
+                          {enquiry.quantityInKg ||
+                            0}{" "}
+                          Kg
+                        </span>
+                      </div>
+
+                      <div className="ios-enquiry-detail-box">
+                        {isAdmin && (
+                          <IosInfo
+                            label="Sales Person"
+                            value={
+                              enquiry
+                                .salesPersonId
+                                ?.name ||
+                              "-"
+                            }
+                          />
+                        )}
+
+                        <IosInfo
+                          label="Customer"
+                          value={
+                            enquiry.customerName ||
+                            "-"
+                          }
+                        />
+
+                        <IosInfo
+                          label="Contact"
+                          value={
+                            enquiry.customerContactNo ||
+                            "-"
+                          }
+                        />
+
+                        <IosInfo
+                          label="Email"
+                          value={
+                            enquiry.customerEmailId ||
+                            "-"
+                          }
+                        />
+
+                        <IosInfo
+                          label="Shape / Size"
+                          value={`${formatEnumLabel(
+                            enquiry.shape
+                          )} / ${
+                            enquiry.size ||
+                            "-"
+                          }`}
+                        />
+
+                        <IosInfo
+                          label="Supply"
+                          value={formatSupplyCondition(
+                            enquiry
+                          )}
+                        />
+
+                        <IosInfo
+                          label="Mode"
+                          value={formatEnumLabel(
+                            enquiry.modeOfEnquiry
+                          )}
+                        />
+                      </div>
+
+                      <div className="ios-enquiry-workflow-box">
+                        <IosStep
+                          title="Feasibility"
+                          plan={formatDateTime(
+                            enquiry
+                              .feasibility
+                              ?.planDate
+                          )}
+                          actual={formatDateTime(
+                            enquiry
+                              .feasibility
+                              ?.actualDate
+                          )}
+                          status={formatEnumLabel(
+                            enquiry
+                              .feasibility
+                              ?.status
+                          )}
+                        />
+
+                        <IosStep
+                          title="Quotation"
+                          plan={formatDateTime(
+                            enquiry
+                              .quotation
+                              ?.planDate
+                          )}
+                          actual={formatDateTime(
+                            enquiry
+                              .quotation
+                              ?.actualDate
+                          )}
+                          status={
+                            enquiry
+                              .quotation
+                              ?.completed
+                              ? "Done"
+                              : "Pending"
+                          }
+                        />
+
+                        <IosStep
+                          title="Closure"
+                          plan={formatDateTime(
+                            enquiry
+                              .closure
+                              ?.planDate
+                          )}
+                          actual={formatDateTime(
+                            enquiry
+                              .closure
+                              ?.actualDate
+                          )}
+                          status={formatEnumLabel(
+                            enquiry
+                              .closure
+                              ?.status
+                          )}
+                        />
+                      </div>
+
+                      {enquiry.closure
+                        ?.status ===
+                        "lost" &&
+                        enquiry.closure
+                          ?.lostRemark && (
+                          <div className="ios-enquiry-lost-box ios-enquiry-lost-insight">
+                            <div className="ios-enquiry-lost-title">
+                              <span>
+                                Lost Reason
+                              </span>
+
+                              <strong>
+                                {getLostReasonLabel(
+                                  enquiry
+                                )}
+                              </strong>
+                            </div>
+
+                            {getLostReasonDetail(
+                              enquiry
+                            ) && (
+                              <div className="ios-enquiry-lost-remark">
+                                <span>
+                                  Remark
+                                </span>
+
+                                <p>
+                                  {getLostReasonDetail(
+                                    enquiry
+                                  )}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                      <div
+                        className="ios-enquiry-action-bottom"
+                        onClick={
+                          stopRowClick
+                        }
+                      >
+                        {sizePdfUrl && (
+                          <a
+                            href={
+                              sizePdfUrl
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="ios-enquiry-secondary-btn"
+                          >
+                            Size PDF
+                          </a>
+                        )}
+
+                        {enquiry
+                          .quotation
+                          ?.quotationLink && (
+                          <a
+                            href={
+                              enquiry
+                                .quotation
+                                .quotationLink
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="ios-enquiry-secondary-btn"
+                          >
+                            View Quote
+                          </a>
+                        )}
+
+                        <button
+                          type="button"
+                          className="ios-enquiry-primary-btn"
+                          onClick={() =>
+                            openWorkflowModal(
+                              enquiry
+                            )
+                          }
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+              )
             )}
 
-            {enquiry.quotation?.quotationLink && (
-              <a
-                href={enquiry.quotation.quotationLink}
-                target="_blank"
-                rel="noreferrer"
-                className="ios-enquiry-secondary-btn"
+            <div className="ios-enquiry-pagination">
+              <button
+                type="button"
+                onClick={
+                  prevPage
+                }
+                disabled={
+                  pagination.currentPage <=
+                  1
+                }
               >
-                View Quote
-              </a>
-            )}
+                Prev
+              </button>
 
-            <button
-              type="button"
-              className="ios-enquiry-primary-btn"
-              onClick={() => openWorkflowModal(enquiry)}
-            >
-              Update
-            </button>
+              <span>
+                Page{" "}
+                {pagination.currentPage ||
+                  1}{" "}
+                /{" "}
+                {pagination.totalPages ||
+                  1}
+              </span>
+
+              <button
+                type="button"
+                onClick={
+                  nextPage
+                }
+                disabled={
+                  pagination.currentPage >=
+                  pagination.totalPages
+                }
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
-      );
-    })
-  )}
-
-  <div className="ios-enquiry-pagination">
-    <button
-      type="button"
-      onClick={prevPage}
-      disabled={pagination.currentPage <= 1}
-    >
-      Prev
-    </button>
-
-    <span>
-      Page {pagination.currentPage || 1} / {pagination.totalPages || 1}
-    </span>
-
-    <button
-      type="button"
-      onClick={nextPage}
-      disabled={pagination.currentPage >= pagination.totalPages}
-    >
-      Next
-    </button>
-  </div>
-</div>
-        </div>
       </div>
+
+      {/* ===================================================
+          DESKTOP
+      =================================================== */}
 
       <div
         className={`enquiry-container desktop-enquiry-page ${
-          isAdmin ? "admin-view" : "user-view"
+          isAdmin
+            ? "admin-view"
+            : "user-view"
         }`}
       >
-   <div className="enquiry-header">
-  <div>
-    <h2>Enquiry Sheet</h2>
-    <p>Latest enquiries appear first · {pagination.totalRecords || 0} total records</p>
-  </div>
+        <div className="enquiry-header">
+          <div>
+            <h2>
+              Enquiry Sheet
+            </h2>
 
-  <button className="new-btn" onClick={openNewEnquiry} type="button">
-    + New Enquiry
-  </button>
-</div>
-<div className="enquiry-summary-grid">
-  {enquirySummaryCards.map((card) => (
-    <button
-      key={card.status}
-      type="button"
-      className={`enquiry-summary-card ${card.className} ${
-        filters.status === card.status ? "active" : ""
-      }`}
-      onClick={() => handleStatusCardClick(card.status)}
-    >
-      <span>{card.label}</span>
-      <strong>{card.value}</strong>
-    </button>
-  ))}
-</div>
-<LostReasonDonut
-  data={lostReasonSummary?.reasons || []}
-  totalLost={lostReasonSummary?.totalLost || 0}
-  onReasonClick={handleLostReasonDrillDown}
-/>
-<div className="enquiry-filter-card">
-  <div className="enquiry-filter-grid">
-    <div className="filter-field">
-      <label>Company</label>
-      <input
-        type="text"
-        name="companyName"
-        value={filters.companyName}
-        onChange={handleFilterChange}
-        placeholder="Search company..."
-      />
-    </div>
+            <p>
+              Latest enquiries
+              appear first ·{" "}
+              {pagination.totalRecords ||
+                0}{" "}
+              total records
+            </p>
+          </div>
+
+          <button
+            className="new-btn"
+            onClick={
+              openNewEnquiry
+            }
+            type="button"
+          >
+            + New Enquiry
+          </button>
+        </div>
+
+        {/* =================================================
+            SUMMARY CARDS
+        ================================================= */}
+
+        <div className="enquiry-summary-grid">
+          {enquirySummaryCards.map(
+            (card) => (
+              <button
+                key={
+                  card.status
+                }
+                type="button"
+                className={`enquiry-summary-card ${
+                  card.className
+                } ${
+                  filters.status ===
+                  card.status
+                    ? "active"
+                    : ""
+                }`}
+                onClick={() =>
+                  handleStatusCardClick(
+                    card.status
+                  )
+                }
+              >
+                <span>
+                  {card.label}
+                </span>
+
+                <strong>
+                  {card.value}
+                </strong>
+              </button>
+            )
+          )}
+        </div>
+
+        {/* =================================================
+            LOST REASON ANALYSIS
+        ================================================= */}
+
+        <LostReasonDonut
+          data={
+            lostReasonSummary
+              ?.reasons || []
+          }
+          totalLost={
+            lostReasonSummary
+              ?.totalLost || 0
+          }
+          onReasonClick={
+            handleLostReasonDrillDown
+          }
+        />
+
+        {/* =================================================
+            FILTERS
+        ================================================= */}
+
+        <div className="enquiry-filter-card">
+          <div className="enquiry-filter-grid">
+            <div className="filter-field">
+              <label>
+                Company
+              </label>
+
+              <input
+                type="text"
+                name="companyName"
+                value={
+                  filters.companyName
+                }
+                onChange={
+                  handleFilterChange
+                }
+                placeholder="Search company..."
+              />
+            </div>
+
             {isAdmin && (
-              
               <div className="filter-field">
-                <label>Sales Person</label>
+                <label>
+                  Sales Person
+                </label>
+
                 <select
                   name="salesPersonId"
-                  value={filters.salesPersonId}
-                  onChange={handleFilterChange}
+                  value={
+                    filters.salesPersonId
+                  }
+                  onChange={
+                    handleFilterChange
+                  }
                 >
-                  <option value="">All Sales Persons</option>
-                  {salesPersons.map((person) => (
-                    <option key={person._id} value={person._id}>
-                      {person.name}
-                    </option>
-                  ))}
+                  <option value="">
+                    All Sales Persons
+                  </option>
+
+                  {salesPersons.map(
+                    (person) => (
+                      <option
+                        key={
+                          person._id
+                        }
+                        value={
+                          person._id
+                        }
+                      >
+                        {
+                          person.name
+                        }
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
             )}
-             <div className="filter-field">
-  <label>Status</label>
-  <select
-    name="status"
-    value={filters.status}
-    onChange={handleFilterChange}
-  >
-    <option value="all">All Enquiries</option>
-    <option value="pending">Pending</option>
-    <option value="feasible">Feasible</option>
-    <option value="not_feasible">Not Feasible</option>
-    <option value="quotation_done">Quotation Done</option>
-    <option value="won">Won</option>
-    <option value="lost">Lost</option>
-  </select>
-</div>
+
             <div className="filter-field">
-              <label>Start Date</label>
+              <label>
+                Status
+              </label>
+
+              <select
+                name="status"
+                value={
+                  filters.status
+                }
+                onChange={
+                  handleFilterChange
+                }
+              >
+                <option value="all">
+                  All Enquiries
+                </option>
+
+                <option value="pending">
+                  Pending
+                </option>
+
+                <option value="feasible">
+                  Feasible
+                </option>
+
+                <option value="not_feasible">
+                  Not Feasible
+                </option>
+
+                <option value="quotation_done">
+                  Quotation Done
+                </option>
+
+                <option value="won">
+                  Won
+                </option>
+
+                <option value="lost">
+                  Lost
+                </option>
+              </select>
+            </div>
+
+            <div className="filter-field">
+              <label>
+                Start Date
+              </label>
+
               <input
                 type="date"
                 name="fromDate"
-                value={filters.fromDate}
-                onChange={handleFilterChange}
+                value={
+                  filters.fromDate
+                }
+                onChange={
+                  handleFilterChange
+                }
               />
             </div>
 
             <div className="filter-field">
-              <label>End Date</label>
+              <label>
+                End Date
+              </label>
+
               <input
                 type="date"
                 name="toDate"
-                value={filters.toDate}
-                min={filters.fromDate || ""}
-                disabled={!filters.fromDate}
-                onChange={handleFilterChange}
+                value={
+                  filters.toDate
+                }
+                min={
+                  filters.fromDate ||
+                  ""
+                }
+                disabled={
+                  !filters.fromDate
+                }
+                onChange={
+                  handleFilterChange
+                }
               />
             </div>
 
             <div className="enquiry-color-remarks">
-              <div><span className="remark-dot delayed"></span> Delayed</div>
-              <div><span className="remark-dot feasible"></span> Feasible</div>
-              <div><span className="remark-dot not-feasible"></span> Not Feasible</div>
-              <div><span className="remark-dot won"></span> Won</div>
-              <div><span className="remark-dot lost"></span> Lost</div>
+              <div>
+                <span className="remark-dot delayed" />
+                Delayed
+              </div>
+
+              <div>
+                <span className="remark-dot feasible" />
+                Feasible
+              </div>
+
+              <div>
+                <span className="remark-dot not-feasible" />
+                Not Feasible
+              </div>
+
+              <div>
+                <span className="remark-dot won" />
+                Won
+              </div>
+
+              <div>
+                <span className="remark-dot lost" />
+                Lost
+              </div>
             </div>
 
             <div className="filter-buttons">
-              <button className="filter-btn" onClick={applyFilters} type="button">
+              <button
+                className="filter-btn"
+                onClick={
+                  applyFilters
+                }
+                type="button"
+              >
                 Apply
               </button>
 
-              <button className="clear-btn" onClick={clearFilters} type="button">
+              <button
+                className="clear-btn"
+                onClick={
+                  clearFilters
+                }
+                type="button"
+              >
                 Clear
               </button>
             </div>
           </div>
         </div>
+
+        {/* =================================================
+            TABLE
+        ================================================= */}
 
         <div className="enquiry-table-wrapper">
           <table className="enquiry-table">
@@ -993,24 +2167,41 @@ const handleLostReasonDrillDown = (reason) => {
               <tr>
                 <th
                   className="sticky-col sticky-head workflow-empty-head"
-                  colSpan={stickyColSpan}
-                ></th>
+                  colSpan={
+                    stickyColSpan
+                  }
+                />
 
-                <th colSpan={11} className="workflow-empty-head"></th>
+                <th
+                  colSpan={11}
+                  className="workflow-empty-head"
+                />
 
-                <th colSpan={3} className="workflow-step-head">
-                  Step 1 - Feasibile
+                <th
+                  colSpan={3}
+                  className="workflow-step-head"
+                >
+                  Step 1 -
+                  Feasibile
                 </th>
 
-                <th colSpan={3} className="workflow-step-head">
-                  Step 2 - Quotation
+                <th
+                  colSpan={3}
+                  className="workflow-step-head"
+                >
+                  Step 2 -
+                  Quotation
                 </th>
 
-                <th colSpan={3} className="workflow-step-head">
-                  Step 3 - Closure
+                <th
+                  colSpan={3}
+                  className="workflow-step-head"
+                >
+                  Step 3 -
+                  Closure
                 </th>
 
-                <th className="workflow-empty-head"></th>
+                <th className="workflow-empty-head" />
               </tr>
 
               <tr>
@@ -1024,7 +2215,9 @@ const handleLostReasonDrillDown = (reason) => {
 
                 {isAdmin && (
                   <th className="sticky-col sticky-head col-sales">
-                    Sales<br />Person
+                    Sales
+                    <br />
+                    Person
                   </th>
                 )}
 
@@ -1032,162 +2225,411 @@ const handleLostReasonDrillDown = (reason) => {
                   Company
                 </th>
 
-                <th>Customer</th>
-                <th>Contact</th>
-                <th>Email</th>
-                <th>Address</th>
-                <th>Product</th>
-                <th>Grade</th>
-                <th>Shape</th>
-                <th>Size</th>
-                <th>Qty</th>
-                <th>Supply</th>
-                <th>Mode</th>
+                <th>
+                  Customer
+                </th>
 
-                <th>Plan</th>
-                <th>Actual</th>
-                <th>Status</th>
+                <th>
+                  Contact
+                </th>
 
-                <th>Plan</th>
-                <th>Actual</th>
-                <th>Link</th>
+                <th>
+                  Email
+                </th>
 
-                <th>Plan</th>
-                <th>Actual</th>
-                <th>Status</th>
+                <th>
+                  Address
+                </th>
 
-                <th>Action</th>
+                <th>
+                  Product
+                </th>
+
+                <th>
+                  Grade
+                </th>
+
+                <th>
+                  Shape
+                </th>
+
+                <th>
+                  Size
+                </th>
+
+                <th>
+                  Qty
+                </th>
+
+                <th>
+                  Supply
+                </th>
+
+                <th>
+                  Mode
+                </th>
+
+                <th>
+                  Plan
+                </th>
+
+                <th>
+                  Actual
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+                <th>
+                  Plan
+                </th>
+
+                <th>
+                  Actual
+                </th>
+
+                <th>
+                  Link
+                </th>
+
+                <th>
+                  Plan
+                </th>
+
+                <th>
+                  Actual
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+                <th>
+                  Action
+                </th>
               </tr>
             </thead>
 
             <tbody>
-              {enquiries.length === 0 ? (
+              {enquiries.length ===
+              0 ? (
                 <tr>
-                  <td colSpan={totalColSpan} className="no-data">
-                    No enquiries found
+                  <td
+                    colSpan={
+                      totalColSpan
+                    }
+                    className="no-data"
+                  >
+                    No enquiries
+                    found
                   </td>
                 </tr>
               ) : (
-                enquiries.map((enquiry) => {
-                  const sizePdfUrl = getSizePdfUrl(enquiry);
+                enquiries.map(
+                  (enquiry) => {
+                    const sizePdfUrl =
+                      getSizePdfUrl(
+                        enquiry
+                      );
 
-                  return (
-                    <tr
-  key={enquiry._id}
-  className={`${getRowClass(enquiry)} enquiry-click-row`}
-  onClick={() => openEnquiryDetail(enquiry)}
->
-                      <td className="sticky-col col-enquiry-no">
-                        {enquiry.enquiryNumber || "-"}
-                      </td>
-
-                      <td className="sticky-col col-date">
-                        {formatDateTime(enquiry.createdAt)}
-                      </td>
-
-                      {isAdmin && (
-                        <td className="sticky-col col-sales">
-                          {enquiry.salesPersonId?.name || "-"}
+                    return (
+                      <tr
+                        key={
+                          enquiry._id
+                        }
+                        className={`${getRowClass(
+                          enquiry
+                        )} enquiry-click-row`}
+                        onClick={() =>
+                          openEnquiryDetail(
+                            enquiry
+                          )
+                        }
+                      >
+                        <td className="sticky-col col-enquiry-no">
+                          {enquiry.enquiryNumber ||
+                            "-"}
                         </td>
-                      )}
 
-                      <td className="sticky-col col-company">
-                        {enquiry.companyName || "-"}
-                      </td>
+                        <td className="sticky-col col-date">
+                          {formatDateTime(
+                            enquiry.createdAt
+                          )}
+                        </td>
 
-                      <td>{enquiry.customerName || "-"}</td>
+                        {isAdmin && (
+                          <td className="sticky-col col-sales">
+                            {enquiry
+                              .salesPersonId
+                              ?.name ||
+                              "-"}
+                          </td>
+                        )}
 
-                      <td className="nowrap-cell">
-                        {enquiry.customerContactNo || "-"}
-                      </td>
+                        <td className="sticky-col col-company">
+                          {enquiry.companyName ||
+                            "-"}
+                        </td>
 
-                      <td className="nowrap-cell">
-                        {enquiry.customerEmailId || "-"}
-                      </td>
+                        <td>
+                          {enquiry.customerName ||
+                            "-"}
+                        </td>
 
-                      <td>{enquiry.customerAddress || "-"}</td>
-                      <td>{formatEnumLabel(enquiry.productCategory)}</td>
-                      <td>{enquiry.grade || "-"}</td>
-                      <td>{formatEnumLabel(enquiry.shape)}</td>
+                        <td className="nowrap-cell">
+                          {enquiry.customerContactNo ||
+                            "-"}
+                        </td>
 
-                      <td className="size-cell" onClick={stopRowClick}>
-                        <div className="size-cell-content">
-                          <div className="size-lines">
-                            {formatSizeText(enquiry.size)}
+                        <td className="nowrap-cell">
+                          {enquiry.customerEmailId ||
+                            "-"}
+                        </td>
+
+                        <td>
+                          {enquiry.customerAddress ||
+                            "-"}
+                        </td>
+
+                        <td>
+                          {formatEnumLabel(
+                            enquiry.productCategory
+                          )}
+                        </td>
+
+                        <td>
+                          {enquiry.grade ||
+                            "-"}
+                        </td>
+
+                        <td>
+                          {formatEnumLabel(
+                            enquiry.shape
+                          )}
+                        </td>
+
+                        <td
+                          className="size-cell"
+                          onClick={
+                            stopRowClick
+                          }
+                        >
+                          <div className="size-cell-content">
+                            <div className="size-lines">
+                              {formatSizeText(
+                                enquiry.size
+                              )}
+                            </div>
+
+                            {sizePdfUrl && (
+                              <a
+                                href={
+                                  sizePdfUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="size-pdf-link"
+                              >
+                                Size PDF
+                              </a>
+                            )}
                           </div>
+                        </td>
 
-                          {sizePdfUrl && (
+                        <td>
+                          {enquiry.quantityInKg ||
+                            "-"}
+                        </td>
+
+                        <td>
+                          {formatSupplyCondition(
+                            enquiry
+                          )}
+                        </td>
+
+                        <td>
+                          {formatEnumLabel(
+                            enquiry.modeOfEnquiry
+                          )}
+                        </td>
+
+                        <td>
+                          {formatDateTime(
+                            enquiry
+                              .feasibility
+                              ?.planDate
+                          )}
+                        </td>
+
+                        <td>
+                          {formatDateTime(
+                            enquiry
+                              .feasibility
+                              ?.actualDate
+                          )}
+                        </td>
+
+                        <td>
+                          {formatEnumLabel(
+                            enquiry
+                              .feasibility
+                              ?.status
+                          )}
+                        </td>
+
+                        <td>
+                          {formatDateTime(
+                            enquiry
+                              .quotation
+                              ?.planDate
+                          )}
+                        </td>
+
+                        <td>
+                          {formatDateTime(
+                            enquiry
+                              .quotation
+                              ?.actualDate
+                          )}
+                        </td>
+
+                        <td
+                          onClick={
+                            stopRowClick
+                          }
+                        >
+                          {enquiry
+                            .quotation
+                            ?.quotationLink ? (
                             <a
-                              href={sizePdfUrl}
+                              href={
+                                enquiry
+                                  .quotation
+                                  .quotationLink
+                              }
                               target="_blank"
                               rel="noreferrer"
-                              className="size-pdf-link"
                             >
-                              Size PDF
+                              View
                             </a>
+                          ) : (
+                            "-"
                           )}
-                        </div>
-                      </td>
+                        </td>
 
-                      <td>{enquiry.quantityInKg || "-"}</td>
-                      <td>{formatSupplyCondition(enquiry)}</td>
-                      <td>{formatEnumLabel(enquiry.modeOfEnquiry)}</td>
+                        <td>
+                          {formatDateTime(
+                            enquiry
+                              .closure
+                              ?.planDate
+                          )}
+                        </td>
 
-                      <td>{formatDateTime(enquiry.feasibility?.planDate)}</td>
-                      <td>{formatDateTime(enquiry.feasibility?.actualDate)}</td>
-                      <td>{formatEnumLabel(enquiry.feasibility?.status)}</td>
+                        <td>
+                          {formatDateTime(
+                            enquiry
+                              .closure
+                              ?.actualDate
+                          )}
+                        </td>
 
-                      <td>{formatDateTime(enquiry.quotation?.planDate)}</td>
-                      <td>{formatDateTime(enquiry.quotation?.actualDate)}</td>
-                      <td onClick={stopRowClick}>
-  {enquiry.quotation?.quotationLink ? (
-                          <a
-                            href={enquiry.quotation.quotationLink}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            View
-                          </a>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
+                        {/* ==================================
+                            CLOSURE STATUS + LOST REMARK
+                        ================================== */}
 
-                      <td>{formatDateTime(enquiry.closure?.planDate)}</td>
-                      <td>{formatDateTime(enquiry.closure?.actualDate)}</td>
-                      <td>
-                        {formatEnumLabel(enquiry.closure?.status)}
-                        {enquiry.closure?.status === "lost" &&
-                          enquiry.closure?.lostRemark && (
-                            <div className="lost-remark-inline">
-                              {enquiry.closure.lostRemark === "others"
-                                ? enquiry.closure.lostRemarkOtherText || "-"
-                                : formatEnumLabel(enquiry.closure.lostRemark)}
+                        <td>
+                          {enquiry
+                            .closure
+                            ?.status ===
+                          "lost" ? (
+                            <div className="enquiry-lost-status">
+                              <div className="enquiry-lost-status-top">
+                                <span className="enquiry-lost-status-main">
+                                  Lost
+                                </span>
+
+                                {enquiry
+                                  .closure
+                                  ?.lostRemark && (
+                                  <>
+                                    <span className="enquiry-lost-status-separator">
+                                      ·
+                                    </span>
+
+                                    <span className="enquiry-lost-status-reason">
+                                      {getLostReasonLabel(
+                                        enquiry
+                                      )}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+
+                              {getLostReasonDetail(
+                                enquiry
+                              ) && (
+                                <div className="enquiry-lost-status-remark">
+                                  <span>
+                                    Remark
+                                  </span>
+
+                                  <p>
+                                    {getLostReasonDetail(
+                                      enquiry
+                                    )}
+                                  </p>
+                                </div>
+                              )}
                             </div>
+                          ) : (
+                            formatEnumLabel(
+                              enquiry
+                                .closure
+                                ?.status
+                            )
                           )}
-                      </td>
+                        </td>
 
-                     <td onClick={stopRowClick}>
-  <button
-    className="edit-btn"
-    onClick={() => openWorkflowModal(enquiry)}
-    type="button"
-  >
-    Edit
-  </button>
-</td>
-                    </tr>
-                  );
-                })
+                        <td
+                          onClick={
+                            stopRowClick
+                          }
+                        >
+                          <button
+                            className="edit-btn"
+                            onClick={() =>
+                              openWorkflowModal(
+                                enquiry
+                              )
+                            }
+                            type="button"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
+                )
               )}
             </tbody>
           </table>
         </div>
 
+        {/* =================================================
+            PAGINATION
+        ================================================= */}
+
         <div className="enquiry-pagination">
           <button
-            onClick={prevPage}
-            disabled={pagination.currentPage <= 1}
+            onClick={
+              prevPage
+            }
+            disabled={
+              pagination.currentPage <=
+              1
+            }
             type="button"
           >
             Prev
@@ -1196,143 +2638,351 @@ const handleLostReasonDrillDown = (reason) => {
           {renderPages()}
 
           <button
-            onClick={nextPage}
-            disabled={pagination.currentPage >= pagination.totalPages}
+            onClick={
+              nextPage
+            }
+            disabled={
+              pagination.currentPage >=
+              pagination.totalPages
+            }
             type="button"
           >
             Next
           </button>
 
-          <span>Total: {pagination.totalRecords}</span>
+          <span>
+            Total:{" "}
+            {
+              pagination.totalRecords
+            }
+          </span>
         </div>
       </div>
 
-            {selectedEnquiryDetail && (
+      {/* ===================================================
+          DETAIL MODAL
+      =================================================== */}
+
+      {selectedEnquiryDetail && (
         <EnquiryDetailModal
-          enquiry={selectedEnquiryDetail}
-          onClose={closeEnquiryDetail}
-          isAdmin={isAdmin}
-          formatDateTime={formatDateTime}
-          formatDate={formatDate}
-          formatEnumLabel={formatEnumLabel}
-          formatSupplyCondition={formatSupplyCondition}
-          getStatusMeta={getStatusMeta}
-          getSizePdfUrl={getSizePdfUrl}
+          enquiry={
+            selectedEnquiryDetail
+          }
+          onClose={
+            closeEnquiryDetail
+          }
+          isAdmin={
+            isAdmin
+          }
+          formatDateTime={
+            formatDateTime
+          }
+          formatDate={
+            formatDate
+          }
+          formatEnumLabel={
+            formatEnumLabel
+          }
+          formatSupplyCondition={
+            formatSupplyCondition
+          }
+          getStatusMeta={
+            getStatusMeta
+          }
+          getSizePdfUrl={
+            getSizePdfUrl
+          }
         />
       )}
+
+      {/* ===================================================
+          NEW ENQUIRY
+      =================================================== */}
 
       {showForm && (
         <EnquiryForm
-          onClose={() => setShowForm(false)}
-          refresh={fetchEnquiries}
+          onClose={() =>
+            setShowForm(false)
+          }
+          refresh={
+            fetchEnquiries
+          }
         />
       )}
 
-      {showWorkflow && selectedEnquiry && (
-        <WorkflowUpdate
-          enquiry={selectedEnquiry}
-          onClose={() => {
-            setShowWorkflow(false);
-            setSelectedEnquiry(null);
-          }}
-          refresh={fetchEnquiries}
-        />
-      )}
+      {/* ===================================================
+          WORKFLOW
+      =================================================== */}
+
+      {showWorkflow &&
+        selectedEnquiry && (
+          <WorkflowUpdate
+            enquiry={
+              selectedEnquiry
+            }
+            onClose={() => {
+              setShowWorkflow(
+                false
+              );
+
+              setSelectedEnquiry(
+                null
+              );
+            }}
+            refresh={
+              fetchEnquiries
+            }
+          />
+        )}
     </div>
   );
 };
 
-function LostReasonDonut({ data, totalLost, onReasonClick, mobile = false }) {
-  const chartData = Array.isArray(data) ? data : [];
+/* =========================================================
+   LOST REASON DONUT
+========================================================= */
+
+function LostReasonDonut({
+  data,
+  totalLost,
+  onReasonClick,
+  mobile = false,
+}) {
+  const chartData =
+    Array.isArray(data)
+      ? data
+      : [];
 
   return (
-    <div className={`lost-reason-chart-card ${mobile ? "mobile" : ""}`}>
+    <div
+      className={`lost-reason-chart-card ${
+        mobile
+          ? "mobile"
+          : ""
+      }`}
+    >
       <div className="lost-reason-chart-head">
         <div>
-          <span>LOST ENQUIRIES</span>
-          <strong>Lost Reason Analysis</strong>
-          <p>Click a reason to open only those lost enquiries.</p>
+          <span>
+            LOST ENQUIRIES
+          </span>
+
+          <strong>
+            Lost Reason Analysis
+          </strong>
+
+          <p>
+            Click a reason to
+            open only those lost
+            enquiries.
+          </p>
         </div>
 
-        <b>{Number(totalLost || 0)}</b>
+        <b>
+          {Number(
+            totalLost || 0
+          )}
+        </b>
       </div>
 
       {!chartData.length ? (
         <div className="lost-reason-chart-empty">
-          No lost reason data available
+          No lost reason data
+          available
         </div>
       ) : (
         <div className="lost-reason-chart-layout">
+          {/* ===============================================
+              LARGE STANDARD DONUT
+          =============================================== */}
+
           <div className="lost-reason-donut-wrap">
-            <ResponsiveContainer width="100%" height={mobile ? 190 : 210}>
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
               <PieChart>
                 <Pie
-  data={chartData}
-  dataKey="count"
-  nameKey="label"
-  cx="50%"
-  cy="50%"
-  innerRadius={mobile ? 28 : 30}
-  outerRadius={mobile ? 42 : 46}
-  paddingAngle={3}
-  onClick={(entry) => onReasonClick?.(entry?.reason)}
->
-  {chartData.map((entry, index) => (
-    <Cell
-      key={entry.reason || index}
-      fill={
-        LOST_REASON_COLORS[
-          index % LOST_REASON_COLORS.length
-        ]
-      }
-      className="lost-reason-chart-slice"
-    />
-  ))}
-</Pie>
+                  data={
+                    chartData
+                  }
+                  dataKey="count"
+                  nameKey="label"
+                  cx="50%"
+                  cy="50%"
+
+                  /*
+                   * Desktop:
+                   * inner 52
+                   * outer 78
+                   *
+                   * This is intentionally
+                   * much larger than the
+                   * previous 30 / 46.
+                   */
+                  innerRadius={
+                    mobile
+                      ? 43
+                      : 52
+                  }
+                  outerRadius={
+                    mobile
+                      ? 66
+                      : 78
+                  }
+                  paddingAngle={
+                    2.5
+                  }
+                  stroke="#ffffff"
+                  strokeWidth={
+                    2
+                  }
+                  onClick={(
+                    entry
+                  ) =>
+                    onReasonClick?.(
+                      entry?.reason
+                    )
+                  }
+                >
+                  {chartData.map(
+                    (
+                      entry,
+                      index
+                    ) => (
+                      <Cell
+                        key={
+                          entry.reason ||
+                          index
+                        }
+                        fill={
+                          LOST_REASON_COLORS[
+                            index %
+                              LOST_REASON_COLORS.length
+                          ]
+                        }
+                        className="lost-reason-chart-slice"
+                      />
+                    )
+                  )}
+                </Pie>
 
                 <Tooltip
-                  formatter={(value, name, props) => [
-                    `${Number(value || 0)} (${Number(props?.payload?.percentage || 0)}%)`,
+                  formatter={(
+                    value,
+                    name,
+                    props
+                  ) => [
+                    `${Number(
+                      value || 0
+                    )} (${Number(
+                      props?.payload
+                        ?.percentage ||
+                        0
+                    )}%)`,
+
                     name,
                   ]}
+                  contentStyle={{
+                    borderRadius:
+                      10,
+
+                    fontSize:
+                      12,
+
+                    fontWeight:
+                      800,
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
 
             <div className="lost-reason-donut-center">
-              <strong>{Number(totalLost || 0)}</strong>
-              <span>Lost</span>
+              <strong>
+                {Number(
+                  totalLost || 0
+                )}
+              </strong>
+
+              <span>
+                Lost
+              </span>
             </div>
           </div>
 
-          <div className="lost-reason-chart-legend">
-            {chartData.map((item, index) => (
-              <button
-                key={item.reason || index}
-                type="button"
-                onClick={() => onReasonClick?.(item.reason)}
-              >
-                <span
-                  className="lost-reason-legend-dot"
-                  style={{
-                    background: LOST_REASON_COLORS[index % LOST_REASON_COLORS.length],
-                  }}
-                />
+          {/* ===============================================
+              COMPACT LARGE-TEXT REASON TABS
+          =============================================== */}
 
-                <div>
-                  <strong>{item.label || "-"}</strong>
-                  <small>
-                    {Number(item.count || 0)} · {Number(item.percentage || 0)}%
-                  </small>
-                </div>
-              </button>
-            ))}
+          <div className="lost-reason-chart-legend">
+            {chartData.map(
+              (
+                item,
+                index
+              ) => (
+                <button
+                  key={
+                    item.reason ||
+                    index
+                  }
+                  type="button"
+                  title={`${item.label || "-"}: ${Number(
+                    item.count || 0
+                  )} (${Number(
+                    item.percentage ||
+                      0
+                  )}%)`}
+                  onClick={() =>
+                    onReasonClick?.(
+                      item.reason
+                    )
+                  }
+                >
+                  <span
+                    className="lost-reason-legend-dot"
+                    style={{
+                      background:
+                        LOST_REASON_COLORS[
+                          index %
+                            LOST_REASON_COLORS.length
+                        ],
+                    }}
+                  />
+
+                  <strong>
+                    {item.label ||
+                      "-"}
+                  </strong>
+
+                  <span className="lost-reason-legend-value">
+                    <b>
+                      {Number(
+                        item.count ||
+                          0
+                      )}
+                    </b>
+
+                    <i>
+                      {Number(
+                        item.percentage ||
+                          0
+                      )}
+                      %
+                    </i>
+                  </span>
+                </button>
+              )
+            )}
           </div>
         </div>
       )}
     </div>
   );
 }
+
+/* =========================================================
+   ENQUIRY DETAIL MODAL
+========================================================= */
 
 function EnquiryDetailModal({
   enquiry,
@@ -1345,122 +2995,399 @@ function EnquiryDetailModal({
   getStatusMeta,
   getSizePdfUrl,
 }) {
-  const meta = getStatusMeta(enquiry);
-  const sizePdfUrl = getSizePdfUrl(enquiry);
+  const meta =
+    getStatusMeta(enquiry);
+
+  const sizePdfUrl =
+    getSizePdfUrl(enquiry);
 
   const enquiryRows = [
-    ["Enquiry No", enquiry.enquiryNumber],
-    ["Enquiry Date", formatDateTime(enquiry.createdAt)],
-    ["Status", meta.label],
-    ["Company", enquiry.companyName],
-    ["Customer", enquiry.customerName],
-    ["Contact", enquiry.customerContactNo],
-    ["Email", enquiry.customerEmailId],
-    ["Address", enquiry.customerAddress],
-    ["Sales Person", enquiry.salesPersonId?.name],
-    ["Mode", formatEnumLabel(enquiry.modeOfEnquiry)],
+    [
+      "Enquiry No",
+      enquiry.enquiryNumber,
+    ],
+
+    [
+      "Enquiry Date",
+      formatDateTime(
+        enquiry.createdAt
+      ),
+    ],
+
+    [
+      "Status",
+      meta.label,
+    ],
+
+    [
+      "Company",
+      enquiry.companyName,
+    ],
+
+    [
+      "Customer",
+      enquiry.customerName,
+    ],
+
+    [
+      "Contact",
+      enquiry.customerContactNo,
+    ],
+
+    [
+      "Email",
+      enquiry.customerEmailId,
+    ],
+
+    [
+      "Address",
+      enquiry.customerAddress,
+    ],
+
+    [
+      "Sales Person",
+      enquiry.salesPersonId
+        ?.name,
+    ],
+
+    [
+      "Mode",
+      formatEnumLabel(
+        enquiry.modeOfEnquiry
+      ),
+    ],
   ];
 
   const materialRows = [
-    ["Product", formatEnumLabel(enquiry.productCategory)],
-    ["Grade", enquiry.grade],
-    ["Shape", formatEnumLabel(enquiry.shape)],
-    ["Size", enquiry.size],
-    ["Quantity", enquiry.quantityInKg ? `${enquiry.quantityInKg} Kg` : "-"],
-    ["Supply", formatSupplyCondition(enquiry)],
+    [
+      "Product",
+      formatEnumLabel(
+        enquiry.productCategory
+      ),
+    ],
+
+    [
+      "Grade",
+      enquiry.grade,
+    ],
+
+    [
+      "Shape",
+      formatEnumLabel(
+        enquiry.shape
+      ),
+    ],
+
+    [
+      "Size",
+      enquiry.size,
+    ],
+
+    [
+      "Quantity",
+      enquiry.quantityInKg
+        ? `${enquiry.quantityInKg} Kg`
+        : "-",
+    ],
+
+    [
+      "Supply",
+      formatSupplyCondition(
+        enquiry
+      ),
+    ],
   ];
 
   const workflowRows = [
-    ["Feasibility Plan", formatDateTime(enquiry.feasibility?.planDate)],
-    ["Feasibility Actual", formatDateTime(enquiry.feasibility?.actualDate)],
-    ["Feasibility Status", formatEnumLabel(enquiry.feasibility?.status)],
+    [
+      "Feasibility Plan",
+      formatDateTime(
+        enquiry.feasibility
+          ?.planDate
+      ),
+    ],
 
-    ["Quotation Plan", formatDateTime(enquiry.quotation?.planDate)],
-    ["Quotation Actual", formatDateTime(enquiry.quotation?.actualDate)],
-    ["Quotation Done", enquiry.quotation?.completed ? "Yes" : "No"],
+    [
+      "Feasibility Actual",
+      formatDateTime(
+        enquiry.feasibility
+          ?.actualDate
+      ),
+    ],
 
-    ["Closure Plan", formatDateTime(enquiry.closure?.planDate)],
-    ["Closure Actual", formatDateTime(enquiry.closure?.actualDate)],
-    ["Closure Status", formatEnumLabel(enquiry.closure?.status)],
+    [
+      "Feasibility Status",
+      formatEnumLabel(
+        enquiry.feasibility
+          ?.status
+      ),
+    ],
+
+    [
+      "Quotation Plan",
+      formatDateTime(
+        enquiry.quotation
+          ?.planDate
+      ),
+    ],
+
+    [
+      "Quotation Actual",
+      formatDateTime(
+        enquiry.quotation
+          ?.actualDate
+      ),
+    ],
+
+    [
+      "Quotation Done",
+      enquiry.quotation
+        ?.completed
+        ? "Yes"
+        : "No",
+    ],
+
+    [
+      "Closure Plan",
+      formatDateTime(
+        enquiry.closure
+          ?.planDate
+      ),
+    ],
+
+    [
+      "Closure Actual",
+      formatDateTime(
+        enquiry.closure
+          ?.actualDate
+      ),
+    ],
+
+    [
+      "Closure Status",
+      formatEnumLabel(
+        enquiry.closure
+          ?.status
+      ),
+    ],
   ];
 
+  /* =======================================================
+     LOST REASON + DETAIL
+  ======================================================= */
+
   const lostReason =
-    enquiry.closure?.status === "lost"
-      ? enquiry.closure?.lostRemark === "others"
-        ? enquiry.closure?.lostRemarkOtherText
-        : formatEnumLabel(enquiry.closure?.lostRemark)
+    enquiry.closure
+      ?.status === "lost"
+      ? formatEnumLabel(
+          enquiry.closure
+            ?.lostRemark
+        )
       : "";
 
-  const renderSection = (title, rows, wideLabels = []) => (
+  const lostRemarkDetail =
+    enquiry.closure
+      ?.status === "lost"
+      ? enquiry.closure
+          ?.lostRemark ===
+        "others"
+        ? enquiry.closure
+            ?.lostRemarkOtherText ||
+          enquiry.closure
+            ?.lostRemarkText ||
+          ""
+        : enquiry.closure
+            ?.lostRemarkText ||
+          ""
+      : "";
+
+  const renderSection = (
+    title,
+    rows,
+    wideLabels = []
+  ) => (
     <div className="enquiry-detail-section">
-      <h4>{title}</h4>
+      <h4>
+        {title}
+      </h4>
 
       <div className="enquiry-detail-grid">
-        {rows.map(([label, value]) => (
-          <div
-            key={label}
-            className={`enquiry-detail-item ${
-              wideLabels.includes(label) ? "enquiry-detail-wide" : ""
-            }`}
-          >
-            <span>{label}</span>
-            <strong>{value || "-"}</strong>
-          </div>
-        ))}
+        {rows.map(
+          ([
+            label,
+            value,
+          ]) => (
+            <div
+              key={
+                label
+              }
+              className={`enquiry-detail-item ${
+                wideLabels.includes(
+                  label
+                )
+                  ? "enquiry-detail-wide"
+                  : ""
+              }`}
+            >
+              <span>
+                {label}
+              </span>
+
+              <strong>
+                {value ||
+                  "-"}
+              </strong>
+            </div>
+          )
+        )}
       </div>
     </div>
   );
 
   return (
-    <div className="enquiry-detail-overlay" onClick={onClose}>
-      <div className="enquiry-detail-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="enquiry-detail-overlay"
+      onClick={
+        onClose
+      }
+    >
+      <div
+        className="enquiry-detail-modal"
+        onClick={(e) =>
+          e.stopPropagation()
+        }
+      >
         <div className="enquiry-detail-head">
           <div>
-            <span>Enquiry Detail</span>
-            <h3>{enquiry.companyName || "-"}</h3>
+            <span>
+              Enquiry Detail
+            </span>
+
+            <h3>
+              {enquiry.companyName ||
+                "-"}
+            </h3>
+
             <p>
-              {enquiry.enquiryNumber || "-"} · {formatDate(enquiry.createdAt)}
+              {enquiry.enquiryNumber ||
+                "-"}{" "}
+              ·{" "}
+              {formatDate(
+                enquiry.createdAt
+              )}
             </p>
           </div>
 
-          <button type="button" onClick={onClose}>
+          <button
+            type="button"
+            onClick={
+              onClose
+            }
+          >
             ×
           </button>
         </div>
 
         <div className="enquiry-detail-hero-grid">
           <div className="enquiry-detail-status-card">
-            <span>Status</span>
-            <strong style={{ color: meta.color }}>{meta.label}</strong>
+            <span>
+              Status
+            </span>
+
+            <strong
+              style={{
+                color:
+                  meta.color,
+              }}
+            >
+              {
+                meta.label
+              }
+            </strong>
           </div>
 
           <div className="enquiry-detail-status-card">
-            <span>Quantity</span>
-            <strong>{enquiry.quantityInKg || 0} Kg</strong>
+            <span>
+              Quantity
+            </span>
+
+            <strong>
+              {enquiry.quantityInKg ||
+                0}{" "}
+              Kg
+            </strong>
           </div>
         </div>
 
-        {renderSection("Customer / Enquiry Info", enquiryRows, ["Address"])}
-        {renderSection("Material Requirement", materialRows, ["Size"])}
-        {renderSection("Workflow Monitoring", workflowRows)}
+        {renderSection(
+          "Customer / Enquiry Info",
+          enquiryRows,
+          ["Address"]
+        )}
+
+        {renderSection(
+          "Material Requirement",
+          materialRows,
+          ["Size"]
+        )}
+
+        {renderSection(
+          "Workflow Monitoring",
+          workflowRows
+        )}
+
+        {/* =================================================
+            LOST REASON + REMARK
+        ================================================= */}
 
         {lostReason && (
           <div className="enquiry-detail-lost-box">
-            <span>Lost Reason</span>
-            <strong>{lostReason}</strong>
+            <span>
+              Lost Reason
+            </span>
+
+            <strong>
+              {lostReason}
+            </strong>
+
+            {lostRemarkDetail && (
+              <div className="enquiry-detail-lost-remark">
+                <span>
+                  Remark
+                </span>
+
+                <p>
+                  {
+                    lostRemarkDetail
+                  }
+                </p>
+              </div>
+            )}
           </div>
         )}
 
         <div className="enquiry-detail-actions">
           {sizePdfUrl && (
-            <a href={sizePdfUrl} target="_blank" rel="noreferrer">
+            <a
+              href={
+                sizePdfUrl
+              }
+              target="_blank"
+              rel="noreferrer"
+            >
               Open Size PDF
             </a>
           )}
 
-          {enquiry.quotation?.quotationLink && (
+          {enquiry
+            .quotation
+            ?.quotationLink && (
             <a
-              href={enquiry.quotation.quotationLink}
+              href={
+                enquiry
+                  .quotation
+                  .quotationLink
+              }
               target="_blank"
               rel="noreferrer"
             >
@@ -1473,31 +3400,68 @@ function EnquiryDetailModal({
   );
 }
 
-function IosLegend({ label, color }) {
+/* =========================================================
+   SMALL COMPONENTS
+========================================================= */
+
+function IosLegend({
+  label,
+  color,
+}) {
   return (
     <span className="ios-enquiry-legend-item">
-      <b style={{ backgroundColor: color }}></b>
+      <b
+        style={{
+          backgroundColor:
+            color,
+        }}
+      />
+
       {label}
     </span>
   );
 }
 
-function IosInfo({ label, value }) {
+function IosInfo({
+  label,
+  value,
+}) {
   return (
     <div className="ios-enquiry-info-row">
-      <span>{label}</span>
-      <strong>{value}</strong>
+      <span>
+        {label}
+      </span>
+
+      <strong>
+        {value}
+      </strong>
     </div>
   );
 }
 
-function IosStep({ title, plan, actual, status }) {
+function IosStep({
+  title,
+  plan,
+  actual,
+  status,
+}) {
   return (
     <div className="ios-enquiry-step-card">
-      <strong>{title}</strong>
-      <p>Plan: {plan}</p>
-      <p>Actual: {actual}</p>
-      <span>{status}</span>
+      <strong>
+        {title}
+      </strong>
+
+      <p>
+        Plan: {plan}
+      </p>
+
+      <p>
+        Actual: {actual}
+      </p>
+
+      <span>
+        {status}
+      </span>
     </div>
   );
 }

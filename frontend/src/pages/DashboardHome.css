@@ -3762,3 +3762,474 @@
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+/* ==========================================================
+   BHARAT RMS DASHBOARD
+   PWA REPORTING PERIOD FILTER
+   ADD AT END OF DashboardHome.css
+========================================================== */
+
+@media (max-width: 900px) {
+
+  /* ========================================================
+     MAIN FILTER CARD
+  ======================================================== */
+
+  .ios-dashboard-period-card {
+    width: 100%;
+
+    margin: 0 0 14px;
+    padding: 14px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #dbe4ee;
+    border-radius: 20px;
+
+    background:
+      radial-gradient(
+        circle at 92% 0%,
+        rgba(34, 197, 94, 0.10),
+        transparent 32%
+      ),
+      linear-gradient(
+        145deg,
+        #ffffff 0%,
+        #f8fbf9 100%
+      );
+
+    box-shadow:
+      0 8px 24px
+      rgba(15, 23, 42, 0.06);
+  }
+
+
+  /* ========================================================
+     HEADER
+  ======================================================== */
+
+  .ios-dashboard-period-head {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 10px;
+
+    margin-bottom: 12px;
+  }
+
+
+  .ios-dashboard-period-head
+    > div {
+    min-width: 0;
+  }
+
+
+  .ios-dashboard-period-head
+    span {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #64748b;
+
+    font-size: 8px;
+    line-height: 1;
+
+    font-weight: 950;
+
+    letter-spacing: 0.11em;
+
+    text-transform: uppercase;
+  }
+
+
+  .ios-dashboard-period-head
+    strong {
+    display: block;
+
+    color: #0f172a;
+
+    font-size: 17px;
+    line-height: 1.2;
+
+    font-weight: 950;
+  }
+
+
+  .ios-dashboard-period-refresh {
+    flex: 0 0 auto;
+
+    width: 38px;
+    height: 38px;
+
+    padding: 0;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+
+    background: #f0fdf4;
+
+    color: #15803d;
+
+    font-size: 18px;
+    line-height: 1;
+
+    font-weight: 950;
+
+    cursor: pointer;
+
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+
+  /* ========================================================
+     PREVIOUS / CURRENT / NEXT
+  ======================================================== */
+
+  .ios-dashboard-period-navigation {
+    display: grid;
+
+    grid-template-columns:
+      75px
+      minmax(0, 1fr)
+      75px;
+
+    align-items: stretch;
+
+    gap: 8px;
+
+    width: 100%;
+
+    margin-bottom: 12px;
+  }
+
+
+  .ios-dashboard-period-navigation
+    > button {
+    min-width: 0;
+    min-height: 62px;
+
+    padding: 6px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #dbe4ee;
+    border-radius: 14px;
+
+    background: #f8fafc;
+
+    color: #334155;
+
+    cursor: pointer;
+
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+
+  .ios-dashboard-period-navigation
+    > button
+    > span {
+    display: block;
+
+    font-size: 25px;
+    line-height: 0.8;
+
+    font-weight: 700;
+  }
+
+
+  .ios-dashboard-period-navigation
+    > button
+    > small {
+    display: block;
+
+    margin-top: 5px;
+
+    color: #64748b;
+
+    font-size: 7px;
+    line-height: 1;
+
+    font-weight: 900;
+
+    text-transform: uppercase;
+  }
+
+
+  .ios-dashboard-period-navigation
+    > button:active {
+    transform: scale(0.97);
+  }
+
+
+  .ios-dashboard-period-navigation
+    > button:disabled {
+    opacity: 0.30;
+
+    cursor: default;
+  }
+
+
+  /* ========================================================
+     CENTER SELECTED MONTH
+  ======================================================== */
+
+  .ios-dashboard-period-navigation
+    > div {
+    min-width: 0;
+    min-height: 62px;
+
+    padding: 8px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+
+    background:
+      linear-gradient(
+        145deg,
+        #f0fdf4,
+        #ecfdf5
+      );
+
+    text-align: center;
+  }
+
+
+  .ios-dashboard-period-navigation
+    > div
+    > span {
+    color: #64748b;
+
+    font-size: 6px;
+    line-height: 1;
+
+    font-weight: 950;
+
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
+  }
+
+
+  .ios-dashboard-period-navigation
+    > div
+    > strong {
+    margin-top: 4px;
+
+    color: #166534;
+
+    font-size: 15px;
+    line-height: 1.1;
+
+    font-weight: 950;
+  }
+
+
+  .ios-dashboard-period-navigation
+    > div
+    > small {
+    margin-top: 3px;
+
+    color: #15803d;
+
+    font-size: 9px;
+    line-height: 1;
+
+    font-weight: 900;
+  }
+
+
+  /* ========================================================
+     MONTHS
+  ======================================================== */
+
+  .ios-dashboard-month-strip {
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    width: 100%;
+
+    padding-bottom: 5px;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    scrollbar-width: none;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+
+  .ios-dashboard-month-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+
+  .ios-dashboard-month-strip
+    button {
+    flex: 0 0 auto;
+
+    min-width: 43px;
+    height: 32px;
+
+    padding: 0 9px;
+
+    border: 1px solid #dbe4ee;
+    border-radius: 10px;
+
+    background: #f8fafc;
+
+    color: #475569;
+
+    font-size: 9px;
+    line-height: 1;
+
+    font-weight: 900;
+
+    cursor: pointer;
+
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+
+  .ios-dashboard-month-strip
+    button.active {
+    border-color: #22c55e;
+
+    background:
+      linear-gradient(
+        135deg,
+        #22c55e,
+        #15803d
+      );
+
+    color: #ffffff;
+
+    box-shadow:
+      0 4px 11px
+      rgba(22, 163, 74, 0.20);
+  }
+
+
+  .ios-dashboard-month-strip
+    button:disabled {
+    opacity: 0.30;
+
+    cursor: default;
+  }
+
+
+  /* ========================================================
+     YEARS
+  ======================================================== */
+
+  .ios-dashboard-year-strip {
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    width: 100%;
+
+    margin-top: 8px;
+  }
+
+
+  .ios-dashboard-year-strip
+    button {
+    flex: 1 1 0;
+
+    min-height: 32px;
+
+    padding: 0 8px;
+
+    border: 1px solid #dbe4ee;
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    color: #475569;
+
+    font-size: 9px;
+
+    font-weight: 900;
+
+    cursor: pointer;
+
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+
+  .ios-dashboard-year-strip
+    button.active {
+    border-color: #166534;
+
+    background: #dcfce7;
+
+    color: #166534;
+
+    box-shadow:
+      inset 0 0 0 1px
+      rgba(22, 101, 52, 0.06);
+  }
+}
+
+
+/* ==========================================================
+   SMALL PWA
+========================================================== */
+
+@media (max-width: 390px) {
+
+  .ios-dashboard-period-card {
+    padding: 12px;
+  }
+
+
+  .ios-dashboard-period-navigation {
+    grid-template-columns:
+      65px
+      minmax(0, 1fr)
+      65px;
+
+    gap: 6px;
+  }
+
+
+  .ios-dashboard-period-navigation
+    > button {
+    min-height: 58px;
+  }
+
+
+  .ios-dashboard-month-strip
+    button {
+    min-width: 40px;
+
+    padding: 0 7px;
+  }
+}

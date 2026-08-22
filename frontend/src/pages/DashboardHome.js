@@ -288,20 +288,96 @@ const [chartWidth, setChartWidth] = useState(
     fetchDashboard(updated);
   };
 
-  const handleMobileYearChange = (yearValue) => {
-    const updated = {
-      ...filters,
-      year: yearValue,
-    };
-
-    setFilters(updated);
-    fetchDashboard(updated);
+const handleMobileYearChange = (yearValue) => {
+  const updated = {
+    ...filters,
+    year: Number(yearValue),
   };
 
-  const handleRefresh = () => {
-    fetchDashboard(filters, true);
-    fetchNotifications();
+  setFilters(updated);
+  fetchDashboard(updated);
+};
+
+/* =================================================
+   PWA PREVIOUS / NEXT MONTH NAVIGATION
+================================================= */
+
+const handlePreviousMonth = () => {
+  let nextMonth =
+    Number(filters.month) - 1;
+
+  let nextYear =
+    Number(filters.year);
+
+  /*
+   * January -> December of previous year
+   */
+  if (nextMonth < 0) {
+    nextMonth = 11;
+    nextYear -= 1;
+  }
+
+  const updated = {
+    ...filters,
+    month: nextMonth,
+    year: nextYear,
   };
+
+  setFilters(updated);
+  fetchDashboard(updated);
+};
+
+const handleNextMonth = () => {
+  let nextMonth =
+    Number(filters.month) + 1;
+
+  let nextYear =
+    Number(filters.year);
+
+  /*
+   * December -> January of next year
+   */
+  if (nextMonth > 11) {
+    nextMonth = 0;
+    nextYear += 1;
+  }
+
+  /*
+   * Do not allow future month beyond current month.
+   */
+  const currentDate =
+    new Date();
+
+  const currentMonth =
+    currentDate.getMonth();
+
+  const currentYear =
+    currentDate.getFullYear();
+
+  if (
+    nextYear > currentYear ||
+    (
+      nextYear === currentYear &&
+      nextMonth > currentMonth
+    )
+  ) {
+    return;
+  }
+
+  const updated = {
+    ...filters,
+    month: nextMonth,
+    year: nextYear,
+  };
+
+  setFilters(updated);
+  fetchDashboard(updated);
+};
+
+const handleRefresh = () => {
+  fetchDashboard(filters, true);
+  fetchNotifications();
+};
 
   const getPriorityIcon = (priority) => {
     if (priority === "high") return "🚨";
@@ -477,55 +553,207 @@ const orderWonChartData = [...misChartData]
   return (
     <div className="dashboard-home">
       <div className="ios-dashboardhome">
-        <div className="ios-dh-header">
-          <div className="ios-dh-header-top">
-            <div>
-              <h2>Business Dashboard</h2>
-              <p>{MONTHS[Number(filters.month)]} {filters.year} performance</p>
-            </div>
+       <div className="ios-dh-header">
+  <div className="ios-dh-header-top">
+    <div>
+      <h2>Business Dashboard</h2>
 
-            <button type="button" className="ios-dh-refresh" onClick={handleRefresh}>
-              ↻
-            </button>
-          </div>
+      <p>
+        {MONTHS[Number(filters.month)]}{" "}
+        {filters.year} performance
+      </p>
+    </div>
 
-          <div className="ios-month-strip">
-            {MONTHS.map((monthName, index) => (
-              <button
-                key={monthName}
-                type="button"
-                className={Number(filters.month) === index ? "active" : ""}
-                onClick={() => handleMobileMonthChange(index)}
-              >
-                {monthName}
-              </button>
-            ))}
-          </div>
-
-          <div className="ios-year-row">
-            {YEARS.map((year) => (
-              <button
-                key={year}
-                type="button"
-                className={Number(filters.year) === year ? "active" : ""}
-                onClick={() => handleMobileYearChange(year)}
-              >
-                {year}
-              </button>
-            ))}
-          </div>
-        </div>
+    <button
+      type="button"
+      className="ios-dh-refresh"
+      onClick={handleRefresh}
+    >
+      ↻
+    </button>
+  </div>
+</div>
 
         <div className="ios-dh-content">
+
+  {/* =================================================
+      PWA REPORTING PERIOD FILTER
+  ================================================= */}
+
+  <div className="ios-dashboard-period-card">
+    <div className="ios-dashboard-period-head">
+      <div>
+        <span>
+          REPORTING PERIOD
+        </span>
+
+        <strong>
+          {FULL_MONTHS[
+            Number(filters.month)
+          ]}{" "}
+          {filters.year}
+        </strong>
+      </div>
+
+      <button
+        type="button"
+        className="ios-dashboard-period-refresh"
+        onClick={handleRefresh}
+        aria-label="Refresh dashboard"
+      >
+        ↻
+      </button>
+    </div>
+
+    {/* ===============================================
+        PREVIOUS / NEXT
+    =============================================== */}
+
+    <div className="ios-dashboard-period-navigation">
+      <button
+        type="button"
+        onClick={handlePreviousMonth}
+        aria-label="Previous month"
+      >
+        <span>‹</span>
+        <small>Previous</small>
+      </button>
+
+      <div>
+        <span>
+          SELECTED MONTH
+        </span>
+
+        <strong>
+          {FULL_MONTHS[
+            Number(filters.month)
+          ]}
+        </strong>
+
+        <small>
+          {filters.year}
+        </small>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleNextMonth}
+        disabled={
+          Number(filters.year) ===
+            new Date().getFullYear() &&
+          Number(filters.month) ===
+            new Date().getMonth()
+        }
+        aria-label="Next month"
+      >
+        <span>›</span>
+        <small>Next</small>
+      </button>
+    </div>
+
+    {/* ===============================================
+        MONTH QUICK SELECT
+    =============================================== */}
+
+    <div className="ios-dashboard-month-strip">
+      {MONTHS.map(
+        (
+          monthName,
+          index
+        ) => {
+          /*
+           * Disable future months
+           * only when selected year
+           * is current year.
+           */
+          const isFuture =
+            Number(filters.year) ===
+              new Date().getFullYear() &&
+            index >
+              new Date().getMonth();
+
+          return (
+            <button
+              key={monthName}
+              type="button"
+              disabled={isFuture}
+              className={
+                Number(
+                  filters.month
+                ) === index
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                handleMobileMonthChange(
+                  index
+                )
+              }
+            >
+              {monthName}
+            </button>
+          );
+        }
+      )}
+    </div>
+
+    {/* ===============================================
+        YEAR QUICK SELECT
+    =============================================== */}
+
+    <div className="ios-dashboard-year-strip">
+      {YEARS.map(
+        (year) => (
           <button
+            key={year}
             type="button"
-            className="ios-hero-card drill-card"
-            onClick={() => openSalesOrders({ view: "revenue" })}
+            className={
+              Number(
+                filters.year
+              ) === year
+                ? "active"
+                : ""
+            }
+            onClick={() =>
+              handleMobileYearChange(
+                year
+              )
+            }
           >
-            <span>Total Revenue</span>
-            <strong>{formatCurrency(data?.totalRevenue)}</strong>
-            <p>Tap to open approved sales orders</p>
+            {year}
           </button>
+        )
+      )}
+    </div>
+  </div>
+
+  {/* =================================================
+      TOTAL REVENUE
+  ================================================= */}
+
+  <button
+    type="button"
+    className="ios-hero-card drill-card"
+    onClick={() =>
+      openSalesOrders({
+        view: "revenue",
+      })
+    }
+  >
+    <span>
+      Total Revenue
+    </span>
+
+    <strong>
+      {formatCurrency(
+        data?.totalRevenue
+      )}
+    </strong>
+
+    <p>
+      Tap to open approved sales orders
+    </p>
+  </button>
 
           <div className="ios-kpi-grid">
             <MobileKpi title="Pending Orders" value={data?.pendingOrders || 0} icon="💼" onClick={() => openPendingSalesOrders()} />

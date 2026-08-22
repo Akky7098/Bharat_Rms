@@ -1,0 +1,4526 @@
+/* =========================================================
+   BHARAT INTELLIGENCE
+   ENTERPRISE BUSINESS COPILOT
+========================================================= */
+
+:root {
+  --bharat-ai-panel-width: 474px;
+
+  --bharat-ai-bg: #f7f8fb;
+  --bharat-ai-surface: #ffffff;
+
+  --bharat-ai-text: #15171c;
+  --bharat-ai-text-soft: #626772;
+  --bharat-ai-text-muted: #9297a1;
+
+  --bharat-ai-border: rgba(24, 29, 39, 0.09);
+  --bharat-ai-border-strong: rgba(24, 29, 39, 0.14);
+
+  --bharat-ai-dark: #18191e;
+  --bharat-ai-dark-soft: #272931;
+
+  --bharat-ai-accent: #635bff;
+  --bharat-ai-accent-soft: rgba(99, 91, 255, 0.1);
+
+  --bharat-ai-success: #16845b;
+
+  --bharat-ai-shadow:
+    0 20px 65px rgba(12, 17, 29, 0.18);
+
+  --bharat-ai-ease:
+    cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* =========================================================
+   LAUNCHER
+========================================================= */
+
+.bharat-ai-launcher {
+  position: fixed;
+
+  right: 24px;
+  bottom: 24px;
+
+  z-index: 9997;
+
+  height: 58px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 6px 14px 6px 7px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  border-radius: 18px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #18191e 0%,
+      #24262e 100%
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 14px 40px rgba(10, 13, 21, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  cursor: pointer;
+
+  overflow: hidden;
+
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.bharat-ai-launcher:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 20px 50px rgba(10, 13, 21, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.bharat-ai-launcher:active {
+  transform: translateY(0);
+}
+
+.bharat-ai-launcher-glow {
+  position: absolute;
+
+  width: 90px;
+  height: 90px;
+
+  left: -28px;
+  top: -30px;
+
+  border-radius: 999px;
+
+  background:
+    rgba(103, 93, 255, 0.28);
+
+  filter: blur(18px);
+
+  pointer-events: none;
+}
+
+.bharat-ai-launcher-icon {
+  position: relative;
+
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 44px;
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7870ff,
+      #584fff
+    );
+
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+.bharat-ai-launcher-copy {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+
+  text-align: left;
+
+  white-space: nowrap;
+}
+
+.bharat-ai-launcher-copy strong {
+  font-size: 13px;
+  line-height: 17px;
+
+  font-weight: 700;
+
+  letter-spacing: -0.01em;
+}
+
+.bharat-ai-launcher-copy span {
+  font-size: 11px;
+  line-height: 15px;
+
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.bharat-ai-launcher-chevron {
+  position: relative;
+
+  display: flex;
+
+  color: rgba(255, 255, 255, 0.55);
+
+  margin-left: 2px;
+}
+
+/* =========================================================
+   PANEL
+========================================================= */
+
+.bharat-ai-panel {
+  position: fixed;
+
+  top: 0;
+  right: 0;
+  bottom: 0;
+
+  width:
+    min(
+      var(--bharat-ai-panel-width),
+      100vw
+    );
+
+  z-index: 9999;
+
+  display: flex;
+  flex-direction: column;
+
+  background:
+    var(--bharat-ai-bg);
+
+  border-left:
+    1px solid
+    var(--bharat-ai-border);
+
+  box-shadow:
+    var(--bharat-ai-shadow);
+
+  transform:
+    translateX(
+      calc(100% + 30px)
+    );
+
+  visibility: hidden;
+
+  transition:
+    transform 420ms var(--bharat-ai-ease),
+    visibility 420ms;
+}
+
+.bharat-ai-panel-open {
+  transform:
+    translateX(0);
+
+  visibility: visible;
+}
+
+/* =========================================================
+   OVERLAY
+========================================================= */
+
+.bharat-ai-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 9998;
+
+  border: 0;
+
+  padding: 0;
+
+  background:
+    rgba(9, 12, 18, 0.28);
+
+  backdrop-filter:
+    blur(2px);
+
+  opacity: 0;
+
+  visibility: hidden;
+
+  pointer-events: none;
+
+  transition:
+    opacity 240ms ease,
+    visibility 240ms;
+}
+
+.bharat-ai-overlay-visible {
+  opacity: 1;
+
+  visibility: visible;
+
+  pointer-events: auto;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.bharat-ai-header {
+  min-height: 76px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  padding:
+    14px
+    16px
+    13px
+    18px;
+
+  background:
+    rgba(255, 255, 255, 0.95);
+
+  border-bottom:
+    1px solid
+    var(--bharat-ai-border);
+
+  backdrop-filter:
+    blur(16px);
+}
+
+.bharat-ai-brand {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+}
+
+.bharat-ai-brand-logo {
+  width: 42px;
+  height: 42px;
+
+  flex: 0 0 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      145deg,
+      #1e2026,
+      #393b45
+    );
+
+  box-shadow:
+    0 8px 20px
+    rgba(20, 23, 31, 0.15);
+}
+
+.bharat-ai-brand-title-row {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+}
+
+.bharat-ai-brand h3 {
+  margin: 0;
+
+  font-size: 15px;
+  line-height: 20px;
+
+  font-weight: 750;
+
+  letter-spacing: -0.025em;
+
+  color:
+    var(--bharat-ai-text);
+}
+
+.bharat-ai-brand p {
+  margin: 1px 0 0;
+
+  font-size: 11px;
+  line-height: 15px;
+
+  color:
+    var(--bharat-ai-text-muted);
+}
+
+.bharat-ai-beta {
+  display: inline-flex;
+
+  padding: 2px 6px;
+
+  border-radius: 6px;
+
+  font-size: 9px;
+  line-height: 13px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.05em;
+
+  color:
+    var(--bharat-ai-accent);
+
+  background:
+    var(--bharat-ai-accent-soft);
+}
+
+.bharat-ai-header-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+}
+
+.bharat-ai-header-button {
+  width: 35px;
+  height: 35px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border:
+    1px solid
+    transparent;
+
+  border-radius: 10px;
+
+  background: transparent;
+
+  color:
+    #646974;
+
+  cursor: pointer;
+
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.bharat-ai-header-button:hover {
+  background:
+    #f4f5f7;
+
+  border-color:
+    var(--bharat-ai-border);
+
+  color:
+    var(--bharat-ai-text);
+}
+
+.bharat-ai-clear-button:hover {
+  color:
+    #bb3346;
+
+  background:
+    rgba(187, 51, 70, 0.06);
+}
+
+/* =========================================================
+   STATUS BAR
+========================================================= */
+
+.bharat-ai-status-bar {
+  height: 32px;
+
+  flex: 0 0 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding:
+    0 18px;
+
+  background:
+    #fbfbfc;
+
+  border-bottom:
+    1px solid
+    var(--bharat-ai-border);
+
+  font-size: 10px;
+  line-height: 14px;
+
+  color:
+    var(--bharat-ai-text-muted);
+}
+
+.bharat-ai-status-bar > div {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+}
+
+.bharat-ai-status-dot {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background:
+    #22a06b;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(34, 160, 107, 0.1);
+}
+
+/* =========================================================
+   BODY
+========================================================= */
+
+.bharat-ai-body {
+  min-height: 0;
+
+  flex: 1;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  overscroll-behavior: contain;
+
+  scrollbar-width: thin;
+
+  scrollbar-color:
+    rgba(35, 39, 49, 0.16)
+    transparent;
+}
+
+.bharat-ai-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bharat-ai-body::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+
+  background:
+    rgba(35, 39, 49, 0.15);
+}
+
+/* =========================================================
+   WELCOME
+========================================================= */
+
+.bharat-ai-welcome {
+  min-height: 100%;
+
+  padding:
+    48px 24px
+    28px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-start;
+}
+
+.bharat-ai-welcome-mark {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  margin-bottom: 24px;
+}
+
+.bharat-ai-welcome-logo {
+  width: 52px;
+  height: 52px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      145deg,
+      #191a1f,
+      #33353e
+    );
+
+  box-shadow:
+    0 13px 28px
+    rgba(18, 21, 29, 0.16);
+}
+
+.bharat-ai-live-indicator {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  padding:
+    4px 7px;
+
+  border:
+    1px solid
+    rgba(22, 132, 91, 0.13);
+
+  border-radius: 7px;
+
+  background:
+    rgba(22, 132, 91, 0.06);
+
+  color:
+    var(--bharat-ai-success);
+
+  font-size: 9px;
+  line-height: 12px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.06em;
+}
+
+.bharat-ai-live-indicator span {
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background:
+    var(--bharat-ai-success);
+}
+
+.bharat-ai-welcome h2 {
+  max-width: 340px;
+
+  margin: 0;
+
+  font-size: 31px;
+  line-height: 36px;
+
+  font-weight: 760;
+
+  letter-spacing: -0.045em;
+
+  color:
+    var(--bharat-ai-text);
+}
+
+.bharat-ai-welcome-subtitle {
+  max-width: 370px;
+
+  margin:
+    13px 0 0;
+
+  font-size: 13px;
+  line-height: 20px;
+
+  color:
+    var(--bharat-ai-text-soft);
+}
+
+.bharat-ai-trust-row {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin-top: 17px;
+}
+
+.bharat-ai-trust-row span {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  padding:
+    5px 8px;
+
+  border-radius: 8px;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid
+    var(--bharat-ai-border);
+
+  font-size: 10px;
+
+  color:
+    #6d727d;
+}
+
+/* =========================================================
+   STARTER CARDS
+========================================================= */
+
+.bharat-ai-starter-grid {
+  width: 100%;
+
+  display: grid;
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 9px;
+
+  margin-top: 28px;
+}
+
+.bharat-ai-starter-grid button {
+  position: relative;
+
+  min-height: 104px;
+
+  padding:
+    13px 32px
+    13px 13px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-start;
+
+  text-align: left;
+
+  border:
+    1px solid
+    var(--bharat-ai-border);
+
+  border-radius: 14px;
+
+  background:
+    rgba(255, 255, 255, 0.88);
+
+  cursor: pointer;
+
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.bharat-ai-starter-grid button:hover {
+  transform:
+    translateY(-1px);
+
+  border-color:
+    rgba(99, 91, 255, 0.18);
+
+  background:
+    #ffffff;
+
+  box-shadow:
+    0 10px 25px
+    rgba(31, 35, 47, 0.06);
+}
+
+.bharat-ai-starter-eyebrow {
+  margin-bottom: 8px;
+
+  font-size: 9px;
+  line-height: 12px;
+
+  font-weight: 750;
+
+  letter-spacing: 0.04em;
+
+  text-transform: uppercase;
+
+  color:
+    var(--bharat-ai-text-muted);
+}
+
+.bharat-ai-starter-grid strong {
+  font-size: 12px;
+  line-height: 17px;
+
+  font-weight: 650;
+
+  letter-spacing: -0.01em;
+
+  color:
+    #323640;
+}
+
+.bharat-ai-starter-arrow {
+  position: absolute;
+
+  right: 11px;
+  bottom: 11px;
+
+  display: flex;
+
+  color:
+    #a0a5ae;
+}
+
+.bharat-ai-welcome-note {
+  margin-top: auto;
+
+  padding-top: 26px;
+
+  font-size: 10px;
+  line-height: 16px;
+
+  color:
+    #a2a6af;
+}
+
+/* =========================================================
+   CONVERSATION
+========================================================= */
+
+.bharat-ai-conversation {
+  padding:
+    20px 18px
+    28px;
+}
+
+.bharat-ai-message {
+  margin-bottom: 22px;
+}
+
+/* =========================================================
+   USER MESSAGE
+========================================================= */
+
+.bharat-ai-message-user {
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-end;
+
+  padding-left: 65px;
+}
+
+.bharat-ai-user-bubble {
+  max-width: 100%;
+
+  padding:
+    10px 13px;
+
+  border-radius:
+    15px 15px 4px 15px;
+
+  background:
+    var(--bharat-ai-dark);
+
+  color:
+    #ffffff;
+
+  font-size: 12px;
+  line-height: 18px;
+
+  box-shadow:
+    0 5px 14px
+    rgba(21, 23, 28, 0.1);
+}
+
+.bharat-ai-message-time {
+  margin-top: 5px;
+
+  font-size: 9px;
+
+  color:
+    var(--bharat-ai-text-muted);
+}
+
+/* =========================================================
+   ASSISTANT MESSAGE
+========================================================= */
+
+.bharat-ai-assistant-row {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 10px;
+}
+
+.bharat-ai-assistant-avatar {
+  width: 30px;
+  height: 30px;
+
+  flex: 0 0 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      145deg,
+      #24262d,
+      #393b45
+    );
+}
+
+.bharat-ai-assistant-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.bharat-ai-assistant-name {
+  margin:
+    1px 0 8px;
+
+  font-size: 10px;
+
+  font-weight: 750;
+
+  color:
+    #4c515b;
+}
+
+.bharat-ai-response-content {
+  color:
+    #343842;
+
+  font-size: 12px;
+  line-height: 19px;
+}
+
+.bharat-ai-response-content p {
+  margin:
+    0 0 9px;
+}
+
+.bharat-ai-response-content h4 {
+  margin:
+    14px 0 6px;
+
+  font-size: 12px;
+
+  font-weight: 750;
+
+  color:
+    var(--bharat-ai-text);
+}
+
+.bharat-ai-response-section-title {
+  margin:
+    15px 0 7px;
+}
+
+.bharat-ai-response-section-title:first-child {
+  margin-top: 0;
+}
+
+.bharat-ai-response-section-title > span {
+  display: inline-flex;
+
+  padding:
+    3px 6px;
+
+  border-radius: 6px;
+
+  background:
+    #eef0f4;
+
+  color:
+    #535862;
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.05em;
+}
+
+.bharat-ai-response-section-title p {
+  margin:
+    7px 0 0;
+}
+
+.bharat-ai-response-list {
+  margin:
+    7px 0 10px;
+
+  padding-left: 18px;
+}
+
+.bharat-ai-response-list li {
+  margin:
+    3px 0;
+
+  padding-left: 2px;
+}
+
+/* =========================================================
+   VERIFIED DATA
+========================================================= */
+
+.bharat-ai-data-strip {
+  margin-top: 13px;
+
+  padding:
+    10px 11px;
+
+  border:
+    1px solid
+    var(--bharat-ai-border);
+
+  border-radius: 10px;
+
+  background:
+    rgba(255, 255, 255, 0.75);
+}
+
+.bharat-ai-data-strip-title {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  margin-bottom: 7px;
+
+  font-size: 9px;
+
+  font-weight: 700;
+
+  color:
+    #737883;
+}
+
+.bharat-ai-tool-chips {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 5px;
+}
+
+.bharat-ai-tool-chip {
+  padding:
+    3px 6px;
+
+  border-radius: 6px;
+
+  background:
+    rgba(22, 132, 91, 0.07);
+
+  color:
+    #33745d;
+
+  font-size: 9px;
+
+  font-weight: 600;
+}
+
+.bharat-ai-tool-chip-error {
+  color:
+    #aa3b4c;
+
+  background:
+    rgba(187, 51, 70, 0.07);
+}
+
+/* =========================================================
+   ANSWER FOOTER
+========================================================= */
+
+.bharat-ai-answer-footer {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  margin-top: 8px;
+
+  font-size: 9px;
+
+  color:
+    var(--bharat-ai-text-muted);
+}
+
+.bharat-ai-answer-footer button {
+  display: flex;
+  align-items: center;
+
+  gap: 4px;
+
+  padding: 0;
+
+  border: 0;
+
+  background:
+    transparent;
+
+  color:
+    #888d97;
+
+  font-size: 9px;
+
+  cursor: pointer;
+}
+
+.bharat-ai-answer-footer button:hover {
+  color:
+    var(--bharat-ai-text);
+}
+
+/* =========================================================
+   FOLLOW-UP SUGGESTIONS
+========================================================= */
+
+.bharat-ai-inline-suggestions {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+
+  margin-top: 13px;
+}
+
+.bharat-ai-inline-suggestions button {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  padding:
+    8px 10px;
+
+  border:
+    1px solid
+    var(--bharat-ai-border);
+
+  border-radius: 9px;
+
+  background:
+    rgba(255, 255, 255, 0.7);
+
+  color:
+    #555a65;
+
+  font-size: 10px;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.bharat-ai-inline-suggestions button:hover {
+  background:
+    #ffffff;
+
+  border-color:
+    rgba(99, 91, 255, 0.2);
+}
+
+/* =========================================================
+   THINKING STATE
+========================================================= */
+
+.bharat-ai-thinking {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin:
+    6px 0 24px;
+
+  padding:
+    11px 12px;
+
+  border:
+    1px solid
+    var(--bharat-ai-border);
+
+  border-radius: 12px;
+
+  background:
+    rgba(255, 255, 255, 0.75);
+}
+
+.bharat-ai-thinking-orb {
+  position: relative;
+
+  width: 30px;
+  height: 30px;
+
+  flex: 0 0 30px;
+
+  border-radius: 9px;
+
+  background:
+    #22242a;
+
+  overflow: hidden;
+}
+
+.bharat-ai-thinking-orb div {
+  position: absolute;
+
+  border-radius: 50%;
+
+  filter: blur(4px);
+
+  animation:
+    bharatAiOrb 2s
+    infinite alternate;
+}
+
+.bharat-ai-thinking-orb div:nth-child(1) {
+  width: 17px;
+  height: 17px;
+
+  left: -2px;
+  top: -1px;
+
+  background:
+    #7970ff;
+}
+
+.bharat-ai-thinking-orb div:nth-child(2) {
+  width: 16px;
+  height: 16px;
+
+  right: -3px;
+  bottom: -2px;
+
+  background:
+    #66d4ac;
+
+  animation-delay:
+    -0.6s;
+}
+
+.bharat-ai-thinking-orb div:nth-child(3) {
+  width: 12px;
+  height: 12px;
+
+  left: 11px;
+  top: 10px;
+
+  background:
+    #ffffff;
+
+  opacity: 0.45;
+
+  animation-delay:
+    -1.1s;
+}
+
+@keyframes bharatAiOrb {
+  from {
+    transform:
+      translate3d(
+        -2px,
+        -2px,
+        0
+      )
+      scale(0.85);
+  }
+
+  to {
+    transform:
+      translate3d(
+        4px,
+        4px,
+        0
+      )
+      scale(1.2);
+  }
+}
+
+.bharat-ai-thinking-copy {
+  min-width: 0;
+
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.bharat-ai-thinking-copy strong {
+  font-size: 10px;
+
+  color:
+    #4b505a;
+}
+
+.bharat-ai-thinking-copy span {
+  margin-top: 2px;
+
+  font-size: 10px;
+
+  color:
+    var(--bharat-ai-text-muted);
+}
+
+.bharat-ai-thinking-dots {
+  display: flex;
+  align-items: center;
+
+  gap: 3px;
+}
+
+.bharat-ai-thinking-dots span {
+  width: 4px;
+  height: 4px;
+
+  border-radius: 50%;
+
+  background:
+    #8b9099;
+
+  animation:
+    bharatAiDots
+    1.15s infinite ease-in-out;
+}
+
+.bharat-ai-thinking-dots span:nth-child(2) {
+  animation-delay:
+    0.15s;
+}
+
+.bharat-ai-thinking-dots span:nth-child(3) {
+  animation-delay:
+    0.3s;
+}
+
+@keyframes bharatAiDots {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform:
+      translateY(0);
+  }
+
+  30% {
+    opacity: 1;
+    transform:
+      translateY(-3px);
+  }
+}
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.bharat-ai-error {
+  display: grid;
+
+  grid-template-columns:
+    28px 1fr auto;
+
+  gap: 9px;
+
+  align-items: center;
+
+  padding:
+    10px;
+
+  border:
+    1px solid
+    rgba(187, 51, 70, 0.12);
+
+  border-radius: 11px;
+
+  background:
+    rgba(187, 51, 70, 0.045);
+}
+
+.bharat-ai-error-icon {
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 8px;
+
+  background:
+    rgba(187, 51, 70, 0.09);
+
+  color:
+    #b53749;
+
+  font-size: 13px;
+
+  font-weight: 800;
+}
+
+.bharat-ai-error > div:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+.bharat-ai-error strong {
+  font-size: 10px;
+
+  color:
+    #7f3541;
+}
+
+.bharat-ai-error span {
+  margin-top: 2px;
+
+  font-size: 9px;
+  line-height: 13px;
+
+  color:
+    #9b6870;
+}
+
+.bharat-ai-error button {
+  display: flex;
+  align-items: center;
+
+  gap: 4px;
+
+  padding:
+    6px 8px;
+
+  border:
+    1px solid
+    rgba(187, 51, 70, 0.12);
+
+  border-radius: 7px;
+
+  background:
+    #ffffff;
+
+  color:
+    #934451;
+
+  font-size: 9px;
+
+  cursor: pointer;
+}
+
+/* =========================================================
+   COMPOSER
+========================================================= */
+
+.bharat-ai-composer-section {
+  flex: 0 0 auto;
+
+  padding:
+    11px 14px
+    10px;
+
+  background:
+    rgba(247, 248, 251, 0.97);
+
+  border-top:
+    1px solid
+    var(--bharat-ai-border);
+
+  backdrop-filter:
+    blur(14px);
+}
+
+.bharat-ai-composer {
+  padding:
+    10px 10px 8px
+    12px;
+
+  border:
+    1px solid
+    rgba(25, 29, 39, 0.13);
+
+  border-radius: 14px;
+
+  background:
+    #ffffff;
+
+  box-shadow:
+    0 4px 18px
+    rgba(22, 26, 36, 0.045);
+
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.bharat-ai-composer:focus-within {
+  border-color:
+    rgba(99, 91, 255, 0.38);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(99, 91, 255, 0.07),
+    0 5px 20px
+    rgba(22, 26, 36, 0.05);
+}
+
+.bharat-ai-composer-loading {
+  opacity: 0.78;
+}
+
+.bharat-ai-composer textarea {
+  display: block;
+
+  width: 100%;
+  max-height: 140px;
+
+  resize: none;
+
+  padding: 0;
+
+  border: 0;
+  outline: 0;
+
+  background:
+    transparent;
+
+  font-family: inherit;
+
+  font-size: 12px;
+  line-height: 18px;
+
+  color:
+    var(--bharat-ai-text);
+}
+
+.bharat-ai-composer textarea::placeholder {
+  color:
+    #a3a7b0;
+}
+
+.bharat-ai-composer textarea:disabled {
+  cursor:
+    not-allowed;
+}
+
+.bharat-ai-composer-bottom {
+  min-height: 31px;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  padding-top: 6px;
+}
+
+.bharat-ai-composer-bottom > span {
+  display: flex;
+  align-items: center;
+
+  gap: 4px;
+
+  color:
+    #a1a5ae;
+
+  font-size: 9px;
+}
+
+.bharat-ai-send-button {
+  width: 31px;
+  height: 31px;
+
+  flex: 0 0 31px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 0;
+
+  border-radius: 9px;
+
+  background:
+    #1d1f25;
+
+  color: #ffffff;
+
+  cursor: pointer;
+
+  transition:
+    transform 140ms ease,
+    opacity 140ms ease,
+    background 140ms ease;
+}
+
+.bharat-ai-send-button:hover:not(:disabled) {
+  transform:
+    translateY(-1px);
+
+  background:
+    #2b2e36;
+}
+
+.bharat-ai-send-button:disabled {
+  opacity: 0.28;
+
+  cursor:
+    not-allowed;
+}
+
+.bharat-ai-disclaimer {
+  margin:
+    6px 4px 0;
+
+  text-align: center;
+
+  font-size: 8.5px;
+  line-height: 12px;
+
+  color:
+    #a1a5ad;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (
+  min-width: 1100px
+) {
+  .bharat-ai-overlay {
+    display: none;
+  }
+}
+
+@media (
+  max-width: 650px
+) {
+  :root {
+    --bharat-ai-panel-width:
+      100vw;
+  }
+
+  .bharat-ai-panel {
+    border-left: 0;
+  }
+
+  .bharat-ai-launcher {
+    right: 14px;
+    bottom: 16px;
+
+    height: 52px;
+
+    border-radius: 16px;
+  }
+
+  .bharat-ai-launcher-icon {
+    width: 40px;
+    height: 40px;
+
+    flex-basis: 40px;
+  }
+
+  .bharat-ai-welcome {
+    padding:
+      34px 18px
+      22px;
+  }
+
+  .bharat-ai-welcome h2 {
+    font-size: 27px;
+    line-height: 32px;
+  }
+
+  .bharat-ai-starter-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .bharat-ai-starter-grid button {
+    min-height: 82px;
+  }
+
+  .bharat-ai-conversation {
+    padding:
+      18px 14px
+      24px;
+  }
+
+  .bharat-ai-message-user {
+    padding-left: 42px;
+  }
+}
+
+@media (
+  max-width: 420px
+) {
+  .bharat-ai-launcher-copy {
+    display: none;
+  }
+
+  .bharat-ai-launcher-chevron {
+    display: none;
+  }
+
+  .bharat-ai-launcher {
+    width: 54px;
+
+    padding: 6px;
+
+    justify-content: center;
+  }
+
+  .bharat-ai-header {
+    min-height: 70px;
+
+    padding:
+      12px;
+  }
+
+  .bharat-ai-status-bar {
+    padding:
+      0 12px;
+  }
+}
+/* =========================================================
+   BHARAT INTELLIGENCE
+   PREMIUM USER EXPERIENCE OVERRIDES
+   ADD AT VERY END OF FILE
+========================================================= */
+
+/* =========================================================
+   REMOVE OLD TECHNICAL STATUS UI
+========================================================= */
+
+.bharat-ai-status-bar,
+.bharat-ai-trust-row,
+.bharat-ai-data-strip,
+.bharat-ai-welcome-note,
+.bharat-ai-disclaimer {
+  display: none !important;
+}
+
+/* =========================================================
+   USER STRIP
+========================================================= */
+
+.bharat-ai-user-strip {
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding:
+    9px 18px;
+
+  background:
+    rgba(255, 255, 255, 0.98);
+
+  border-bottom:
+    1px solid
+    rgba(20, 25, 35, 0.07);
+}
+
+.bharat-ai-user-strip-avatar {
+  width: 32px;
+  height: 32px;
+
+  flex:
+    0 0 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius:
+    10px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #e8ebff,
+      #f1f2ff
+    );
+
+  color:
+    #4d55d8;
+
+  font-size:
+    13px;
+
+  font-weight:
+    800;
+
+  text-transform:
+    uppercase;
+}
+
+.bharat-ai-user-strip-copy {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 1px;
+}
+
+.bharat-ai-user-strip-copy strong {
+  overflow: hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  font-size:
+    11px;
+
+  line-height:
+    15px;
+
+  color:
+    #343842;
+
+  font-weight:
+    700;
+}
+
+.bharat-ai-user-strip-copy span {
+  font-size:
+    9px;
+
+  line-height:
+    13px;
+
+  color:
+    #9499a3;
+}
+
+/* =========================================================
+   PREMIUM WELCOME
+========================================================= */
+
+.bharat-ai-welcome-premium {
+  padding:
+    46px 26px
+    28px;
+
+  justify-content:
+    flex-start;
+}
+
+.bharat-ai-welcome-mark-premium {
+  margin-bottom:
+    25px;
+}
+
+.bharat-ai-welcome-mark-premium
+  .bharat-ai-welcome-logo {
+  width:
+    54px;
+
+  height:
+    54px;
+
+  border-radius:
+    17px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #1b1d23 0%,
+      #2f323b 100%
+    );
+
+  box-shadow:
+    0 14px 30px
+    rgba(
+      15,
+      18,
+      26,
+      0.16
+    );
+}
+
+/* =========================================================
+   GREETING
+========================================================= */
+
+.bharat-ai-welcome-greeting {
+  width:
+    100%;
+}
+
+.bharat-ai-greeting-label {
+  display:
+    block;
+
+  margin-bottom:
+    5px;
+
+  font-size:
+    11px;
+
+  line-height:
+    15px;
+
+  font-weight:
+    650;
+
+  color:
+    #8c919c;
+}
+
+.bharat-ai-welcome-greeting h2 {
+  max-width:
+    380px;
+
+  margin:
+    0;
+
+  font-size:
+    29px;
+
+  line-height:
+    35px;
+
+  font-weight:
+    760;
+
+  letter-spacing:
+    -0.045em;
+
+  color:
+    #17191e;
+}
+
+.bharat-ai-welcome-subtitle-premium {
+  max-width:
+    365px;
+
+  margin-top:
+    12px;
+
+  font-size:
+    12px;
+
+  line-height:
+    19px;
+
+  color:
+    #707681;
+}
+
+/* =========================================================
+   USER LOADING SKELETON
+========================================================= */
+
+.bharat-ai-name-skeleton {
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  border-radius:
+    7px;
+
+  background:
+    #e9ebef;
+}
+
+.bharat-ai-name-skeleton::after {
+  content:
+    "";
+
+  position:
+    absolute;
+
+  inset:
+    0;
+
+  transform:
+    translateX(
+      -100%
+    );
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(
+        255,
+        255,
+        255,
+        0.8
+      ),
+      transparent
+    );
+
+  animation:
+    bharatAiSkeleton
+    1.4s
+    infinite;
+}
+
+.bharat-ai-name-skeleton-large {
+  width:
+    68%;
+
+  height:
+    27px;
+
+  margin-bottom:
+    8px;
+}
+
+.bharat-ai-name-skeleton-small {
+  width:
+    42%;
+
+  height:
+    14px;
+}
+
+@keyframes bharatAiSkeleton {
+  100% {
+    transform:
+      translateX(
+        100%
+      );
+  }
+}
+
+/* =========================================================
+   PREMIUM SUGGESTION GRID
+========================================================= */
+
+.bharat-ai-starter-grid-premium {
+  margin-top:
+    29px;
+
+  gap:
+    10px;
+}
+
+.bharat-ai-starter-grid-premium
+  button {
+  min-height:
+    98px;
+
+  padding:
+    14px 34px
+    14px 14px;
+
+  border:
+    1px solid
+    rgba(
+      27,
+      31,
+      43,
+      0.08
+    );
+
+  border-radius:
+    15px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.92
+    );
+
+  box-shadow:
+    0 1px 2px
+    rgba(
+      20,
+      24,
+      34,
+      0.02
+    );
+}
+
+.bharat-ai-starter-grid-premium
+  button:hover {
+  transform:
+    translateY(
+      -2px
+    );
+
+  border-color:
+    rgba(
+      86,
+      80,
+      220,
+      0.2
+    );
+
+  box-shadow:
+    0 12px 28px
+    rgba(
+      24,
+      29,
+      45,
+      0.07
+    );
+}
+
+.bharat-ai-starter-grid-premium
+  .bharat-ai-starter-eyebrow {
+  margin-bottom:
+    7px;
+
+  color:
+    #999eaa;
+
+  font-size:
+    8.5px;
+}
+
+.bharat-ai-starter-grid-premium
+  strong {
+  max-width:
+    145px;
+
+  font-size:
+    11.5px;
+
+  line-height:
+    17px;
+
+  color:
+    #30343d;
+}
+
+/* =========================================================
+   WELCOME TIP
+========================================================= */
+
+.bharat-ai-welcome-tip {
+  display: flex;
+  align-items: center;
+
+  gap:
+    6px;
+
+  margin-top:
+    22px;
+
+  padding:
+    7px 9px;
+
+  border-radius:
+    9px;
+
+  background:
+    rgba(
+      86,
+      80,
+      220,
+      0.055
+    );
+
+  color:
+    #767a92;
+
+  font-size:
+    9px;
+
+  line-height:
+    13px;
+}
+
+/* =========================================================
+   HEADER POLISH
+========================================================= */
+
+.bharat-ai-header {
+  min-height:
+    72px;
+
+  padding:
+    13px 15px
+    13px 17px;
+}
+
+.bharat-ai-brand-logo {
+  width:
+    40px;
+
+  height:
+    40px;
+
+  flex-basis:
+    40px;
+
+  border-radius:
+    12px;
+}
+
+.bharat-ai-brand h3 {
+  white-space:
+    nowrap;
+
+  font-size:
+    14px;
+}
+
+.bharat-ai-brand p {
+  font-size:
+    10px;
+
+  color:
+    #969ba5;
+}
+
+/* =========================================================
+   CONVERSATION AREA
+========================================================= */
+
+.bharat-ai-conversation {
+  padding:
+    22px 19px
+    30px;
+}
+
+.bharat-ai-message {
+  margin-bottom:
+    24px;
+}
+
+.bharat-ai-user-bubble {
+  padding:
+    10px 13px;
+
+  border-radius:
+    15px 15px
+    5px 15px;
+
+  font-size:
+    11.5px;
+
+  line-height:
+    18px;
+}
+
+/* =========================================================
+   ASSISTANT RESPONSE
+========================================================= */
+
+.bharat-ai-assistant-avatar {
+  width:
+    31px;
+
+  height:
+    31px;
+
+  flex-basis:
+    31px;
+
+  border-radius:
+    10px;
+
+  box-shadow:
+    0 5px 12px
+    rgba(
+      20,
+      24,
+      31,
+      0.08
+    );
+}
+
+.bharat-ai-assistant-name {
+  margin-bottom:
+    7px;
+
+  color:
+    #555a65;
+
+  font-size:
+    9.5px;
+}
+
+.bharat-ai-response-content {
+  font-size:
+    11.5px;
+
+  line-height:
+    18.5px;
+
+  color:
+    #3b4049;
+}
+
+.bharat-ai-response-content
+  p {
+  margin-bottom:
+    8px;
+}
+
+.bharat-ai-response-section-title
+  > span {
+  padding:
+    3px 7px;
+
+  border-radius:
+    6px;
+
+  background:
+    #f0f1f4;
+
+  color:
+    #5f6470;
+
+  font-size:
+    8px;
+
+  letter-spacing:
+    0.05em;
+}
+
+/* =========================================================
+   THINKING CARD
+========================================================= */
+
+.bharat-ai-thinking {
+  margin-top:
+    5px;
+
+  padding:
+    11px;
+
+  border-radius:
+    13px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.92
+    );
+
+  border:
+    1px solid
+    rgba(
+      25,
+      29,
+      40,
+      0.075
+    );
+
+  box-shadow:
+    0 4px 16px
+    rgba(
+      20,
+      24,
+      34,
+      0.03
+    );
+}
+
+.bharat-ai-thinking-copy
+  strong {
+  font-size:
+    9.5px;
+}
+
+.bharat-ai-thinking-copy
+  span {
+  font-size:
+    9.5px;
+}
+
+/* =========================================================
+   CLEAN ERROR
+========================================================= */
+
+.bharat-ai-error-clean {
+  margin-top:
+    12px;
+
+  grid-template-columns:
+    28px 1fr auto;
+
+  padding:
+    10px;
+
+  border-radius:
+    11px;
+}
+
+.bharat-ai-error-clean
+  strong {
+  font-size:
+    9.5px;
+}
+
+.bharat-ai-error-clean
+  span {
+  font-size:
+    9px;
+
+  line-height:
+    13px;
+}
+
+/* =========================================================
+   COMPOSER CLEANUP
+========================================================= */
+
+.bharat-ai-composer-section {
+  padding:
+    11px 14px
+    12px;
+}
+
+.bharat-ai-composer {
+  padding:
+    10px 10px
+    8px 12px;
+
+  border-radius:
+    14px;
+}
+
+.bharat-ai-composer textarea {
+  min-height:
+    20px;
+
+  font-size:
+    11.5px;
+
+  line-height:
+    18px;
+}
+
+.bharat-ai-composer-bottom-clean {
+  min-height:
+    30px;
+
+  padding-top:
+    6px;
+}
+
+.bharat-ai-composer-bottom-clean
+  > span {
+  font-size:
+    8px;
+
+  color:
+    #b0b4bc;
+}
+
+.bharat-ai-send-button {
+  width:
+    32px;
+
+  height:
+    32px;
+
+  flex-basis:
+    32px;
+
+  border-radius:
+    10px;
+}
+
+/* =========================================================
+   PANEL WIDTH / DEPTH
+========================================================= */
+
+.bharat-ai-panel {
+  width:
+    min(
+      470px,
+      100vw
+    );
+
+  background:
+    #f8f9fb;
+
+  box-shadow:
+    -18px 0 55px
+    rgba(
+      13,
+      18,
+      29,
+      0.13
+    );
+}
+
+/* =========================================================
+   LAUNCHER POLISH
+========================================================= */
+
+.bharat-ai-launcher {
+  min-width:
+    148px;
+
+  height:
+    56px;
+
+  padding:
+    6px 14px
+    6px 7px;
+
+  border-radius:
+    17px;
+
+  box-shadow:
+    0 16px 42px
+    rgba(
+      11,
+      15,
+      24,
+      0.27
+    );
+}
+
+.bharat-ai-launcher-icon {
+  width:
+    42px;
+
+  height:
+    42px;
+
+  flex-basis:
+    42px;
+
+  border-radius:
+    13px;
+}
+
+.bharat-ai-launcher-copy
+  strong {
+  font-size:
+    12px;
+}
+
+.bharat-ai-launcher-copy
+  span {
+  font-size:
+    10px;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (
+  max-width: 650px
+) {
+  .bharat-ai-user-strip {
+    padding:
+      8px 14px;
+  }
+
+  .bharat-ai-welcome-premium {
+    padding:
+      34px 18px
+      24px;
+  }
+
+  .bharat-ai-welcome-greeting
+    h2 {
+    font-size:
+      26px;
+
+    line-height:
+      31px;
+  }
+
+  .bharat-ai-starter-grid-premium {
+    grid-template-columns:
+      1fr;
+  }
+
+  .bharat-ai-starter-grid-premium
+    button {
+    min-height:
+      78px;
+  }
+
+  .bharat-ai-starter-grid-premium
+    strong {
+    max-width:
+      none;
+  }
+
+  .bharat-ai-composer-bottom-clean
+    > span {
+    display:
+      none;
+  }
+}
+/* =========================================================
+   BHARAT INTELLIGENCE
+   NEXT-GENERATION CHAT EXPERIENCE
+   ADD AT VERY END
+========================================================= */
+
+:root {
+  --bharat-next-purple: #6558ff;
+  --bharat-next-purple-dark: #5046e5;
+  --bharat-next-purple-soft: rgba(101, 88, 255, 0.085);
+
+  --bharat-next-blue: #4969ff;
+  --bharat-next-green: #15a879;
+
+  --bharat-next-ink: #181a20;
+  --bharat-next-muted: #747985;
+  --bharat-next-border: rgba(19, 24, 35, 0.085);
+
+  --bharat-next-radius-xl: 20px;
+  --bharat-next-radius-lg: 15px;
+  --bharat-next-radius-md: 11px;
+}
+
+/* =========================================================
+   PANEL
+========================================================= */
+
+.bharat-ai-panel-next {
+  width:
+    min(
+      500px,
+      100vw
+    );
+
+  background:
+    linear-gradient(
+      180deg,
+      #fafbfc 0%,
+      #f7f8fa 100%
+    );
+
+  box-shadow:
+    -24px 0 70px
+    rgba(
+      15,
+      20,
+      32,
+      0.16
+    );
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.bharat-ai-header-next {
+  min-height:
+    70px;
+
+  padding:
+    12px 15px
+    11px 17px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.96
+    );
+
+  border-bottom:
+    1px solid
+    rgba(
+      18,
+      23,
+      34,
+      0.07
+    );
+
+  box-shadow:
+    0 1px 0
+    rgba(
+      255,
+      255,
+      255,
+      0.7
+    );
+}
+
+.bharat-ai-brand-logo-next {
+  width:
+    39px;
+
+  height:
+    39px;
+
+  flex-basis:
+    39px;
+
+  border-radius:
+    12px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #17191f,
+      #292c35
+    );
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+}
+
+.bharat-ai-brand-logo-next::after {
+  content:
+    "";
+
+  position:
+    absolute;
+
+  width:
+    30px;
+
+  height:
+    30px;
+
+  top:
+    -15px;
+
+  right:
+    -13px;
+
+  border-radius:
+    50%;
+
+  background:
+    rgba(
+      111,
+      99,
+      255,
+      0.55
+    );
+
+  filter:
+    blur(
+      8px
+    );
+}
+
+.bharat-ai-beta-next {
+  padding:
+    2px 6px;
+
+  color:
+    #5d51e7;
+
+  background:
+    rgba(
+      101,
+      88,
+      255,
+      0.09
+    );
+}
+
+/* =========================================================
+   USER STRIP
+========================================================= */
+
+.bharat-ai-user-strip-next {
+  min-height:
+    49px;
+
+  padding:
+    7px 17px;
+
+  background:
+    rgba(
+      253,
+      253,
+      254,
+      0.96
+    );
+}
+
+.bharat-ai-user-strip-next
+  .bharat-ai-user-strip-avatar {
+  width:
+    30px;
+
+  height:
+    30px;
+
+  flex-basis:
+    30px;
+
+  border-radius:
+    10px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #eceaff,
+      #f6f4ff
+    );
+
+  color:
+    #5c52da;
+}
+
+.bharat-ai-online-indicator {
+  margin-left:
+    auto;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    5px;
+
+  padding:
+    4px 7px;
+
+  border-radius:
+    999px;
+
+  background:
+    rgba(
+      21,
+      168,
+      121,
+      0.07
+    );
+
+  color:
+    #16825f;
+
+  font-size:
+    8px;
+
+  font-weight:
+    700;
+}
+
+.bharat-ai-online-indicator
+  span {
+  width:
+    5px;
+
+  height:
+    5px;
+
+  border-radius:
+    50%;
+
+  background:
+    #1ab780;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      26,
+      183,
+      128,
+      0.1
+    );
+}
+
+/* =========================================================
+   WELCOME HERO
+========================================================= */
+
+.bharat-ai-welcome-next {
+  min-height:
+    100%;
+
+  padding:
+    37px 24px
+    27px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    stretch;
+}
+
+.bharat-ai-welcome-hero {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    14px;
+}
+
+.bharat-ai-welcome-orb {
+  position:
+    relative;
+
+  width:
+    52px;
+
+  height:
+    52px;
+
+  flex:
+    0 0 52px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border-radius:
+    17px;
+
+  color:
+    #ffffff;
+
+  background:
+    linear-gradient(
+      145deg,
+      #17191f 0%,
+      #262934 100%
+    );
+
+  overflow:
+    hidden;
+
+  box-shadow:
+    0 14px 32px
+    rgba(
+      13,
+      18,
+      28,
+      0.16
+    );
+}
+
+.bharat-ai-welcome-orb
+  span {
+  position:
+    absolute;
+
+  width:
+    35px;
+
+  height:
+    35px;
+
+  right:
+    -17px;
+
+  top:
+    -15px;
+
+  border-radius:
+    50%;
+
+  background:
+    #756aff;
+
+  filter:
+    blur(
+      10px
+    );
+
+  opacity:
+    0.8;
+}
+
+.bharat-ai-welcome-next
+  .bharat-ai-welcome-greeting {
+  min-width:
+    0;
+}
+
+.bharat-ai-welcome-next
+  .bharat-ai-greeting-label {
+  margin-bottom:
+    3px;
+
+  color:
+    #9296a0;
+
+  font-size:
+    10px;
+
+  font-weight:
+    650;
+}
+
+.bharat-ai-welcome-next
+  .bharat-ai-welcome-greeting
+  h2 {
+  margin:
+    0;
+
+  font-size:
+    27px;
+
+  line-height:
+    32px;
+
+  letter-spacing:
+    -0.04em;
+
+  font-weight:
+    760;
+
+  color:
+    #191b21;
+}
+
+.bharat-ai-welcome-subtitle-next {
+  margin:
+    18px 0 0;
+
+  max-width:
+    425px;
+
+  color:
+    #6f7480;
+
+  font-size:
+    12px;
+
+  line-height:
+    19px;
+}
+
+/* =========================================================
+   CAPABILITY ROW
+========================================================= */
+
+.bharat-ai-capability-row {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    6px;
+
+  margin-top:
+    16px;
+}
+
+.bharat-ai-capability-row
+  span {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    5px;
+
+  padding:
+    5px 8px;
+
+  border:
+    1px solid
+    rgba(
+      22,
+      27,
+      38,
+      0.07
+    );
+
+  border-radius:
+    999px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.8
+    );
+
+  color:
+    #727782;
+
+  font-size:
+    8.5px;
+
+  font-weight:
+    600;
+}
+
+/* =========================================================
+   STARTER CARDS
+========================================================= */
+
+.bharat-ai-starter-grid-next {
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap:
+    8px;
+
+  margin-top:
+    23px;
+}
+
+.bharat-ai-starter-grid-next
+  button {
+  min-height:
+    82px;
+
+  padding:
+    12px 29px
+    12px 12px;
+
+  border-radius:
+    13px;
+
+  border:
+    1px solid
+    rgba(
+      21,
+      26,
+      37,
+      0.075
+    );
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.84
+    );
+
+  box-shadow:
+    0 2px 7px
+    rgba(
+      21,
+      26,
+      37,
+      0.02
+    );
+}
+
+.bharat-ai-starter-grid-next
+  button:hover {
+  transform:
+    translateY(
+      -2px
+    );
+
+  border-color:
+    rgba(
+      101,
+      88,
+      255,
+      0.2
+    );
+
+  box-shadow:
+    0 10px 28px
+    rgba(
+      28,
+      31,
+      44,
+      0.065
+    );
+}
+
+.bharat-ai-starter-grid-next
+  strong {
+  font-size:
+    10.5px;
+
+  line-height:
+    15px;
+
+  color:
+    #333740;
+}
+
+.bharat-ai-starter-grid-next
+  .bharat-ai-starter-eyebrow {
+  margin-bottom:
+    5px;
+
+  font-size:
+    7.5px;
+
+  color:
+    #9b9fa8;
+}
+
+.bharat-ai-welcome-tip-next {
+  margin-top:
+    18px;
+
+  align-self:
+    flex-start;
+
+  background:
+    rgba(
+      101,
+      88,
+      255,
+      0.05
+    );
+
+  color:
+    #73758a;
+}
+
+/* =========================================================
+   CONVERSATION
+========================================================= */
+
+.bharat-ai-conversation-next {
+  padding:
+    22px 18px
+    34px;
+}
+
+.bharat-ai-conversation-next
+  .bharat-ai-message {
+  margin-bottom:
+    26px;
+}
+
+.bharat-ai-conversation-next
+  .bharat-ai-message-user {
+  padding-left:
+    80px;
+}
+
+.bharat-ai-conversation-next
+  .bharat-ai-user-bubble {
+  padding:
+    10px 13px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #22242a,
+      #16181d
+    );
+
+  border-radius:
+    15px 15px
+    5px 15px;
+
+  box-shadow:
+    0 7px 18px
+    rgba(
+      18,
+      21,
+      28,
+      0.11
+    );
+
+  font-size:
+    11px;
+
+  line-height:
+    18px;
+}
+
+/* =========================================================
+   USER ATTACHED FILE
+========================================================= */
+
+.bharat-ai-user-file-list {
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  justify-content:
+    flex-end;
+
+  gap:
+    5px;
+
+  margin-bottom:
+    6px;
+}
+
+.bharat-ai-user-file {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    5px;
+
+  max-width:
+    220px;
+
+  padding:
+    5px 8px;
+
+  border-radius:
+    8px;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid
+    var(
+      --bharat-next-border
+    );
+
+  color:
+    #616671;
+
+  font-size:
+    8.5px;
+}
+
+.bharat-ai-user-file
+  span {
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+/* =========================================================
+   AI RESPONSE
+========================================================= */
+
+.bharat-ai-conversation-next
+  .bharat-ai-assistant-avatar {
+  width:
+    30px;
+
+  height:
+    30px;
+
+  flex-basis:
+    30px;
+
+  border-radius:
+    10px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #1c1e24,
+      #333640
+    );
+}
+
+.bharat-ai-conversation-next
+  .bharat-ai-response-content {
+  color:
+    #383c45;
+
+  font-size:
+    11px;
+
+  line-height:
+    18px;
+}
+
+.bharat-ai-conversation-next
+  .bharat-ai-response-content
+  p {
+  margin:
+    0 0 8px;
+}
+
+/* =========================================================
+   SOURCES / BHARAT DOCUMENTS
+========================================================= */
+
+.bharat-ai-reference-section {
+  margin-top:
+    13px;
+}
+
+.bharat-ai-reference-label {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    5px;
+
+  margin-bottom:
+    7px;
+
+  color:
+    #888d98;
+
+  font-size:
+    8.5px;
+
+  font-weight:
+    700;
+}
+
+.bharat-ai-reference-list {
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    6px;
+}
+
+.bharat-ai-reference-card {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    8px;
+
+  padding:
+    8px 9px;
+
+  border:
+    1px solid
+    var(
+      --bharat-next-border
+    );
+
+  border-radius:
+    10px;
+
+  background:
+    #ffffff;
+
+  color:
+    #4d525d;
+
+  text-decoration:
+    none;
+
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.bharat-ai-reference-card:hover {
+  transform:
+    translateY(
+      -1px
+    );
+
+  border-color:
+    rgba(
+      101,
+      88,
+      255,
+      0.19
+    );
+
+  box-shadow:
+    0 6px 18px
+    rgba(
+      21,
+      26,
+      38,
+      0.05
+    );
+}
+
+.bharat-ai-reference-icon {
+  width:
+    28px;
+
+  height:
+    28px;
+
+  flex:
+    0 0 28px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border-radius:
+    8px;
+
+  background:
+    rgba(
+      101,
+      88,
+      255,
+      0.07
+    );
+
+  color:
+    #6157df;
+}
+
+.bharat-ai-reference-copy {
+  min-width:
+    0;
+
+  flex:
+    1;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+}
+
+.bharat-ai-reference-copy
+  strong {
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  font-size:
+    9px;
+
+  color:
+    #454a55;
+}
+
+.bharat-ai-reference-copy
+  small {
+  margin-top:
+    1px;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  color:
+    #9a9ea7;
+
+  font-size:
+    7.5px;
+}
+
+.bharat-ai-source-pills {
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    5px;
+}
+
+.bharat-ai-source-pills
+  a {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    4px;
+
+  max-width:
+    190px;
+
+  padding:
+    5px 7px;
+
+  border:
+    1px solid
+    var(
+      --bharat-next-border
+    );
+
+  border-radius:
+    7px;
+
+  background:
+    #ffffff;
+
+  color:
+    #666b76;
+
+  text-decoration:
+    none;
+
+  font-size:
+    8px;
+}
+
+.bharat-ai-source-pills
+  a
+  span {
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+/* =========================================================
+   FOLLOW-UP SUGGESTIONS
+========================================================= */
+
+.bharat-ai-inline-suggestions-modern {
+  gap:
+    5px;
+
+  margin-top:
+    14px;
+}
+
+.bharat-ai-inline-suggestions-modern
+  button {
+  padding:
+    8px 10px;
+
+  border-radius:
+    9px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.82
+    );
+
+  font-size:
+    9px;
+
+  color:
+    #575c67;
+}
+
+.bharat-ai-inline-suggestions-modern
+  button:hover {
+  padding-left:
+    11px;
+
+  border-color:
+    rgba(
+      101,
+      88,
+      255,
+      0.22
+    );
+
+  background:
+    #ffffff;
+}
+
+/* =========================================================
+   THINKING
+========================================================= */
+
+.bharat-ai-thinking-premium {
+  border-radius:
+    13px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.88
+    );
+
+  box-shadow:
+    0 4px 15px
+    rgba(
+      19,
+      24,
+      36,
+      0.025
+    );
+}
+
+/* =========================================================
+   COMPOSER AREA
+========================================================= */
+
+.bharat-ai-composer-section-next {
+  padding:
+    9px 12px
+    8px;
+
+  background:
+    rgba(
+      248,
+      249,
+      251,
+      0.96
+    );
+}
+
+.bharat-ai-composer-next {
+  padding:
+    11px 9px
+    7px 12px;
+
+  border:
+    1px solid
+    rgba(
+      25,
+      29,
+      40,
+      0.12
+    );
+
+  border-radius:
+    16px;
+
+  box-shadow:
+    0 5px 20px
+    rgba(
+      21,
+      26,
+      38,
+      0.04
+    );
+
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.bharat-ai-composer-next:focus-within {
+  border-color:
+    rgba(
+      101,
+      88,
+      255,
+      0.35
+    );
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      101,
+      88,
+      255,
+      0.06
+    ),
+    0 8px 24px
+    rgba(
+      21,
+      26,
+      38,
+      0.045
+    );
+}
+
+.bharat-ai-composer-listening {
+  border-color:
+    rgba(
+      226,
+      72,
+      92,
+      0.32
+    );
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      226,
+      72,
+      92,
+      0.05
+    );
+}
+
+.bharat-ai-composer-next
+  textarea {
+  min-height:
+    25px;
+
+  max-height:
+    160px;
+
+  font-size:
+    11px;
+
+  line-height:
+    18px;
+}
+
+.bharat-ai-composer-bottom-next {
+  min-height:
+    32px;
+
+  align-items:
+    center;
+
+  padding-top:
+    6px;
+}
+
+/* =========================================================
+   COMPOSER TOOLS
+========================================================= */
+
+.bharat-ai-composer-tools {
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    4px;
+}
+
+.bharat-ai-tool-button {
+  width:
+    29px;
+
+  height:
+    29px;
+
+  flex:
+    0 0 29px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  padding:
+    0;
+
+  border:
+    1px solid
+    transparent;
+
+  border-radius:
+    9px;
+
+  background:
+    transparent;
+
+  color:
+    #777c86;
+
+  cursor:
+    pointer;
+
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.bharat-ai-tool-button:hover:not(:disabled) {
+  transform:
+    translateY(
+      -1px
+    );
+
+  border-color:
+    rgba(
+      26,
+      31,
+      42,
+      0.07
+    );
+
+  background:
+    #f5f6f8;
+
+  color:
+    #343841;
+}
+
+.bharat-ai-tool-button:disabled {
+  opacity:
+    0.4;
+
+  cursor:
+    not-allowed;
+}
+
+.bharat-ai-mic-active {
+  color:
+    #ffffff;
+
+  background:
+    #e34d61 !important;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(
+      227,
+      77,
+      97,
+      0.09
+    );
+}
+
+.bharat-ai-composer-hint {
+  margin-left:
+    3px;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  color:
+    #a5a9b1;
+
+  font-size:
+    7.8px;
+}
+
+/* =========================================================
+   SEND BUTTON
+========================================================= */
+
+.bharat-ai-send-button-next {
+  width:
+    31px;
+
+  height:
+    31px;
+
+  flex-basis:
+    31px;
+
+  border-radius:
+    10px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #25272e,
+      #17191e
+    );
+
+  box-shadow:
+    0 5px 13px
+    rgba(
+      19,
+      22,
+      29,
+      0.14
+    );
+}
+
+.bharat-ai-send-button-next:hover:not(:disabled) {
+  background:
+    linear-gradient(
+      145deg,
+      #6b60ff,
+      #574ce5
+    );
+
+  box-shadow:
+    0 6px 16px
+    rgba(
+      88,
+      76,
+      229,
+      0.2
+    );
+}
+
+/* =========================================================
+   ATTACHMENT TRAY
+========================================================= */
+
+.bharat-ai-attachment-tray {
+  display:
+    flex;
+
+  gap:
+    6px;
+
+  overflow-x:
+    auto;
+
+  padding:
+    0 1px
+    7px;
+
+  scrollbar-width:
+    none;
+}
+
+.bharat-ai-attachment-tray::-webkit-scrollbar {
+  display:
+    none;
+}
+
+.bharat-ai-attachment-chip {
+  min-width:
+    150px;
+
+  max-width:
+    205px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    7px;
+
+  padding:
+    7px;
+
+  flex:
+    0 0 auto;
+
+  border:
+    1px solid
+    rgba(
+      23,
+      28,
+      39,
+      0.08
+    );
+
+  border-radius:
+    10px;
+
+  background:
+    #ffffff;
+
+  box-shadow:
+    0 3px 10px
+    rgba(
+      20,
+      24,
+      36,
+      0.025
+    );
+}
+
+.bharat-ai-attachment-icon {
+  width:
+    28px;
+
+  height:
+    28px;
+
+  flex:
+    0 0 28px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border-radius:
+    8px;
+
+  color:
+    #5d53dc;
+
+  background:
+    rgba(
+      101,
+      88,
+      255,
+      0.07
+    );
+}
+
+.bharat-ai-attachment-copy {
+  min-width:
+    0;
+
+  flex:
+    1;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+}
+
+.bharat-ai-attachment-copy
+  strong {
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  font-size:
+    8.5px;
+
+  color:
+    #4c515b;
+}
+
+.bharat-ai-attachment-copy
+  small {
+  margin-top:
+    1px;
+
+  font-size:
+    7.5px;
+
+  color:
+    #9b9fa8;
+}
+
+.bharat-ai-attachment-chip
+  > button {
+  width:
+    22px;
+
+  height:
+    22px;
+
+  flex:
+    0 0 22px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  padding:
+    0;
+
+  border:
+    0;
+
+  border-radius:
+    7px;
+
+  background:
+    transparent;
+
+  color:
+    #969aa4;
+
+  cursor:
+    pointer;
+}
+
+.bharat-ai-attachment-chip
+  > button:hover {
+  background:
+    #f3f4f6;
+
+  color:
+    #353941;
+}
+
+/* =========================================================
+   LISTENING BAR
+========================================================= */
+
+.bharat-ai-listening-bar {
+  min-height:
+    31px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    7px;
+
+  margin-bottom:
+    7px;
+
+  padding:
+    6px 9px;
+
+  border-radius:
+    10px;
+
+  background:
+    rgba(
+      227,
+      77,
+      97,
+      0.055
+    );
+
+  border:
+    1px solid
+    rgba(
+      227,
+      77,
+      97,
+      0.09
+    );
+
+  color:
+    #9c4652;
+
+  font-size:
+    8.5px;
+}
+
+.bharat-ai-listening-dot {
+  width:
+    7px;
+
+  height:
+    7px;
+
+  flex:
+    0 0 7px;
+
+  border-radius:
+    50%;
+
+  background:
+    #e34d61;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(
+      227,
+      77,
+      97,
+      0.09
+    );
+
+  animation:
+    bharatAiListeningPulse
+    1.25s
+    infinite;
+}
+
+@keyframes bharatAiListeningPulse {
+  0%,
+  100% {
+    transform:
+      scale(
+        0.8
+      );
+
+    opacity:
+      0.7;
+  }
+
+  50% {
+    transform:
+      scale(
+        1.05
+      );
+
+    opacity:
+      1;
+  }
+}
+
+.bharat-ai-listening-bar
+  > span:nth-child(2) {
+  flex:
+    1;
+}
+
+.bharat-ai-listening-bar
+  button {
+  padding:
+    3px 7px;
+
+  border:
+    0;
+
+  border-radius:
+    6px;
+
+  background:
+    rgba(
+      227,
+      77,
+      97,
+      0.09
+    );
+
+  color:
+    #ad4352;
+
+  font-size:
+    8px;
+
+  font-weight:
+    700;
+
+  cursor:
+    pointer;
+}
+
+/* =========================================================
+   COMPOSER META
+========================================================= */
+
+.bharat-ai-composer-meta {
+  margin:
+    5px 3px 0;
+
+  text-align:
+    center;
+
+  color:
+    #afb2b9;
+
+  font-size:
+    7.4px;
+
+  line-height:
+    11px;
+}
+
+/* =========================================================
+   LAUNCHER
+========================================================= */
+
+.bharat-ai-launcher-next {
+  height:
+    55px;
+
+  min-width:
+    145px;
+
+  border-radius:
+    17px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #15171c 0%,
+      #23262e 100%
+    );
+
+  box-shadow:
+    0 16px 44px
+    rgba(
+      10,
+      14,
+      23,
+      0.27
+    );
+}
+
+.bharat-ai-launcher-next:hover {
+  box-shadow:
+    0 20px 52px
+    rgba(
+      10,
+      14,
+      23,
+      0.33
+    );
+}
+
+.bharat-ai-launcher-icon-next {
+  background:
+    linear-gradient(
+      145deg,
+      #756aff,
+      #564ae5
+    );
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (
+  max-width: 650px
+) {
+  .bharat-ai-panel-next {
+    width:
+      100vw;
+  }
+
+  .bharat-ai-welcome-next {
+    padding:
+      29px 17px
+      22px;
+  }
+
+  .bharat-ai-welcome-next
+    .bharat-ai-welcome-greeting
+    h2 {
+    font-size:
+      24px;
+
+    line-height:
+      29px;
+  }
+
+  .bharat-ai-starter-grid-next {
+    grid-template-columns:
+      1fr;
+  }
+
+  .bharat-ai-starter-grid-next
+    button {
+    min-height:
+      68px;
+  }
+
+  .bharat-ai-capability-row {
+    gap:
+      5px;
+  }
+
+  .bharat-ai-capability-row
+    span {
+    font-size:
+      7.5px;
+  }
+
+  .bharat-ai-composer-hint {
+    display:
+      none;
+  }
+
+  .bharat-ai-conversation-next
+    .bharat-ai-message-user {
+    padding-left:
+      45px;
+  }
+}
+
+@media (
+  max-width: 420px
+) {
+  .bharat-ai-online-indicator {
+    display:
+      none;
+  }
+
+  .bharat-ai-brand p {
+    max-width:
+      190px;
+
+    overflow:
+      hidden;
+
+    text-overflow:
+      ellipsis;
+
+    white-space:
+      nowrap;
+  }
+
+  .bharat-ai-capability-row
+    span:nth-child(3) {
+    display:
+      none;
+  }
+}
