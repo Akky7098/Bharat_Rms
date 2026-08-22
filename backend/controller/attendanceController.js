@@ -1,5 +1,8 @@
-const attendanceService = require("../services/attendanceService");
+const attendanceService =
+  require("../services/attendanceService");
 
+const employeeLocationService =
+  require("../services/employeeLocationService");
 /* =====================================================
    COMMON HELPERS
 ===================================================== */
@@ -444,6 +447,102 @@ const createMissedCheckoutRegularizationReminders =
     }
   };
 
+
+  /* =====================================================
+   EMPLOYEE WORKDAY LOCATION TRACKING
+===================================================== */
+
+const createLocationCheckpoint = async (
+  req,
+  res
+) => {
+  try {
+    const data =
+      await employeeLocationService.createCheckpoint(
+        buildAuditPayload(
+          req
+        ),
+        req.user
+      );
+
+    return sendSuccess(
+      res,
+      data,
+      data?.skipped
+        ? "Location checkpoint already recorded recently."
+        : "Location checkpoint recorded successfully."
+    );
+  } catch (error) {
+    return handleError(
+      res,
+      error
+    );
+  }
+};
+
+/* =====================================================
+   MY TRACKING STATUS
+
+   Used by frontend to know whether the employee has
+   an active checked-in workday.
+
+   Does not return employee history.
+===================================================== */
+
+const getMyLocationTrackingStatus =
+  async (req, res) => {
+    try {
+      const data =
+        await employeeLocationService.getMyTrackingStatus(
+          req.user
+        );
+
+      return sendSuccess(
+        res,
+        data,
+        "Workday tracking status fetched successfully."
+      );
+    } catch (error) {
+      return handleError(
+        res,
+        error
+      );
+    }
+  };
+
+/* =====================================================
+   EMPLOYEE DAY HISTORY
+
+   Permission is checked again inside service.
+
+   SUPER ADMIN ONLY.
+===================================================== */
+
+const getEmployeeLocationHistory =
+  async (req, res) => {
+    try {
+      const data =
+        await employeeLocationService.getEmployeeHistory(
+          req.params
+            .employeeId,
+          req.query,
+          req.user
+        );
+
+      return sendSuccess(
+        res,
+        data,
+        "Employee workday history fetched successfully."
+      );
+    } catch (error) {
+      return handleError(
+        res,
+        error
+      );
+    }
+  };
+
+
 module.exports = {
   checkIn,
   checkOut,
@@ -466,4 +565,11 @@ module.exports = {
   createMissedCheckInNotifications,
   createMissedCheckoutNotifications,
   createMissedCheckoutRegularizationReminders,
+
+  /*
+   * NEW
+   */
+  createLocationCheckpoint,
+  getMyLocationTrackingStatus,
+  getEmployeeLocationHistory,
 };

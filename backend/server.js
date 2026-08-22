@@ -57,6 +57,14 @@ const {
   initSocket,
 } = require("./socket");
 
+/* =========================================================
+   REDIS CACHE
+========================================================= */
+
+const {
+  connectRedis,
+} = require("./services/bharat-ai/cache/redisClient");
+
 const PORT =
   process.env.PORT || 5000;
 
@@ -83,6 +91,40 @@ const startApp = async () => {
     ===================================================== */
 
     await connectDB();
+
+    /* =====================================================
+       REDIS CACHE
+
+       IMPORTANT:
+       Redis is only a cache layer.
+
+       Do not await Redis here because Redis failure
+       must never stop the Bharat backend.
+
+       If Redis is unavailable:
+       - MongoDB will continue working
+       - Bharat AI tools will continue working
+       - Cache will simply be skipped
+    ===================================================== */
+
+    connectRedis()
+      .then((redis) => {
+        if (redis) {
+          console.log(
+            "Redis cache initialized successfully."
+          );
+        } else {
+          console.log(
+            "Redis not available. Backend will continue without cache."
+          );
+        }
+      })
+      .catch((error) => {
+        console.log(
+          "REDIS STARTUP FAILED =>",
+          error.message
+        );
+      });
 
     /* =====================================================
        ROOT HEALTH ROUTE

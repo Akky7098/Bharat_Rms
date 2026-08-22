@@ -8,3 +8,5 @@ whatsapp-session/
 
 # uploads/session/temp
 *.log
+baileys-auth*
+baileys-runtime*

@@ -29,6 +29,9 @@ const orderTrackingRoutes = require(
   "./routes/orderTrackingRoutes"
 );
 
+const bharatAiRoutes =
+  require("./routes/bharatAiRoutes");
+
 const app = express();
 
 /* CORS */
@@ -253,6 +256,10 @@ app.use(
 app.use(
   "/api/order-tracking",
   orderTrackingRoutes
+);
+app.use(
+  "/api/bharat-ai",
+  bharatAiRoutes
 );
 
 

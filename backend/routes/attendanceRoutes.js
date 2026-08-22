@@ -30,6 +30,48 @@ router.get(
   attendanceController.getTodayAttendance
 );
 
+/* =====================================================
+
+   WORKDAY LOCATION TRACKING
+
+===================================================== */
+
+/*
+ * Logged-in employee sends genuine GPS checkpoint.
+ *
+ * Employee ID is NEVER accepted from frontend.
+ * Backend uses req.user.
+ */
+router.post(
+  "/location/checkpoint",
+  attendanceController.createLocationCheckpoint
+);
+
+/*
+ * Used by employee PWA to determine whether
+ * workday tracking is active.
+ */
+router.get(
+  "/location/status",
+  attendanceController.getMyLocationTrackingStatus
+);
+
+/*
+ * Management history.
+ *
+ * SUPER ADMIN ONLY.
+ *
+ * Example:
+ *
+ * GET
+ * /api/attendance/location/history/USER_ID
+ * ?date=2026-08-21
+ */
+router.get(
+  "/location/history/:employeeId",
+  attendanceController.getEmployeeLocationHistory
+);
+
 router.get(
   "/",
   attendanceController.getAttendanceList
