@@ -221,6 +221,14 @@ otherSupplyConditions: {
         ],
         default: "",
       },
+
+      lostRemarkText: {
+  type: String,
+  trim: true,
+  default: "",
+  maxlength: 2000,
+},
+
       lostRemarkOtherText: {
   type: String,
   default: "",

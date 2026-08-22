@@ -353,6 +353,105 @@ const buildGoogleMapLink = (
   return `https://www.google.com/maps?q=${latitude},${longitude}`;
 };
 
+
+
+/* =====================================================
+   REVERSE GEOCODING
+
+   Converts:
+
+   28.45860, 77.30626
+
+   into something like:
+
+   Sector 27A, Old Faridabad,
+   Faridabad, Haryana, 121001
+
+   IMPORTANT:
+   - Never blocks attendance/location tracking permanently.
+   - If reverse geocoding fails, checkpoint still saves.
+   - Uses timeout so external API cannot hang backend.
+===================================================== */
+
+const reverseGeocodeLocation =
+  async (
+    latitude,
+    longitude
+  ) => {
+    let timeoutId;
+
+    try {
+      const controller =
+        new AbortController();
+
+      timeoutId =
+        setTimeout(
+          () =>
+            controller.abort(),
+          5000
+        );
+
+      const url =
+        `https://nominatim.openstreetmap.org/reverse` +
+        `?format=jsonv2` +
+        `&lat=${encodeURIComponent(latitude)}` +
+        `&lon=${encodeURIComponent(longitude)}` +
+        `&zoom=18` +
+        `&addressdetails=1`;
+
+      const response =
+        await fetch(
+          url,
+          {
+            method: "GET",
+
+            headers: {
+              "User-Agent":
+                "BharatSpecialSteels-RMS/1.0",
+
+              Accept:
+                "application/json",
+            },
+
+            signal:
+              controller.signal,
+          }
+        );
+
+      if (!response.ok) {
+        console.warn(
+          "LOCATION REVERSE GEOCODING FAILED =>",
+          response.status
+        );
+
+        return "";
+      }
+
+      const data =
+        await response.json();
+
+      return String(
+        data?.display_name ||
+        ""
+      ).trim();
+    } catch (error) {
+      console.warn(
+        "LOCATION REVERSE GEOCODING ERROR =>",
+        error?.message ||
+        error
+      );
+
+      return "";
+    } finally {
+      if (timeoutId) {
+        clearTimeout(
+          timeoutId
+        );
+      }
+    }
+  };
+
+
 /* =====================================================
    ACTIVE ATTENDANCE
 ===================================================== */
@@ -702,18 +801,35 @@ const createCheckpoint =
         .lean();
 
     const classification =
-      await classifyLocation(
-        {
-          latitude,
-          longitude,
-          accuracy,
-          attendance,
-          employee,
-        }
-      );
+  await classifyLocation(
+    {
+      latitude,
+      longitude,
+      accuracy,
+      attendance,
+      employee,
+    }
+  );
 
-    const checkpoint =
-      await EmployeeLocationLog.create(
+/* =====================================================
+   GET READABLE ADDRESS
+
+   Do this before saving checkpoint.
+
+   If reverse geocoding fails:
+   locationAddress = ""
+
+   Checkpoint still saves normally.
+===================================================== */
+
+const locationAddress =
+  await reverseGeocodeLocation(
+    latitude,
+    longitude
+  );
+
+const checkpoint =
+  await EmployeeLocationLog.create(
         {
           employeeId:
             user._id,
@@ -750,6 +866,10 @@ const createCheckpoint =
             classification.isWithinHome,
 
           source,
+           
+          locationAddress:
+  locationAddress ||
+  "",
 
           ipAddress:
             payload.ipAddress ||

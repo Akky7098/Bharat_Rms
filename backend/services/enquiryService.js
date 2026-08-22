@@ -400,65 +400,137 @@ const updateWorkflow = async (id, body) => {
     throw new Error("Enquiry not found");
   }
 
-  const wasQuotationCompleted = enquiry.quotation.completed === true;
-  const previousClosureStatus = enquiry.closure.status;
+  const wasQuotationCompleted =
+    enquiry.quotation.completed === true;
 
-  const { feasibility, quotation, closure } = body;
+  const previousClosureStatus =
+    enquiry.closure.status;
 
-  if (!feasibility && !quotation && !closure) {
-    throw new Error("No workflow data provided");
+  const {
+    feasibility,
+    quotation,
+    closure,
+  } = body;
+
+  if (
+    !feasibility &&
+    !quotation &&
+    !closure
+  ) {
+    throw new Error(
+      "No workflow data provided"
+    );
   }
+
+  /* =====================================================
+     FEASIBILITY
+  ===================================================== */
 
   if (feasibility) {
     if (
       feasibility.completed === true &&
-      (!feasibility.status || feasibility.status === "pending")
+      (
+        !feasibility.status ||
+        feasibility.status ===
+          "pending"
+      )
     ) {
-      throw new Error("Feasibility status is required when completed");
+      throw new Error(
+        "Feasibility status is required when completed"
+      );
     }
 
     if (feasibility.status) {
-      enquiry.feasibility.status = feasibility.status;
+      enquiry.feasibility.status =
+        feasibility.status;
     }
 
-    if (feasibility.completed !== undefined) {
-      enquiry.feasibility.completed = feasibility.completed;
+    if (
+      feasibility.completed !==
+      undefined
+    ) {
+      enquiry.feasibility.completed =
+        feasibility.completed;
 
-      if (feasibility.completed === true && !enquiry.feasibility.actualDate) {
-        enquiry.feasibility.actualDate = new Date();
+      if (
+        feasibility.completed ===
+          true &&
+        !enquiry.feasibility
+          .actualDate
+      ) {
+        enquiry.feasibility.actualDate =
+          new Date();
       }
 
-      if (feasibility.completed === false) {
-        enquiry.feasibility.actualDate = undefined;
+      if (
+        feasibility.completed ===
+        false
+      ) {
+        enquiry.feasibility.actualDate =
+          undefined;
       }
     }
   }
+
+  /* =====================================================
+     QUOTATION
+  ===================================================== */
 
   if (quotation) {
-    if (!enquiry.feasibility.completed) {
-      throw new Error("Please complete feasibility before quotation update");
+    if (
+      !enquiry.feasibility.completed
+    ) {
+      throw new Error(
+        "Please complete feasibility before quotation update"
+      );
     }
 
-    if (quotation.quotationLink !== undefined) {
-      enquiry.quotation.quotationLink = quotation.quotationLink;
+    if (
+      quotation.quotationLink !==
+      undefined
+    ) {
+      enquiry.quotation.quotationLink =
+        quotation.quotationLink;
     }
 
-    if (quotation.completed !== undefined) {
-      enquiry.quotation.completed = quotation.completed;
+    if (
+      quotation.completed !==
+      undefined
+    ) {
+      enquiry.quotation.completed =
+        quotation.completed;
 
-      if (quotation.completed === true && !enquiry.quotation.actualDate) {
-        enquiry.quotation.actualDate = new Date();
+      if (
+        quotation.completed ===
+          true &&
+        !enquiry.quotation
+          .actualDate
+      ) {
+        enquiry.quotation.actualDate =
+          new Date();
       }
 
-      if (quotation.completed === false) {
-        enquiry.quotation.actualDate = undefined;
+      if (
+        quotation.completed ===
+        false
+      ) {
+        enquiry.quotation.actualDate =
+          undefined;
       }
     }
   }
 
+  /* =====================================================
+     CLOSURE
+  ===================================================== */
+
   if (closure) {
-    if (!enquiry.quotation.completed) {
-      throw new Error("Please complete quotation before closure update");
+    if (
+      !enquiry.quotation.completed
+    ) {
+      throw new Error(
+        "Please complete quotation before closure update"
+      );
     }
 
     const allowedLostRemarks = [
@@ -472,49 +544,171 @@ const updateWorkflow = async (id, body) => {
     ];
 
     if (closure.status) {
-      enquiry.closure.status = closure.status;
+      enquiry.closure.status =
+        closure.status;
     }
 
-    if (closure.status === "lost") {
-      if (!closure.lostRemark) {
-        throw new Error("Lost remark is required when closure status is lost");
+    /* ===================================================
+       LOST
+    =================================================== */
+
+    if (
+      closure.status ===
+      "lost"
+    ) {
+      if (
+        !closure.lostRemark
+      ) {
+        throw new Error(
+          "Lost remark is required when closure status is lost"
+        );
       }
 
-      if (!allowedLostRemarks.includes(closure.lostRemark)) {
-        throw new Error("Invalid lost remark selected");
+      if (
+        !allowedLostRemarks.includes(
+          closure.lostRemark
+        )
+      ) {
+        throw new Error(
+          "Invalid lost remark selected"
+        );
       }
 
-      enquiry.closure.lostRemark = closure.lostRemark;
+      enquiry.closure.lostRemark =
+        closure.lostRemark;
 
-      if (closure.lostRemark === "others") {
-        if (!closure.lostRemarkOtherText || !closure.lostRemarkOtherText.trim()) {
-          throw new Error("Other lost remark is required");
+      /* ===============================================
+         OTHERS
+
+         Existing behavior stays same.
+      =============================================== */
+
+      if (
+        closure.lostRemark ===
+        "others"
+      ) {
+        if (
+          !closure
+            .lostRemarkOtherText ||
+          !closure
+            .lostRemarkOtherText
+            .trim()
+        ) {
+          throw new Error(
+            "Other lost remark is required"
+          );
         }
 
-        enquiry.closure.lostRemarkOtherText =
-          closure.lostRemarkOtherText.trim();
-      } else {
-        enquiry.closure.lostRemarkOtherText = "";
+        enquiry.closure
+          .lostRemarkOtherText =
+          closure
+            .lostRemarkOtherText
+            .trim();
+
+        /*
+         * Clear predefined lost detail.
+         */
+        enquiry.closure
+          .lostRemarkText =
+          "";
+      }
+
+      /* ===============================================
+         ALL OTHER LOST REASONS
+
+         price
+         delivery
+         qty
+         quality
+         payment_terms
+         material_not_available
+      =============================================== */
+
+      else {
+        /*
+         * Save detail text sent by frontend.
+         *
+         * Example:
+         *
+         * lostRemark = "price"
+         * lostRemarkText =
+         * "Quoted 116/kg, customer expected 108/kg."
+         */
+
+        enquiry.closure
+          .lostRemarkText =
+          String(
+            closure
+              .lostRemarkText ||
+              ""
+          ).trim();
+
+        /*
+         * Clear old Others text.
+         */
+        enquiry.closure
+          .lostRemarkOtherText =
+          "";
       }
     }
 
-    if (closure.status && closure.status !== "lost") {
-      enquiry.closure.lostRemark = "";
-      enquiry.closure.lostRemarkOtherText = "";
+    /* ===================================================
+       NOT LOST
+
+       Clear all lost related values.
+    =================================================== */
+
+    if (
+      closure.status &&
+      closure.status !==
+        "lost"
+    ) {
+      enquiry.closure.lostRemark =
+        "";
+
+      enquiry.closure
+        .lostRemarkText =
+        "";
+
+      enquiry.closure
+        .lostRemarkOtherText =
+        "";
     }
 
-    if (closure.completed !== undefined) {
-      enquiry.closure.completed = closure.completed;
+    /* ===================================================
+       COMPLETION
+    =================================================== */
 
-      if (closure.completed === true && !enquiry.closure.actualDate) {
-        enquiry.closure.actualDate = new Date();
+    if (
+      closure.completed !==
+      undefined
+    ) {
+      enquiry.closure.completed =
+        closure.completed;
+
+      if (
+        closure.completed ===
+          true &&
+        !enquiry.closure
+          .actualDate
+      ) {
+        enquiry.closure.actualDate =
+          new Date();
       }
 
-      if (closure.completed === false) {
-        enquiry.closure.actualDate = undefined;
+      if (
+        closure.completed ===
+        false
+      ) {
+        enquiry.closure.actualDate =
+          undefined;
       }
     }
   }
+
+  /* =====================================================
+     SAVE
+  ===================================================== */
 
   await enquiry.save();
 
@@ -533,9 +727,15 @@ const updateWorkflow = async (id, body) => {
   //     enqueueEnquiryWhatsapp(async () => {
   //       try {
   //         await sendQuotationDoneWhatsapp(enquiry);
-  //         console.log("QUOTATION WHATSAPP SENT =>", enquiry.enquiryNumber);
+  //         console.log(
+  //           "QUOTATION WHATSAPP SENT =>",
+  //           enquiry.enquiryNumber
+  //         );
   //       } catch (waError) {
-  //         console.log("QUOTATION WHATSAPP ERROR =>", waError.message);
+  //         console.log(
+  //           "QUOTATION WHATSAPP ERROR =>",
+  //           waError.message
+  //         );
   //       }
   //     });
   //   });
@@ -546,9 +746,15 @@ const updateWorkflow = async (id, body) => {
   //     enqueueEnquiryWhatsapp(async () => {
   //       try {
   //         await sendOrderWonWhatsapp(enquiry);
-  //         console.log("ORDER WON WHATSAPP SENT =>", enquiry.enquiryNumber);
+  //         console.log(
+  //           "ORDER WON WHATSAPP SENT =>",
+  //           enquiry.enquiryNumber
+  //         );
   //       } catch (waError) {
-  //         console.log("ORDER WON WHATSAPP ERROR =>", waError.message);
+  //         console.log(
+  //           "ORDER WON WHATSAPP ERROR =>",
+  //           waError.message
+  //         );
   //       }
   //     });
   //   });
