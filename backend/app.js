@@ -75,6 +75,16 @@ const orderTrackingRoutes =
 const bharatAiRoutes =
   require("./routes/bharatAiRoutes");
 
+  const customerOrderTrackingRoutes =
+  require(
+    "./routes/customerOrderTrackingRoutes"
+  );
+
+  const customerOrderTrackingPageRoutes =
+  require(
+    "./routes/customerOrderTrackingPageRoutes"
+  );
+
 /* =========================================================
    APP
 ========================================================= */
@@ -675,9 +685,19 @@ app.use(
   baileysStatusRoutes
 );
 
+
+
 app.use(
-  "/api/order-tracking",
-  orderTrackingRoutes
+  "/api/customer-order-tracking",
+
+  customerOrderTrackingRoutes
+);
+
+
+app.use(
+  "/track-order",
+
+  customerOrderTrackingPageRoutes
 );
 
 /* =========================================================
@@ -692,6 +712,12 @@ app.use(
 app.use(
   "/api/bharat-ai",
   bharatAiRoutes
+);
+
+app.use(
+  "/api/customer-order-tracking",
+
+  customerOrderTrackingRoutes
 );
 
 /* =========================================================

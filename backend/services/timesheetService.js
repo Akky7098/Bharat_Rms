@@ -7,7 +7,7 @@ const ADMIN_EMAIL = process.env.MANAGER_EMAIL || "info@bharatspecialsteels.com"
    DATE RANGE
 ========================= */
 const getTodayRange = () => {
-  const start = new Date();
+  const start = new Date();1
   start.setHours(0, 0, 0, 0);
 
   const end = new Date();

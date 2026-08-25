@@ -1,6 +1,10 @@
 //const emailService = require("./emailService");
 const pdfService = require("./pdfService");
 const whatsappApprovalService = require("./whatsappApprovalService");
+const customerOrderTrackingService =
+  require(
+    "./customerOrderTrackingService"
+  );
 
 let notificationService = null;
 
@@ -268,15 +272,86 @@ if (
     : `Sales order approved by MD Sir from ${source}`,
 });
 
-  await safeSaveSalesOrder(salesOrder);
+  await safeSaveSalesOrder(
+  salesOrder
+);
 
-  runFinalApprovalBackgroundTasks(
-    salesOrder.constructor,
-    salesOrder._id,
-    source
-  );
+/* =====================================================
+   EXISTING INTERNAL FINAL-APPROVAL TASKS
 
-  await safeCreateNotification({
+   PDF + WhatsApp remain exactly as before.
+===================================================== */
+
+runFinalApprovalBackgroundTasks(
+  salesOrder.constructor,
+  salesOrder._id,
+  source
+);
+
+
+/* =====================================================
+   CUSTOMER ORDER TRACKING
+
+   IMPORTANT:
+   Fire-and-forget background task.
+
+   Customer email failure MUST NOT roll back
+   MD approval.
+===================================================== */
+
+setImmediate(
+  async () => {
+    try {
+      const result =
+        await customerOrderTrackingService
+          .issueCustomerTrackingAfterApproval({
+            salesOrderId:
+              salesOrder._id,
+
+            approvedBy: {
+              managerId:
+                managerData
+                  ?.managerId ||
+                null,
+
+              managerName:
+                managerData
+                  ?.managerName ||
+                "MD Sir",
+
+              managerEmail:
+                managerData
+                  ?.managerEmail ||
+                "",
+            },
+          });
+
+      console.log(
+        "CUSTOMER TRACKING EMAIL SENT =>",
+        salesOrder
+          .companyName,
+        result
+          ?.customerEmail ||
+          ""
+      );
+    } catch (
+      error
+    ) {
+      /*
+       * DO NOT THROW.
+       *
+       * Final Sales Order approval has already completed.
+       */
+      console.log(
+        "CUSTOMER TRACKING BACKGROUND ERROR =>",
+        error.message
+      );
+    }
+  }
+);
+
+
+await safeCreateNotification({
     module: "sales_order",
     event: "manager_approved",
     title: "Sales Order Approved by MD Sir",
