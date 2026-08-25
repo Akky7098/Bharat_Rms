@@ -1,142 +1,327 @@
-const fs = require("fs");
-const path = require("path");
-const puppeteer = require("puppeteer");
+const fs =
+  require("fs");
 
-let chromiumReady = false;
-let cachedExecutablePath = null;
+const path =
+  require("path");
 
-const chmodRecursive = (targetPath) => {
-  if (!targetPath || !fs.existsSync(targetPath)) {
-    return;
-  }
+const puppeteer =
+  require("puppeteer");
 
-  try {
-    const stat = fs.statSync(targetPath);
 
-    fs.chmodSync(targetPath, 0o755);
+let chromiumReady =
+  false;
 
-    if (stat.isDirectory()) {
-      fs.readdirSync(targetPath).forEach((child) => {
-        chmodRecursive(
-          path.join(targetPath, child)
-        );
-      });
-    }
-  } catch (error) {
-    console.log(
-      "CHROMIUM CHMOD WARNING =>",
-      targetPath,
-      error.message
-    );
-  }
-};
+let cachedExecutablePath =
+  null;
 
-const ensureChromium = async () => {
-  /*
-   * If we already resolved Chromium and the binary
-   * still exists, reuse the same executable path.
-   */
-  if (
-    chromiumReady &&
-    cachedExecutablePath &&
-    fs.existsSync(cachedExecutablePath)
-  ) {
-    return cachedExecutablePath;
-  }
 
-  const revision =
-    puppeteer._preferredRevision ||
-    "901912";
+/* =========================================================
+   PERSISTENT CHROMIUM STORAGE
 
-  const browserFetcher =
-    puppeteer.createBrowserFetcher();
+   IMPORTANT:
 
-  let info =
-    browserFetcher.revisionInfo(
-      revision
-    );
+   Do NOT use:
+   node_modules/puppeteer/.local-chromium
 
-  console.log(
-    "CHROMIUM CHECK =>",
-    {
-      revision,
-      local: info.local,
-      executablePath:
-        info.executablePath,
-    }
+   Hostinger creates a new /hbuilds/versions/... directory
+   after deployments.
+
+   HOME is normally persistent between deployments.
+========================================================= */
+
+const CHROMIUM_STORAGE_PATH =
+  process.env.CHROMIUM_STORAGE_PATH ||
+  path.join(
+    process.env.HOME ||
+      process.cwd(),
+    ".bharat-rms-chromium"
   );
 
-  /*
-   * This is the important fallback.
-   *
-   * Even if npm install did not download Chromium,
-   * production can download the Puppeteer-compatible
-   * revision once.
-   */
-  if (!info.local) {
+
+/* =========================================================
+   DIRECTORY
+========================================================= */
+
+const ensureDirectory =
+  (
+    directoryPath
+  ) => {
+    if (
+      !directoryPath
+    ) {
+      throw new Error(
+        "Chromium storage path is empty."
+      );
+    }
+
+    if (
+      !fs.existsSync(
+        directoryPath
+      )
+    ) {
+      fs.mkdirSync(
+        directoryPath,
+        {
+          recursive:
+            true,
+        }
+      );
+    }
+  };
+
+
+/* =========================================================
+   PERMISSIONS
+========================================================= */
+
+const chmodRecursive =
+  (
+    targetPath
+  ) => {
+    if (
+      !targetPath ||
+      !fs.existsSync(
+        targetPath
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const stat =
+        fs.statSync(
+          targetPath
+        );
+
+      fs.chmodSync(
+        targetPath,
+        0o755
+      );
+
+      if (
+        stat.isDirectory()
+      ) {
+        fs.readdirSync(
+          targetPath
+        ).forEach(
+          (
+            child
+          ) => {
+            chmodRecursive(
+              path.join(
+                targetPath,
+                child
+              )
+            );
+          }
+        );
+      }
+    } catch (
+      error
+    ) {
+      console.log(
+        "CHROMIUM CHMOD WARNING =>",
+        targetPath,
+        error.message
+      );
+    }
+  };
+
+
+/* =========================================================
+   ENSURE CHROMIUM
+========================================================= */
+
+const ensureChromium =
+  async () => {
+    /* =====================================================
+       REUSE RESOLVED BINARY
+    ===================================================== */
+
+    if (
+      chromiumReady &&
+      cachedExecutablePath &&
+      fs.existsSync(
+        cachedExecutablePath
+      )
+    ) {
+      return (
+        cachedExecutablePath
+      );
+    }
+
+
+    /* =====================================================
+       MAKE PERSISTENT STORAGE DIRECTORY
+    ===================================================== */
+
+    ensureDirectory(
+      CHROMIUM_STORAGE_PATH
+    );
+
+
     console.log(
-      "CHROMIUM DOWNLOAD STARTED =>",
-      revision
+      "CHROMIUM STORAGE PATH =>",
+      CHROMIUM_STORAGE_PATH
     );
 
-    await browserFetcher.download(
-      revision
+
+    /* =====================================================
+       PUPPETEER REVISION
+
+       Keep your existing revision logic unchanged.
+    ===================================================== */
+
+    const revision =
+      puppeteer
+        ._preferredRevision ||
+      "901912";
+
+
+    /* =====================================================
+       IMPORTANT CHANGE
+
+       Explicit download location.
+
+       Chromium is now outside node_modules.
+    ===================================================== */
+
+    const browserFetcher =
+      puppeteer
+        .createBrowserFetcher({
+          path:
+            CHROMIUM_STORAGE_PATH,
+        });
+
+
+    let info =
+      browserFetcher
+        .revisionInfo(
+          revision
+        );
+
+
+    console.log(
+      "CHROMIUM CHECK =>",
+      {
+        revision,
+
+        local:
+          info.local,
+
+        executablePath:
+          info.executablePath,
+
+        storagePath:
+          CHROMIUM_STORAGE_PATH,
+      }
     );
 
-    info =
-      browserFetcher.revisionInfo(
+
+    /* =====================================================
+       DOWNLOAD ONLY WHEN REQUIRED
+    ===================================================== */
+
+    if (
+      !info.local
+    ) {
+      console.log(
+        "CHROMIUM DOWNLOAD STARTED =>",
         revision
       );
 
-    console.log(
-      "CHROMIUM DOWNLOAD DONE =>",
-      info.executablePath
-    );
-  }
 
-  if (
-    !info.executablePath ||
-    !fs.existsSync(
-      info.executablePath
-    )
-  ) {
-    throw new Error(
-      `Chromium installation failed. Executable not found for revision ${revision}.`
-    );
-  }
+      await browserFetcher
+        .download(
+          revision
+        );
 
-  const chromiumRoot =
-    path.dirname(
-      path.dirname(
+
+      info =
+        browserFetcher
+          .revisionInfo(
+            revision
+          );
+
+
+      console.log(
+        "CHROMIUM DOWNLOAD DONE =>",
+        info.executablePath
+      );
+    }
+
+
+    /* =====================================================
+       VERIFY EXECUTABLE
+    ===================================================== */
+
+    if (
+      !info.executablePath ||
+      !fs.existsSync(
         info.executablePath
       )
+    ) {
+      throw new Error(
+        `Chromium installation failed. Executable not found for revision ${revision}.`
+      );
+    }
+
+
+    /* =====================================================
+       PERMISSIONS
+    ===================================================== */
+
+    const chromiumRoot =
+      path.dirname(
+        path.dirname(
+          info.executablePath
+        )
+      );
+
+
+    chmodRecursive(
+      chromiumRoot
     );
 
-  chmodRecursive(
-    chromiumRoot
-  );
 
-  fs.chmodSync(
-    info.executablePath,
-    0o755
-  );
+    try {
+      fs.chmodSync(
+        info.executablePath,
+        0o755
+      );
+    } catch (
+      permissionError
+    ) {
+      console.log(
+        "CHROMIUM EXECUTABLE CHMOD WARNING =>",
+        permissionError.message
+      );
+    }
 
-  cachedExecutablePath =
-    info.executablePath;
 
-  chromiumReady = true;
+    /* =====================================================
+       CACHE
+    ===================================================== */
 
-  console.log(
-    "CHROMIUM READY =>",
-    cachedExecutablePath
-  );
+    cachedExecutablePath =
+      info.executablePath;
 
-  /*
-   * CRITICAL:
-   * Return exact binary path to Puppeteer.
-   */
-  return cachedExecutablePath;
-};
+
+    chromiumReady =
+      true;
+
+
+    console.log(
+      "CHROMIUM READY =>",
+      cachedExecutablePath
+    );
+
+
+    return (
+      cachedExecutablePath
+    );
+  };
+
 
 module.exports =
   ensureChromium;

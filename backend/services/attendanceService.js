@@ -712,61 +712,218 @@ const createDailyUniqueAttendanceNotification =
    LOCATION
 ===================================================== */
 
+/* =====================================================
+   LOCATION
+
+   Supports these safe frontend payload shapes:
+
+   {
+     latitude,
+     longitude,
+     accuracy
+   }
+
+   OR
+
+   {
+     location: {
+       latitude,
+       longitude,
+       accuracy
+     }
+   }
+
+   OR
+
+   {
+     coords: {
+       latitude,
+       longitude,
+       accuracy
+     }
+   }
+
+   IMPORTANT:
+   Backend cannot obtain browser GPS by itself.
+   Coordinates must still come from the employee device.
+===================================================== */
+
 const buildLocationObject = async (
-  body,
+  body = {},
   workMode
 ) => {
-  const latitude = Number(
-    body.latitude
-  );
+  /* ===================================================
+     SUPPORT MULTIPLE SAFE REQUEST SHAPES
+  =================================================== */
 
-  const longitude = Number(
-    body.longitude
-  );
+  const rawLatitude =
+    body?.latitude ??
+    body?.location?.latitude ??
+    body?.coords?.latitude;
 
-  const accuracy = Number(
-    body.accuracy || 0
-  );
+  const rawLongitude =
+    body?.longitude ??
+    body?.location?.longitude ??
+    body?.coords?.longitude;
+
+  const rawAccuracy =
+    body?.accuracy ??
+    body?.location?.accuracy ??
+    body?.coords?.accuracy ??
+    0;
+
+
+  const latitude =
+    rawLatitude !== undefined &&
+    rawLatitude !== null &&
+    String(rawLatitude).trim() !== ""
+      ? Number(rawLatitude)
+      : NaN;
+
+
+  const longitude =
+    rawLongitude !== undefined &&
+    rawLongitude !== null &&
+    String(rawLongitude).trim() !== ""
+      ? Number(rawLongitude)
+      : NaN;
+
+
+  const parsedAccuracy =
+    Number(rawAccuracy);
+
+
+  const accuracy =
+    Number.isFinite(
+      parsedAccuracy
+    ) &&
+    parsedAccuracy >= 0
+      ? parsedAccuracy
+      : 0;
+
 
   const ipAddress =
-    body.ipAddress || "";
+    body?.ipAddress || "";
+
 
   const userAgent =
-    body.userAgent || "";
+    body?.userAgent || "";
+
 
   const deviceType =
-    body.deviceType ||
-    getDeviceType(userAgent);
+    body?.deviceType ||
+    getDeviceType(
+      userAgent
+    );
+
+
+  /* ===================================================
+     LOG ONLY SAFE DEBUG INFORMATION
+
+     Useful while testing production/PWA.
+     Remove later if you want quieter logs.
+  =================================================== */
+
+  console.log(
+    "ATTENDANCE LOCATION PAYLOAD =>",
+    {
+      hasLatitude:
+        Number.isFinite(
+          latitude
+        ),
+
+      hasLongitude:
+        Number.isFinite(
+          longitude
+        ),
+
+      accuracy,
+
+      workMode,
+
+      deviceType,
+    }
+  );
+
+
+  /* ===================================================
+     LOCATION REQUIRED
+  =================================================== */
 
   if (
-    !Number.isFinite(latitude) ||
-    !Number.isFinite(longitude)
+    !Number.isFinite(
+      latitude
+    ) ||
+    !Number.isFinite(
+      longitude
+    )
   ) {
     throw createServiceError(
-      "Location permission is required to mark attendance.",
+      "Current location could not be received from your device. Please allow location access and try Check In again.",
       400
     );
   }
+
+
+  /* ===================================================
+     VALID COORDINATE RANGE
+  =================================================== */
+
+  if (
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    throw createServiceError(
+      "Invalid GPS coordinates received. Please refresh your location and try again.",
+      400
+    );
+  }
+
 
   if (
     latitude === 0 &&
     longitude === 0
   ) {
     throw createServiceError(
-      "Valid location is required to mark attendance.",
+      "Valid current location is required to mark attendance.",
       400
     );
   }
+
+
+  /* ===================================================
+     WORK FROM HOME
+  =================================================== */
 
   if (
     workMode ===
     "work_from_home"
   ) {
-    const locationAddress =
-      await reverseGeocode(
-        latitude,
-        longitude
+    let locationAddress =
+      "";
+
+    /*
+     * Reverse geocoding should not block attendance
+     * if the GPS itself is valid.
+     */
+    try {
+      locationAddress =
+        await reverseGeocode(
+          latitude,
+          longitude
+        );
+    } catch (error) {
+      console.log(
+        "CHECK-IN REVERSE GEOCODE WARNING =>",
+        error.message
       );
+
+      locationAddress =
+        "";
+    }
+
 
     return {
       latitude,
@@ -776,7 +933,8 @@ const buildLocationObject = async (
       distanceFromOfficeMeters:
         null,
 
-      isWithinOffice: false,
+      isWithinOffice:
+        false,
 
       ipAddress,
       userAgent,
@@ -788,9 +946,15 @@ const buildLocationObject = async (
         `https://www.google.com/maps?q=${latitude},${longitude}`,
 
       remark:
-        body.remark || "",
+        body?.remark ||
+        "",
     };
   }
+
+
+  /* ===================================================
+     OFFICE LOCATION
+  =================================================== */
 
   const result =
     verifyOfficeLocation({
@@ -798,28 +962,51 @@ const buildLocationObject = async (
       longitude,
     });
 
+
+  if (
+    !result
+  ) {
+    throw createServiceError(
+      "Office location verification failed.",
+      500
+    );
+  }
+
+
   return {
     latitude,
     longitude,
     accuracy,
 
     distanceFromOfficeMeters:
-      result.distance,
+      Number.isFinite(
+        Number(
+          result.distance
+        )
+      )
+        ? Number(
+            result.distance
+          )
+        : null,
 
     isWithinOffice:
-      result.isWithinOffice,
+      Boolean(
+        result.isWithinOffice
+      ),
 
     ipAddress,
     userAgent,
     deviceType,
 
-    locationAddress: "",
+    locationAddress:
+      "",
 
     googleMapLink:
       `https://www.google.com/maps?q=${latitude},${longitude}`,
 
     remark:
-      body.remark || "",
+      body?.remark ||
+      "",
   };
 };
 
