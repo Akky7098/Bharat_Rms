@@ -685,6 +685,10 @@ app.use(
   baileysStatusRoutes
 );
 
+app.use(
+  "/api/order-tracking",
+  orderTrackingRoutes
+);
 
 
 app.use(

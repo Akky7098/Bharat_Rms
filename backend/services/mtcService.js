@@ -2,15 +2,28 @@ const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
 
+const puppeteer = require("puppeteer");
+
+const ensureChromium = require(
+  "../util/ensureChromium"
+);
+
 const {
   MtcCertificate,
 } = require("../model/MtcCertificate");
+
 const BharatMtcCertificate = require(
   "../model/BharatMtcCertificate"
 );
+
 const GloriaMtcCertificate = require(
   "../model/GloriaMtcCertificate"
 );
+
+const SbeGermanyMtcCertificate = require(
+  "../model/SbeGermanyMtcCertificate"
+);
+
 const mtcChemicalSpecs = require(
   "../util/mtcChemicalSpecs"
 );
@@ -27,6 +40,37 @@ const bharatTemplate = require(
   "../templates/mtc/bharatTemplate"
 );
 
+const mtcGermanTemplate = require(
+  "../templates/mtc/mtcGermanTemplate"
+);
+
+/* =========================================================
+   SBE GERMANY CONTROLLED CONFIG
+========================================================= */
+
+const {
+  SBE_FIXED_VALUES,
+  SBE_CHEMICAL_ORDER,
+  SBE_FRONTEND_RULES,
+  getSbeGradeConfig,
+  getSbeGrades,
+  buildSbeGradeFormData,
+  validateSbeCreatePayload,
+  validateSbeUpdatePayload,
+} = require(
+  "../util/sbeGermanyConfig"
+);
+
+/* =========================================================
+   SBE GERMANY UNIQUE NUMBER GENERATOR
+========================================================= */
+
+const {
+  generateSbeDocumentNumbers,
+} = require(
+  "../util/sbeNumberGenerator"
+);
+
 /* =========================================================
    CONSTANTS
 ========================================================= */
@@ -35,19 +79,25 @@ const DEFAULT_PROVIDER = "gloria";
 
 const MAX_MTC_LIST_LIMIT = 200;
 
-const PUBLIC_MTC_UPLOAD_PATH = "/uploads/mtc";
+const PUBLIC_MTC_UPLOAD_PATH =
+  "/uploads/mtc";
 
 /* =========================================================
    BASIC HELPERS
 ========================================================= */
 
 const normalizeProvider = (value) => {
-  return String(value || DEFAULT_PROVIDER)
+  return String(
+    value || DEFAULT_PROVIDER
+  )
     .trim()
     .toLowerCase();
 };
 
-const cleanText = (value, fallback = "") => {
+const cleanText = (
+  value,
+  fallback = ""
+) => {
   if (
     value === null ||
     value === undefined
@@ -72,9 +122,14 @@ const firstValue = (...values) => {
   return "";
 };
 
-const sanitizeFileName = (value = "") => {
+const sanitizeFileName = (
+  value = ""
+) => {
   return String(value)
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+    .replace(
+      /[<>:"/\\|?*\x00-\x1F]/g,
+      ""
+    )
     .replace(/\s+/g, "_")
     .replace(/_+/g, "_")
     .replace(/^\.+|\.+$/g, "")
@@ -86,20 +141,30 @@ const formatFileDate = (date) => {
     date || new Date()
   );
 
-  if (Number.isNaN(parsedDate.getTime())) {
-    return formatFileDate(new Date());
+  if (
+    Number.isNaN(
+      parsedDate.getTime()
+    )
+  ) {
+    return formatFileDate(
+      new Date()
+    );
   }
 
   return `${String(
     parsedDate.getDate()
   ).padStart(2, "0")}-${String(
     parsedDate.getMonth() + 1
-  ).padStart(2, "0")}-${parsedDate.getFullYear()}`;
+  ).padStart(
+    2,
+    "0"
+  )}-${parsedDate.getFullYear()}`;
 };
 
 const getMtcPdfDirectory = () => {
   return (
-    process.env.MTC_PDF_STORAGE_PATH ||
+    process.env
+      .MTC_PDF_STORAGE_PATH ||
     path.join(
       __dirname,
       "..",
@@ -113,10 +178,17 @@ const ensurePdfDirectory = () => {
   const pdfDirectory =
     getMtcPdfDirectory();
 
-  if (!fs.existsSync(pdfDirectory)) {
-    fs.mkdirSync(pdfDirectory, {
-      recursive: true,
-    });
+  if (
+    !fs.existsSync(
+      pdfDirectory
+    )
+  ) {
+    fs.mkdirSync(
+      pdfDirectory,
+      {
+        recursive: true,
+      }
+    );
   }
 
   return pdfDirectory;
@@ -128,17 +200,21 @@ const generateUniqueId = () => {
     .slice(2, 10)}`;
 };
 
-const isValidObjectId = (value) => {
+const isValidObjectId = (
+  value
+) => {
   return mongoose.Types.ObjectId.isValid(
     value
   );
 };
 
 /* =========================================================
-   CHEMICAL COMPOSITION HELPERS
+   CHEMICAL HELPERS
 ========================================================= */
 
-const normalizeElementName = (value) => {
+const normalizeElementName = (
+  value
+) => {
   return String(value || "")
     .replace(/\s+/g, "")
     .trim()
@@ -149,55 +225,62 @@ const findChemicalInput = (
   inputComposition,
   element
 ) => {
-  if (!Array.isArray(inputComposition)) {
+  if (
+    !Array.isArray(
+      inputComposition
+    )
+  ) {
     return null;
   }
 
   const normalizedElement =
-    normalizeElementName(element);
+    normalizeElementName(
+      element
+    );
 
   return (
     inputComposition.find(
       (item) =>
-        normalizeElementName(item?.element) ===
-        normalizedElement
+        normalizeElementName(
+          item?.element
+        ) === normalizedElement
     ) || null
   );
 };
 
-/**
- * Gloria validation:
- *
- * The grade configuration controls:
- * - allowed elements
- * - minimum value
- * - maximum value
- * - elements where result must be X
- */
-const validateGloriaChemicalComposition = (
-  grade,
-  inputComposition = []
-) => {
-  const gradeConfig =
-    mtcChemicalSpecs[grade];
+/* =========================================================
+   GLORIA CHEMICAL VALIDATION
+========================================================= */
 
-  if (!gradeConfig) {
-    throw new Error(
-      `Chemical composition spec not configured for grade ${grade}`
-    );
-  }
+const validateGloriaChemicalComposition =
+  (
+    grade,
+    inputComposition = []
+  ) => {
+    const gradeConfig =
+      mtcChemicalSpecs[grade];
 
-  const gradeSpec =
-    gradeConfig.elements || gradeConfig;
-
-  return Object.keys(gradeSpec).map(
-    (element) => {
-      const spec = gradeSpec[element];
-
-      const input = findChemicalInput(
-        inputComposition,
-        element
+    if (!gradeConfig) {
+      throw new Error(
+        `Chemical composition spec not configured for grade ${grade}`
       );
+    }
+
+    const gradeSpec =
+      gradeConfig.elements ||
+      gradeConfig;
+
+    return Object.keys(
+      gradeSpec
+    ).map((element) => {
+      const spec =
+        gradeSpec[element];
+
+      const input =
+        findChemicalInput(
+          inputComposition,
+          element
+        );
 
       const hasNoMinAndMax =
         spec.min === null &&
@@ -216,16 +299,21 @@ const validateGloriaChemicalComposition = (
         !input ||
         input.result === "" ||
         input.result === null ||
-        input.result === undefined
+        input.result ===
+          undefined
       ) {
         throw new Error(
           `${element} result is required`
         );
       }
 
-      const result = Number(input.result);
+      const result = Number(
+        input.result
+      );
 
-      if (Number.isNaN(result)) {
+      if (
+        Number.isNaN(result)
+      ) {
         throw new Error(
           `${element} result must be numeric`
         );
@@ -234,7 +322,8 @@ const validateGloriaChemicalComposition = (
       if (
         spec.min !== null &&
         spec.min !== undefined &&
-        result < Number(spec.min)
+        result <
+          Number(spec.min)
       ) {
         throw new Error(
           `${element} result must be greater than or equal to ${spec.min}`
@@ -244,7 +333,8 @@ const validateGloriaChemicalComposition = (
       if (
         spec.max !== null &&
         spec.max !== undefined &&
-        result > Number(spec.max)
+        result >
+          Number(spec.max)
       ) {
         throw new Error(
           `${element} result must be less than or equal to ${spec.max}`
@@ -253,136 +343,260 @@ const validateGloriaChemicalComposition = (
 
       return {
         element,
+
         min:
           spec.min === null ||
-          spec.min === undefined
+          spec.min ===
+            undefined
             ? null
-            : Number(spec.min),
+            : Number(
+                spec.min
+              ),
 
         max:
           spec.max === null ||
-          spec.max === undefined
+          spec.max ===
+            undefined
             ? null
-            : Number(spec.max),
+            : Number(
+                spec.max
+              ),
 
         result,
       };
-    }
-  );
-};
+    });
+  };
 
-/**
- * Bharat certificate chemical composition:
- *
- * The Bharat certificate displays achieved values supplied
- * from the frontend. It does not automatically force the
- * Gloria chemical grade configuration.
- *
- * Empty values are represented by "-".
- */
-const normalizeBharatChemicalComposition = (
-  inputComposition = []
-) => {
-  const bharatElements = [
-    "C",
-    "Si",
-    "Mn",
-    "P",
-    "S",
-    "Cr",
-    "Mo",
-    "Ni",
-    "Al",
-    "Cu",
-    "Ti",
-    "V",
-    "Nb",
-    "B",
-  ];
+/* =========================================================
+   BHARAT CHEMICAL NORMALIZATION
+========================================================= */
 
-  return bharatElements.map((element) => {
-    const input = findChemicalInput(
-      inputComposition,
-      element
+const normalizeBharatChemicalComposition =
+  (
+    inputComposition = []
+  ) => {
+    const bharatElements = [
+      "C",
+      "Si",
+      "Mn",
+      "P",
+      "S",
+      "Cr",
+      "Mo",
+      "Ni",
+      "Al",
+      "Cu",
+      "Ti",
+      "V",
+      "Nb",
+      "B",
+    ];
+
+    return bharatElements.map(
+      (element) => {
+        const input =
+          findChemicalInput(
+            inputComposition,
+            element
+          );
+
+        const rawResult =
+          firstValue(
+            input?.result,
+            input?.achieved,
+            input?.value,
+            "-"
+          );
+
+        let result =
+          rawResult;
+
+        if (
+          rawResult !== "-" &&
+          rawResult !== "X" &&
+          rawResult !== "x" &&
+          rawResult !== ""
+        ) {
+          const numericValue =
+            Number(
+              rawResult
+            );
+
+          result =
+            Number.isNaN(
+              numericValue
+            )
+              ? cleanText(
+                  rawResult,
+                  "-"
+                )
+              : numericValue;
+        }
+
+        return {
+          element,
+
+          min:
+            input?.min ===
+              "" ||
+            input?.min ===
+              undefined
+              ? null
+              : input.min,
+
+          max:
+            input?.max ===
+              "" ||
+            input?.max ===
+              undefined
+              ? null
+              : input.max,
+
+          result,
+        };
+      }
     );
+  };
 
-    const rawResult = firstValue(
-      input?.result,
-      input?.achieved,
-      input?.value,
-      "-"
+/* =========================================================
+   SBE GERMANY CHEMICAL NORMALIZATION
+========================================================= */
+
+const normalizeSbeGermanyChemicalComposition =
+  (
+    inputComposition = []
+  ) => {
+    const sbeElements = [
+      "C",
+      "Si",
+      "Mn",
+      "Cr",
+      "S",
+      "P",
+      "V",
+      "Mo",
+      "Ni",
+      "Al",
+      "Cu",
+    ];
+
+    return sbeElements.map(
+      (element) => {
+        const input =
+          findChemicalInput(
+            inputComposition,
+            element
+          );
+
+        const rawResult =
+          firstValue(
+            input?.result,
+            input?.achieved,
+            input?.value,
+            "---"
+          );
+
+        let result =
+          rawResult;
+
+        if (
+          rawResult !==
+            "---" &&
+          rawResult !== "-" &&
+          rawResult !== "X" &&
+          rawResult !== "x" &&
+          rawResult !== ""
+        ) {
+          const numericValue =
+            Number(
+              rawResult
+            );
+
+          result =
+            Number.isNaN(
+              numericValue
+            )
+              ? cleanText(
+                  rawResult,
+                  "---"
+                )
+              : numericValue;
+        }
+
+        return {
+          element,
+
+          min:
+            input?.min ===
+              "" ||
+            input?.min ===
+              undefined
+              ? null
+              : input.min,
+
+          max:
+            input?.max ===
+              "" ||
+            input?.max ===
+              undefined
+              ? null
+              : input.max,
+
+          result,
+        };
+      }
     );
+  };
 
-    let result = rawResult;
+/* =========================================================
+   GENERIC CHEMICAL NORMALIZER
+========================================================= */
 
+const normalizeGenericChemicalComposition =
+  (
+    inputComposition = []
+  ) => {
     if (
-      rawResult !== "-" &&
-      rawResult !== "X" &&
-      rawResult !== "x" &&
-      rawResult !== ""
+      !Array.isArray(
+        inputComposition
+      )
     ) {
-      const numericValue =
-        Number(rawResult);
-
-      result = Number.isNaN(numericValue)
-        ? cleanText(rawResult, "-")
-        : numericValue;
+      return [];
     }
 
-    return {
-      element,
-      min:
-        input?.min === "" ||
-        input?.min === undefined
-          ? null
-          : input?.min,
+    return inputComposition
+      .filter((item) =>
+        cleanText(
+          item?.element
+        )
+      )
+      .map((item) => ({
+        element:
+          cleanText(
+            item.element
+          ),
 
-      max:
-        input?.max === "" ||
-        input?.max === undefined
-          ? null
-          : input?.max,
+        min:
+          item.min === "" ||
+          item.min ===
+            undefined
+            ? null
+            : item.min,
 
-      result,
-    };
-  });
-};
+        max:
+          item.max === "" ||
+          item.max ===
+            undefined
+            ? null
+            : item.max,
 
-/**
- * Generic chemical composition normalizer.
- *
- * Future providers can use this when they do not require
- * grade-level min/max validation.
- */
-const normalizeGenericChemicalComposition = (
-  inputComposition = []
-) => {
-  if (!Array.isArray(inputComposition)) {
-    return [];
-  }
-
-  return inputComposition
-    .filter((item) =>
-      cleanText(item?.element)
-    )
-    .map((item) => ({
-      element: cleanText(item.element),
-      min:
-        item.min === "" ||
-        item.min === undefined
-          ? null
-          : item.min,
-      max:
-        item.max === "" ||
-        item.max === undefined
-          ? null
-          : item.max,
-      result: firstValue(
-        item.result,
-        "-"
-      ),
-    }));
-};
+        result:
+          firstValue(
+            item.result,
+            "-"
+          ),
+      }));
+  };
 
 /* =========================================================
    GLORIA PAYLOAD NORMALIZATION
@@ -392,9 +606,10 @@ const normalizeGloriaPayload = (
   payload,
   loggedInUser
 ) => {
-  const grade = cleanText(
-    payload.grade
-  );
+  const grade =
+    cleanText(
+      payload.grade
+    );
 
   if (!grade) {
     throw new Error(
@@ -403,7 +618,9 @@ const normalizeGloriaPayload = (
   }
 
   const gradeConfig =
-    mtcChemicalSpecs[grade];
+    mtcChemicalSpecs[
+      grade
+    ];
 
   if (!gradeConfig) {
     throw new Error(
@@ -411,85 +628,131 @@ const normalizeGloriaPayload = (
     );
   }
 
-  const messers = cleanText(
-    firstValue(
-      payload.messers,
-      payload.companyName
-    )
-  );
+  const messers =
+    cleanText(
+      firstValue(
+        payload.messers,
+        payload.companyName
+      )
+    );
 
   const chemicalComposition =
     validateGloriaChemicalComposition(
       grade,
-      payload.chemicalComposition || []
+      payload.chemicalComposition ||
+        []
     );
 
   return {
     ...payload,
 
-    mtcProvider: "gloria",
+    mtcProvider:
+      "gloria",
 
     messers,
 
-    companyName: cleanText(
-      firstValue(
-        payload.companyName,
-        messers
-      )
-    ),
+    companyName:
+      cleanText(
+        firstValue(
+          payload.companyName,
+          messers
+        )
+      ),
 
-    orderNo: cleanText(
-      payload.orderNo
-    ),
+    customerName:
+      cleanText(
+        firstValue(
+          payload.customerName,
+          payload.companyName,
+          messers
+        )
+      ),
 
-    poNo: cleanText(payload.poNo),
+    customerAddress:
+      cleanText(
+        firstValue(
+          payload.customerAddress,
+          payload.companyAddress
+        )
+      ),
 
-    fileNo: cleanText(
-      payload.fileNo
-    ),
+    orderNo:
+      cleanText(
+        payload.orderNo
+      ),
 
-    mtcDate: payload.mtcDate,
+    poNo:
+      cleanText(
+        payload.poNo
+      ),
+
+    fileNo:
+      cleanText(
+        payload.fileNo
+      ),
+
+    invoiceNo:
+      cleanText(
+        payload.invoiceNo
+      ),
+
+    mtcDate:
+      payload.mtcDate ||
+      new Date(),
 
     grade,
 
-    weight: cleanText(
-      payload.weight
-    ),
+    weight:
+      cleanText(
+        payload.weight
+      ),
 
-    size: cleanText(payload.size),
+    size:
+      cleanText(
+        payload.size
+      ),
 
-    pcs: cleanText(payload.pcs),
+    pcs:
+      cleanText(
+        payload.pcs
+      ),
 
-    heatLotNo: cleanText(
-      payload.heatLotNo
-    ),
+    heatLotNo:
+      cleanText(
+        payload.heatLotNo
+      ),
 
-    condition: cleanText(
-      payload.condition
-    ),
+    condition:
+      cleanText(
+        payload.condition
+      ),
 
     chemicalComposition,
 
-    /*
-     * Gloria values are controlled by the grade
-     * configuration.
-     */
     hardness:
-      gradeConfig.hardness || {},
+      gradeConfig
+        .hardness || {},
 
     hardenability:
-      gradeConfig.hardenability || {},
+      gradeConfig
+        .hardenability || {},
 
-    seat: gradeConfig.seat || {},
+    seat:
+      gradeConfig.seat ||
+      {},
 
     createdBy:
       loggedInUser?._id ||
       payload.createdBy,
+
+    updatedBy:
+      payload.updatedBy ||
+      null,
   };
 };
 
 /* =========================================================
-   BHARAT PAYLOAD NORMALIZATION
+   BHARAT ITEMS
 ========================================================= */
 
 const normalizeBharatItems = (
@@ -502,164 +765,194 @@ const normalizeBharatItems = (
     [];
 
   if (
-    Array.isArray(inputItems) &&
+    Array.isArray(
+      inputItems
+    ) &&
     inputItems.length > 0
   ) {
     return inputItems.map(
       (item, index) => ({
-        heatNo: cleanText(
-          firstValue(
-            item.heatNo,
-            item.heatNumber,
-            payload.heatLotNo
-          )
-        ),
+        heatNo:
+          cleanText(
+            firstValue(
+              item.heatNo,
+              item.heatNumber,
+              payload.heatLotNo
+            )
+          ),
 
-        size: cleanText(
-          firstValue(
-            item.size,
-            item.materialSize,
-            payload.size
-          )
-        ),
+        size:
+          cleanText(
+            firstValue(
+              item.size,
+              item.materialSize,
+              payload.size
+            )
+          ),
 
-        noOfPcs: cleanText(
-          firstValue(
-            item.noOfPcs,
-            item.pcs,
-            item.quantityPcs,
-            "-"
-          )
-        ),
+        noOfPcs:
+          cleanText(
+            firstValue(
+              item.noOfPcs,
+              item.pcs,
+              item.quantityPcs,
+              "-"
+            )
+          ),
 
-        quantityInKgs: cleanText(
-          firstValue(
-            item.quantityInKgs,
-            item.quantity,
-            item.qty,
-            item.weight
-          )
-        ),
+        quantityInKgs:
+          cleanText(
+            firstValue(
+              item.quantityInKgs,
+              item.quantity,
+              item.qty,
+              item.weight,
+              payload.weight
+            )
+          ),
 
-        remarks: cleanText(
-          firstValue(
-            item.remarks,
-            "-"
-          )
-        ),
+        remarks:
+          cleanText(
+            firstValue(
+              item.remarks,
+              "-"
+            )
+          ),
 
-        rowNumber: index + 1,
+        rowNumber:
+          index + 1,
       })
     );
   }
 
-  /*
-   * Backward-compatible single item row.
-   */
   return [
     {
-      heatNo: cleanText(
-        payload.heatLotNo
-      ),
+      heatNo:
+        cleanText(
+          payload.heatLotNo
+        ),
 
-      size: cleanText(payload.size),
+      size:
+        cleanText(
+          payload.size
+        ),
 
-      noOfPcs: cleanText(
-        firstValue(
-          payload.pcs,
-          "-"
-        )
-      ),
+      noOfPcs:
+        cleanText(
+          firstValue(
+            payload.pcs,
+            "-"
+          )
+        ),
 
-      quantityInKgs: cleanText(
-        firstValue(
-          payload.weight,
-          payload.quantityInKgs
-        )
-      ),
+      quantityInKgs:
+        cleanText(
+          firstValue(
+            payload.weight,
+            payload.quantityInKgs
+          )
+        ),
 
-      remarks: cleanText(
-        firstValue(
-          payload.remarks,
-          "-"
-        )
-      ),
+      remarks:
+        cleanText(
+          firstValue(
+            payload.remarks,
+            "-"
+          )
+        ),
     },
   ];
 };
 
-const normalizeBharatHardenability = (
-  payload
-) => {
-  const source =
-    payload.hardenabilityTest ||
-    payload.hardenability ||
-    {};
+/* =========================================================
+   BHARAT HARDENABILITY
+========================================================= */
 
-  const distanceResults =
-    source.distanceResults ||
-    payload.hardenabilityRows ||
-    [];
+const normalizeBharatHardenability =
+  (payload) => {
+    const source =
+      payload.hardenabilityTest ||
+      payload.hardenability ||
+      {};
 
-  return {
-    standard: cleanText(
-      firstValue(
-        source.standard,
-        "IS: 3848, ASTM A255, SAE J406"
-      )
-    ),
+    const distanceResults =
+      source.distanceResults ||
+      payload.hardenabilityRows ||
+      [];
 
-    distanceResults: Array.isArray(
-      distanceResults
-    )
-      ? distanceResults.map(
-          (item) => ({
-            distance: cleanText(
-              firstValue(
-                item.distance,
-                item.distanceMm,
-                item.position
-              )
-            ),
+    return {
+      standard:
+        cleanText(
+          firstValue(
+            source.standard,
+            "IS: 3848, ASTM A255, SAE J406"
+          )
+        ),
 
-            specMin: cleanText(
-              item.specMin
-            ),
-
-            specMax: cleanText(
-              item.specMax
-            ),
-
-            result: cleanText(
-              item.result
-            ),
-          })
+      distanceResults:
+        Array.isArray(
+          distanceResults
         )
-      : [],
+          ? distanceResults.map(
+              (item) => ({
+                distance:
+                  cleanText(
+                    firstValue(
+                      item.distance,
+                      item.distanceMm,
+                      item.position
+                    )
+                  ),
+
+                specMin:
+                  cleanText(
+                    item.specMin
+                  ),
+
+                specMax:
+                  cleanText(
+                    item.specMax
+                  ),
+
+                result:
+                  cleanText(
+                    item.result
+                  ),
+              })
+            )
+          : [],
+    };
   };
-};
+
+/* =========================================================
+   BHARAT PAYLOAD NORMALIZATION
+========================================================= */
 
 const normalizeBharatPayload = (
   payload,
   loggedInUser
 ) => {
-  const customerName = cleanText(
-    firstValue(
-      payload.customerName,
-      payload.companyName,
-      payload.messers
-    )
-  );
+  const customerName =
+    cleanText(
+      firstValue(
+        payload.customerName,
+        payload.companyName,
+        payload.messers
+      )
+    );
 
-  const companyName = cleanText(
-    firstValue(
-      payload.companyName,
-      customerName
-    )
-  );
+  const companyName =
+    cleanText(
+      firstValue(
+        payload.companyName,
+        customerName
+      )
+    );
 
   const items =
-    normalizeBharatItems(payload);
+    normalizeBharatItems(
+      payload
+    );
 
   const primaryItem =
     items[0] || {};
@@ -667,57 +960,64 @@ const normalizeBharatPayload = (
   return {
     ...payload,
 
-    mtcProvider: "bharat",
+    mtcProvider:
+      "bharat",
 
-    messers: cleanText(
-      firstValue(
-        payload.messers,
-        customerName,
-        companyName
-      )
-    ),
+    messers:
+      cleanText(
+        firstValue(
+          payload.messers,
+          customerName,
+          companyName
+        )
+      ),
 
     companyName,
 
     customerName,
 
-    customerAddress: cleanText(
-      firstValue(
-        payload.customerAddress,
-        payload.companyAddress,
-        payload.address
-      )
-    ),
+    customerAddress:
+      cleanText(
+        firstValue(
+          payload.customerAddress,
+          payload.companyAddress,
+          payload.address
+        )
+      ),
 
-    orderNo: cleanText(
-      firstValue(
-        payload.orderNo,
-        payload.salesOrderNo
-      )
-    ),
+    orderNo:
+      cleanText(
+        firstValue(
+          payload.orderNo,
+          payload.salesOrderNo
+        )
+      ),
 
-    poNo: cleanText(
-      firstValue(
-        payload.poNo,
-        payload.poNumber,
-        "-"
-      )
-    ),
+    poNo:
+      cleanText(
+        firstValue(
+          payload.poNo,
+          payload.poNumber,
+          "-"
+        )
+      ),
 
-    invoiceNo: cleanText(
-      firstValue(
-        payload.invoiceNo,
-        payload.invoiceNumber
-      )
-    ),
+    invoiceNo:
+      cleanText(
+        firstValue(
+          payload.invoiceNo,
+          payload.invoiceNumber
+        )
+      ),
 
-    tcNo: cleanText(
-      firstValue(
-        payload.tcNo,
-        payload.certificateNo,
-        payload.mtcNumber
-      )
-    ),
+    tcNo:
+      cleanText(
+        firstValue(
+          payload.tcNo,
+          payload.certificateNo,
+          payload.mtcNumber
+        )
+      ),
 
     issueDate:
       payload.issueDate ||
@@ -729,20 +1029,22 @@ const normalizeBharatPayload = (
       payload.issueDate ||
       new Date(),
 
-    tdcNo: cleanText(
-      firstValue(
-        payload.tdcNo,
-        payload.tdcNumber,
-        "N/A"
-      )
-    ),
+    tdcNo:
+      cleanText(
+        firstValue(
+          payload.tdcNo,
+          payload.tdcNumber,
+          "N/A"
+        )
+      ),
 
-    grade: cleanText(
-      firstValue(
-        payload.grade,
-        payload.purchaseSpecification
-      )
-    ),
+    grade:
+      cleanText(
+        firstValue(
+          payload.grade,
+          payload.purchaseSpecification
+        )
+      ),
 
     purchaseSpecification:
       cleanText(
@@ -752,129 +1054,159 @@ const normalizeBharatPayload = (
         )
       ),
 
-    product: cleanText(
-      firstValue(
-        payload.product,
-        payload.productDescription,
-        payload.materialDescription
-      )
-    ),
+    product:
+      cleanText(
+        firstValue(
+          payload.product,
+          payload.productDescription,
+          payload.materialDescription
+        )
+      ),
 
-    manufacturingRoute: cleanText(
-      firstValue(
-        payload.manufacturingRoute,
-        payload.mfgRoute,
-        payload.condition
-      )
-    ),
+    manufacturingRoute:
+      cleanText(
+        firstValue(
+          payload.manufacturingRoute,
+          payload.mfgRoute,
+          payload.condition
+        )
+      ),
 
-    heatLotNo: cleanText(
-      firstValue(
-        payload.heatLotNo,
-        primaryItem.heatNo
-      )
-    ),
+    heatLotNo:
+      cleanText(
+        firstValue(
+          payload.heatLotNo,
+          primaryItem.heatNo
+        )
+      ),
 
-    size: cleanText(
-      firstValue(
-        payload.size,
-        primaryItem.size
-      )
-    ),
+    size:
+      cleanText(
+        firstValue(
+          payload.size,
+          primaryItem.size
+        )
+      ),
 
-    weight: cleanText(
-      firstValue(
-        payload.weight,
-        primaryItem.quantityInKgs
-      )
-    ),
+    weight:
+      cleanText(
+        firstValue(
+          payload.weight,
+          primaryItem.quantityInKgs
+        )
+      ),
 
-    pcs: cleanText(
-      firstValue(
-        payload.pcs,
-        primaryItem.noOfPcs,
-        "-"
-      )
-    ),
+    pcs:
+      cleanText(
+        firstValue(
+          payload.pcs,
+          primaryItem.noOfPcs,
+          "-"
+        )
+      ),
 
-    condition: cleanText(
-      firstValue(
-        payload.condition,
-        payload.manufacturingRoute
-      )
-    ),
+    condition:
+      cleanText(
+        firstValue(
+          payload.condition,
+          payload.manufacturingRoute
+        )
+      ),
 
     items,
 
     chemicalComposition:
       normalizeBharatChemicalComposition(
-        payload.chemicalComposition || []
+        payload.chemicalComposition ||
+          []
       ),
 
     mechanicalProperties: {
-      hardnessBhn: cleanText(
-        firstValue(
-          payload.mechanicalProperties
-            ?.hardnessBhn,
-          payload.hardness?.bhn,
-          payload.hardnessBhn
-        )
-      ),
+      hardnessBhn:
+        cleanText(
+          firstValue(
+            payload
+              .mechanicalProperties
+              ?.hardnessBhn,
+            payload.hardness?.bhn,
+            payload.hardnessBhn
+          )
+        ),
 
-      hardnessSpec: cleanText(
-        firstValue(
-          payload.mechanicalProperties
-            ?.hardnessSpec,
-          payload.hardness?.spec,
-          payload.hardnessSpec
-        )
-      ),
+      hardnessSpec:
+        cleanText(
+          firstValue(
+            payload
+              .mechanicalProperties
+              ?.hardnessSpec,
+            payload.hardness?.spec,
+            payload.hardnessSpec
+          )
+        ),
 
-      hardnessResult: cleanText(
-        firstValue(
-          payload.mechanicalProperties
-            ?.hardnessResult,
-          payload.hardness?.result,
-          payload.hardnessResult
-        )
-      ),
+      hardnessResult:
+        cleanText(
+          firstValue(
+            payload
+              .mechanicalProperties
+              ?.hardnessResult,
+            payload.hardness
+              ?.result,
+            payload.hardnessResult
+          )
+        ),
 
-      sampleRemark: cleanText(
-        firstValue(
-          payload.mechanicalProperties
-            ?.sampleRemark,
-          payload.mechanicalSampleRemark,
-          "ONLY H&T SAMPLE"
-        )
-      ),
+      sampleRemark:
+        cleanText(
+          firstValue(
+            payload
+              .mechanicalProperties
+              ?.sampleRemark,
+            payload
+              .mechanicalSampleRemark,
+            "ONLY H&T SAMPLE"
+          )
+        ),
 
       tensileStrength:
-        payload.mechanicalProperties
-          ?.tensileStrength || {},
+        payload
+          .mechanicalProperties
+          ?.tensileStrength ||
+        {},
 
       yieldStrength:
-        payload.mechanicalProperties
-          ?.yieldStrength || {},
+        payload
+          .mechanicalProperties
+          ?.yieldStrength ||
+        {},
 
       elongation:
-        payload.mechanicalProperties
-          ?.elongation || {},
+        payload
+          .mechanicalProperties
+          ?.elongation ||
+        {},
 
       impactStrength:
-        payload.mechanicalProperties
-          ?.impactStrength || {},
+        payload
+          .mechanicalProperties
+          ?.impactStrength ||
+        {},
     },
 
     rawMaterialDetail: {
-      source: cleanText(
-        payload.rawMaterialDetail
-          ?.source
-      ),
+      source:
+        cleanText(
+          payload
+            .rawMaterialDetail
+            ?.source
+        ),
 
-      reference: cleanText(
-        payload.rawMaterialDetail
-          ?.reference
-      ),
+      reference:
+        cleanText(
+          payload
+            .rawMaterialDetail
+            ?.reference
+        ),
     },
 
     hardenabilityTest:
@@ -883,270 +1215,648 @@ const normalizeBharatPayload = (
       ),
 
     ultrasonicTesting: {
-      referenceStandard: cleanText(
-        firstValue(
-          payload.ultrasonicTesting
-            ?.referenceStandard,
-          "ASTM A388"
-        )
-      ),
+      referenceStandard:
+        cleanText(
+          firstValue(
+            payload
+              .ultrasonicTesting
+              ?.referenceStandard,
+            "ASTM A388"
+          )
+        ),
 
-      acceptance: cleanText(
-        firstValue(
-          payload.ultrasonicTesting
-            ?.acceptance,
-          "4MM FBH, 2MHZ"
-        )
-      ),
+      acceptance:
+        cleanText(
+          firstValue(
+            payload
+              .ultrasonicTesting
+              ?.acceptance,
+            "4MM FBH, 2MHZ"
+          )
+        ),
 
-      probeUsed: cleanText(
-        firstValue(
-          payload.ultrasonicTesting
-            ?.probeUsed,
-          "24MM"
-        )
-      ),
+      probeUsed:
+        cleanText(
+          firstValue(
+            payload
+              .ultrasonicTesting
+              ?.probeUsed,
+            "24MM"
+          )
+        ),
 
-      result: cleanText(
-        firstValue(
-          payload.ultrasonicTesting
-            ?.result,
-          "100% SATISFACTORY"
-        )
-      ),
+      result:
+        cleanText(
+          firstValue(
+            payload
+              .ultrasonicTesting
+              ?.result,
+            "100% SATISFACTORY"
+          )
+        ),
     },
 
     gasAnalysis: {
       o2:
-        payload.gasAnalysis?.o2 ||
-        {},
+        payload.gasAnalysis
+          ?.o2 || {},
 
       n2:
-        payload.gasAnalysis?.n2 ||
-        {},
+        payload.gasAnalysis
+          ?.n2 || {},
 
       h2:
-        payload.gasAnalysis?.h2 ||
-        {},
+        payload.gasAnalysis
+          ?.h2 || {},
     },
 
     depthOfDecarbonization: {
-      mixupTesting: cleanText(
-        firstValue(
-          payload.depthOfDecarbonization
-            ?.mixupTesting,
-          payload.mixupTesting,
-          "OK"
-        )
-      ),
+      mixupTesting:
+        cleanText(
+          firstValue(
+            payload
+              .depthOfDecarbonization
+              ?.mixupTesting,
+            payload.mixupTesting,
+            "OK"
+          )
+        ),
 
-      microstructure: cleanText(
-        firstValue(
-          payload.depthOfDecarbonization
-            ?.microstructure,
-          payload.microstructure,
-          "Pearlite + Ferrite"
-        )
-      ),
+      microstructure:
+        cleanText(
+          firstValue(
+            payload
+              .depthOfDecarbonization
+              ?.microstructure,
+            payload.microstructure,
+            "Pearlite + Ferrite"
+          )
+        ),
     },
 
     inclusionRating:
-      payload.inclusionRating || {},
+      payload.inclusionRating ||
+      {},
 
     grainSize: {
-      specified: cleanText(
-        firstValue(
-          payload.grainSize
-            ?.specified,
-          "5-8"
-        )
-      ),
+      specified:
+        cleanText(
+          firstValue(
+            payload.grainSize
+              ?.specified,
+            "5-8"
+          )
+        ),
 
-      achieved: cleanText(
-        firstValue(
-          payload.grainSize
-            ?.achieved,
-          typeof payload.grainSize ===
-            "string"
-            ? payload.grainSize
-            : ""
-        )
-      ),
+      achieved:
+        cleanText(
+          firstValue(
+            payload.grainSize
+              ?.achieved,
+            typeof payload.grainSize ===
+              "string"
+              ? payload.grainSize
+              : ""
+          )
+        ),
     },
 
-    macrostructure: cleanText(
-      firstValue(
-        payload.macrostructure,
-        payload.macroStructure
-      )
-    ),
+    macrostructure:
+      cleanText(
+        firstValue(
+          payload.macrostructure,
+          payload.macroStructure
+        )
+      ),
 
     physicalTesting: {
-      sdt: cleanText(
-        firstValue(
-          payload.physicalTesting
-            ?.sdt,
-          "N/A"
-        )
-      ),
+      sdt:
+        cleanText(
+          firstValue(
+            payload
+              .physicalTesting
+              ?.sdt,
+            "N/A"
+          )
+        ),
 
-      coldBendTest: cleanText(
-        firstValue(
-          payload.physicalTesting
-            ?.coldBendTest,
-          "N/A"
-        )
-      ),
+      coldBendTest:
+        cleanText(
+          firstValue(
+            payload
+              .physicalTesting
+              ?.coldBendTest,
+            "N/A"
+          )
+        ),
 
-      surface: cleanText(
-        payload.physicalTesting
-          ?.surface
-      ),
+      surface:
+        cleanText(
+          payload
+            .physicalTesting
+            ?.surface
+        ),
     },
 
-    identificationDetail: cleanText(
-      firstValue(
-        payload.identificationDetail,
-        "Heat No, Grade, Size has been marked on Bar. Free from bend"
-      )
-    ),
+    identificationDetail:
+      cleanText(
+        firstValue(
+          payload.identificationDetail,
+          "Heat No, Grade, Size has been marked on Bar. Free from bend"
+        )
+      ),
 
-    colourCode: cleanText(
-      firstValue(
-        payload.colourCode,
-        payload.colorCode,
-        "N/A"
-      )
-    ),
+    colourCode:
+      cleanText(
+        firstValue(
+          payload.colourCode,
+          payload.colorCode,
+          "N/A"
+        )
+      ),
 
-    dimensionalInspection: cleanText(
-      firstValue(
-        payload.dimensionalInspection,
-        "Dimensional inspection carried out as per above mentioned PO/TDS and found within limits"
-      )
-    ),
+    dimensionalInspection:
+      cleanText(
+        firstValue(
+          payload
+            .dimensionalInspection,
+          "Dimensional inspection carried out as per above mentioned PO/TDS and found within limits"
+        )
+      ),
 
-    visualInspection: cleanText(
-      firstValue(
-        payload.visualInspection,
-        "Visual inspection carried out as per T.D.C and found satisfactory"
-      )
-    ),
+    visualInspection:
+      cleanText(
+        firstValue(
+          payload.visualInspection,
+          "Visual inspection carried out as per T.D.C and found satisfactory"
+        )
+      ),
 
-    resultDeclaration: cleanText(
-      firstValue(
-        payload.resultDeclaration,
-        payload.result,
-        "We hereby certify that material is free from radioactive elements, has been manufactured and inspected, and found acceptable as per customer requirement"
-      )
-    ),
+    resultDeclaration:
+      cleanText(
+        firstValue(
+          payload.resultDeclaration,
+          payload.result,
+          "We hereby certify that material is free from radioactive elements, has been manufactured and inspected, and found acceptable as per customer requirement"
+        )
+      ),
 
-    preparedBy: cleanText(
-      firstValue(
-        payload.preparedBy,
-        loggedInUser?.name
-      )
-    ),
+    preparedBy:
+      cleanText(
+        firstValue(
+          payload.preparedBy,
+          loggedInUser?.name
+        )
+      ),
 
     createdBy:
       loggedInUser?._id ||
       payload.createdBy,
+
+    updatedBy:
+      payload.updatedBy ||
+      null,
   };
 };
+
+/* =========================================================
+   SBE GERMANY PAYLOAD NORMALIZATION
+
+   IMPORTANT:
+
+   Frontend is allowed to control only:
+
+   CREATE:
+   - grade
+   - customerName
+   - quantity
+   - dimension
+
+   UPDATE:
+   - customerName
+   - quantity
+   - dimension
+
+   ALL other certificate data comes from backend config.
+========================================================= */
+
+const normalizeSbeGermanyPayload =
+  (
+    payload,
+    loggedInUser
+  ) => {
+    const grade =
+      cleanText(
+        payload.grade
+      );
+
+    if (!grade) {
+      throw new Error(
+        "Grade is required"
+      );
+    }
+
+    /*
+     * This is the master source for:
+     *
+     * materialCode
+     * materialDescription
+     * execution
+     * hardnessBHN
+     * chemicalComposition
+     */
+    const gradeConfig =
+      getSbeGradeConfig(
+        grade
+      );
+
+    const customerName =
+      cleanText(
+        payload.customerName
+      );
+
+    const quantity =
+      cleanText(
+        firstValue(
+          payload.quantity,
+          payload.pcs,
+          "1"
+        )
+      );
+
+    const dimension =
+      cleanText(
+        firstValue(
+          payload.dimension,
+          payload.size
+        )
+      );
+
+    /*
+     * These MUST already have been generated
+     * in createMtcCertificate() or retained
+     * from the existing record during update.
+     */
+    const productionOrder =
+      cleanText(
+        payload.productionOrder
+      );
+
+    const customerPoNumber =
+      cleanText(
+        payload.customerPoNumber
+      );
+
+    if (!productionOrder) {
+      throw new Error(
+        "SBE Fertigungsauftrag was not generated"
+      );
+    }
+
+    if (!customerPoNumber) {
+      throw new Error(
+        "SBE Kundenbestellnummer was not generated"
+      );
+    }
+
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT add:
+     *
+     * ...payload
+     *
+     * here.
+     *
+     * We intentionally return an explicit object
+     * to stop users from overriding controlled data.
+     */
+    return {
+      mtcProvider:
+        "sbe_germany",
+
+      /* ===================================================
+         COMMON MTC FIELDS
+      =================================================== */
+
+      companyName:
+        customerName,
+
+      customerName,
+
+      customerAddress:
+        "",
+
+      /*
+       * We map generated numbers to the base
+       * common fields too.
+       */
+      orderNo:
+        productionOrder,
+
+      poNo:
+        customerPoNumber,
+
+      invoiceNo:
+        "",
+
+      mtcDate:
+        payload.mtcDate ||
+        new Date(),
+
+      grade:
+        gradeConfig.grade,
+
+      /*
+       * Base MtcCertificate requires heatLotNo.
+       *
+       * SBE certificate does not expose a separate
+       * editable heat number field, therefore we retain
+       * productionOrder internally for this required field.
+       */
+      heatLotNo:
+        productionOrder,
+
+      size:
+        dimension,
+
+      weight:
+        "",
+
+      pcs:
+        quantity,
+
+      condition:
+        SBE_FIXED_VALUES
+          .condition,
+
+      /* ===================================================
+         CHEMISTRY FROM MASTER CONFIG ONLY
+      =================================================== */
+
+      chemicalComposition:
+        JSON.parse(
+          JSON.stringify(
+            gradeConfig
+              .chemicalComposition
+          )
+        ),
+
+      /* ===================================================
+         SBE FIXED DATA
+      =================================================== */
+
+      position:
+        SBE_FIXED_VALUES
+          .position,
+
+      quantity,
+
+      quantityUnit:
+        SBE_FIXED_VALUES
+          .quantityUnit,
+
+      meltingMethod:
+        SBE_FIXED_VALUES
+          .meltingMethod,
+
+      castingProcess:
+        SBE_FIXED_VALUES
+          .castingProcess,
+
+      /* ===================================================
+         GRADE-CONTROLLED DATA
+      =================================================== */
+
+      materialCode:
+        gradeConfig
+          .materialCode,
+
+      materialDescription:
+        gradeConfig
+          .materialDescription,
+
+      execution:
+        gradeConfig
+          .execution,
+
+      hardnessBHN:
+        gradeConfig
+          .hardnessBHN,
+
+      /* ===================================================
+         AUTO GENERATED UNIQUE NUMBERS
+      =================================================== */
+
+      productionOrder,
+
+      customerPoNumber,
+
+      /* ===================================================
+         USER VALUE
+      =================================================== */
+
+      dimension,
+
+      /* ===================================================
+         FIXED SBE TEST VALUES
+      =================================================== */
+
+      materialRemark:
+        SBE_FIXED_VALUES
+          .materialRemark,
+
+      ultrasonicTest:
+        SBE_FIXED_VALUES
+          .ultrasonicTest,
+
+      cleanlinessRating:
+        SBE_FIXED_VALUES
+          .cleanlinessRating,
+
+      meltingProcess:
+        SBE_FIXED_VALUES
+          .meltingProcess,
+
+      macroMicroStructure:
+        SBE_FIXED_VALUES
+          .macroMicroStructure,
+
+      chemicalOrder:
+        [...SBE_CHEMICAL_ORDER],
+
+      /* ===================================================
+         AUDIT
+      =================================================== */
+
+      createdBy:
+        loggedInUser?._id ||
+        payload.createdBy,
+
+      updatedBy:
+        payload.updatedBy ||
+        null,
+    };
+  };
 
 /* =========================================================
    PROVIDER REGISTRY
 ========================================================= */
 
-/**
- * Add every future provider only inside this registry.
- *
- * Example:
- *
- * tata: {
- *   model: TataMtcCertificate,
- *   template: tataTemplate,
- *   normalizePayload: normalizeTataPayload,
- *   filePrefix: "TATA_TC",
- * }
- */
 const MTC_PROVIDER_REGISTRY = {
+  /* =======================================================
+     GLORIA
+  ======================================================= */
+
   gloria: {
-  provider: "gloria",
+    provider:
+      "gloria",
 
-  model: GloriaMtcCertificate,
+    model:
+      GloriaMtcCertificate,
 
-  template: gloriaTemplate,
+    template:
+      gloriaTemplate,
 
-  normalizePayload: normalizeGloriaPayload,
+    normalizePayload:
+      normalizeGloriaPayload,
 
-  filePrefix: "MTC",
+    filePrefix:
+      "MTC",
 
-  getCompanyName: (mtc) =>
-    firstValue(
-      mtc.messers,
-      mtc.companyName,
-      "Customer"
-    ),
+    getCompanyName:
+      (mtc) =>
+        firstValue(
+          mtc.messers,
+          mtc.companyName,
+          mtc.customerName,
+          "Customer"
+        ),
 
-  getDocumentNumber: (mtc) =>
-    firstValue(
-      mtc.orderNo,
-      mtc.fileNo,
-      mtc._id
-    ),
+    getDocumentNumber:
+      (mtc) =>
+        firstValue(
+          mtc.orderNo,
+          mtc.fileNo,
+          mtc._id
+        ),
 
-  getDocumentDate: (mtc) =>
-    firstValue(
-      mtc.mtcDate,
-      mtc.createdAt,
-      new Date()
-    ),
-},
+    getDocumentDate:
+      (mtc) =>
+        firstValue(
+          mtc.mtcDate,
+          mtc.createdAt,
+          new Date()
+        ),
+  },
+
+  /* =======================================================
+     BHARAT
+  ======================================================= */
 
   bharat: {
-    provider: "bharat",
+    provider:
+      "bharat",
 
-    model: BharatMtcCertificate,
+    model:
+      BharatMtcCertificate,
 
-    template: bharatTemplate,
+    template:
+      bharatTemplate,
 
     normalizePayload:
       normalizeBharatPayload,
 
-    filePrefix: "TC_BHARAT",
+    filePrefix:
+      "TC_BHARAT",
 
-    getCompanyName: (mtc) =>
-      firstValue(
-        mtc.customerName,
-        mtc.companyName,
-        mtc.messers,
-        "Customer"
-      ),
+    getCompanyName:
+      (mtc) =>
+        firstValue(
+          mtc.customerName,
+          mtc.companyName,
+          mtc.messers,
+          "Customer"
+        ),
 
-    getDocumentNumber: (mtc) =>
-      firstValue(
-        mtc.tcNo,
-        mtc.invoiceNo,
-        mtc.orderNo,
-        mtc._id
-      ),
+    getDocumentNumber:
+      (mtc) =>
+        firstValue(
+          mtc.tcNo,
+          mtc.invoiceNo,
+          mtc.orderNo,
+          mtc._id
+        ),
 
-    getDocumentDate: (mtc) =>
-      firstValue(
-        mtc.issueDate,
-        mtc.mtcDate,
-        mtc.createdAt,
-        new Date()
-      ),
+    getDocumentDate:
+      (mtc) =>
+        firstValue(
+          mtc.issueDate,
+          mtc.mtcDate,
+          mtc.createdAt,
+          new Date()
+        ),
+  },
+
+  /* =======================================================
+     SBE GERMANY
+  ======================================================= */
+
+  sbe_germany: {
+    provider:
+      "sbe_germany",
+
+    model:
+      SbeGermanyMtcCertificate,
+
+    template:
+      mtcGermanTemplate,
+
+    normalizePayload:
+      normalizeSbeGermanyPayload,
+
+    filePrefix:
+      "SBE_TC",
+
+    getCompanyName:
+      (mtc) =>
+        firstValue(
+          mtc.customerName,
+          mtc.companyName,
+          "Customer"
+        ),
+
+    getDocumentNumber:
+      (mtc) =>
+        firstValue(
+          mtc.productionOrder,
+          mtc.orderNo,
+          mtc.customerPoNumber,
+          mtc.poNo,
+          mtc._id
+        ),
+
+    getDocumentDate:
+      (mtc) =>
+        firstValue(
+          mtc.mtcDate,
+          mtc.createdAt,
+          new Date()
+        ),
   },
 };
+
+/* =========================================================
+   GET PROVIDER CONFIG
+========================================================= */
 
 const getProviderConfiguration = (
   provider
 ) => {
   const normalizedProvider =
-    normalizeProvider(provider);
+    normalizeProvider(
+      provider
+    );
 
   const configuration =
     MTC_PROVIDER_REGISTRY[
@@ -1162,11 +1872,12 @@ const getProviderConfiguration = (
   return configuration;
 };
 
-const getConfiguredProviders = () => {
-  return Object.keys(
-    MTC_PROVIDER_REGISTRY
-  );
-};
+const getConfiguredProviders =
+  () => {
+    return Object.keys(
+      MTC_PROVIDER_REGISTRY
+    );
+  };
 
 /* =========================================================
    TEMPLATE SELECTION
@@ -1181,375 +1892,727 @@ const getTemplateByProvider = (
 };
 
 /* =========================================================
-   PDF GENERATION
+   MTC HTML -> PDF
+
+   COMPLETELY INDEPENDENT FROM WHATSAPP
 ========================================================= */
 
 const generateMtcPdfBuffer = async (
   mtc
 ) => {
-  const plainMtc =
-    typeof mtc?.toObject ===
-    "function"
-      ? mtc.toObject({
-          virtuals: true,
-        })
-      : mtc;
+  return runWithChromiumLock(
+    "MTC_PDF",
 
-  const template =
-    getTemplateByProvider(
-      plainMtc.mtcProvider
-    );
+    async () => {
+      const plainMtc =
+        typeof mtc?.toObject ===
+        "function"
+          ? mtc.toObject({
+              virtuals: true,
+            })
+          : mtc;
 
-  const html = template(plainMtc);
+      const template =
+        getTemplateByProvider(
+          plainMtc.mtcProvider
+        );
 
-  let page;
+      if (
+        typeof template !==
+        "function"
+      ) {
+        throw new Error(
+          `Invalid MTC template for provider: ${plainMtc.mtcProvider}`
+        );
+      }
 
-  const {
-    getWhatsappBrowser,
-    pauseWhatsappHealthForPdf,
-    resumeWhatsappHealthAfterPdf,
-  } = require("../util/whatsappClient");
+      const html =
+        template(plainMtc);
 
-  try {
-    pauseWhatsappHealthForPdf();
+      if (
+        !html ||
+        typeof html !==
+        "string"
+      ) {
+        throw new Error(
+          `MTC template returned invalid HTML for provider: ${plainMtc.mtcProvider}`
+        );
+      }
 
-    const whatsappBrowser =
-      getWhatsappBrowser();
+      let browser = null;
+      let page = null;
 
-    if (
-      !whatsappBrowser ||
-      !whatsappBrowser.isConnected()
-    ) {
-      throw new Error(
-        "WhatsApp Chromium is not connected. Please restart the Node app once and try again."
-      );
+      try {
+        /* =================================================
+           ENSURE CHROMIUM
+        ================================================= */
+
+        const executablePath =
+          await ensureChromium();
+
+        if (
+          !executablePath ||
+          !fs.existsSync(
+            executablePath
+          )
+        ) {
+          throw new Error(
+            "MTC PDF Chromium executable is unavailable."
+          );
+        }
+
+        console.log(
+          "MTC PDF CHROMIUM START =>",
+          executablePath
+        );
+
+        console.log(
+          "MTC PDF PROVIDER =>",
+          plainMtc.mtcProvider
+        );
+
+        /* =================================================
+           START TEMPORARY CHROMIUM
+        ================================================= */
+
+        browser =
+          await puppeteer.launch({
+            executablePath,
+
+            headless: true,
+
+            args: [
+              "--no-sandbox",
+              "--disable-setuid-sandbox",
+              "--disable-dev-shm-usage",
+              "--disable-gpu",
+              "--disable-extensions",
+              "--disable-background-networking",
+              "--disable-background-timer-throttling",
+              "--disable-renderer-backgrounding",
+              "--disable-features=TranslateUI",
+              "--disable-ipc-flooding-protection",
+              "--single-process",
+              "--no-zygote",
+              "--no-first-run",
+            ],
+          });
+
+        if (
+          !browser ||
+          !browser.isConnected()
+        ) {
+          throw new Error(
+            "MTC PDF Chromium failed to start."
+          );
+        }
+
+        /* =================================================
+           NEW PAGE
+        ================================================= */
+
+        page =
+          await browser.newPage();
+
+        /* =================================================
+           LOAD HTML
+        ================================================= */
+
+        await page.setContent(
+          html,
+          {
+            waitUntil:
+              "domcontentloaded",
+
+            timeout:
+              120000,
+          }
+        );
+
+        await page.emulateMediaType(
+          "screen"
+        );
+
+        /* =================================================
+           WAIT FOR FONTS
+        ================================================= */
+
+        try {
+          await page.evaluateHandle(
+            "document.fonts.ready"
+          );
+        } catch (error) {
+          console.log(
+            "MTC PDF font wait skipped:",
+            error.message
+          );
+        }
+
+        /* =================================================
+           WAIT FOR ALL IMAGES
+        ================================================= */
+
+        try {
+          await page.evaluate(
+            async () => {
+              const images =
+                Array.from(
+                  document.images
+                );
+
+              await Promise.all(
+                images.map(
+                  (image) => {
+                    if (
+                      image.complete
+                    ) {
+                      return Promise.resolve();
+                    }
+
+                    return new Promise(
+                      (resolve) => {
+                        image.onload =
+                          resolve;
+
+                        image.onerror =
+                          resolve;
+                      }
+                    );
+                  }
+                )
+              );
+            }
+          );
+        } catch (error) {
+          console.log(
+            "MTC PDF image wait skipped:",
+            error.message
+          );
+        }
+
+        await new Promise(
+          (resolve) =>
+            setTimeout(
+              resolve,
+              500
+            )
+        );
+
+        /* =================================================
+           GENERATE PDF
+        ================================================= */
+
+        const pdfBuffer =
+          await page.pdf({
+            format: "A4",
+
+            printBackground:
+              true,
+
+            preferCSSPageSize:
+              true,
+
+            margin: {
+              top: "0mm",
+              right: "0mm",
+              bottom: "0mm",
+              left: "0mm",
+            },
+          });
+
+        if (
+          !pdfBuffer ||
+          pdfBuffer.length ===
+            0
+        ) {
+          throw new Error(
+            "MTC PDF generation returned an empty file."
+          );
+        }
+
+        console.log(
+          "MTC PDF BUFFER GENERATED SUCCESSFULLY =>",
+          plainMtc.mtcProvider
+        );
+
+        return pdfBuffer;
+      } catch (error) {
+        console.log(
+          "MTC PDF BUFFER FAILED =>",
+          error.message
+        );
+
+        throw error;
+      } finally {
+        if (page) {
+          await page
+            .close()
+            .catch(
+              () => {}
+            );
+        }
+
+        if (browser) {
+          await browser
+            .close()
+            .catch(
+              () => {}
+            );
+
+          console.log(
+            "MTC PDF CHROMIUM CLOSED"
+          );
+        }
+      }
     }
-
-    console.log(
-      `MTC PDF USING WHATSAPP CHROMIUM => ${plainMtc.mtcProvider}`
-    );
-
-    page =
-      await whatsappBrowser.newPage();
-
-    await page.setContent(html, {
-      waitUntil: "domcontentloaded",
-      timeout: 120000,
-    });
-
-    await page.emulateMediaType(
-      "screen"
-    );
-
-    try {
-      await page.evaluateHandle(
-        "document.fonts.ready"
-      );
-    } catch (error) {
-      console.log(
-        "MTC PDF font wait skipped:",
-        error.message
-      );
-    }
-
-    await new Promise((resolve) =>
-      setTimeout(resolve, 500)
-    );
-
-    return await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: true,
-
-      margin: {
-        top: "0mm",
-        right: "0mm",
-        bottom: "0mm",
-        left: "0mm",
-      },
-    });
-  } finally {
-    if (page) {
-      await page
-        .close()
-        .catch(() => {});
-    }
-
-    resumeWhatsappHealthAfterPdf();
-  }
+  );
 };
+
+/* =========================================================
+   GENERATE MTC PDF FILE
+========================================================= */
 
 const generateMtcPdf = async (
   mtc
 ) => {
-  return runWithChromiumLock(
-    "MTC PDF",
-    async () => {
-      const providerConfiguration =
-        getProviderConfiguration(
-          mtc.mtcProvider
-        );
+  const providerConfiguration =
+    getProviderConfiguration(
+      mtc.mtcProvider
+    );
 
-      const pdfDirectory =
-        ensurePdfDirectory();
+  const pdfDirectory =
+    ensurePdfDirectory();
 
-      const company =
-        sanitizeFileName(
-          providerConfiguration.getCompanyName(
-            mtc
-          )
-        ) || "Customer";
+  const company =
+    sanitizeFileName(
+      providerConfiguration
+        .getCompanyName(mtc)
+    ) || "Customer";
 
-      const documentNumber =
-        sanitizeFileName(
-          providerConfiguration.getDocumentNumber(
-            mtc
-          )
-        ) ||
-        sanitizeFileName(mtc._id) ||
-        "Document";
-
-      const grade =
-        sanitizeFileName(
-          firstValue(
-            mtc.grade,
-            "Grade"
-          )
-        ) || "Grade";
-
-      const date = formatFileDate(
-        providerConfiguration.getDocumentDate(
+  const documentNumber =
+    sanitizeFileName(
+      providerConfiguration
+        .getDocumentNumber(
           mtc
         )
-      );
+    ) ||
+    sanitizeFileName(
+      mtc._id
+    ) ||
+    "Document";
 
-      const uniqueId =
-        generateUniqueId();
+  const grade =
+    sanitizeFileName(
+      firstValue(
+        mtc.grade,
+        "Grade"
+      )
+    ) || "Grade";
 
-      const filePrefix =
-        sanitizeFileName(
-          providerConfiguration.filePrefix ||
-            "MTC"
-        );
+  const date =
+    formatFileDate(
+      providerConfiguration
+        .getDocumentDate(
+          mtc
+        )
+    );
 
-      const fileName = [
-        filePrefix,
-        company,
-        documentNumber,
-        grade,
-        date,
-        uniqueId,
-      ]
-        .filter(Boolean)
-        .join("_")
-        .concat(".pdf");
+  const uniqueId =
+    generateUniqueId();
 
-      const filePath = path.join(
-        pdfDirectory,
-        fileName
-      );
+  const filePrefix =
+    sanitizeFileName(
+      providerConfiguration
+        .filePrefix ||
+        "MTC"
+    );
 
-      const pdfBuffer =
-        await generateMtcPdfBuffer(mtc);
+  const fileName = [
+    filePrefix,
+    company,
+    documentNumber,
+    grade,
+    date,
+    uniqueId,
+  ]
+    .filter(Boolean)
+    .join("_")
+    .concat(".pdf");
 
-      fs.writeFileSync(
-        filePath,
-        pdfBuffer
-      );
+  const filePath =
+    path.join(
+      pdfDirectory,
+      fileName
+    );
 
-      return {
-        fileName,
-
-        filePath,
-
-        fileUrl: `${PUBLIC_MTC_UPLOAD_PATH}/${fileName}`,
-
-        generatedAt: new Date(),
-      };
-    }
+  console.log(
+    "NEW MTC PDF CREATED =>",
+    fileName
   );
+
+  const pdfBuffer =
+    await generateMtcPdfBuffer(
+      mtc
+    );
+
+  fs.writeFileSync(
+    filePath,
+    pdfBuffer
+  );
+
+  return {
+    fileName,
+
+    filePath,
+
+    fileUrl:
+      `${PUBLIC_MTC_UPLOAD_PATH}/${fileName}`,
+
+    generatedAt:
+      new Date(),
+  };
+};
+
+/* =========================================================
+   APPLY PDF DATA
+========================================================= */
+
+const applyPdfData = (
+  mtc,
+  pdfData
+) => {
+  mtc.pdf = {
+    fileName:
+      pdfData.fileName,
+
+    filePath:
+      pdfData.filePath,
+
+    fileUrl:
+      pdfData.fileUrl,
+
+    generatedAt:
+      pdfData.generatedAt ||
+      new Date(),
+  };
+
+  mtc.pdfUrl =
+    pdfData.fileUrl;
+
+  mtc.pdfFileName =
+    pdfData.fileName;
+
+  if (
+    typeof mtc.markModified ===
+    "function"
+  ) {
+    mtc.markModified(
+      "pdf"
+    );
+  }
+};
+
+/* =========================================================
+   DELETE PDF FILE
+========================================================= */
+
+const deletePdfFile = (
+  filePath
+) => {
+  if (
+    filePath &&
+    fs.existsSync(
+      filePath
+    )
+  ) {
+    try {
+      fs.unlinkSync(
+        filePath
+      );
+    } catch (error) {
+      console.error(
+        "DELETE PDF ERROR =>",
+        error
+      );
+    }
+  }
 };
 
 /* =========================================================
    CREATE CERTIFICATE
 ========================================================= */
 
-const createMtcCertificate = async (
-  payload,
-  loggedInUser
-) => {
-  let createdCertificate = null;
-  let generatedPdfData = null;
+const createMtcCertificate =
+  async (
+    payload,
+    loggedInUser
+  ) => {
+    let createdCertificate =
+      null;
 
-  try {
-    const provider =
-      normalizeProvider(
-        payload?.mtcProvider
-      );
+    let generatedPdfData =
+      null;
 
-    const providerConfiguration =
-      getProviderConfiguration(
-        provider
-      );
-
-    if (
-      !providerConfiguration?.model ||
-      typeof providerConfiguration.model
-        .create !== "function"
-    ) {
-      throw new Error(
-        `Invalid MTC model configured for provider: ${provider}`
-      );
-    }
-
-    if (
-      typeof providerConfiguration
-        .normalizePayload !==
-      "function"
-    ) {
-      throw new Error(
-        `MTC payload normalizer is missing for provider: ${provider}`
-      );
-    }
-
-    const normalizedPayload =
-      providerConfiguration.normalizePayload(
-        {
-          ...payload,
-          mtcProvider: provider,
-        },
-        loggedInUser
-      );
-
-    if (
-      !normalizedPayload ||
-      typeof normalizedPayload !==
-        "object"
-    ) {
-      throw new Error(
-        `Invalid normalized MTC payload for provider: ${provider}`
-      );
-    }
-
-    /*
-     * Keep provider fixed after normalization.
-     */
-    normalizedPayload.mtcProvider =
-      provider;
-
-    /*
-     * Uses the correct discriminator model:
-     *
-     * gloria => GloriaMtcCertificate
-     * bharat => BharatMtcCertificate
-     */
-    createdCertificate =
-      await providerConfiguration.model.create(
-        normalizedPayload
-      );
-
-    generatedPdfData =
-      await generateMtcPdf(
-        createdCertificate
-      );
-
-    if (
-      !generatedPdfData?.fileName ||
-      !generatedPdfData?.filePath ||
-      !generatedPdfData?.fileUrl
-    ) {
-      throw new Error(
-        "MTC PDF generation returned incomplete file details"
-      );
-    }
-
-    createdCertificate.pdf = {
-      fileName:
-        generatedPdfData.fileName,
-
-      filePath:
-        generatedPdfData.filePath,
-
-      fileUrl:
-        generatedPdfData.fileUrl,
-
-      generatedAt:
-        generatedPdfData.generatedAt ||
-        new Date(),
-    };
-
-    createdCertificate.pdfUrl =
-      generatedPdfData.fileUrl;
-
-    createdCertificate.pdfFileName =
-      generatedPdfData.fileName;
-
-    /*
-     * Safe for nested pdf object.
-     */
-    createdCertificate.markModified(
-      "pdf"
-    );
-
-    await createdCertificate.save();
-
-    return createdCertificate;
-  } catch (error) {
-    /*
-     * Delete generated PDF if database update
-     * failed after PDF creation.
-     */
-    if (
-      generatedPdfData?.filePath &&
-      fs.existsSync(
-        generatedPdfData.filePath
-      )
-    ) {
-      try {
-        fs.unlinkSync(
-          generatedPdfData.filePath
+    try {
+      const provider =
+        normalizeProvider(
+          payload?.mtcProvider
         );
-      } catch (fileDeleteError) {
-        console.error(
-          "FAILED TO DELETE GENERATED MTC PDF =>",
-          fileDeleteError
+
+      const providerConfiguration =
+        getProviderConfiguration(
+          provider
+        );
+
+      if (
+        !providerConfiguration
+          ?.model ||
+        typeof providerConfiguration
+          .model.create !==
+          "function"
+      ) {
+        throw new Error(
+          `Invalid MTC model configured for provider: ${provider}`
         );
       }
-    }
 
-    /*
-     * Roll back the newly created database record
-     * whenever any later operation fails.
-     */
-    if (createdCertificate?._id) {
-      try {
-        await createdCertificate
-          .constructor
-          .deleteOne({
-            _id:
-              createdCertificate._id,
-          });
-      } catch (deleteError) {
-        console.error(
-          "FAILED TO ROLLBACK MTC RECORD =>",
+      if (
+        typeof providerConfiguration
+          .normalizePayload !==
+        "function"
+      ) {
+        throw new Error(
+          `MTC payload normalizer is missing for provider: ${provider}`
+        );
+      }
+
+      let payloadForNormalization = {
+        ...payload,
+
+        mtcProvider:
+          provider,
+      };
+
+      /* =====================================================
+         SBE GERMANY CONTROLLED CREATE
+      ===================================================== */
+
+      if (
+        provider ===
+        "sbe_germany"
+      ) {
+        /*
+         * Backend validates only permitted
+         * frontend values.
+         */
+        validateSbeCreatePayload(
+          payload
+        );
+
+        /*
+         * Generate TWO globally unique numbers
+         * for this daily YYMMDD sequence.
+         *
+         * Example:
+         *
+         * Fertigungsauftrag:
+         * 26082711
+         *
+         * Kundenbestellnummer:
+         * 26082712
+         */
+        const {
+          productionOrder,
+          customerPoNumber,
+        } =
+          await generateSbeDocumentNumbers(
+            new Date()
+          );
+
+        /*
+         * IMPORTANT:
+         *
+         * Construct a completely new payload.
+         *
+         * We intentionally do NOT forward
+         * unwanted SBE frontend fields.
+         */
+        payloadForNormalization = {
+          mtcProvider:
+            "sbe_germany",
+
+          grade:
+            cleanText(
+              payload.grade
+            ),
+
+          customerName:
+            cleanText(
+              payload.customerName
+            ),
+
+          quantity:
+            cleanText(
+              firstValue(
+                payload.quantity,
+                payload.pcs,
+                "1"
+              )
+            ),
+
+          dimension:
+            cleanText(
+              firstValue(
+                payload.dimension,
+                payload.size
+              )
+            ),
+
+          productionOrder,
+
+          customerPoNumber,
+
+          /*
+           * Server controls certificate date.
+           */
+          mtcDate:
+            new Date(),
+        };
+
+        console.log(
+          "SBE GENERATED FERTIGUNGSAUFTRAG =>",
+          productionOrder
+        );
+
+        console.log(
+          "SBE GENERATED KUNDENBESTELLNUMMER =>",
+          customerPoNumber
+        );
+      }
+
+      /* =====================================================
+         NORMALIZE PROVIDER DATA
+      ===================================================== */
+
+      const normalizedPayload =
+        providerConfiguration
+          .normalizePayload(
+            payloadForNormalization,
+            loggedInUser
+          );
+
+      if (
+        !normalizedPayload ||
+        typeof normalizedPayload !==
+          "object"
+      ) {
+        throw new Error(
+          `Invalid normalized MTC payload for provider: ${provider}`
+        );
+      }
+
+      normalizedPayload.mtcProvider =
+        provider;
+
+      /* =====================================================
+         CREATE DB RECORD
+      ===================================================== */
+
+      createdCertificate =
+        await providerConfiguration
+          .model.create(
+            normalizedPayload
+          );
+
+      /* =====================================================
+         GENERATE PDF
+      ===================================================== */
+
+      generatedPdfData =
+        await generateMtcPdf(
+          createdCertificate
+        );
+
+      if (
+        !generatedPdfData
+          ?.fileName ||
+        !generatedPdfData
+          ?.filePath ||
+        !generatedPdfData
+          ?.fileUrl
+      ) {
+        throw new Error(
+          "MTC PDF generation returned incomplete file details"
+        );
+      }
+
+      /* =====================================================
+         ATTACH PDF DATA
+      ===================================================== */
+
+      applyPdfData(
+        createdCertificate,
+        generatedPdfData
+      );
+
+      await createdCertificate.save();
+
+      return createdCertificate;
+    } catch (error) {
+      /*
+       * Remove PDF if one was written before
+       * an error occurred.
+       */
+      if (
+        generatedPdfData
+          ?.filePath
+      ) {
+        deletePdfFile(
+          generatedPdfData
+            .filePath
+        );
+      }
+
+      /*
+       * Remove database record if PDF creation
+       * failed after record creation.
+       */
+      if (
+        createdCertificate?._id
+      ) {
+        try {
+          await createdCertificate
+            .constructor
+            .deleteOne({
+              _id:
+                createdCertificate
+                  ._id,
+            });
+        } catch (
           deleteError
-        );
+        ) {
+          console.error(
+            "FAILED TO ROLLBACK MTC RECORD =>",
+            deleteError
+          );
+        }
       }
-    }
 
-    throw error;
-  }
-};
+      throw error;
+    }
+  };
 
 /* =========================================================
-   FIND CERTIFICATE ACROSS ALL PROVIDERS
+   FIND CERTIFICATE
 ========================================================= */
 
 const findMtcById = async (
   id,
   preferredProvider = ""
 ) => {
-  if (!isValidObjectId(id)) {
+  if (
+    !isValidObjectId(id)
+  ) {
     throw new Error(
       "Invalid MTC certificate ID"
     );
@@ -1559,16 +2622,14 @@ const findMtcById = async (
     _id: id,
   };
 
-  if (preferredProvider) {
+  if (
+    preferredProvider
+  ) {
     const normalizedProvider =
       normalizeProvider(
         preferredProvider
       );
 
-    /*
-     * Throws a clear error when an unsupported
-     * provider is supplied.
-     */
     getProviderConfiguration(
       normalizedProvider
     );
@@ -1583,6 +2644,323 @@ const findMtcById = async (
 };
 
 /* =========================================================
+   GET SINGLE CERTIFICATE
+========================================================= */
+
+const getMtcCertificateById =
+  async (
+    id,
+    provider = ""
+  ) => {
+    const mtc =
+      await findMtcById(
+        id,
+        provider
+      );
+
+    if (!mtc) {
+      throw new Error(
+        "MTC certificate not found"
+      );
+    }
+
+    return mtc;
+  };
+
+/* =========================================================
+   UPDATE CERTIFICATE + REGENERATE PDF
+========================================================= */
+
+const updateMtcCertificate =
+  async (
+    id,
+    payload,
+    loggedInUser,
+    preferredProvider = ""
+  ) => {
+    const existingMtc =
+      await findMtcById(
+        id,
+        preferredProvider
+      );
+
+    if (!existingMtc) {
+      throw new Error(
+        "MTC certificate not found"
+      );
+    }
+
+    const provider =
+      normalizeProvider(
+        existingMtc.mtcProvider
+      );
+
+    /* =====================================================
+       PROVIDER CANNOT CHANGE
+    ===================================================== */
+
+    if (
+      payload.mtcProvider &&
+      normalizeProvider(
+        payload.mtcProvider
+      ) !== provider
+    ) {
+      throw new Error(
+        "MTC provider cannot be changed after certificate creation"
+      );
+    }
+
+    const providerConfiguration =
+      getProviderConfiguration(
+        provider
+      );
+
+    const existingPlain =
+      existingMtc.toObject({
+        virtuals: false,
+      });
+
+    let mergedPayload;
+
+    /* =====================================================
+       SBE GERMANY CONTROLLED UPDATE
+
+       ONLY:
+       - customerName
+       - quantity
+       - dimension
+
+       Grade remains the original grade.
+
+       Generated numbers never change.
+    ===================================================== */
+
+    if (
+      provider ===
+      "sbe_germany"
+    ) {
+      validateSbeUpdatePayload(
+        payload
+      );
+
+      const customerName =
+        payload.customerName !==
+        undefined
+          ? cleanText(
+              payload.customerName
+            )
+          : existingPlain
+              .customerName;
+
+      const quantity =
+        payload.quantity !==
+        undefined
+          ? cleanText(
+              payload.quantity
+            )
+          : existingPlain
+              .quantity;
+
+      const dimension =
+        payload.dimension !==
+        undefined
+          ? cleanText(
+              payload.dimension
+            )
+          : existingPlain
+              .dimension;
+
+      mergedPayload = {
+        mtcProvider:
+          "sbe_germany",
+
+        /*
+         * Grade cannot be changed after
+         * certificate creation.
+         */
+        grade:
+          existingPlain.grade,
+
+        customerName,
+
+        quantity,
+
+        dimension,
+
+        /*
+         * Preserve generated identifiers.
+         */
+        productionOrder:
+          existingPlain
+            .productionOrder,
+
+        customerPoNumber:
+          existingPlain
+            .customerPoNumber,
+
+        mtcDate:
+          existingPlain.mtcDate,
+
+        createdBy:
+          existingPlain.createdBy,
+
+        updatedBy:
+          loggedInUser?._id ||
+          existingPlain.updatedBy ||
+          null,
+      };
+    } else {
+      /*
+       * Existing Gloria/Bharat behavior.
+       */
+      mergedPayload = {
+        ...existingPlain,
+        ...payload,
+
+        mtcProvider:
+          provider,
+
+        pdf:
+          existingPlain.pdf,
+
+        chemicalComposition:
+          payload
+            .chemicalComposition ??
+          existingPlain
+            .chemicalComposition,
+      };
+    }
+
+    /* =====================================================
+       NORMALIZE
+    ===================================================== */
+
+    const normalizedPayload =
+      providerConfiguration
+        .normalizePayload(
+          mergedPayload,
+          loggedInUser
+        );
+
+    /*
+     * Keep creator unchanged.
+     */
+    normalizedPayload.createdBy =
+      existingMtc.createdBy;
+
+    normalizedPayload.updatedBy =
+      loggedInUser?._id ||
+      payload.updatedBy ||
+      existingMtc.updatedBy ||
+      null;
+
+    normalizedPayload.mtcProvider =
+      provider;
+
+    /*
+     * Existing PDF metadata is retained until
+     * new PDF generation succeeds.
+     */
+    delete normalizedPayload.pdf;
+
+    delete normalizedPayload.pdfUrl;
+
+    delete normalizedPayload
+      .pdfFileName;
+
+    delete normalizedPayload._id;
+
+    delete normalizedPayload
+      .createdAt;
+
+    delete normalizedPayload
+      .updatedAt;
+
+    delete normalizedPayload.__v;
+
+    const oldPdfPath =
+      existingMtc.pdf
+        ?.filePath ||
+      "";
+
+    let newPdfData =
+      null;
+
+    try {
+      /* ===================================================
+         APPLY NORMALIZED VALUES
+      =================================================== */
+
+      Object.keys(
+        normalizedPayload
+      ).forEach((key) => {
+        if (
+          key !==
+          "mtcProvider"
+        ) {
+          existingMtc.set(
+            key,
+            normalizedPayload[
+              key
+            ]
+          );
+        }
+      });
+
+      existingMtc.updatedBy =
+        normalizedPayload
+          .updatedBy;
+
+      /* ===================================================
+         GENERATE NEW PDF
+      =================================================== */
+
+      newPdfData =
+        await generateMtcPdf(
+          existingMtc
+        );
+
+      applyPdfData(
+        existingMtc,
+        newPdfData
+      );
+
+      await existingMtc.save();
+
+      /* ===================================================
+         DELETE OLD PDF ONLY AFTER DB SAVE SUCCESS
+      =================================================== */
+
+      if (
+        oldPdfPath &&
+        oldPdfPath !==
+          newPdfData.filePath
+      ) {
+        deletePdfFile(
+          oldPdfPath
+        );
+      }
+
+      return existingMtc;
+    } catch (error) {
+      /*
+       * Delete only new failed PDF.
+       *
+       * Existing working PDF remains.
+       */
+      if (
+        newPdfData?.filePath
+      ) {
+        deletePdfFile(
+          newPdfData.filePath
+        );
+      }
+
+      throw error;
+    }
+  };
+
+/* =========================================================
    GET PDF
 ========================================================= */
 
@@ -1590,10 +2968,11 @@ const getMtcPdf = async (
   id,
   provider = ""
 ) => {
-  const mtc = await findMtcById(
-    id,
-    provider
-  );
+  const mtc =
+    await findMtcById(
+      id,
+      provider
+    );
 
   if (!mtc) {
     throw new Error(
@@ -1606,7 +2985,9 @@ const getMtcPdf = async (
 
   if (
     !filePath ||
-    !fs.existsSync(filePath)
+    !fs.existsSync(
+      filePath
+    )
   ) {
     throw new Error(
       "MTC PDF file not found"
@@ -1622,12 +3003,13 @@ const getMtcPdf = async (
         mtc.mtcProvider
       )}_MTC.pdf`,
 
-    mtcProvider: mtc.mtcProvider,
+    mtcProvider:
+      mtc.mtcProvider,
   };
 };
 
 /* =========================================================
-   BUILD COMMON LIST FILTER
+   BUILD LIST QUERY
 ========================================================= */
 
 const buildMtcListQuery = (
@@ -1635,69 +3017,118 @@ const buildMtcListQuery = (
 ) => {
   const query = {};
 
-  if (filters.companyName) {
-    const searchText = cleanText(
-      filters.companyName
-    );
+  if (
+    filters.companyName
+  ) {
+    const searchText =
+      cleanText(
+        filters.companyName
+      );
 
     query.$or = [
       {
         messers: {
-          $regex: searchText,
-          $options: "i",
+          $regex:
+            searchText,
+
+          $options:
+            "i",
         },
       },
 
       {
         companyName: {
-          $regex: searchText,
-          $options: "i",
+          $regex:
+            searchText,
+
+          $options:
+            "i",
         },
       },
 
       {
         customerName: {
-          $regex: searchText,
-          $options: "i",
+          $regex:
+            searchText,
+
+          $options:
+            "i",
         },
       },
 
       {
         orderNo: {
-          $regex: searchText,
-          $options: "i",
+          $regex:
+            searchText,
+
+          $options:
+            "i",
         },
       },
 
       {
         tcNo: {
-          $regex: searchText,
-          $options: "i",
+          $regex:
+            searchText,
+
+          $options:
+            "i",
         },
       },
 
       {
         invoiceNo: {
-          $regex: searchText,
-          $options: "i",
+          $regex:
+            searchText,
+
+          $options:
+            "i",
         },
       },
 
       {
         heatLotNo: {
-          $regex: searchText,
-          $options: "i",
+          $regex:
+            searchText,
+
+          $options:
+            "i",
+        },
+      },
+
+      {
+        productionOrder: {
+          $regex:
+            searchText,
+
+          $options:
+            "i",
+        },
+      },
+
+      {
+        customerPoNumber: {
+          $regex:
+            searchText,
+
+          $options:
+            "i",
         },
       },
     ];
   }
 
-  if (filters.grade) {
+  if (
+    filters.grade
+  ) {
     query.grade = {
-      $regex: cleanText(
-        filters.grade
-      ),
-      $options: "i",
+      $regex:
+        cleanText(
+          filters.grade
+        ),
+
+      $options:
+        "i",
     };
   }
 
@@ -1707,10 +3138,13 @@ const buildMtcListQuery = (
   ) {
     query.mtcDate = {};
 
-    if (filters.fromDate) {
-      const fromDate = new Date(
-        filters.fromDate
-      );
+    if (
+      filters.fromDate
+    ) {
+      const fromDate =
+        new Date(
+          filters.fromDate
+        );
 
       if (
         !Number.isNaN(
@@ -1729,13 +3163,18 @@ const buildMtcListQuery = (
       }
     }
 
-    if (filters.toDate) {
-      const toDate = new Date(
-        filters.toDate
-      );
+    if (
+      filters.toDate
+    ) {
+      const toDate =
+        new Date(
+          filters.toDate
+        );
 
       if (
-        !Number.isNaN(toDate.getTime())
+        !Number.isNaN(
+          toDate.getTime()
+        )
       ) {
         toDate.setHours(
           23,
@@ -1750,8 +3189,9 @@ const buildMtcListQuery = (
     }
 
     if (
-      Object.keys(query.mtcDate)
-        .length === 0
+      Object.keys(
+        query.mtcDate
+      ).length === 0
     ) {
       delete query.mtcDate;
     }
@@ -1761,234 +3201,415 @@ const buildMtcListQuery = (
 };
 
 /* =========================================================
-   LIST CERTIFICATES FROM ONE OR ALL PROVIDERS
+   GET MTC LIST
 ========================================================= */
 
-const getMtcCertificates = async (
-  filters = {}
-) => {
-  const requestedProvider =
-    cleanText(filters.mtcProvider)
-      .toLowerCase();
+const getMtcCertificates =
+  async (
+    filters = {}
+  ) => {
+    const requestedProvider =
+      cleanText(
+        filters.mtcProvider
+      ).toLowerCase();
 
-  const limit = Math.min(
-    Math.max(
-      Number(filters.limit) ||
-        MAX_MTC_LIST_LIMIT,
-      1
-    ),
-    MAX_MTC_LIST_LIMIT
-  );
-
-  const query =
-    buildMtcListQuery(filters);
-
-  /*
-   * All provider discriminators use the same
-   * "mtccertificates" MongoDB collection.
-   *
-   * Therefore, query through the base model.
-   */
-  if (requestedProvider) {
-    /*
-     * Validate provider before adding it to query.
-     */
-    getProviderConfiguration(
-      requestedProvider
+    const limit = Math.min(
+      Math.max(
+        Number(
+          filters.limit
+        ) ||
+          MAX_MTC_LIST_LIMIT,
+        1
+      ),
+      MAX_MTC_LIST_LIMIT
     );
 
-    query.mtcProvider =
-      requestedProvider;
-  }
+    const query =
+      buildMtcListQuery(
+        filters
+      );
 
-  return MtcCertificate.find(query)
-    .sort({
-      createdAt: -1,
-    })
-    .limit(limit)
-    .lean();
-};
+    if (
+      requestedProvider
+    ) {
+      getProviderConfiguration(
+        requestedProvider
+      );
 
-/* =========================================================
-   GET CHEMICAL SPECS
-========================================================= */
+      query.mtcProvider =
+        requestedProvider;
+    }
 
-const getMtcChemicalSpecs = async (
-  provider = "gloria"
-) => {
-  const normalizedProvider =
-    normalizeProvider(provider);
-
-  /*
-   * Gloria currently uses the configured grade limits.
-   */
-  if (
-    normalizedProvider === "gloria"
-  ) {
-    return mtcChemicalSpecs;
-  }
-
-  /*
-   * Bharat values are entered according to the supplied
-   * original TC and are not forced through Gloria limits.
-   */
-  if (
-    normalizedProvider === "bharat"
-  ) {
-    return {
-      elements: [
-        "C",
-        "Si",
-        "Mn",
-        "P",
-        "S",
-        "Cr",
-        "Mo",
-        "Ni",
-        "Al",
-        "Cu",
-        "Ti",
-        "V",
-        "Nb",
-        "B",
-      ],
-
-      validationMode: "manual",
-    };
-  }
-
-  return {
-    elements: [],
-    validationMode: "manual",
+    return MtcCertificate.find(
+      query
+    )
+      .sort({
+        createdAt: -1,
+      })
+      .limit(limit)
+      .lean();
   };
-};
 
 /* =========================================================
-   GET PROVIDERS FOR FRONTEND DROPDOWN
+   GET CHEMICAL SPECS / FRONTEND FORM CONFIG
 ========================================================= */
 
-const getMtcProviders = async () => {
-  return getConfiguredProviders().map(
-    (provider) => {
-      const labels = {
-        gloria: "Gloria",
-        bharat: "Bharat Special Steel",
-      };
+const getMtcChemicalSpecs =
+  async (
+    provider = "gloria"
+  ) => {
+    const normalizedProvider =
+      normalizeProvider(
+        provider
+      );
 
+    /* =====================================================
+       GLORIA
+    ===================================================== */
+
+    if (
+      normalizedProvider ===
+      "gloria"
+    ) {
+      return mtcChemicalSpecs;
+    }
+
+    /* =====================================================
+       BHARAT
+    ===================================================== */
+
+    if (
+      normalizedProvider ===
+      "bharat"
+    ) {
       return {
-        value: provider,
+        provider:
+          "bharat",
+
         label:
-          labels[provider] ||
-          provider
-            .charAt(0)
-            .toUpperCase() +
-            provider.slice(1),
+          "Bharat Special Steel",
+
+        validationMode:
+          "manual",
+
+        elements: [
+          "C",
+          "Si",
+          "Mn",
+          "P",
+          "S",
+          "Cr",
+          "Mo",
+          "Ni",
+          "Al",
+          "Cu",
+          "Ti",
+          "V",
+          "Nb",
+          "B",
+        ],
       };
     }
-  );
-};
+
+    /* =====================================================
+       SBE GERMANY
+
+       Frontend receives only controlled form configuration.
+    ===================================================== */
+
+    if (
+      normalizedProvider ===
+      "sbe_germany"
+    ) {
+      const gradeConfigs = {};
+
+      getSbeGrades().forEach(
+        (gradeOption) => {
+          gradeConfigs[
+            gradeOption.value
+          ] =
+            buildSbeGradeFormData(
+              gradeOption.value
+            );
+        }
+      );
+
+      return {
+        provider:
+          "sbe_germany",
+
+        label:
+          "SBE Germany",
+
+        /*
+         * Frontend understands that this provider
+         * is configuration controlled.
+         */
+        validationMode:
+          "controlled",
+
+        /*
+         * Grade dropdown.
+         */
+        grades:
+          getSbeGrades(),
+
+        /*
+         * Auto-populated preview information.
+         *
+         * Example:
+         *
+         * data.gradeConfigs["1.2714"]
+         */
+        gradeConfigs,
+
+        /*
+         * Permissions returned directly
+         * from central SBE config.
+         */
+        rules:
+          SBE_FRONTEND_RULES,
+
+        /*
+         * Exact PDF chemical order.
+         */
+        elements:
+          [...SBE_CHEMICAL_ORDER],
+
+        /*
+         * ONLY these create inputs should
+         * be rendered.
+         */
+        fields: [
+          {
+            name:
+              "grade",
+
+            label:
+              "Grade",
+
+            type:
+              "select",
+
+            required:
+              true,
+
+            editable:
+              true,
+          },
+
+          {
+            name:
+              "customerName",
+
+            label:
+              "Customer Name",
+
+            type:
+              "text",
+
+            required:
+              true,
+
+            editable:
+              true,
+          },
+
+          {
+            name:
+              "quantity",
+
+            label:
+              "Quantity / Anzahl",
+
+            type:
+              "number",
+
+            required:
+              true,
+
+            editable:
+              true,
+
+            default:
+              "1",
+          },
+
+          {
+            name:
+              "dimension",
+
+            label:
+              "Dimension / Abmessung",
+
+            type:
+              "text",
+
+            required:
+              true,
+
+            editable:
+              true,
+          },
+        ],
+
+        /*
+         * These fields are deliberately NOT
+         * frontend inputs.
+         */
+        generatedFields: [
+          {
+            name:
+              "productionOrder",
+
+            pdfLabel:
+              "Fertigungsauftrag",
+
+            generatedBy:
+              "backend",
+          },
+
+          {
+            name:
+              "customerPoNumber",
+
+            pdfLabel:
+              "Kundenbestellnummer",
+
+            generatedBy:
+              "backend",
+          },
+        ],
+      };
+    }
+
+    return {
+      elements: [],
+
+      validationMode:
+        "manual",
+    };
+  };
+
+/* =========================================================
+   GET PROVIDERS FOR FRONTEND
+========================================================= */
+
+const getMtcProviders =
+  async () => {
+    return getConfiguredProviders().map(
+      (provider) => {
+        const labels = {
+          gloria:
+            "Gloria",
+
+          bharat:
+            "Bharat Special Steel",
+
+          sbe_germany:
+            "SBE Germany",
+        };
+
+        return {
+          value:
+            provider,
+
+          label:
+            labels[
+              provider
+            ] ||
+            provider
+              .charAt(0)
+              .toUpperCase() +
+              provider.slice(
+                1
+              ),
+        };
+      }
+    );
+  };
 
 /* =========================================================
    DELETE GENERATED PDF SAFELY
 ========================================================= */
 
-const deleteGeneratedMtcPdf = (
-  mtc
-) => {
-  const filePath =
-    mtc?.pdf?.filePath;
+const deleteGeneratedMtcPdf =
+  (mtc) => {
+    const filePath =
+      mtc?.pdf?.filePath;
 
-  if (
-    filePath &&
-    fs.existsSync(filePath)
-  ) {
-    try {
-      fs.unlinkSync(filePath);
-    } catch (error) {
-      console.error(
-        "DELETE MTC PDF ERROR =>",
-        error
-      );
-    }
-  }
-};
+    deletePdfFile(
+      filePath
+    );
+  };
 
 /* =========================================================
    REGENERATE PDF
 ========================================================= */
 
-const regenerateMtcPdf = async (
-  id,
-  provider = ""
-) => {
-  const mtc = await findMtcById(
+const regenerateMtcPdf =
+  async (
     id,
-    provider
-  );
-
-  if (!mtc) {
-    throw new Error(
-      "MTC certificate not found"
-    );
-  }
-
-  const oldPdf = mtc.pdf
-    ? {
-        ...mtc.pdf,
-      }
-    : null;
-
-  const pdfData =
-    await generateMtcPdf(mtc);
-
-  mtc.pdf = {
-  fileName:
-    pdfData.fileName,
-
-  filePath:
-    pdfData.filePath,
-
-  fileUrl:
-    pdfData.fileUrl,
-
-  generatedAt:
-    pdfData.generatedAt,
-};
-
-mtc.pdfUrl =
-  pdfData.fileUrl;
-
-mtc.pdfFileName =
-  pdfData.fileName;
-
-await mtc.save();
-
-  /*
-   * Delete old PDF only after the new PDF and database
-   * record are saved successfully.
-   */
-  if (
-    oldPdf?.filePath &&
-    oldPdf.filePath !==
-      pdfData.filePath &&
-    fs.existsSync(
-      oldPdf.filePath
-    )
-  ) {
-    try {
-      fs.unlinkSync(
-        oldPdf.filePath
+    provider = ""
+  ) => {
+    const mtc =
+      await findMtcById(
+        id,
+        provider
       );
-    } catch (error) {
-      console.error(
-        "OLD MTC PDF DELETE ERROR =>",
-        error
+
+    if (!mtc) {
+      throw new Error(
+        "MTC certificate not found"
       );
     }
-  }
 
-  return mtc;
-};
+    const oldPdfPath =
+      mtc.pdf?.filePath ||
+      "";
+
+    let pdfData = null;
+
+    try {
+      pdfData =
+        await generateMtcPdf(
+          mtc
+        );
+
+      applyPdfData(
+        mtc,
+        pdfData
+      );
+
+      await mtc.save();
+
+      /*
+       * Delete old PDF only after
+       * new PDF and DB save succeed.
+       */
+      if (
+        oldPdfPath &&
+        oldPdfPath !==
+          pdfData.filePath
+      ) {
+        deletePdfFile(
+          oldPdfPath
+        );
+      }
+
+      return mtc;
+    } catch (error) {
+      if (
+        pdfData?.filePath
+      ) {
+        deletePdfFile(
+          pdfData.filePath
+        );
+      }
+
+      throw error;
+    }
+  };
 
 /* =========================================================
    EXPORTS
@@ -1996,6 +3617,10 @@ await mtc.save();
 
 module.exports = {
   createMtcCertificate,
+
+  updateMtcCertificate,
+
+  getMtcCertificateById,
 
   getMtcCertificates,
 
@@ -2018,6 +3643,10 @@ module.exports = {
   getProviderConfiguration,
 
   normalizeGenericChemicalComposition,
+
+  normalizeSbeGermanyChemicalComposition,
+
+  normalizeSbeGermanyPayload,
 
   deleteGeneratedMtcPdf,
 };
