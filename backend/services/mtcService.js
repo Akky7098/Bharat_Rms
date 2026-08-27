@@ -2,11 +2,11 @@ const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
 
-const puppeteer = require("puppeteer");
+// const puppeteer = require("puppeteer");
 
-const ensureChromium = require(
-  "../util/ensureChromium"
-);
+// const ensureChromium = require(
+//   "../util/ensureChromium"
+// );
 
 const {
   MtcCertificate,
@@ -1947,29 +1947,29 @@ const generateMtcPdfBuffer = async (
            ENSURE CHROMIUM
         ================================================= */
 
-        const executablePath =
-          await ensureChromium();
+        // const executablePath =
+        //   await ensureChromium();
 
-        if (
-          !executablePath ||
-          !fs.existsSync(
-            executablePath
-          )
-        ) {
-          throw new Error(
-            "MTC PDF Chromium executable is unavailable."
-          );
-        }
+        // if (
+        //   !executablePath ||
+        //   !fs.existsSync(
+        //     executablePath
+        //   )
+        // ) {
+        //   throw new Error(
+        //     "MTC PDF Chromium executable is unavailable."
+        //   );
+        // }
 
-        console.log(
-          "MTC PDF CHROMIUM START =>",
-          executablePath
-        );
+        // console.log(
+        //   "MTC PDF CHROMIUM START =>",
+        //   executablePath
+        // );
 
-        console.log(
-          "MTC PDF PROVIDER =>",
-          plainMtc.mtcProvider
-        );
+        // console.log(
+        //   "MTC PDF PROVIDER =>",
+        //   plainMtc.mtcProvider
+        // );
 
         /* =================================================
            START TEMPORARY CHROMIUM
