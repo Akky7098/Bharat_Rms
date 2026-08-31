@@ -571,435 +571,1091 @@ const searchPendingDispatchSalesOrders = async (query, user) => {
 };
 
 /* CREATE DISPATCH */
-const createDispatch = async (body, files, user) => {
-  const session = await mongoose.startSession();
+/* =========================================================
+   CREATE DISPATCH
 
-  const uploadedFiles = [
-    ...(files?.billPdf || []),
-    ...(files?.lrCopyPdf || []),
-    ...(files?.tcCertificatePdf || []),
-  ];
+   TC / MTC SUPPORT:
+   - TC not applicable → 0 files
+   - TC applicable → minimum 1 file
+   - Maximum 10 TC files
+   - Stores all in tcCertificatePdfs[]
+   - Keeps first file in legacy tcCertificatePdf
+========================================================= */
 
-  try {
-    session.startTransaction();
+const createDispatch =
+  async (
+    body,
+    files,
+    user
+  ) => {
+    const session =
+      await mongoose
+        .startSession();
 
-    const {
-      salesOrderId,
-      invoiceNumber,
-      invoiceDate,
-      dispatchDate,
-      dispatchQty,
-      invoiceValue,
-      paymentDueDays,
-      paidAmount = 0,
-      additionalCcEmails = [],
-      dispatchStatus = "dispatched",
-      internalRemark = "",
-      paymentRemark = "",
-      tcApplicable = "not_applicable",
-    } = body;
+    /*
+     * IMPORTANT:
+     *
+     * Keep references to every uploaded file.
+     * If creation fails after files have been moved,
+     * deleteUploadedFiles() can still clean them because
+     * moveUploadedFileToPersistentDir mutates file.path.
+     */
+    const uploadedFiles = [
+      ...(files?.billPdf ||
+        []),
 
-    const normalizedTcApplicable =
-      String(tcApplicable).trim() === "applicable"
-        ? "applicable"
-        : "not_applicable";
+      ...(files?.lrCopyPdf ||
+        []),
 
-    if (!salesOrderId) {
-      throw new Error("Sales order is required.");
-    }
-
-    if (!invoiceNumber || !String(invoiceNumber).trim()) {
-      throw new Error("Invoice number is required.");
-    }
-
-    if (!invoiceDate) {
-      throw new Error("Invoice date is required.");
-    }
-
-    if (!files?.billPdf?.[0]) {
-      throw new Error("Bill PDF is required.");
-    }
-
-    if (
-      normalizedTcApplicable === "applicable" &&
-      !files?.tcCertificatePdf?.[0]
-    ) {
-      throw new Error(
-        "MTC / TC PDF is required when TC is applicable."
-      );
-    }
-
-    const salesOrder = await SalesOrder.findById(
-      salesOrderId
-    ).session(session);
-
-    if (!salesOrder) {
-      throw new Error("Sales order not found.");
-    }
-
-    if (salesOrder.approvalStatus !== "approved") {
-      throw new Error(
-        "Dispatch can be created only for approved sales orders."
-      );
-    }
-
-    if (
-      !isAdminOrSuperAdmin(user) &&
-      String(salesOrder.salesPersonId) !==
-        String(getUserId(user))
-    ) {
-      throw new Error(
-        "You are not allowed to create dispatch for this sales order."
-      );
-    }
-
-    const existingInvoice = await Dispatch.findOne({
-      invoiceNumber: String(invoiceNumber).trim(),
-      isActive: true,
-    }).session(session);
-
-    if (existingInvoice) {
-      throw new Error(
-        "Dispatch with this invoice number already exists."
-      );
-    }
-
-    const qty = Number(dispatchQty);
-    const value = Number(invoiceValue);
-    const days = Number(paymentDueDays);
-    const paid = Number(paidAmount || 0);
-
-    if (!qty || qty <= 0) {
-      throw new Error(
-        "Dispatch quantity must be greater than 0."
-      );
-    }
-
-    if (!value || value <= 0) {
-      throw new Error(
-        "Invoice value must be greater than 0."
-      );
-    }
-
-    if (
-      paymentDueDays === "" ||
-      paymentDueDays === undefined ||
-      days < 0
-    ) {
-      throw new Error("Payment due days is required.");
-    }
-
-    if (paid < 0) {
-      throw new Error(
-        "Paid amount cannot be negative."
-      );
-    }
-
-    if (paid > value) {
-      throw new Error(
-        "Paid amount cannot be greater than invoice value."
-      );
-    }
-
-    const salesOrderTotalQty =
-      getSalesOrderTotalQty(salesOrder);
-
-    const dispatchSummary =
-      await getSalesOrderDispatchSummary(
-        salesOrder._id,
-        session
-      );
-
-    const previousDispatchedQty =
-      dispatchSummary.totalDispatchedQty;
-
-    const remainingBeforeDispatch =
-      salesOrderTotalQty > 0
-        ? Number(
-            (
-              salesOrderTotalQty -
-              previousDispatchedQty
-            ).toFixed(3)
-          )
-        : 0;
-
-    if (
-      salesOrderTotalQty > 0 &&
-      remainingBeforeDispatch <= 0
-    ) {
-      throw new Error(
-        "This sales order is already fully dispatched."
-      );
-    }
-
-    if (
-      salesOrderTotalQty > 0 &&
-      qty > remainingBeforeDispatch
-    ) {
-      throw new Error(
-        `Dispatch quantity cannot be greater than remaining quantity ${remainingBeforeDispatch} Kg.`
-      );
-    }
-
-    const remainingQtyAfterDispatch =
-      salesOrderTotalQty > 0
-        ? Math.max(
-            Number(
-              (
-                remainingBeforeDispatch -
-                qty
-              ).toFixed(3)
-            ),
-            0
-          )
-        : 0;
-
-    const finalDispatchDate =
-      parseLocalDateOnly(dispatchDate);
-
-    if (!finalDispatchDate) {
-      throw new Error("Invalid dispatch date.");
-    }
-
-    const paymentDueDate =
-      calculatePaymentDueDate(
-        finalDispatchDate,
-        days
-      );
-
-    const pendingAmount = Number(
-      (value - paid).toFixed(2)
-    );
-
-    const paymentStatus =
-      calculatePaymentStatus(
-        pendingAmount,
-        paymentDueDate,
-        paid
-      );
-
-    const renamedBillFile =
-      moveUploadedFileToPersistentDir(
-        files.billPdf[0],
-        `bill-${invoiceNumber}-${salesOrder.companyName}`
-      );
-
-    const renamedLrFile =
-      files?.lrCopyPdf?.[0]
-        ? moveUploadedFileToPersistentDir(
-            files.lrCopyPdf[0],
-            `lr-${invoiceNumber}-${salesOrder.companyName}`
-          )
-        : null;
-
-    const renamedTcCertificateFile =
-      normalizedTcApplicable === "applicable" &&
-      files?.tcCertificatePdf?.[0]
-        ? moveUploadedFileToPersistentDir(
-            files.tcCertificatePdf[0],
-            `tc-certificate-${invoiceNumber}-${salesOrder.companyName}`
-          )
-        : null;
-
-    const ccEmails = buildDispatchCcEmails(
-      salesOrder,
-      additionalCcEmails,
-      user
-    );
-
-    const dispatch = await Dispatch.create(
-      [
-        {
-          salesOrderId: salesOrder._id,
-          salesOrderNo: salesOrder.salesOrderNo,
-          poNumber: salesOrder.poNumber,
-          companyName: salesOrder.companyName,
-
-          salesPersonId: salesOrder.salesPersonId,
-          salesPersonName:
-            salesOrder.salesPersonName,
-          salesPersonEmail:
-            salesOrder.salesPersonEmail,
-          salesPersonMobile:
-            salesOrder.salesPersonMobile,
-
-          contactPersonName:
-            salesOrder.contactPersonName,
-          contactPersonEmail:
-            salesOrder.contactPersonEmail,
-          contactPersonNumber:
-            salesOrder.contactPersonNumber,
-          shippingAddress:
-            getShippingAddress(salesOrder),
-
-          dispatchCreatedBy: {
-            userId: getUserId(user),
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          },
-
-          invoiceNumber:
-            String(invoiceNumber).trim(),
-          invoiceDate,
-          dispatchDate: finalDispatchDate,
-          dispatchQty: qty,
-          invoiceValue: value,
-          materialDescription:
-            salesOrder.sizeGradeQuantityRate ||
-            "As per sales order",
-
-          salesOrderTotalQtySnapshot:
-            salesOrderTotalQty,
-          previousDispatchedQty,
-          remainingQtyAfterDispatch,
-
-          dispatchCompletionStatus:
-            salesOrderTotalQty > 0 &&
-            remainingQtyAfterDispatch <= 0
-              ? "fully_dispatched"
-              : "partial_dispatched",
-
-          billPdf:
-            buildFileObject(renamedBillFile),
-
-          lrCopyPdf: renamedLrFile
-            ? buildFileObject(renamedLrFile)
-            : undefined,
-
-          tcApplicable:
-            normalizedTcApplicable,
-
-          tcCertificatePdf:
-            normalizedTcApplicable ===
-              "applicable" &&
-            renamedTcCertificateFile
-              ? buildFileObject(
-                  renamedTcCertificateFile
-                )
-              : undefined,
-
-          paymentTerms:
-            salesOrder.paymentTerms || "",
-          paymentDueDays: days,
-          paymentDueDate,
-          paymentStatus,
-          paidAmount: paid,
-          pendingAmount,
-          paymentRemark,
-
-          additionalCcEmails:
-            cleanEmails(additionalCcEmails),
-
-          notificationEmail: {
-            sent: false,
-            sentTo:
-              salesOrder.contactPersonEmail,
-            cc: ccEmails,
-          },
-
-          mobileNotification: {
-            sent: false,
-            sentTo:
-              salesOrder.contactPersonNumber,
-          },
-
-          dispatchStatus,
-          internalRemark,
-        },
-      ],
-      { session }
-    );
-
-    await session.commitTransaction();
-
-    const createdDispatch = dispatch[0];
-
-    const dispatchCreatedByAdmin =
-      isAdminOrSuperAdmin(user);
-
-    await safeCreateNotification({
-      module: "dispatch",
-      event: "created",
-      title: "Dispatch Created",
-      message: `Dispatch created for ${createdDispatch.companyName} | Invoice ${createdDispatch.invoiceNumber}`,
-      priority: "high",
-
-      targetUserIds:
-        dispatchCreatedByAdmin
-          ? [createdDispatch.salesPersonId]
-          : [],
-
-      targetRoles:
-        dispatchCreatedByAdmin
-          ? ["super_admin"]
-          : ["admin", "super_admin"],
-
-      createdBy: getUserId(user),
-      referenceId: createdDispatch._id,
-      referenceModel: "Dispatch",
-      actionUrl: "/dashboard#dispatch",
-
-      meta: {
-        companyName:
-          createdDispatch.companyName,
-        invoiceNumber:
-          createdDispatch.invoiceNumber,
-        invoiceValue:
-          createdDispatch.invoiceValue,
-        dispatchQty:
-          createdDispatch.dispatchQty,
-        remainingQtyAfterDispatch:
-          createdDispatch.remainingQtyAfterDispatch,
-        dispatchCompletionStatus:
-          createdDispatch.dispatchCompletionStatus,
-        tcApplicable:
-          createdDispatch.tcApplicable,
-        salesPersonName:
-          createdDispatch.salesPersonName,
-        createdByName: user.name,
-        createdByRole: user.role,
-      },
-    });
+      ...(files?.tcCertificatePdf ||
+        []),
+    ];
 
     try {
-      const mailInfo =
-        await sendDispatchCreatedEmail(
-          createdDispatch
+      session.startTransaction();
+
+      /* =====================================================
+         REQUEST BODY
+      ===================================================== */
+
+      const {
+        salesOrderId,
+
+        invoiceNumber,
+
+        invoiceDate,
+
+        dispatchDate,
+
+        dispatchQty,
+
+        invoiceValue,
+
+        paymentDueDays,
+
+        paidAmount = 0,
+
+        additionalCcEmails =
+          [],
+
+        dispatchStatus =
+          "dispatched",
+
+        internalRemark =
+          "",
+
+        paymentRemark =
+          "",
+
+        tcApplicable =
+          "not_applicable",
+      } = body;
+
+
+      /* =====================================================
+         NORMALIZE TC APPLICABLE
+      ===================================================== */
+
+      const normalizedTcApplicable =
+        String(
+          tcApplicable
+        ).trim() ===
+        "applicable"
+          ? "applicable"
+          : "not_applicable";
+
+
+      /* =====================================================
+         NORMALIZE MULTIPLE TC FILES
+      ===================================================== */
+
+      const tcCertificateFiles =
+        Array.isArray(
+          files?.tcCertificatePdf
+        )
+          ? files.tcCertificatePdf
+          : [];
+
+
+      /* =====================================================
+         BASIC VALIDATION
+      ===================================================== */
+
+      if (!salesOrderId) {
+        throw new Error(
+          "Sales order is required."
+        );
+      }
+
+
+      if (
+        !invoiceNumber ||
+        !String(
+          invoiceNumber
+        ).trim()
+      ) {
+        throw new Error(
+          "Invoice number is required."
+        );
+      }
+
+
+      if (!invoiceDate) {
+        throw new Error(
+          "Invoice date is required."
+        );
+      }
+
+
+      if (
+        !files?.billPdf?.[0]
+      ) {
+        throw new Error(
+          "Bill PDF is required."
+        );
+      }
+
+
+      /* =====================================================
+         TC VALIDATION
+
+         Applicable:
+         minimum 1
+         maximum 10
+      ===================================================== */
+
+      if (
+        normalizedTcApplicable ===
+          "applicable" &&
+        tcCertificateFiles.length ===
+          0
+      ) {
+        throw new Error(
+          "At least one MTC / TC PDF is required when TC is applicable."
+        );
+      }
+
+
+      if (
+        tcCertificateFiles.length >
+        10
+      ) {
+        throw new Error(
+          "Maximum 10 MTC / TC PDF files can be uploaded for one dispatch."
+        );
+      }
+
+
+      /* =====================================================
+         SALES ORDER
+      ===================================================== */
+
+      const salesOrder =
+        await SalesOrder
+          .findById(
+            salesOrderId
+          )
+          .session(
+            session
+          );
+
+
+      if (!salesOrder) {
+        throw new Error(
+          "Sales order not found."
+        );
+      }
+
+
+      if (
+        salesOrder
+          .approvalStatus !==
+        "approved"
+      ) {
+        throw new Error(
+          "Dispatch can be created only for approved sales orders."
+        );
+      }
+
+
+      /* =====================================================
+         ACCESS
+      ===================================================== */
+
+      if (
+        !isAdminOrSuperAdmin(
+          user
+        ) &&
+        String(
+          salesOrder
+            .salesPersonId
+        ) !==
+          String(
+            getUserId(
+              user
+            )
+          )
+      ) {
+        throw new Error(
+          "You are not allowed to create dispatch for this sales order."
+        );
+      }
+
+
+      /* =====================================================
+         DUPLICATE INVOICE CHECK
+      ===================================================== */
+
+      const normalizedInvoiceNumber =
+        String(
+          invoiceNumber
+        ).trim();
+
+
+      const existingInvoice =
+        await Dispatch
+          .findOne({
+            invoiceNumber:
+              normalizedInvoiceNumber,
+
+            isActive:
+              true,
+          })
+          .session(
+            session
+          );
+
+
+      if (
+        existingInvoice
+      ) {
+        throw new Error(
+          "Dispatch with this invoice number already exists."
+        );
+      }
+
+
+      /* =====================================================
+         NUMBER VALIDATION
+      ===================================================== */
+
+      const qty =
+        Number(
+          dispatchQty
         );
 
-      createdDispatch.notificationEmail.sent =
-        true;
 
-      createdDispatch.notificationEmail.sentAt =
-        new Date();
+      const value =
+        Number(
+          invoiceValue
+        );
 
-      createdDispatch.notificationEmail.messageId =
-        mailInfo.messageId || "";
 
-      await createdDispatch.save();
-    } catch (mailError) {
-      createdDispatch.notificationEmail.sent =
-        false;
+      const days =
+        Number(
+          paymentDueDays
+        );
 
-      createdDispatch.notificationEmail.errorMessage =
-        mailError.message;
 
-      await createdDispatch.save();
+      const paid =
+        Number(
+          paidAmount ||
+            0
+        );
+
+
+      if (
+        !Number.isFinite(
+          qty
+        ) ||
+        qty <= 0
+      ) {
+        throw new Error(
+          "Dispatch quantity must be greater than 0."
+        );
+      }
+
+
+      if (
+        !Number.isFinite(
+          value
+        ) ||
+        value <= 0
+      ) {
+        throw new Error(
+          "Invoice value must be greater than 0."
+        );
+      }
+
+
+      if (
+        paymentDueDays ===
+          "" ||
+        paymentDueDays ===
+          undefined ||
+        paymentDueDays ===
+          null ||
+        !Number.isFinite(
+          days
+        ) ||
+        days < 0
+      ) {
+        throw new Error(
+          "Payment due days is required."
+        );
+      }
+
+
+      if (
+        !Number.isFinite(
+          paid
+        ) ||
+        paid < 0
+      ) {
+        throw new Error(
+          "Paid amount cannot be negative."
+        );
+      }
+
+
+      if (
+        paid >
+        value
+      ) {
+        throw new Error(
+          "Paid amount cannot be greater than invoice value."
+        );
+      }
+
+
+      /* =====================================================
+         SALES ORDER QUANTITY
+      ===================================================== */
+
+      const salesOrderTotalQty =
+        getSalesOrderTotalQty(
+          salesOrder
+        );
+
+
+      const dispatchSummary =
+        await getSalesOrderDispatchSummary(
+          salesOrder._id,
+          session
+        );
+
+
+      const previousDispatchedQty =
+        Number(
+          dispatchSummary
+            .totalDispatchedQty ||
+            0
+        );
+
+
+      const remainingBeforeDispatch =
+        salesOrderTotalQty >
+        0
+          ? Number(
+              (
+                salesOrderTotalQty -
+                previousDispatchedQty
+              ).toFixed(
+                3
+              )
+            )
+          : 0;
+
+
+      if (
+        salesOrderTotalQty >
+          0 &&
+        remainingBeforeDispatch <=
+          0
+      ) {
+        throw new Error(
+          "This sales order is already fully dispatched."
+        );
+      }
+
+
+      if (
+        salesOrderTotalQty >
+          0 &&
+        qty >
+          remainingBeforeDispatch
+      ) {
+        throw new Error(
+          `Dispatch quantity cannot be greater than remaining quantity ${remainingBeforeDispatch} Kg.`
+        );
+      }
+
+
+      const remainingQtyAfterDispatch =
+        salesOrderTotalQty >
+        0
+          ? Math.max(
+              Number(
+                (
+                  remainingBeforeDispatch -
+                  qty
+                ).toFixed(
+                  3
+                )
+              ),
+              0
+            )
+          : 0;
+
+
+      /* =====================================================
+         DISPATCH DATE
+      ===================================================== */
+
+      const finalDispatchDate =
+        parseLocalDateOnly(
+          dispatchDate
+        );
+
+
+      if (
+        !finalDispatchDate
+      ) {
+        throw new Error(
+          "Invalid dispatch date."
+        );
+      }
+
+
+      /* =====================================================
+         PAYMENT
+      ===================================================== */
+
+      const paymentDueDate =
+        calculatePaymentDueDate(
+          finalDispatchDate,
+          days
+        );
+
+
+      const pendingAmount =
+        Number(
+          (
+            value -
+            paid
+          ).toFixed(
+            2
+          )
+        );
+
+
+      const paymentStatus =
+        calculatePaymentStatus(
+          pendingAmount,
+          paymentDueDate,
+          paid
+        );
+
+
+      /* =====================================================
+         BILL PDF
+      ===================================================== */
+
+      const renamedBillFile =
+        moveUploadedFileToPersistentDir(
+          files.billPdf[0],
+
+          `bill-${normalizedInvoiceNumber}-${salesOrder.companyName}`
+        );
+
+
+      /* =====================================================
+         LR COPY
+      ===================================================== */
+
+      const renamedLrFile =
+        files?.lrCopyPdf?.[0]
+          ? moveUploadedFileToPersistentDir(
+              files
+                .lrCopyPdf[0],
+
+              `lr-${normalizedInvoiceNumber}-${salesOrder.companyName}`
+            )
+          : null;
+
+
+      /* =====================================================
+         MULTIPLE TC / MTC FILES
+
+         Example:
+         tc-certificate-1-INV001-company.pdf
+         tc-certificate-2-INV001-company.pdf
+         tc-certificate-3-INV001-company.pdf
+      ===================================================== */
+
+      const renamedTcCertificateFiles =
+        normalizedTcApplicable ===
+        "applicable"
+          ? tcCertificateFiles.map(
+              (
+                file,
+                index
+              ) =>
+                moveUploadedFileToPersistentDir(
+                  file,
+
+                  `tc-certificate-${
+                    index +
+                    1
+                  }-${normalizedInvoiceNumber}-${salesOrder.companyName}`
+                )
+            )
+          : [];
+
+
+      /* =====================================================
+         BUILD FILE OBJECTS ONCE
+      ===================================================== */
+
+      const billFileObject =
+        buildFileObject(
+          renamedBillFile
+        );
+
+
+      const lrFileObject =
+        renamedLrFile
+          ? buildFileObject(
+              renamedLrFile
+            )
+          : undefined;
+
+
+      const tcFileObjects =
+        renamedTcCertificateFiles
+          .map(
+            (file) =>
+              buildFileObject(
+                file
+              )
+          );
+
+
+      /*
+       * Legacy first file.
+       *
+       * Existing code that still reads:
+       *
+       * dispatch.tcCertificatePdf
+       *
+       * continues working.
+       */
+      const legacyTcFileObject =
+        tcFileObjects.length >
+        0
+          ? tcFileObjects[0]
+          : undefined;
+
+
+      /* =====================================================
+         CC EMAILS
+      ===================================================== */
+
+      const ccEmails =
+        buildDispatchCcEmails(
+          salesOrder,
+          additionalCcEmails,
+          user
+        );
+
+
+      /* =====================================================
+         CREATE DISPATCH
+      ===================================================== */
+
+      const dispatch =
+        await Dispatch.create(
+          [
+            {
+              salesOrderId:
+                salesOrder._id,
+
+              salesOrderNo:
+                salesOrder
+                  .salesOrderNo,
+
+              poNumber:
+                salesOrder
+                  .poNumber,
+
+              companyName:
+                salesOrder
+                  .companyName,
+
+
+              /* =============================================
+                 SALES PERSON
+              ============================================= */
+
+              salesPersonId:
+                salesOrder
+                  .salesPersonId,
+
+              salesPersonName:
+                salesOrder
+                  .salesPersonName,
+
+              salesPersonEmail:
+                salesOrder
+                  .salesPersonEmail,
+
+              salesPersonMobile:
+                salesOrder
+                  .salesPersonMobile,
+
+
+              /* =============================================
+                 CUSTOMER
+              ============================================= */
+
+              contactPersonName:
+                salesOrder
+                  .contactPersonName,
+
+              contactPersonEmail:
+                salesOrder
+                  .contactPersonEmail,
+
+              contactPersonNumber:
+                salesOrder
+                  .contactPersonNumber,
+
+              shippingAddress:
+                getShippingAddress(
+                  salesOrder
+                ),
+
+
+              /* =============================================
+                 CREATED BY
+              ============================================= */
+
+              dispatchCreatedBy: {
+                userId:
+                  getUserId(
+                    user
+                  ),
+
+                name:
+                  user?.name ||
+                  "",
+
+                email:
+                  user?.email ||
+                  "",
+
+                role:
+                  user?.role ||
+                  "",
+              },
+
+
+              /* =============================================
+                 INVOICE
+              ============================================= */
+
+              invoiceNumber:
+                normalizedInvoiceNumber,
+
+              invoiceDate,
+
+              dispatchDate:
+                finalDispatchDate,
+
+              dispatchQty:
+                qty,
+
+              invoiceValue:
+                value,
+
+              materialDescription:
+                salesOrder
+                  .sizeGradeQuantityRate ||
+                "As per sales order",
+
+
+              /* =============================================
+                 QUANTITY SNAPSHOT
+              ============================================= */
+
+              salesOrderTotalQtySnapshot:
+                salesOrderTotalQty,
+
+              previousDispatchedQty,
+
+              remainingQtyAfterDispatch,
+
+
+              dispatchCompletionStatus:
+                salesOrderTotalQty >
+                  0 &&
+                remainingQtyAfterDispatch <=
+                  0
+                  ? "fully_dispatched"
+                  : "partial_dispatched",
+
+
+              /* =============================================
+                 BILL / LR
+              ============================================= */
+
+              billPdf:
+                billFileObject,
+
+              lrCopyPdf:
+                lrFileObject,
+
+
+              /* =============================================
+                 TC / MTC
+              ============================================= */
+
+              tcApplicable:
+                normalizedTcApplicable,
+
+
+              /*
+               * NEW multiple files
+               */
+              tcCertificatePdfs:
+                normalizedTcApplicable ===
+                "applicable"
+                  ? tcFileObjects
+                  : [],
+
+
+              /*
+               * LEGACY first file.
+               */
+              tcCertificatePdf:
+                normalizedTcApplicable ===
+                  "applicable" &&
+                legacyTcFileObject
+                  ? legacyTcFileObject
+                  : undefined,
+
+
+              /* =============================================
+                 PAYMENT
+              ============================================= */
+
+              paymentTerms:
+                salesOrder
+                  .paymentTerms ||
+                "",
+
+              paymentDueDays:
+                days,
+
+              paymentDueDate,
+
+              paymentStatus,
+
+              paidAmount:
+                paid,
+
+              pendingAmount,
+
+              paymentRemark,
+
+
+              /* =============================================
+                 EMAIL
+              ============================================= */
+
+              additionalCcEmails:
+                cleanEmails(
+                  additionalCcEmails
+                ),
+
+              notificationEmail: {
+                sent:
+                  false,
+
+                sentTo:
+                  salesOrder
+                    .contactPersonEmail,
+
+                cc:
+                  ccEmails,
+              },
+
+
+              /* =============================================
+                 MOBILE
+              ============================================= */
+
+              mobileNotification: {
+                sent:
+                  false,
+
+                sentTo:
+                  salesOrder
+                    .contactPersonNumber,
+              },
+
+
+              /* =============================================
+                 STATUS
+              ============================================= */
+
+              dispatchStatus,
+
+              internalRemark,
+            },
+          ],
+          {
+            session,
+          }
+        );
+
+
+      /* =====================================================
+         COMMIT DATABASE TRANSACTION
+      ===================================================== */
+
+      await session
+        .commitTransaction();
+
+
+      const createdDispatch =
+        dispatch[0];
+
+
+      /* =====================================================
+         INTERNAL NOTIFICATION
+      ===================================================== */
+
+      const dispatchCreatedByAdmin =
+        isAdminOrSuperAdmin(
+          user
+        );
+
+
+      await safeCreateNotification({
+        module:
+          "dispatch",
+
+        event:
+          "created",
+
+        title:
+          "Dispatch Created",
+
+        message:
+          `Dispatch created for ${createdDispatch.companyName} | Invoice ${createdDispatch.invoiceNumber}`,
+
+        priority:
+          "high",
+
+
+        targetUserIds:
+          dispatchCreatedByAdmin
+            ? [
+                createdDispatch
+                  .salesPersonId,
+              ]
+            : [],
+
+
+        targetRoles:
+          dispatchCreatedByAdmin
+            ? [
+                "super_admin",
+              ]
+            : [
+                "admin",
+                "super_admin",
+              ],
+
+
+        createdBy:
+          getUserId(
+            user
+          ),
+
+        referenceId:
+          createdDispatch._id,
+
+        referenceModel:
+          "Dispatch",
+
+        actionUrl:
+          "/dashboard#dispatch",
+
+
+        meta: {
+          companyName:
+            createdDispatch
+              .companyName,
+
+          invoiceNumber:
+            createdDispatch
+              .invoiceNumber,
+
+          invoiceValue:
+            createdDispatch
+              .invoiceValue,
+
+          dispatchQty:
+            createdDispatch
+              .dispatchQty,
+
+          remainingQtyAfterDispatch:
+            createdDispatch
+              .remainingQtyAfterDispatch,
+
+          dispatchCompletionStatus:
+            createdDispatch
+              .dispatchCompletionStatus,
+
+          tcApplicable:
+            createdDispatch
+              .tcApplicable,
+
+          /*
+           * Useful for management notification.
+           */
+          tcCount:
+            Array.isArray(
+              createdDispatch
+                .tcCertificatePdfs
+            )
+              ? createdDispatch
+                  .tcCertificatePdfs
+                  .length
+              : 0,
+
+          salesPersonName:
+            createdDispatch
+              .salesPersonName,
+
+          createdByName:
+            user?.name ||
+            "",
+
+          createdByRole:
+            user?.role ||
+            "",
+        },
+      });
+
+
+      /* =====================================================
+         CUSTOMER DISPATCH EMAIL
+
+         IMPORTANT:
+         sendDispatchCreatedEmail() must also be updated
+         to attach tcCertificatePdfs[].
+
+         Until then its existing legacy code will still
+         attach the first TC through tcCertificatePdf.
+      ===================================================== */
+
+      try {
+        const mailInfo =
+          await sendDispatchCreatedEmail(
+            createdDispatch
+          );
+
+
+        createdDispatch
+          .notificationEmail
+          .sent =
+          true;
+
+
+        createdDispatch
+          .notificationEmail
+          .sentAt =
+          new Date();
+
+
+        createdDispatch
+          .notificationEmail
+          .messageId =
+          mailInfo
+            ?.messageId ||
+          "";
+
+
+        createdDispatch
+          .notificationEmail
+          .errorMessage =
+          "";
+
+
+        await createdDispatch
+          .save();
+
+      } catch (
+        mailError
+      ) {
+        createdDispatch
+          .notificationEmail
+          .sent =
+          false;
+
+
+        createdDispatch
+          .notificationEmail
+          .errorMessage =
+          mailError
+            ?.message ||
+          "Dispatch email failed.";
+
+
+        await createdDispatch
+          .save();
+      }
+
+
+      return (
+        createdDispatch
+      );
+
+    } catch (
+      error
+    ) {
+      /* ===================================================
+         ABORT DATABASE TRANSACTION
+      =================================================== */
+
+      if (
+        session
+          .inTransaction()
+      ) {
+        await session
+          .abortTransaction();
+      }
+
+
+      /* ===================================================
+         REMOVE UPLOADED FILES IF CREATION FAILED
+      =================================================== */
+
+      deleteUploadedFiles(
+        uploadedFiles
+      );
+
+
+      throw error;
+
+    } finally {
+      await session
+        .endSession();
     }
-
-    return createdDispatch;
-  } catch (error) {
-    if (session.inTransaction()) {
-      await session.abortTransaction();
-    }
-
-    deleteUploadedFiles(uploadedFiles);
-    throw error;
-  } finally {
-    await session.endSession();
-  }
-};
+  };
 
 const getCurrentISTMonthRange = () => {
   const now = new Date();

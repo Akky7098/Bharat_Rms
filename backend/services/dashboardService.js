@@ -1293,15 +1293,15 @@ const getMisScoring = async (query, user) => {
       sales: 15000000,
       visits: 40,
       orders: 10,
-      newCustomers: 1,
+      newCustomers: 5,
     },
 
     renu: {
       enquiry: 60,
-      sales: 3000000,
+      sales: 15000000,
       visits: 15,
-      orders: 6,
-      newCustomers: 1,
+      orders: 25,
+      newCustomers: 5,
     },
 
     deepika: {
@@ -1316,24 +1316,24 @@ const getMisScoring = async (query, user) => {
       enquiry: 100,
       sales: 10000000,
       visits: 15,
-      orders: 8,
-      newCustomers: 1,
+      orders: 10,
+      newCustomers: 3,
     },
 
     saloni: {
       enquiry: 70,
       sales: 5000000,
       visits: 15,
-      orders: 6,
-      newCustomers: 1,
+      orders: 10,
+      newCustomers: 2,
     },
 
     kailash: {
       enquiry: 60,
       sales: 20000000,
       visits: 40,
-      orders: 12,
-      newCustomers: 1,
+      orders: 20,
+      newCustomers: 4,
     },
   };
 

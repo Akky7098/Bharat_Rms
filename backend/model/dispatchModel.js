@@ -93,14 +93,50 @@ const dispatchSchema = new mongoose.Schema(
     billPdf: { type: fileSchema, required: true },
     lrCopyPdf: fileSchema,
 
-    tcApplicable: {
-      type: String,
-      enum: ["applicable", "not_applicable"],
-      default: "not_applicable",
-      index: true,
-    },
+    /* =========================================================
+   MTC / TC CERTIFICATES
 
-    tcCertificatePdf: fileSchema,
+   NEW:
+   tcCertificatePdfs supports multiple TC files.
+
+   LEGACY:
+   tcCertificatePdf is retained temporarily so old
+   records / frontend / email code do not break.
+========================================================= */
+
+tcApplicable: {
+  type: String,
+  enum: [
+    "applicable",
+    "not_applicable",
+  ],
+  default: "not_applicable",
+  index: true,
+},
+
+/*
+ * Legacy first TC.
+ *
+ * Keep this until every frontend/email/download
+ * implementation has migrated to tcCertificatePdfs.
+ */
+tcCertificatePdf: {
+  type: fileSchema,
+  default: undefined,
+},
+
+/*
+ * NEW:
+ * Multiple TC/MTC certificates.
+ *
+ * Maximum count is enforced in:
+ * 1. Multer route
+ * 2. Dispatch service
+ */
+tcCertificatePdfs: {
+  type: [fileSchema],
+  default: [],
+},
 
     paymentTerms: {
   type: String,
@@ -286,25 +322,105 @@ paymentStatus: {
 dispatchSchema.pre("validate", function () {
   if (!this.dispatchDate) this.dispatchDate = new Date();
 
-  if (!this.tcApplicable) {
-    this.tcApplicable = this.tcCertificatePdf
+  /* =====================================================
+   TC / MTC VALIDATION
+
+   Supports both:
+   - old tcCertificatePdf
+   - new tcCertificatePdfs[]
+===================================================== */
+
+const tcFiles =
+  Array.isArray(
+    this.tcCertificatePdfs
+  )
+    ? this.tcCertificatePdfs
+    : [];
+
+const hasMultipleTcFiles =
+  tcFiles.some(
+    (file) =>
+      Boolean(
+        file?.fileUrl
+      )
+  );
+
+const hasLegacyTcFile =
+  Boolean(
+    this.tcCertificatePdf
+      ?.fileUrl
+  );
+
+/*
+ * Backward compatibility for old records.
+ */
+if (!this.tcApplicable) {
+  this.tcApplicable =
+    hasMultipleTcFiles ||
+    hasLegacyTcFile
       ? "applicable"
       : "not_applicable";
-  }
+}
 
-  if (
-    this.tcApplicable === "applicable" &&
-    (!this.tcCertificatePdf || !this.tcCertificatePdf.fileUrl)
-  ) {
-    this.invalidate(
-      "tcCertificatePdf",
-      "MTC / TC PDF is required when TC is applicable."
-    );
-  }
+/*
+ * TC applicable means at least one genuine
+ * uploaded certificate must exist.
+ */
+if (
+  this.tcApplicable ===
+    "applicable" &&
+  !hasMultipleTcFiles &&
+  !hasLegacyTcFile
+) {
+  this.invalidate(
+    "tcCertificatePdfs",
+    "At least one MTC / TC PDF is required when TC is applicable."
+  );
+}
 
-  if (this.tcApplicable === "not_applicable") {
-    this.tcCertificatePdf = undefined;
-  }
+/*
+ * Hard safety limit.
+ */
+if (
+  tcFiles.length >
+  10
+) {
+  this.invalidate(
+    "tcCertificatePdfs",
+    "Maximum 10 MTC / TC PDF files are allowed."
+  );
+}
+
+/*
+ * TC not applicable:
+ * clear both new and legacy TC fields.
+ */
+if (
+  this.tcApplicable ===
+  "not_applicable"
+) {
+  this.tcCertificatePdf =
+    undefined;
+
+  this.tcCertificatePdfs =
+    [];
+}
+
+/*
+ * Maintain old field automatically.
+ *
+ * This allows old frontend / download / mail code
+ * to continue reading tcCertificatePdf.
+ */
+if (
+  this.tcApplicable ===
+    "applicable" &&
+  !hasLegacyTcFile &&
+  hasMultipleTcFiles
+) {
+  this.tcCertificatePdf =
+    tcFiles[0];
+}
 
   if (this.paymentDueDays !== undefined && this.paymentDueDays !== null) {
     const dueDate = new Date(this.dispatchDate);

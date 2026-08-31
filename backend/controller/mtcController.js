@@ -2,148 +2,196 @@ const mtcService = require(
   "../services/mtcService"
 );
 
+const sbeGermanyMtcService = require(
+  "../services/sbeGermanyMtcService"
+);
+
 /* =========================================================
-   CREATE MTC CERTIFICATE
+   HELPERS
 ========================================================= */
 
-const createMtcCertificate = async (
-  req,
-  res
+const normalizeProvider = (
+  value = ""
 ) => {
-  try {
-    let payload =
-      req.body;
-
-    /*
-     * Supports multipart/form-data:
-     *
-     * formData.append(
-     *   "data",
-     *   JSON.stringify(payload)
-     * );
-     */
-    if (req.body?.data) {
-      try {
-        payload =
-          typeof req.body
-            .data ===
-          "string"
-            ? JSON.parse(
-                req.body.data
-              )
-            : req.body.data;
-      } catch (
-        parseError
-      ) {
-        return res
-          .status(400)
-          .json({
-            success:
-              false,
-
-            message:
-              "Invalid MTC form data",
-          });
-      }
-    }
-
-    if (
-      !payload ||
-      typeof payload !==
-        "object"
-    ) {
-      return res
-        .status(400)
-        .json({
-          success:
-            false,
-
-          message:
-            "MTC payload is required",
-        });
-    }
-
-    if (
-      !payload.mtcProvider
-    ) {
-      return res
-        .status(400)
-        .json({
-          success:
-            false,
-
-          message:
-            "MTC provider is required",
-        });
-    }
-
-    const mtc =
-      await mtcService
-        .createMtcCertificate(
-          payload,
-          req.user
-        );
-
-    return res
-      .status(201)
-      .json({
-        success: true,
-
-        message:
-          "MTC certificate generated successfully",
-
-        data: mtc,
-      });
-  } catch (error) {
-    console.log(
-      "CREATE MTC ERROR =>",
-      error
-    );
-
-    return res
-      .status(400)
-      .json({
-        success:
-          false,
-
-        message:
-          error.message ||
-          "Unable to generate MTC certificate",
-      });
-  }
+  return String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase();
 };
 
-/* =========================================================
-   UPDATE / EDIT MTC CERTIFICATE
+const parsePayload = (
+  req
+) => {
+  let payload =
+    req.body;
 
-   Saved values are edited in English.
-   PDF is regenerated automatically using provider template.
+  if (
+    req.body?.data
+  ) {
+    try {
+      payload =
+        typeof req.body.data ===
+        "string"
+          ? JSON.parse(
+              req.body.data
+            )
+          : req.body.data;
+    } catch (
+      error
+    ) {
+      const parseError =
+        new Error(
+          "Invalid MTC form data"
+        );
+
+      parseError.statusCode =
+        400;
+
+      throw parseError;
+    }
+  }
+
+  if (
+    !payload ||
+    typeof payload !==
+      "object" ||
+    Array.isArray(
+      payload
+    )
+  ) {
+    const error =
+      new Error(
+        "MTC payload is required"
+      );
+
+    error.statusCode =
+      400;
+
+    throw error;
+  }
+
+  return payload;
+};
+
+const getProviderFromRequest =
+  (
+    req,
+    payload = {}
+  ) => {
+    return normalizeProvider(
+      payload.mtcProvider ||
+        req.body
+          ?.mtcProvider ||
+        req.query
+          ?.mtcProvider ||
+        req.query
+          ?.provider ||
+        ""
+    );
+  };
+
+const getServiceByProvider =
+  (
+    provider
+  ) => {
+    if (
+      normalizeProvider(
+        provider
+      ) ===
+      "sbe_germany"
+    ) {
+      return sbeGermanyMtcService;
+    }
+
+    return mtcService;
+  };
+
+/* =========================================================
+   DETECT PROVIDER FROM SAVED RECORD
+
+   Used when frontend sends only ID.
 ========================================================= */
 
-const updateMtcCertificate = async (
-  req,
-  res
-) => {
-  try {
-    let payload =
-      req.body;
+const resolveServiceForExistingMtc =
+  async (
+    id,
+    requestedProvider = ""
+  ) => {
+    const provider =
+      normalizeProvider(
+        requestedProvider
+      );
+
+    if (provider) {
+      return {
+        provider,
+
+        service:
+          getServiceByProvider(
+            provider
+          ),
+      };
+    }
 
     /*
-     * Supports multipart/form-data as well.
+     * Base/common MTC lookup.
+     *
+     * We only use normal service here
+     * to discover the provider.
+     *
+     * No PDF generation occurs.
      */
-    if (req.body?.data) {
-      try {
-        payload =
-          typeof req.body
-            .data ===
-          "string"
-            ? JSON.parse(
-                req.body.data
-              )
-            : req.body.data;
-      } catch (
-        parseError
-      ) {
+    const existing =
+      await mtcService
+        .findMtcById(
+          id
+        );
+
+    if (!existing) {
+      throw new Error(
+        "MTC certificate not found"
+      );
+    }
+
+    const savedProvider =
+      normalizeProvider(
+        existing.mtcProvider
+      );
+
+    return {
+      provider:
+        savedProvider,
+
+      service:
+        getServiceByProvider(
+          savedProvider
+        ),
+    };
+  };
+
+/* =========================================================
+   CREATE
+========================================================= */
+
+const createMtcCertificate =
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const payload =
+        parsePayload(
+          req
+        );
+
+      const provider =
+        getProviderFromRequest(
+          req,
+          payload
+        );
+
+      if (!provider) {
         return res
           .status(400)
           .json({
@@ -151,76 +199,145 @@ const updateMtcCertificate = async (
               false,
 
             message:
-              "Invalid MTC form data",
+              "MTC provider is required",
           });
       }
-    }
 
-    if (
-      !payload ||
-      typeof payload !==
-        "object"
-    ) {
-      return res
-        .status(400)
-        .json({
-          success:
-            false,
-
-          message:
-            "MTC payload is required",
-        });
-    }
-
-    const provider =
-      payload.mtcProvider ||
-      req.query
-        .mtcProvider ||
-      req.query.provider ||
-      "";
-
-    const mtc =
-      await mtcService
-        .updateMtcCertificate(
-          req.params.id,
-          payload,
-          req.user,
+      const service =
+        getServiceByProvider(
           provider
         );
 
-    return res
-      .status(200)
-      .json({
-        success: true,
+      const mtc =
+        await service
+          .createMtcCertificate(
+            {
+              ...payload,
 
-        message:
-          "MTC certificate updated and PDF regenerated successfully",
+              mtcProvider:
+                provider,
+            },
 
-        data: mtc,
-      });
-  } catch (error) {
-    console.log(
-      "UPDATE MTC ERROR =>",
-      error
-    );
+            req.user
+          );
 
-    return res
-      .status(400)
-      .json({
-        success:
-          false,
+      return res
+        .status(201)
+        .json({
+          success:
+            true,
 
-        message:
-          error.message ||
-          "Unable to update MTC certificate",
-      });
-  }
-};
+          message:
+            "MTC certificate generated successfully",
+
+          data:
+            mtc,
+        });
+    } catch (error) {
+      console.error(
+        "CREATE MTC ERROR =>",
+        error
+      );
+
+      return res
+        .status(
+          error.statusCode ||
+            400
+        )
+        .json({
+          success:
+            false,
+
+          message:
+            error.message ||
+            "Unable to generate MTC certificate",
+        });
+    }
+  };
 
 /* =========================================================
-   GET SINGLE MTC CERTIFICATE
+   UPDATE
+========================================================= */
 
-   Frontend edit page will call this API.
+const updateMtcCertificate =
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const payload =
+        parsePayload(
+          req
+        );
+
+      const requestedProvider =
+        getProviderFromRequest(
+          req,
+          payload
+        );
+
+      const {
+        provider,
+        service,
+      } =
+        await resolveServiceForExistingMtc(
+          req.params.id,
+          requestedProvider
+        );
+
+      const mtc =
+        await service
+          .updateMtcCertificate(
+            req.params.id,
+
+            {
+              ...payload,
+
+              mtcProvider:
+                provider,
+            },
+
+            req.user,
+
+            provider
+          );
+
+      return res
+        .status(200)
+        .json({
+          success:
+            true,
+
+          message:
+            "MTC certificate updated and PDF regenerated successfully",
+
+          data:
+            mtc,
+        });
+    } catch (error) {
+      console.error(
+        "UPDATE MTC ERROR =>",
+        error
+      );
+
+      return res
+        .status(
+          error.statusCode ||
+            400
+        )
+        .json({
+          success:
+            false,
+
+          message:
+            error.message ||
+            "Unable to update MTC certificate",
+        });
+    }
+  };
+
+/* =========================================================
+   GET SINGLE
 ========================================================= */
 
 const getMtcCertificateById =
@@ -229,14 +346,22 @@ const getMtcCertificateById =
     res
   ) => {
     try {
-      const provider =
-        req.query
-          .mtcProvider ||
-        req.query.provider ||
-        "";
+      const requestedProvider =
+        getProviderFromRequest(
+          req
+        );
+
+      const {
+        provider,
+        service,
+      } =
+        await resolveServiceForExistingMtc(
+          req.params.id,
+          requestedProvider
+        );
 
       const mtc =
-        await mtcService
+        await service
           .getMtcCertificateById(
             req.params.id,
             provider
@@ -245,12 +370,14 @@ const getMtcCertificateById =
       return res
         .status(200)
         .json({
-          success: true,
+          success:
+            true,
 
-          data: mtc,
+          data:
+            mtc,
         });
     } catch (error) {
-      console.log(
+      console.error(
         "GET SINGLE MTC ERROR =>",
         error
       );
@@ -269,76 +396,9 @@ const getMtcCertificateById =
   };
 
 /* =========================================================
-   DOWNLOAD MTC PDF
-========================================================= */
+   LIST
 
-const downloadMtcPdf = async (
-  req,
-  res
-) => {
-  try {
-    const provider =
-      req.query
-        .mtcProvider ||
-      req.query.provider ||
-      "";
-
-    const result =
-      await mtcService
-        .getMtcPdf(
-          req.params.id,
-          provider
-        );
-
-    return res.download(
-      result.filePath,
-      result.fileName,
-      (error) => {
-        if (error) {
-          console.log(
-            "MTC PDF RESPONSE ERROR =>",
-            error
-          );
-
-          if (
-            !res.headersSent
-          ) {
-            return res
-              .status(500)
-              .json({
-                success:
-                  false,
-
-                message:
-                  "Unable to download MTC PDF",
-              });
-          }
-        }
-
-        return undefined;
-      }
-    );
-  } catch (error) {
-    console.log(
-      "DOWNLOAD MTC PDF ERROR =>",
-      error
-    );
-
-    return res
-      .status(404)
-      .json({
-        success:
-          false,
-
-        message:
-          error.message ||
-          "MTC PDF not found",
-      });
-  }
-};
-
-/* =========================================================
-   GET MTC CERTIFICATE LIST
+   Common/base collection is used for list.
 ========================================================= */
 
 const getMtcCertificates =
@@ -360,7 +420,8 @@ const getMtcCertificates =
         mtcProvider:
           req.query
             .mtcProvider ||
-          req.query.provider ||
+          req.query
+            .provider ||
           "",
 
         fromDate:
@@ -369,14 +430,40 @@ const getMtcCertificates =
           "",
 
         toDate:
-          req.query.toDate ||
+          req.query
+            .toDate ||
           "",
 
         limit:
           req.query.limit,
       };
 
-      const mtcList =
+      /*
+       * SBE-specific filter request.
+       */
+      if (
+        normalizeProvider(
+          filters.mtcProvider
+        ) ===
+        "sbe_germany"
+      ) {
+        const data =
+          await sbeGermanyMtcService
+            .getMtcCertificates(
+              filters
+            );
+
+        return res
+          .status(200)
+          .json({
+            success:
+              true,
+
+            data,
+          });
+      }
+
+      const data =
         await mtcService
           .getMtcCertificates(
             filters
@@ -385,13 +472,13 @@ const getMtcCertificates =
       return res
         .status(200)
         .json({
-          success: true,
+          success:
+            true,
 
-          data:
-            mtcList,
+          data,
         });
     } catch (error) {
-      console.log(
+      console.error(
         "GET MTC LIST ERROR =>",
         error
       );
@@ -410,7 +497,7 @@ const getMtcCertificates =
   };
 
 /* =========================================================
-   GET PROVIDER-SPECIFIC CHEMICAL SPECS / FORM CONFIG
+   CHEMICAL SPECS / FORM CONFIG
 ========================================================= */
 
 const getMtcChemicalSpecs =
@@ -420,13 +507,21 @@ const getMtcChemicalSpecs =
   ) => {
     try {
       const provider =
-        req.query
-          .mtcProvider ||
-        req.query.provider ||
-        "gloria";
+        normalizeProvider(
+          req.query
+            .mtcProvider ||
+            req.query
+              .provider ||
+            "gloria"
+        );
 
-      const specs =
-        await mtcService
+      const service =
+        getServiceByProvider(
+          provider
+        );
+
+      const data =
+        await service
           .getMtcChemicalSpecs(
             provider
           );
@@ -434,12 +529,13 @@ const getMtcChemicalSpecs =
       return res
         .status(200)
         .json({
-          success: true,
+          success:
+            true,
 
-          data: specs,
+          data,
         });
     } catch (error) {
-      console.log(
+      console.error(
         "GET MTC CHEMICAL SPECS ERROR =>",
         error
       );
@@ -458,100 +554,210 @@ const getMtcChemicalSpecs =
   };
 
 /* =========================================================
-   GET CONFIGURED MTC PROVIDERS
+   PROVIDERS
+
+   Combine providers from BOTH services.
 ========================================================= */
 
-const getMtcProviders = async (
-  req,
-  res
-) => {
-  try {
-    const providers =
-      await mtcService
-        .getMtcProviders();
+const getMtcProviders =
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const [
+        normalProviders,
+        sbeProviders,
+      ] =
+        await Promise.all([
+          mtcService
+            .getMtcProviders(),
 
-    return res
-      .status(200)
-      .json({
-        success: true,
+          sbeGermanyMtcService
+            .getMtcProviders(),
+        ]);
 
-        data:
-          providers,
-      });
-  } catch (error) {
-    console.log(
-      "GET MTC PROVIDERS ERROR =>",
-      error
-    );
+      const providers = [
+        ...normalProviders,
+        ...sbeProviders,
+      ];
 
-    return res
-      .status(400)
-      .json({
-        success:
-          false,
+      return res
+        .status(200)
+        .json({
+          success:
+            true,
 
-        message:
-          error.message ||
-          "Unable to load MTC providers",
-      });
-  }
-};
+          data:
+            providers,
+        });
+    } catch (error) {
+      console.error(
+        "GET MTC PROVIDERS ERROR =>",
+        error
+      );
+
+      return res
+        .status(400)
+        .json({
+          success:
+            false,
+
+          message:
+            error.message ||
+            "Unable to load MTC providers",
+        });
+    }
+  };
 
 /* =========================================================
-   REGENERATE MTC PDF
+   DOWNLOAD PDF
 ========================================================= */
 
-const regenerateMtcPdf = async (
-  req,
-  res
-) => {
-  try {
-    const provider =
-      req.body
-        ?.mtcProvider ||
-      req.query
-        .mtcProvider ||
-      req.query.provider ||
-      "";
-
-    const mtc =
-      await mtcService
-        .regenerateMtcPdf(
-          req.params.id,
-          provider
+const downloadMtcPdf =
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const requestedProvider =
+        getProviderFromRequest(
+          req
         );
 
-    return res
-      .status(200)
-      .json({
-        success: true,
+      const {
+        provider,
+        service,
+      } =
+        await resolveServiceForExistingMtc(
+          req.params.id,
+          requestedProvider
+        );
 
-        message:
-          "MTC PDF regenerated successfully",
+      const result =
+        await service
+          .getMtcPdf(
+            req.params.id,
+            provider
+          );
 
-        data: mtc,
-      });
-  } catch (error) {
-    console.log(
-      "REGENERATE MTC PDF ERROR =>",
-      error
-    );
+      return res.download(
+        result.filePath,
+        result.fileName,
+        (error) => {
+          if (error) {
+            console.error(
+              "MTC PDF RESPONSE ERROR =>",
+              error
+            );
 
-    return res
-      .status(400)
-      .json({
-        success:
-          false,
+            if (
+              !res.headersSent
+            ) {
+              return res
+                .status(500)
+                .json({
+                  success:
+                    false,
 
-        message:
-          error.message ||
-          "Unable to regenerate MTC PDF",
-      });
-  }
-};
+                  message:
+                    "Unable to download MTC PDF",
+                });
+            }
+          }
+
+          return undefined;
+        }
+      );
+    } catch (error) {
+      console.error(
+        "DOWNLOAD MTC PDF ERROR =>",
+        error
+      );
+
+      return res
+        .status(404)
+        .json({
+          success:
+            false,
+
+          message:
+            error.message ||
+            "MTC PDF not found",
+        });
+    }
+  };
 
 /* =========================================================
-   EXPORT
+   REGENERATE PDF
+========================================================= */
+
+const regenerateMtcPdf =
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const requestedProvider =
+        normalizeProvider(
+          req.body
+            ?.mtcProvider ||
+            req.query
+              ?.mtcProvider ||
+            req.query
+              ?.provider ||
+            ""
+        );
+
+      const {
+        provider,
+        service,
+      } =
+        await resolveServiceForExistingMtc(
+          req.params.id,
+          requestedProvider
+        );
+
+      const mtc =
+        await service
+          .regenerateMtcPdf(
+            req.params.id,
+            provider
+          );
+
+      return res
+        .status(200)
+        .json({
+          success:
+            true,
+
+          message:
+            "MTC PDF regenerated successfully",
+
+          data:
+            mtc,
+        });
+    } catch (error) {
+      console.error(
+        "REGENERATE MTC PDF ERROR =>",
+        error
+      );
+
+      return res
+        .status(400)
+        .json({
+          success:
+            false,
+
+          message:
+            error.message ||
+            "Unable to regenerate MTC PDF",
+        });
+    }
+  };
+
+/* =========================================================
+   EXPORTS
 ========================================================= */
 
 module.exports = {

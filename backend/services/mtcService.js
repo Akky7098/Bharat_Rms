@@ -2,12 +2,6 @@ const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
 
-// const puppeteer = require("puppeteer");
-
-// const ensureChromium = require(
-//   "../util/ensureChromium"
-// );
-
 const {
   MtcCertificate,
 } = require("../model/MtcCertificate");
@@ -20,16 +14,8 @@ const GloriaMtcCertificate = require(
   "../model/GloriaMtcCertificate"
 );
 
-const SbeGermanyMtcCertificate = require(
-  "../model/SbeGermanyMtcCertificate"
-);
-
 const mtcChemicalSpecs = require(
   "../util/mtcChemicalSpecs"
-);
-
-const runWithChromiumLock = require(
-  "../util/chromiumLock"
 );
 
 const gloriaTemplate = require(
@@ -38,37 +24,6 @@ const gloriaTemplate = require(
 
 const bharatTemplate = require(
   "../templates/mtc/bharatTemplate"
-);
-
-const mtcGermanTemplate = require(
-  "../templates/mtc/mtcGermanTemplate"
-);
-
-/* =========================================================
-   SBE GERMANY CONTROLLED CONFIG
-========================================================= */
-
-const {
-  SBE_FIXED_VALUES,
-  SBE_CHEMICAL_ORDER,
-  SBE_FRONTEND_RULES,
-  getSbeGradeConfig,
-  getSbeGrades,
-  buildSbeGradeFormData,
-  validateSbeCreatePayload,
-  validateSbeUpdatePayload,
-} = require(
-  "../util/sbeGermanyConfig"
-);
-
-/* =========================================================
-   SBE GERMANY UNIQUE NUMBER GENERATOR
-========================================================= */
-
-const {
-  generateSbeDocumentNumbers,
-} = require(
-  "../util/sbeNumberGenerator"
 );
 
 /* =========================================================
@@ -429,96 +384,6 @@ const normalizeBharatChemicalComposition =
               ? cleanText(
                   rawResult,
                   "-"
-                )
-              : numericValue;
-        }
-
-        return {
-          element,
-
-          min:
-            input?.min ===
-              "" ||
-            input?.min ===
-              undefined
-              ? null
-              : input.min,
-
-          max:
-            input?.max ===
-              "" ||
-            input?.max ===
-              undefined
-              ? null
-              : input.max,
-
-          result,
-        };
-      }
-    );
-  };
-
-/* =========================================================
-   SBE GERMANY CHEMICAL NORMALIZATION
-========================================================= */
-
-const normalizeSbeGermanyChemicalComposition =
-  (
-    inputComposition = []
-  ) => {
-    const sbeElements = [
-      "C",
-      "Si",
-      "Mn",
-      "Cr",
-      "S",
-      "P",
-      "V",
-      "Mo",
-      "Ni",
-      "Al",
-      "Cu",
-    ];
-
-    return sbeElements.map(
-      (element) => {
-        const input =
-          findChemicalInput(
-            inputComposition,
-            element
-          );
-
-        const rawResult =
-          firstValue(
-            input?.result,
-            input?.achieved,
-            input?.value,
-            "---"
-          );
-
-        let result =
-          rawResult;
-
-        if (
-          rawResult !==
-            "---" &&
-          rawResult !== "-" &&
-          rawResult !== "X" &&
-          rawResult !== "x" &&
-          rawResult !== ""
-        ) {
-          const numericValue =
-            Number(
-              rawResult
-            );
-
-          result =
-            Number.isNaN(
-              numericValue
-            )
-              ? cleanText(
-                  rawResult,
-                  "---"
                 )
               : numericValue;
         }
@@ -1420,294 +1285,10 @@ const normalizeBharatPayload = (
 };
 
 /* =========================================================
-   SBE GERMANY PAYLOAD NORMALIZATION
-
-   IMPORTANT:
-
-   Frontend is allowed to control only:
-
-   CREATE:
-   - grade
-   - customerName
-   - quantity
-   - dimension
-
-   UPDATE:
-   - customerName
-   - quantity
-   - dimension
-
-   ALL other certificate data comes from backend config.
-========================================================= */
-
-const normalizeSbeGermanyPayload =
-  (
-    payload,
-    loggedInUser
-  ) => {
-    const grade =
-      cleanText(
-        payload.grade
-      );
-
-    if (!grade) {
-      throw new Error(
-        "Grade is required"
-      );
-    }
-
-    /*
-     * This is the master source for:
-     *
-     * materialCode
-     * materialDescription
-     * execution
-     * hardnessBHN
-     * chemicalComposition
-     */
-    const gradeConfig =
-      getSbeGradeConfig(
-        grade
-      );
-
-    const customerName =
-      cleanText(
-        payload.customerName
-      );
-
-    const quantity =
-      cleanText(
-        firstValue(
-          payload.quantity,
-          payload.pcs,
-          "1"
-        )
-      );
-
-    const dimension =
-      cleanText(
-        firstValue(
-          payload.dimension,
-          payload.size
-        )
-      );
-
-    /*
-     * These MUST already have been generated
-     * in createMtcCertificate() or retained
-     * from the existing record during update.
-     */
-    const productionOrder =
-      cleanText(
-        payload.productionOrder
-      );
-
-    const customerPoNumber =
-      cleanText(
-        payload.customerPoNumber
-      );
-
-    if (!productionOrder) {
-      throw new Error(
-        "SBE Fertigungsauftrag was not generated"
-      );
-    }
-
-    if (!customerPoNumber) {
-      throw new Error(
-        "SBE Kundenbestellnummer was not generated"
-      );
-    }
-
-    /*
-     * IMPORTANT:
-     *
-     * Do NOT add:
-     *
-     * ...payload
-     *
-     * here.
-     *
-     * We intentionally return an explicit object
-     * to stop users from overriding controlled data.
-     */
-    return {
-      mtcProvider:
-        "sbe_germany",
-
-      /* ===================================================
-         COMMON MTC FIELDS
-      =================================================== */
-
-      companyName:
-        customerName,
-
-      customerName,
-
-      customerAddress:
-        "",
-
-      /*
-       * We map generated numbers to the base
-       * common fields too.
-       */
-      orderNo:
-        productionOrder,
-
-      poNo:
-        customerPoNumber,
-
-      invoiceNo:
-        "",
-
-      mtcDate:
-        payload.mtcDate ||
-        new Date(),
-
-      grade:
-        gradeConfig.grade,
-
-      /*
-       * Base MtcCertificate requires heatLotNo.
-       *
-       * SBE certificate does not expose a separate
-       * editable heat number field, therefore we retain
-       * productionOrder internally for this required field.
-       */
-      heatLotNo:
-        productionOrder,
-
-      size:
-        dimension,
-
-      weight:
-        "",
-
-      pcs:
-        quantity,
-
-      condition:
-        SBE_FIXED_VALUES
-          .condition,
-
-      /* ===================================================
-         CHEMISTRY FROM MASTER CONFIG ONLY
-      =================================================== */
-
-      chemicalComposition:
-        JSON.parse(
-          JSON.stringify(
-            gradeConfig
-              .chemicalComposition
-          )
-        ),
-
-      /* ===================================================
-         SBE FIXED DATA
-      =================================================== */
-
-      position:
-        SBE_FIXED_VALUES
-          .position,
-
-      quantity,
-
-      quantityUnit:
-        SBE_FIXED_VALUES
-          .quantityUnit,
-
-      meltingMethod:
-        SBE_FIXED_VALUES
-          .meltingMethod,
-
-      castingProcess:
-        SBE_FIXED_VALUES
-          .castingProcess,
-
-      /* ===================================================
-         GRADE-CONTROLLED DATA
-      =================================================== */
-
-      materialCode:
-        gradeConfig
-          .materialCode,
-
-      materialDescription:
-        gradeConfig
-          .materialDescription,
-
-      execution:
-        gradeConfig
-          .execution,
-
-      hardnessBHN:
-        gradeConfig
-          .hardnessBHN,
-
-      /* ===================================================
-         AUTO GENERATED UNIQUE NUMBERS
-      =================================================== */
-
-      productionOrder,
-
-      customerPoNumber,
-
-      /* ===================================================
-         USER VALUE
-      =================================================== */
-
-      dimension,
-
-      /* ===================================================
-         FIXED SBE TEST VALUES
-      =================================================== */
-
-      materialRemark:
-        SBE_FIXED_VALUES
-          .materialRemark,
-
-      ultrasonicTest:
-        SBE_FIXED_VALUES
-          .ultrasonicTest,
-
-      cleanlinessRating:
-        SBE_FIXED_VALUES
-          .cleanlinessRating,
-
-      meltingProcess:
-        SBE_FIXED_VALUES
-          .meltingProcess,
-
-      macroMicroStructure:
-        SBE_FIXED_VALUES
-          .macroMicroStructure,
-
-      chemicalOrder:
-        [...SBE_CHEMICAL_ORDER],
-
-      /* ===================================================
-         AUDIT
-      =================================================== */
-
-      createdBy:
-        loggedInUser?._id ||
-        payload.createdBy,
-
-      updatedBy:
-        payload.updatedBy ||
-        null,
-    };
-  };
-
-/* =========================================================
    PROVIDER REGISTRY
 ========================================================= */
 
 const MTC_PROVIDER_REGISTRY = {
-  /* =======================================================
-     GLORIA
-  ======================================================= */
-
   gloria: {
     provider:
       "gloria",
@@ -1750,10 +1331,6 @@ const MTC_PROVIDER_REGISTRY = {
         ),
   },
 
-  /* =======================================================
-     BHARAT
-  ======================================================= */
-
   bharat: {
     provider:
       "bharat",
@@ -1792,53 +1369,6 @@ const MTC_PROVIDER_REGISTRY = {
       (mtc) =>
         firstValue(
           mtc.issueDate,
-          mtc.mtcDate,
-          mtc.createdAt,
-          new Date()
-        ),
-  },
-
-  /* =======================================================
-     SBE GERMANY
-  ======================================================= */
-
-  sbe_germany: {
-    provider:
-      "sbe_germany",
-
-    model:
-      SbeGermanyMtcCertificate,
-
-    template:
-      mtcGermanTemplate,
-
-    normalizePayload:
-      normalizeSbeGermanyPayload,
-
-    filePrefix:
-      "SBE_TC",
-
-    getCompanyName:
-      (mtc) =>
-        firstValue(
-          mtc.customerName,
-          mtc.companyName,
-          "Customer"
-        ),
-
-    getDocumentNumber:
-      (mtc) =>
-        firstValue(
-          mtc.productionOrder,
-          mtc.orderNo,
-          mtc.customerPoNumber,
-          mtc.poNo,
-          mtc._id
-        ),
-
-    getDocumentDate:
-      (mtc) =>
-        firstValue(
           mtc.mtcDate,
           mtc.createdAt,
           new Date()
@@ -1894,384 +1424,391 @@ const getTemplateByProvider = (
 /* =========================================================
    MTC HTML -> PDF
 
-   COMPLETELY INDEPENDENT FROM WHATSAPP
+   GLORIA + BHARAT ONLY
+
+   IMPORTANT:
+   - No ensureChromium
+   - No chromiumLock
+   - No BrowserFetcher
+   - No custom executablePath
+   - No Chromium download
+   - Puppeteer loads only when MTC PDF is requested
 ========================================================= */
 
-const generateMtcPdfBuffer = async (
-  mtc
-) => {
-  return runWithChromiumLock(
-    "MTC_PDF",
+const generateMtcPdfBuffer =
+  async (mtc) => {
+    const plainMtc =
+      typeof mtc?.toObject ===
+      "function"
+        ? mtc.toObject({
+            virtuals:
+              true,
+          })
+        : mtc;
 
-    async () => {
-      const plainMtc =
-        typeof mtc?.toObject ===
-        "function"
-          ? mtc.toObject({
-              virtuals: true,
-            })
-          : mtc;
+    const provider =
+      normalizeProvider(
+        plainMtc?.mtcProvider
+      );
 
-      const template =
-        getTemplateByProvider(
-          plainMtc.mtcProvider
-        );
+    if (
+      provider !==
+        "gloria" &&
+      provider !==
+        "bharat"
+    ) {
+      throw new Error(
+        `Unsupported provider in mtcService: ${provider}`
+      );
+    }
 
-      if (
-        typeof template !==
-        "function"
-      ) {
-        throw new Error(
-          `Invalid MTC template for provider: ${plainMtc.mtcProvider}`
-        );
-      }
+    const template =
+      getTemplateByProvider(
+        provider
+      );
 
-      const html =
-        template(plainMtc);
+    if (
+      typeof template !==
+      "function"
+    ) {
+      throw new Error(
+        `Invalid MTC template for provider: ${provider}`
+      );
+    }
 
-      if (
-        !html ||
-        typeof html !==
+    const html =
+      template(
+        plainMtc
+      );
+
+    if (
+      !html ||
+      typeof html !==
         "string"
+    ) {
+      throw new Error(
+        `MTC template returned invalid HTML for provider: ${provider}`
+      );
+    }
+
+    /*
+     * Important:
+     *
+     * Puppeteer is NOT imported at
+     * application startup.
+     *
+     * It is required only when a
+     * Gloria/Bharat MTC PDF is created.
+     */
+    const puppeteer =
+      require("puppeteer");
+
+    let browser =
+      null;
+
+    let page =
+      null;
+
+    try {
+      /*
+       * IMPORTANT:
+       *
+       * No ensureChromium().
+       * No custom executablePath.
+       * No browser download.
+       */
+      browser =
+        await puppeteer.launch({
+          headless:
+            true,
+
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-extensions",
+            "--no-first-run",
+          ],
+        });
+
+      if (
+        !browser ||
+        !browser.isConnected()
       ) {
         throw new Error(
-          `MTC template returned invalid HTML for provider: ${plainMtc.mtcProvider}`
+          "MTC PDF browser failed to start."
         );
       }
 
-      let browser = null;
-      let page = null;
+      page =
+        await browser.newPage();
+
+      await page.setContent(
+        html,
+        {
+          waitUntil:
+            "domcontentloaded",
+
+          timeout:
+            120000,
+        }
+      );
+
+      await page.emulateMediaType(
+        "screen"
+      );
+
+      /* =====================================================
+         WAIT FOR FONTS
+      ===================================================== */
 
       try {
-        /* =================================================
-           ENSURE CHROMIUM
-        ================================================= */
-
-        // const executablePath =
-        //   await ensureChromium();
-
-        // if (
-        //   !executablePath ||
-        //   !fs.existsSync(
-        //     executablePath
-        //   )
-        // ) {
-        //   throw new Error(
-        //     "MTC PDF Chromium executable is unavailable."
-        //   );
-        // }
-
-        // console.log(
-        //   "MTC PDF CHROMIUM START =>",
-        //   executablePath
-        // );
-
-        // console.log(
-        //   "MTC PDF PROVIDER =>",
-        //   plainMtc.mtcProvider
-        // );
-
-        /* =================================================
-           START TEMPORARY CHROMIUM
-        ================================================= */
-
-        browser =
-          await puppeteer.launch({
-            executablePath,
-
-            headless: true,
-
-            args: [
-              "--no-sandbox",
-              "--disable-setuid-sandbox",
-              "--disable-dev-shm-usage",
-              "--disable-gpu",
-              "--disable-extensions",
-              "--disable-background-networking",
-              "--disable-background-timer-throttling",
-              "--disable-renderer-backgrounding",
-              "--disable-features=TranslateUI",
-              "--disable-ipc-flooding-protection",
-              "--single-process",
-              "--no-zygote",
-              "--no-first-run",
-            ],
-          });
-
-        if (
-          !browser ||
-          !browser.isConnected()
-        ) {
-          throw new Error(
-            "MTC PDF Chromium failed to start."
-          );
-        }
-
-        /* =================================================
-           NEW PAGE
-        ================================================= */
-
-        page =
-          await browser.newPage();
-
-        /* =================================================
-           LOAD HTML
-        ================================================= */
-
-        await page.setContent(
-          html,
-          {
-            waitUntil:
-              "domcontentloaded",
-
-            timeout:
-              120000,
+        await page.evaluate(
+          async () => {
+            if (
+              document.fonts &&
+              document.fonts.ready
+            ) {
+              await document
+                .fonts.ready;
+            }
           }
         );
-
-        await page.emulateMediaType(
-          "screen"
-        );
-
-        /* =================================================
-           WAIT FOR FONTS
-        ================================================= */
-
-        try {
-          await page.evaluateHandle(
-            "document.fonts.ready"
-          );
-        } catch (error) {
-          console.log(
-            "MTC PDF font wait skipped:",
-            error.message
-          );
-        }
-
-        /* =================================================
-           WAIT FOR ALL IMAGES
-        ================================================= */
-
-        try {
-          await page.evaluate(
-            async () => {
-              const images =
-                Array.from(
-                  document.images
-                );
-
-              await Promise.all(
-                images.map(
-                  (image) => {
-                    if (
-                      image.complete
-                    ) {
-                      return Promise.resolve();
-                    }
-
-                    return new Promise(
-                      (resolve) => {
-                        image.onload =
-                          resolve;
-
-                        image.onerror =
-                          resolve;
-                      }
-                    );
-                  }
-                )
-              );
-            }
-          );
-        } catch (error) {
-          console.log(
-            "MTC PDF image wait skipped:",
-            error.message
-          );
-        }
-
-        await new Promise(
-          (resolve) =>
-            setTimeout(
-              resolve,
-              500
-            )
-        );
-
-        /* =================================================
-           GENERATE PDF
-        ================================================= */
-
-        const pdfBuffer =
-          await page.pdf({
-            format: "A4",
-
-            printBackground:
-              true,
-
-            preferCSSPageSize:
-              true,
-
-            margin: {
-              top: "0mm",
-              right: "0mm",
-              bottom: "0mm",
-              left: "0mm",
-            },
-          });
-
-        if (
-          !pdfBuffer ||
-          pdfBuffer.length ===
-            0
-        ) {
-          throw new Error(
-            "MTC PDF generation returned an empty file."
-          );
-        }
-
-        console.log(
-          "MTC PDF BUFFER GENERATED SUCCESSFULLY =>",
-          plainMtc.mtcProvider
-        );
-
-        return pdfBuffer;
       } catch (error) {
         console.log(
-          "MTC PDF BUFFER FAILED =>",
+          "MTC PDF FONT WAIT WARNING =>",
           error.message
         );
+      }
 
-        throw error;
-      } finally {
-        if (page) {
-          await page
-            .close()
-            .catch(
-              () => {}
+      /* =====================================================
+         WAIT FOR IMAGES
+      ===================================================== */
+
+      try {
+        await page.evaluate(
+          async () => {
+            const images =
+              Array.from(
+                document.images ||
+                  []
+              );
+
+            await Promise.all(
+              images.map(
+                (image) => {
+                  if (
+                    image.complete
+                  ) {
+                    return Promise.resolve();
+                  }
+
+                  return new Promise(
+                    (resolve) => {
+                      image.onload =
+                        resolve;
+
+                      image.onerror =
+                        resolve;
+                    }
+                  );
+                }
+              )
             );
-        }
+          }
+        );
+      } catch (error) {
+        console.log(
+          "MTC PDF IMAGE WAIT WARNING =>",
+          error.message
+        );
+      }
 
-        if (browser) {
-          await browser
-            .close()
-            .catch(
-              () => {}
-            );
+      await new Promise(
+        (resolve) =>
+          setTimeout(
+            resolve,
+            400
+          )
+      );
 
-          console.log(
-            "MTC PDF CHROMIUM CLOSED"
+      /* =====================================================
+         GENERATE PDF
+      ===================================================== */
+
+      const pdfBuffer =
+        await page.pdf({
+          format:
+            "A4",
+
+          printBackground:
+            true,
+
+          preferCSSPageSize:
+            true,
+
+          margin: {
+            top:
+              "0mm",
+
+            right:
+              "0mm",
+
+            bottom:
+              "0mm",
+
+            left:
+              "0mm",
+          },
+        });
+
+      if (
+        !pdfBuffer ||
+        pdfBuffer.length ===
+          0
+      ) {
+        throw new Error(
+          "MTC PDF generation returned an empty file."
+        );
+      }
+
+      return pdfBuffer;
+    } catch (error) {
+      console.error(
+        "MTC PDF GENERATION ERROR =>",
+        error
+      );
+
+      throw error;
+    } finally {
+      if (page) {
+        await page
+          .close()
+          .catch(
+            () => {}
           );
-        }
+      }
+
+      if (browser) {
+        await browser
+          .close()
+          .catch(
+            () => {}
+          );
       }
     }
-  );
-};
+  };
 
 /* =========================================================
    GENERATE MTC PDF FILE
 ========================================================= */
 
-const generateMtcPdf = async (
-  mtc
-) => {
-  const providerConfiguration =
-    getProviderConfiguration(
-      mtc.mtcProvider
-    );
+const generateMtcPdf =
+  async (
+    mtc
+  ) => {
+    const providerConfiguration =
+      getProviderConfiguration(
+        mtc.mtcProvider
+      );
 
-  const pdfDirectory =
-    ensurePdfDirectory();
+    const pdfDirectory =
+      ensurePdfDirectory();
 
-  const company =
-    sanitizeFileName(
-      providerConfiguration
-        .getCompanyName(mtc)
-    ) || "Customer";
+    const company =
+      sanitizeFileName(
+        providerConfiguration
+          .getCompanyName(
+            mtc
+          )
+      ) ||
+      "Customer";
 
-  const documentNumber =
-    sanitizeFileName(
-      providerConfiguration
-        .getDocumentNumber(
-          mtc
+    const documentNumber =
+      sanitizeFileName(
+        providerConfiguration
+          .getDocumentNumber(
+            mtc
+          )
+      ) ||
+      sanitizeFileName(
+        mtc._id
+      ) ||
+      "Document";
+
+    const grade =
+      sanitizeFileName(
+        firstValue(
+          mtc.grade,
+          "Grade"
         )
-    ) ||
-    sanitizeFileName(
-      mtc._id
-    ) ||
-    "Document";
+      ) ||
+      "Grade";
 
-  const grade =
-    sanitizeFileName(
-      firstValue(
-        mtc.grade,
-        "Grade"
-      )
-    ) || "Grade";
+    const date =
+      formatFileDate(
+        providerConfiguration
+          .getDocumentDate(
+            mtc
+          )
+      );
 
-  const date =
-    formatFileDate(
-      providerConfiguration
-        .getDocumentDate(
-          mtc
-        )
-    );
+    const uniqueId =
+      generateUniqueId();
 
-  const uniqueId =
-    generateUniqueId();
+    const filePrefix =
+      sanitizeFileName(
+        providerConfiguration
+          .filePrefix ||
+          "MTC"
+      );
 
-  const filePrefix =
-    sanitizeFileName(
-      providerConfiguration
-        .filePrefix ||
-        "MTC"
-    );
+    const fileName = [
+      filePrefix,
+      company,
+      documentNumber,
+      grade,
+      date,
+      uniqueId,
+    ]
+      .filter(Boolean)
+      .join("_")
+      .concat(".pdf");
 
-  const fileName = [
-    filePrefix,
-    company,
-    documentNumber,
-    grade,
-    date,
-    uniqueId,
-  ]
-    .filter(Boolean)
-    .join("_")
-    .concat(".pdf");
+    const filePath =
+      path.join(
+        pdfDirectory,
+        fileName
+      );
 
-  const filePath =
-    path.join(
-      pdfDirectory,
+    console.log(
+      "NEW MTC PDF CREATED =>",
       fileName
     );
 
-  console.log(
-    "NEW MTC PDF CREATED =>",
-    fileName
-  );
+    const pdfBuffer =
+      await generateMtcPdfBuffer(
+        mtc
+      );
 
-  const pdfBuffer =
-    await generateMtcPdfBuffer(
-      mtc
+    fs.writeFileSync(
+      filePath,
+      pdfBuffer
     );
 
-  fs.writeFileSync(
-    filePath,
-    pdfBuffer
-  );
+    return {
+      fileName,
 
-  return {
-    fileName,
+      filePath,
 
-    filePath,
+      fileUrl:
+        `${PUBLIC_MTC_UPLOAD_PATH}/${fileName}`,
 
-    fileUrl:
-      `${PUBLIC_MTC_UPLOAD_PATH}/${fileName}`,
-
-    generatedAt:
-      new Date(),
+      generatedAt:
+        new Date(),
+    };
   };
-};
 
 /* =========================================================
    APPLY PDF DATA
@@ -2359,6 +1896,24 @@ const createMtcCertificate =
           payload?.mtcProvider
         );
 
+      /*
+       * This service accepts ONLY
+       * Gloria and Bharat.
+       *
+       * SBE Germany is handled by
+       * sbeGermanyMtcService.js.
+       */
+      if (
+        provider !==
+          "gloria" &&
+        provider !==
+          "bharat"
+      ) {
+        throw new Error(
+          `MTC provider not handled by mtcService: ${provider}`
+        );
+      }
+
       const providerConfiguration =
         getProviderConfiguration(
           provider
@@ -2386,113 +1941,13 @@ const createMtcCertificate =
         );
       }
 
-      let payloadForNormalization = {
-        ...payload,
+      const payloadForNormalization =
+        {
+          ...payload,
 
-        mtcProvider:
-          provider,
-      };
-
-      /* =====================================================
-         SBE GERMANY CONTROLLED CREATE
-      ===================================================== */
-
-      if (
-        provider ===
-        "sbe_germany"
-      ) {
-        /*
-         * Backend validates only permitted
-         * frontend values.
-         */
-        validateSbeCreatePayload(
-          payload
-        );
-
-        /*
-         * Generate TWO globally unique numbers
-         * for this daily YYMMDD sequence.
-         *
-         * Example:
-         *
-         * Fertigungsauftrag:
-         * 26082711
-         *
-         * Kundenbestellnummer:
-         * 26082712
-         */
-        const {
-          productionOrder,
-          customerPoNumber,
-        } =
-          await generateSbeDocumentNumbers(
-            new Date()
-          );
-
-        /*
-         * IMPORTANT:
-         *
-         * Construct a completely new payload.
-         *
-         * We intentionally do NOT forward
-         * unwanted SBE frontend fields.
-         */
-        payloadForNormalization = {
           mtcProvider:
-            "sbe_germany",
-
-          grade:
-            cleanText(
-              payload.grade
-            ),
-
-          customerName:
-            cleanText(
-              payload.customerName
-            ),
-
-          quantity:
-            cleanText(
-              firstValue(
-                payload.quantity,
-                payload.pcs,
-                "1"
-              )
-            ),
-
-          dimension:
-            cleanText(
-              firstValue(
-                payload.dimension,
-                payload.size
-              )
-            ),
-
-          productionOrder,
-
-          customerPoNumber,
-
-          /*
-           * Server controls certificate date.
-           */
-          mtcDate:
-            new Date(),
+            provider,
         };
-
-        console.log(
-          "SBE GENERATED FERTIGUNGSAUFTRAG =>",
-          productionOrder
-        );
-
-        console.log(
-          "SBE GENERATED KUNDENBESTELLNUMMER =>",
-          customerPoNumber
-        );
-      }
-
-      /* =====================================================
-         NORMALIZE PROVIDER DATA
-      ===================================================== */
 
       const normalizedPayload =
         providerConfiguration
@@ -2515,7 +1970,7 @@ const createMtcCertificate =
         provider;
 
       /* =====================================================
-         CREATE DB RECORD
+         CREATE DATABASE RECORD
       ===================================================== */
 
       createdCertificate =
@@ -2546,10 +2001,6 @@ const createMtcCertificate =
         );
       }
 
-      /* =====================================================
-         ATTACH PDF DATA
-      ===================================================== */
-
       applyPdfData(
         createdCertificate,
         generatedPdfData
@@ -2560,8 +2011,8 @@ const createMtcCertificate =
       return createdCertificate;
     } catch (error) {
       /*
-       * Remove PDF if one was written before
-       * an error occurred.
+       * Remove newly generated PDF
+       * if something failed.
        */
       if (
         generatedPdfData
@@ -2574,11 +2025,13 @@ const createMtcCertificate =
       }
 
       /*
-       * Remove database record if PDF creation
-       * failed after record creation.
+       * If database record was created
+       * but PDF generation failed,
+       * rollback that new record.
        */
       if (
-        createdCertificate?._id
+        createdCertificate
+          ?._id
       ) {
         try {
           await createdCertificate
@@ -2604,44 +2057,61 @@ const createMtcCertificate =
 
 /* =========================================================
    FIND CERTIFICATE
+
+   IMPORTANT:
+
+   No provider supplied:
+   Search by ID so controller can identify whether
+   record is Gloria, Bharat or SBE.
+
+   Provider supplied:
+   This service only accepts Gloria/Bharat.
 ========================================================= */
 
-const findMtcById = async (
-  id,
-  preferredProvider = ""
-) => {
-  if (
-    !isValidObjectId(id)
-  ) {
-    throw new Error(
-      "Invalid MTC certificate ID"
-    );
-  }
+const findMtcById =
+  async (
+    id,
+    preferredProvider = ""
+  ) => {
+    if (
+      !isValidObjectId(
+        id
+      )
+    ) {
+      throw new Error(
+        "Invalid MTC certificate ID"
+      );
+    }
 
-  const query = {
-    _id: id,
-  };
+    const query = {
+      _id:
+        id,
+    };
 
-  if (
-    preferredProvider
-  ) {
-    const normalizedProvider =
-      normalizeProvider(
-        preferredProvider
+    if (
+      preferredProvider
+    ) {
+      const normalizedProvider =
+        normalizeProvider(
+          preferredProvider
+        );
+
+      /*
+       * Only validate against this
+       * service if provider was passed.
+       */
+      getProviderConfiguration(
+        normalizedProvider
       );
 
-    getProviderConfiguration(
-      normalizedProvider
+      query.mtcProvider =
+        normalizedProvider;
+    }
+
+    return MtcCertificate.findOne(
+      query
     );
-
-    query.mtcProvider =
-      normalizedProvider;
-  }
-
-  return MtcCertificate.findOne(
-    query
-  );
-};
+  };
 
 /* =========================================================
    GET SINGLE CERTIFICATE
@@ -2669,6 +2139,8 @@ const getMtcCertificateById =
 
 /* =========================================================
    UPDATE CERTIFICATE + REGENERATE PDF
+
+   GLORIA + BHARAT ONLY
 ========================================================= */
 
 const updateMtcCertificate =
@@ -2695,6 +2167,17 @@ const updateMtcCertificate =
         existingMtc.mtcProvider
       );
 
+    if (
+      provider !==
+        "gloria" &&
+      provider !==
+        "bharat"
+    ) {
+      throw new Error(
+        `MTC provider not handled by mtcService: ${provider}`
+      );
+    }
+
     /* =====================================================
        PROVIDER CANNOT CHANGE
     ===================================================== */
@@ -2703,7 +2186,8 @@ const updateMtcCertificate =
       payload.mtcProvider &&
       normalizeProvider(
         payload.mtcProvider
-      ) !== provider
+      ) !==
+        provider
     ) {
       throw new Error(
         "MTC provider cannot be changed after certificate creation"
@@ -2717,123 +2201,29 @@ const updateMtcCertificate =
 
     const existingPlain =
       existingMtc.toObject({
-        virtuals: false,
+        virtuals:
+          false,
       });
 
-    let mergedPayload;
+    /*
+     * Existing Gloria/Bharat behaviour.
+     */
+    const mergedPayload = {
+      ...existingPlain,
+      ...payload,
 
-    /* =====================================================
-       SBE GERMANY CONTROLLED UPDATE
+      mtcProvider:
+        provider,
 
-       ONLY:
-       - customerName
-       - quantity
-       - dimension
+      pdf:
+        existingPlain.pdf,
 
-       Grade remains the original grade.
-
-       Generated numbers never change.
-    ===================================================== */
-
-    if (
-      provider ===
-      "sbe_germany"
-    ) {
-      validateSbeUpdatePayload(
+      chemicalComposition:
         payload
-      );
-
-      const customerName =
-        payload.customerName !==
-        undefined
-          ? cleanText(
-              payload.customerName
-            )
-          : existingPlain
-              .customerName;
-
-      const quantity =
-        payload.quantity !==
-        undefined
-          ? cleanText(
-              payload.quantity
-            )
-          : existingPlain
-              .quantity;
-
-      const dimension =
-        payload.dimension !==
-        undefined
-          ? cleanText(
-              payload.dimension
-            )
-          : existingPlain
-              .dimension;
-
-      mergedPayload = {
-        mtcProvider:
-          "sbe_germany",
-
-        /*
-         * Grade cannot be changed after
-         * certificate creation.
-         */
-        grade:
-          existingPlain.grade,
-
-        customerName,
-
-        quantity,
-
-        dimension,
-
-        /*
-         * Preserve generated identifiers.
-         */
-        productionOrder:
-          existingPlain
-            .productionOrder,
-
-        customerPoNumber:
-          existingPlain
-            .customerPoNumber,
-
-        mtcDate:
-          existingPlain.mtcDate,
-
-        createdBy:
-          existingPlain.createdBy,
-
-        updatedBy:
-          loggedInUser?._id ||
-          existingPlain.updatedBy ||
-          null,
-      };
-    } else {
-      /*
-       * Existing Gloria/Bharat behavior.
-       */
-      mergedPayload = {
-        ...existingPlain,
-        ...payload,
-
-        mtcProvider:
-          provider,
-
-        pdf:
-          existingPlain.pdf,
-
-        chemicalComposition:
-          payload
-            .chemicalComposition ??
-          existingPlain
-            .chemicalComposition,
-      };
-    }
-
-    /* =====================================================
-       NORMALIZE
-    ===================================================== */
+          .chemicalComposition ??
+        existingPlain
+          .chemicalComposition,
+    };
 
     const normalizedPayload =
       providerConfiguration
@@ -2843,7 +2233,7 @@ const updateMtcCertificate =
         );
 
     /*
-     * Keep creator unchanged.
+     * Creator never changes.
      */
     normalizedPayload.createdBy =
       existingMtc.createdBy;
@@ -2858,8 +2248,8 @@ const updateMtcCertificate =
       provider;
 
     /*
-     * Existing PDF metadata is retained until
-     * new PDF generation succeeds.
+     * Existing PDF stays untouched until
+     * new PDF has been created successfully.
      */
     delete normalizedPayload.pdf;
 
@@ -2887,25 +2277,23 @@ const updateMtcCertificate =
       null;
 
     try {
-      /* ===================================================
-         APPLY NORMALIZED VALUES
-      =================================================== */
-
       Object.keys(
         normalizedPayload
-      ).forEach((key) => {
-        if (
-          key !==
-          "mtcProvider"
-        ) {
-          existingMtc.set(
-            key,
-            normalizedPayload[
-              key
-            ]
-          );
+      ).forEach(
+        (key) => {
+          if (
+            key !==
+            "mtcProvider"
+          ) {
+            existingMtc.set(
+              key,
+              normalizedPayload[
+                key
+              ]
+            );
+          }
         }
-      });
+      );
 
       existingMtc.updatedBy =
         normalizedPayload
@@ -2927,10 +2315,10 @@ const updateMtcCertificate =
 
       await existingMtc.save();
 
-      /* ===================================================
-         DELETE OLD PDF ONLY AFTER DB SAVE SUCCESS
-      =================================================== */
-
+      /*
+       * Remove old PDF ONLY after
+       * new PDF + database save succeed.
+       */
       if (
         oldPdfPath &&
         oldPdfPath !==
@@ -2944,15 +2332,18 @@ const updateMtcCertificate =
       return existingMtc;
     } catch (error) {
       /*
-       * Delete only new failed PDF.
+       * If new PDF failed, remove only
+       * the newly-created file.
        *
-       * Existing working PDF remains.
+       * Old working PDF remains.
        */
       if (
-        newPdfData?.filePath
+        newPdfData
+          ?.filePath
       ) {
         deletePdfFile(
-          newPdfData.filePath
+          newPdfData
+            .filePath
         );
       }
 
@@ -2964,49 +2355,65 @@ const updateMtcCertificate =
    GET PDF
 ========================================================= */
 
-const getMtcPdf = async (
-  id,
-  provider = ""
-) => {
-  const mtc =
-    await findMtcById(
-      id,
-      provider
-    );
+const getMtcPdf =
+  async (
+    id,
+    provider = ""
+  ) => {
+    const mtc =
+      await findMtcById(
+        id,
+        provider
+      );
 
-  if (!mtc) {
-    throw new Error(
-      "MTC certificate not found"
-    );
-  }
+    if (!mtc) {
+      throw new Error(
+        "MTC certificate not found"
+      );
+    }
 
-  const filePath =
-    mtc.pdf?.filePath;
-
-  if (
-    !filePath ||
-    !fs.existsSync(
-      filePath
-    )
-  ) {
-    throw new Error(
-      "MTC PDF file not found"
-    );
-  }
-
-  return {
-    filePath,
-
-    fileName:
-      mtc.pdf?.fileName ||
-      `${normalizeProvider(
+    const currentProvider =
+      normalizeProvider(
         mtc.mtcProvider
-      )}_MTC.pdf`,
+      );
 
-    mtcProvider:
-      mtc.mtcProvider,
+    if (
+      currentProvider !==
+        "gloria" &&
+      currentProvider !==
+        "bharat"
+    ) {
+      throw new Error(
+        `MTC provider not handled by mtcService: ${currentProvider}`
+      );
+    }
+
+    const filePath =
+      mtc.pdf?.filePath;
+
+    if (
+      !filePath ||
+      !fs.existsSync(
+        filePath
+      )
+    ) {
+      throw new Error(
+        "MTC PDF file not found"
+      );
+    }
+
+    return {
+      filePath,
+
+      fileName:
+        mtc.pdf
+          ?.fileName ||
+        `${currentProvider}_MTC.pdf`,
+
+      mtcProvider:
+        mtc.mtcProvider,
+    };
   };
-};
 
 /* =========================================================
    BUILD LIST QUERY
@@ -3095,26 +2502,6 @@ const buildMtcListQuery = (
             "i",
         },
       },
-
-      {
-        productionOrder: {
-          $regex:
-            searchText,
-
-          $options:
-            "i",
-        },
-      },
-
-      {
-        customerPoNumber: {
-          $regex:
-            searchText,
-
-          $options:
-            "i",
-        },
-      },
     ];
   }
 
@@ -3191,7 +2578,8 @@ const buildMtcListQuery = (
     if (
       Object.keys(
         query.mtcDate
-      ).length === 0
+      ).length ===
+      0
     ) {
       delete query.mtcDate;
     }
@@ -3202,6 +2590,14 @@ const buildMtcListQuery = (
 
 /* =========================================================
    GET MTC LIST
+
+   IMPORTANT:
+
+   This service handles Gloria/Bharat.
+
+   If provider is blank we restrict this
+   service to Gloria + Bharat so SBE is not
+   accidentally handled here.
 ========================================================= */
 
 const getMtcCertificates =
@@ -3213,16 +2609,18 @@ const getMtcCertificates =
         filters.mtcProvider
       ).toLowerCase();
 
-    const limit = Math.min(
-      Math.max(
-        Number(
-          filters.limit
-        ) ||
-          MAX_MTC_LIST_LIMIT,
-        1
-      ),
-      MAX_MTC_LIST_LIMIT
-    );
+    const limit =
+      Math.min(
+        Math.max(
+          Number(
+            filters.limit
+          ) ||
+            MAX_MTC_LIST_LIMIT,
+          1
+        ),
+
+        MAX_MTC_LIST_LIMIT
+      );
 
     const query =
       buildMtcListQuery(
@@ -3232,21 +2630,44 @@ const getMtcCertificates =
     if (
       requestedProvider
     ) {
-      getProviderConfiguration(
-        requestedProvider
-      );
+      if (
+        requestedProvider !==
+          "gloria" &&
+        requestedProvider !==
+          "bharat"
+      ) {
+        throw new Error(
+          `MTC provider not handled by mtcService: ${requestedProvider}`
+        );
+      }
 
       query.mtcProvider =
         requestedProvider;
+    } else {
+      /*
+       * Critical separation:
+       *
+       * Do not return SBE records from
+       * this normal service.
+       */
+      query.mtcProvider = {
+        $in: [
+          "gloria",
+          "bharat",
+        ],
+      };
     }
 
     return MtcCertificate.find(
       query
     )
       .sort({
-        createdAt: -1,
+        createdAt:
+          -1,
       })
-      .limit(limit)
+      .limit(
+        limit
+      )
       .lean();
   };
 
@@ -3256,7 +2677,8 @@ const getMtcCertificates =
 
 const getMtcChemicalSpecs =
   async (
-    provider = "gloria"
+    provider =
+      "gloria"
   ) => {
     const normalizedProvider =
       normalizeProvider(
@@ -3311,222 +2733,36 @@ const getMtcChemicalSpecs =
       };
     }
 
-    /* =====================================================
-       SBE GERMANY
-
-       Frontend receives only controlled form configuration.
-    ===================================================== */
-
-    if (
-      normalizedProvider ===
-      "sbe_germany"
-    ) {
-      const gradeConfigs = {};
-
-      getSbeGrades().forEach(
-        (gradeOption) => {
-          gradeConfigs[
-            gradeOption.value
-          ] =
-            buildSbeGradeFormData(
-              gradeOption.value
-            );
-        }
-      );
-
-      return {
-        provider:
-          "sbe_germany",
-
-        label:
-          "SBE Germany",
-
-        /*
-         * Frontend understands that this provider
-         * is configuration controlled.
-         */
-        validationMode:
-          "controlled",
-
-        /*
-         * Grade dropdown.
-         */
-        grades:
-          getSbeGrades(),
-
-        /*
-         * Auto-populated preview information.
-         *
-         * Example:
-         *
-         * data.gradeConfigs["1.2714"]
-         */
-        gradeConfigs,
-
-        /*
-         * Permissions returned directly
-         * from central SBE config.
-         */
-        rules:
-          SBE_FRONTEND_RULES,
-
-        /*
-         * Exact PDF chemical order.
-         */
-        elements:
-          [...SBE_CHEMICAL_ORDER],
-
-        /*
-         * ONLY these create inputs should
-         * be rendered.
-         */
-        fields: [
-          {
-            name:
-              "grade",
-
-            label:
-              "Grade",
-
-            type:
-              "select",
-
-            required:
-              true,
-
-            editable:
-              true,
-          },
-
-          {
-            name:
-              "customerName",
-
-            label:
-              "Customer Name",
-
-            type:
-              "text",
-
-            required:
-              true,
-
-            editable:
-              true,
-          },
-
-          {
-            name:
-              "quantity",
-
-            label:
-              "Quantity / Anzahl",
-
-            type:
-              "number",
-
-            required:
-              true,
-
-            editable:
-              true,
-
-            default:
-              "1",
-          },
-
-          {
-            name:
-              "dimension",
-
-            label:
-              "Dimension / Abmessung",
-
-            type:
-              "text",
-
-            required:
-              true,
-
-            editable:
-              true,
-          },
-        ],
-
-        /*
-         * These fields are deliberately NOT
-         * frontend inputs.
-         */
-        generatedFields: [
-          {
-            name:
-              "productionOrder",
-
-            pdfLabel:
-              "Fertigungsauftrag",
-
-            generatedBy:
-              "backend",
-          },
-
-          {
-            name:
-              "customerPoNumber",
-
-            pdfLabel:
-              "Kundenbestellnummer",
-
-            generatedBy:
-              "backend",
-          },
-        ],
-      };
-    }
-
-    return {
-      elements: [],
-
-      validationMode:
-        "manual",
-    };
+    throw new Error(
+      `MTC provider not handled by mtcService: ${normalizedProvider}`
+    );
   };
 
 /* =========================================================
    GET PROVIDERS FOR FRONTEND
+
+   Only providers owned by this service.
 ========================================================= */
 
 const getMtcProviders =
   async () => {
-    return getConfiguredProviders().map(
-      (provider) => {
-        const labels = {
-          gloria:
-            "Gloria",
+    return [
+      {
+        value:
+          "gloria",
 
-          bharat:
-            "Bharat Special Steel",
+        label:
+          "Gloria",
+      },
 
-          sbe_germany:
-            "SBE Germany",
-        };
+      {
+        value:
+          "bharat",
 
-        return {
-          value:
-            provider,
-
-          label:
-            labels[
-              provider
-            ] ||
-            provider
-              .charAt(0)
-              .toUpperCase() +
-              provider.slice(
-                1
-              ),
-        };
-      }
-    );
+        label:
+          "Bharat Special Steel",
+      },
+    ];
   };
 
 /* =========================================================
@@ -3564,11 +2800,28 @@ const regenerateMtcPdf =
       );
     }
 
+    const currentProvider =
+      normalizeProvider(
+        mtc.mtcProvider
+      );
+
+    if (
+      currentProvider !==
+        "gloria" &&
+      currentProvider !==
+        "bharat"
+    ) {
+      throw new Error(
+        `MTC provider not handled by mtcService: ${currentProvider}`
+      );
+    }
+
     const oldPdfPath =
       mtc.pdf?.filePath ||
       "";
 
-    let pdfData = null;
+    let pdfData =
+      null;
 
     try {
       pdfData =
@@ -3600,7 +2853,8 @@ const regenerateMtcPdf =
       return mtc;
     } catch (error) {
       if (
-        pdfData?.filePath
+        pdfData
+          ?.filePath
       ) {
         deletePdfFile(
           pdfData.filePath
@@ -3632,6 +2886,11 @@ module.exports = {
 
   regenerateMtcPdf,
 
+  /*
+   * Controller uses this with no provider
+   * to discover which service owns a saved
+   * certificate.
+   */
   findMtcById,
 
   generateMtcPdf,
@@ -3643,10 +2902,6 @@ module.exports = {
   getProviderConfiguration,
 
   normalizeGenericChemicalComposition,
-
-  normalizeSbeGermanyChemicalComposition,
-
-  normalizeSbeGermanyPayload,
 
   deleteGeneratedMtcPdf,
 };
