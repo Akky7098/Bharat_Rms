@@ -1,160 +1,160 @@
-const express = require(
-  "express"
-);
+// const express = require(
+//   "express"
+// );
 
-const router =
-  express.Router();
+// const router =
+//   express.Router();
 
-const mtcController = require(
-  "../controller/mtcController"
-);
+// const mtcController = require(
+//   "../controller/mtcController"
+// );
 
-const authMiddleware = require(
-  "../util/auth"
-);
+// const authMiddleware = require(
+//   "../util/auth"
+// );
 
-/* =========================================================
-   GET CONFIGURED MTC PROVIDERS
+// /* =========================================================
+//    GET CONFIGURED MTC PROVIDERS
 
-   GET
-   /api/mtc/providers
-========================================================= */
+//    GET
+//    /api/mtc/providers
+// ========================================================= */
 
-router.get(
-  "/providers",
-  authMiddleware,
-  mtcController.getMtcProviders
-);
+// router.get(
+//   "/providers",
+//   authMiddleware,
+//   mtcController.getMtcProviders
+// );
 
-/* =========================================================
-   GET PROVIDER CHEMICAL SPECS / FORM CONFIG
+// /* =========================================================
+//    GET PROVIDER CHEMICAL SPECS / FORM CONFIG
 
-   GET
-   /api/mtc/chemical-specs
+//    GET
+//    /api/mtc/chemical-specs
 
-   Examples:
+//    Examples:
 
-   /api/mtc/chemical-specs?mtcProvider=gloria
+//    /api/mtc/chemical-specs?mtcProvider=gloria
 
-   /api/mtc/chemical-specs?mtcProvider=bharat
+//    /api/mtc/chemical-specs?mtcProvider=bharat
 
-   /api/mtc/chemical-specs?mtcProvider=sbe_germany
-========================================================= */
+//    /api/mtc/chemical-specs?mtcProvider=sbe_germany
+// ========================================================= */
 
-router.get(
-  "/chemical-specs",
-  authMiddleware,
-  mtcController
-    .getMtcChemicalSpecs
-);
+// router.get(
+//   "/chemical-specs",
+//   authMiddleware,
+//   mtcController
+//     .getMtcChemicalSpecs
+// );
 
-/* =========================================================
-   GET ALL MTC CERTIFICATES
+// /* =========================================================
+//    GET ALL MTC CERTIFICATES
 
-   GET
-   /api/mtc
+//    GET
+//    /api/mtc
 
-   Optional:
+//    Optional:
 
-   ?companyName=
-   ?grade=
-   ?mtcProvider=
-   ?fromDate=
-   ?toDate=
-   ?limit=
-========================================================= */
+//    ?companyName=
+//    ?grade=
+//    ?mtcProvider=
+//    ?fromDate=
+//    ?toDate=
+//    ?limit=
+// ========================================================= */
 
-router.get(
-  "/",
-  authMiddleware,
-  mtcController
-    .getMtcCertificates
-);
+// router.get(
+//   "/",
+//   authMiddleware,
+//   mtcController
+//     .getMtcCertificates
+// );
 
-/* =========================================================
-   CREATE MTC
+// /* =========================================================
+//    CREATE MTC
 
-   POST
-   /api/mtc
+//    POST
+//    /api/mtc
 
-   Example:
+//    Example:
 
-   {
-     "mtcProvider": "sbe_germany",
-     "grade": "1.2714"
-   }
-========================================================= */
+//    {
+//      "mtcProvider": "sbe_germany",
+//      "grade": "1.2714"
+//    }
+// ========================================================= */
 
-router.post(
-  "/",
-  authMiddleware,
-  mtcController
-    .createMtcCertificate
-);
+// router.post(
+//   "/",
+//   authMiddleware,
+//   mtcController
+//     .createMtcCertificate
+// );
 
-/* =========================================================
-   DOWNLOAD MTC PDF
+// /* =========================================================
+//    DOWNLOAD MTC PDF
 
-   GET
-   /api/mtc/:id/download
+//    GET
+//    /api/mtc/:id/download
 
-   Keep this BEFORE /:id.
-========================================================= */
+//    Keep this BEFORE /:id.
+// ========================================================= */
 
-router.get(
-  "/:id/download",
-  authMiddleware,
-  mtcController
-    .downloadMtcPdf
-);
+// router.get(
+//   "/:id/download",
+//   authMiddleware,
+//   mtcController
+//     .downloadMtcPdf
+// );
 
-/* =========================================================
-   REGENERATE MTC PDF
+// /* =========================================================
+//    REGENERATE MTC PDF
 
-   POST
-   /api/mtc/:id/regenerate
+//    POST
+//    /api/mtc/:id/regenerate
 
-   Keep this BEFORE /:id.
-========================================================= */
+//    Keep this BEFORE /:id.
+// ========================================================= */
 
-router.post(
-  "/:id/regenerate",
-  authMiddleware,
-  mtcController
-    .regenerateMtcPdf
-);
+// router.post(
+//   "/:id/regenerate",
+//   authMiddleware,
+//   mtcController
+//     .regenerateMtcPdf
+// );
 
-/* =========================================================
-   GET SINGLE MTC
+// /* =========================================================
+//    GET SINGLE MTC
 
-   GET
-   /api/mtc/:id
+//    GET
+//    /api/mtc/:id
 
-   Used to populate edit form.
-========================================================= */
+//    Used to populate edit form.
+// ========================================================= */
 
-router.get(
-  "/:id",
-  authMiddleware,
-  mtcController
-    .getMtcCertificateById
-);
+// router.get(
+//   "/:id",
+//   authMiddleware,
+//   mtcController
+//     .getMtcCertificateById
+// );
 
-/* =========================================================
-   UPDATE / EDIT MTC
+// /* =========================================================
+//    UPDATE / EDIT MTC
 
-   PATCH
-   /api/mtc/:id
+//    PATCH
+//    /api/mtc/:id
 
-   Saves English fields and regenerates
-   provider-specific PDF automatically.
-========================================================= */
+//    Saves English fields and regenerates
+//    provider-specific PDF automatically.
+// ========================================================= */
 
-router.patch(
-  "/:id",
-  authMiddleware,
-  mtcController
-    .updateMtcCertificate
-);
+// router.patch(
+//   "/:id",
+//   authMiddleware,
+//   mtcController
+//     .updateMtcCertificate
+// );
 
-module.exports = router;
+// module.exports = router;

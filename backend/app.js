@@ -54,8 +54,8 @@ const pushSubscriptionRoutes =
 const appPushRoutes =
   require("./routes/appPushRoutes");
 
-const mtcRoutes =
-  require("./routes/mtcRoutes");
+// const mtcRoutes =
+//   require("./routes/mtcRoutes");
 
 const supportTicketRoutes =
   require("./routes/supportTicketRoutes");
@@ -665,10 +665,10 @@ app.use(
   supportTicketRoutes
 );
 
-app.use(
-  "/api/mtc",
-  mtcRoutes
-);
+// app.use(
+//   "/api/mtc",
+//   mtcRoutes
+// );
 
 app.use(
   "/api/enquiry-lookup",
