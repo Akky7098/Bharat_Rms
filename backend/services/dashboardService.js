@@ -147,385 +147,700 @@ const getDashboardSummary = async (query, user) => {
   let pendingSalesOrderFilter = { ...salesOrderFilter };
 
   if (user.role === "admin") {
-    pendingSalesOrderFilter.approvalStatus = "pending_admin_review";
+    pendingSalesOrderFilter.approvalStatus =
+      "pending_admin_review";
   } else if (user.role === "super_admin") {
-    pendingSalesOrderFilter.approvalStatus = "pending_manager_approval";
+    pendingSalesOrderFilter.approvalStatus =
+      "pending_manager_approval";
   } else {
     pendingSalesOrderFilter.approvalStatus = {
-      $in: ["pending_admin_review", "pending_manager_approval"],
+      $in: [
+        "pending_admin_review",
+        "pending_manager_approval",
+      ],
     };
   }
 
-  const pendingOrders = await SalesOrder.countDocuments(pendingSalesOrderFilter);
+  const pendingOrders =
+    await SalesOrder.countDocuments(
+      pendingSalesOrderFilter
+    );
 
-  const totalOrders = await SalesOrder.countDocuments(approvedSalesOrderFilter);
+  const totalOrders =
+    await SalesOrder.countDocuments(
+      approvedSalesOrderFilter
+    );
 
-  const revenueData = await SalesOrder.aggregate([
-    { $match: approvedSalesOrderFilter },
-    {
-      $group: {
-        _id: null,
-        totalRevenue: { $sum: "$orderValue" },
+  const revenueData =
+    await SalesOrder.aggregate([
+      {
+        $match:
+          approvedSalesOrderFilter,
       },
-    },
-  ]);
+      {
+        $group: {
+          _id: null,
+          totalRevenue: {
+            $sum: "$orderValue",
+          },
+        },
+      },
+    ]);
 
-  const totalRevenue = revenueData[0]?.totalRevenue || 0;
+  const totalRevenue =
+    revenueData[0]?.totalRevenue || 0;
 
-  const totalEnquiries = await Enquiry.countDocuments(enquiryFilter);
+  const totalEnquiries =
+    await Enquiry.countDocuments(
+      enquiryFilter
+    );
 
-  const feasibleEnquiries = await Enquiry.countDocuments({
-    ...enquiryFilter,
-    "feasibility.status": "feasible",
-  });
+  const feasibleEnquiries =
+    await Enquiry.countDocuments({
+      ...enquiryFilter,
+      "feasibility.status":
+        "feasible",
+    });
 
-  const notFeasibleEnquiries = await Enquiry.countDocuments({
-    ...enquiryFilter,
-    "feasibility.status": "not_feasible",
-  });
+  const notFeasibleEnquiries =
+    await Enquiry.countDocuments({
+      ...enquiryFilter,
+      "feasibility.status":
+        "not_feasible",
+    });
 
-  const wonEnquiries = await Enquiry.countDocuments({
-    ...enquiryFilter,
-    "closure.status": "won",
-  });
+  const wonEnquiries =
+    await Enquiry.countDocuments({
+      ...enquiryFilter,
+      "closure.status": "won",
+    });
 
-  const lostEnquiries = await Enquiry.countDocuments({
-    ...enquiryFilter,
-    "closure.status": "lost",
-  });
+  const lostEnquiries =
+    await Enquiry.countDocuments({
+      ...enquiryFilter,
+      "closure.status": "lost",
+    });
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const delayedEnquiries = await Enquiry.countDocuments({
-    ...enquiryFilter,
-    "closure.status": { $nin: ["won", "lost"] },
-    $or: [
-      {
-        "feasibility.planDate": { $lt: today },
-        "feasibility.completed": { $ne: true },
-      },
-      {
-        "quotation.planDate": { $lt: today },
-        "quotation.completed": { $ne: true },
-      },
-      {
-        "closure.planDate": { $lt: today },
-        "closure.completed": { $ne: true },
-      },
-    ],
-  });
+  const delayedEnquiries =
+    await Enquiry.countDocuments({
+      ...enquiryFilter,
 
-  const activeEnquiries = await Enquiry.countDocuments({
-    ...enquiryFilter,
-    "closure.status": { $nin: ["won", "lost"] },
-    $nor: [
-      {
-        $or: [
-          {
-            "feasibility.planDate": { $lt: today },
-            "feasibility.completed": { $ne: true },
+      "closure.status": {
+        $nin: ["won", "lost"],
+      },
+
+      $or: [
+        {
+          "feasibility.planDate": {
+            $lt: today,
           },
-          {
-            "quotation.planDate": { $lt: today },
-            "quotation.completed": { $ne: true },
+
+          "feasibility.completed": {
+            $ne: true,
           },
-          {
-            "closure.planDate": { $lt: today },
-            "closure.completed": { $ne: true },
-          },
-        ],
-      },
-    ],
-  });
-
-  const salesPersonRevenue = await SalesOrder.aggregate([
-    { $match: approvedSalesOrderFilter },
-    {
-      $group: {
-        _id: "$salesPersonId",
-        revenue: { $sum: "$orderValue" },
-        orders: { $sum: 1 },
-      },
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "_id",
-        foreignField: "_id",
-        as: "salesPerson",
-      },
-    },
-    { $unwind: "$salesPerson" },
-    {
-      $project: {
-        _id: 0,
-        salesPersonId: "$salesPerson._id",
-        name: "$salesPerson.name",
-        email: "$salesPerson.email",
-        revenue: 1,
-        orders: 1,
-      },
-    },
-    { $sort: { revenue: -1 } },
-  ]);
-
-  const salesPersonRevenueWithPercentage = salesPersonRevenue.map((person) => ({
-    ...person,
-    percentage:
-      totalRevenue > 0
-        ? Number(((person.revenue / totalRevenue) * 100).toFixed(2))
-        : 0,
-  }));
-
- const gradeWiseQuantity = await SalesOrder.aggregate([
-  {
-    $match: approvedSalesOrderFilter,
-  },
-  {
-    $project: {
-      orderValue: 1,
-      sizeGradeQuantityRate: {
-        $ifNull: ["$sizeGradeQuantityRate", ""],
-      },
-    },
-  },
-  {
-    $addFields: {
-      gradeMatch: {
-        $regexFind: {
-          input: "$sizeGradeQuantityRate",
-          regex: /(?:grade|gr)\s*[:\-]?\s*([A-Za-z0-9.+\-\/]+)/i,
         },
-      },
-    },
-  },
-  {
-    $addFields: {
-      extractedGrade: {
-        $arrayElemAt: ["$gradeMatch.captures", 0],
-      },
-    },
-  },
-  {
-    $project: {
-      orderValue: 1,
-      grade: {
-        $cond: [
-          {
-            $or: [
-              { $eq: ["$extractedGrade", null] },
-              { $eq: ["$extractedGrade", ""] },
-            ],
+
+        {
+          "quotation.planDate": {
+            $lt: today,
           },
-          "Not Specified",
-          {
-            $toUpper: {
-              $trim: {
-                input: "$extractedGrade",
+
+          "quotation.completed": {
+            $ne: true,
+          },
+        },
+
+        {
+          "closure.planDate": {
+            $lt: today,
+          },
+
+          "closure.completed": {
+            $ne: true,
+          },
+        },
+      ],
+    });
+
+  const activeEnquiries =
+    await Enquiry.countDocuments({
+      ...enquiryFilter,
+
+      "closure.status": {
+        $nin: ["won", "lost"],
+      },
+
+      $nor: [
+        {
+          $or: [
+            {
+              "feasibility.planDate": {
+                $lt: today,
+              },
+
+              "feasibility.completed": {
+                $ne: true,
               },
             },
+
+            {
+              "quotation.planDate": {
+                $lt: today,
+              },
+
+              "quotation.completed": {
+                $ne: true,
+              },
+            },
+
+            {
+              "closure.planDate": {
+                $lt: today,
+              },
+
+              "closure.completed": {
+                $ne: true,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+  const salesPersonRevenue =
+    await SalesOrder.aggregate([
+      {
+        $match:
+          approvedSalesOrderFilter,
+      },
+
+      {
+        $group: {
+          _id: "$salesPersonId",
+
+          revenue: {
+            $sum: "$orderValue",
           },
-        ],
-      },
-    },
-  },
-  {
-    $group: {
-      _id: "$grade",
-      revenue: { $sum: "$orderValue" },
-      orders: { $sum: 1 },
-    },
-  },
-  {
-    $project: {
-      _id: 0,
-      grade: "$_id",
-      revenue: 1,
-      orders: 1,
-    },
-  },
-  {
-    $sort: {
-      orders: -1,
-      revenue: -1,
-    },
-  },
-  {
-    $limit: 10,
-  },
-]);
 
-  const delayedEmployeeData = await Enquiry.aggregate([
-    {
-      $match: {
-        ...enquiryFilter,
-        "closure.status": { $nin: ["won", "lost"] },
+          orders: {
+            $sum: 1,
+          },
+        },
       },
-    },
-    {
-      $match: {
-        $or: [
-          { $expr: { $gt: ["$feasibility.actualDate", "$feasibility.planDate"] } },
-          { $expr: { $gt: ["$quotation.actualDate", "$quotation.planDate"] } },
-        ],
-      },
-    },
-    {
-      $group: {
-        _id: "$salesPersonId",
-        delayedCount: { $sum: 1 },
-      },
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "_id",
-        foreignField: "_id",
-        as: "salesPerson",
-      },
-    },
-    { $unwind: "$salesPerson" },
-    {
-      $project: {
-        _id: 0,
-        name: "$salesPerson.name",
-        email: "$salesPerson.email",
-        delayedCount: 1,
-      },
-    },
-    { $sort: { delayedCount: -1 } },
-    { $limit: 1 },
-  ]);
 
-  const lostEmployeeData = await Enquiry.aggregate([
-    {
-      $match: {
-        ...enquiryFilter,
-        "closure.status": "lost",
-      },
-    },
-    {
-      $group: {
-        _id: "$salesPersonId",
-        lostCount: { $sum: 1 },
-      },
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "_id",
-        foreignField: "_id",
-        as: "salesPerson",
-      },
-    },
-    { $unwind: "$salesPerson" },
-    {
-      $project: {
-        _id: 0,
-        name: "$salesPerson.name",
-        email: "$salesPerson.email",
-        lostCount: 1,
-      },
-    },
-    { $sort: { lostCount: -1 } },
-    { $limit: 1 },
-  ]);
+      {
+        $lookup: {
+          from: "users",
 
-  const wonEmployeeData = await Enquiry.aggregate([
-    {
-      $match: {
-        ...enquiryFilter,
-        "closure.status": "won",
-      },
-    },
-    {
-      $group: {
-        _id: "$salesPersonId",
-        wonCount: { $sum: 1 },
-      },
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "_id",
-        foreignField: "_id",
-        as: "salesPerson",
-      },
-    },
-    { $unwind: "$salesPerson" },
-    {
-      $project: {
-        _id: 0,
-        name: "$salesPerson.name",
-        email: "$salesPerson.email",
-        wonCount: 1,
-      },
-    },
-    { $sort: { wonCount: -1 } },
-    { $limit: 1 },
-  ]);
+          localField: "_id",
 
-  const lostReasonData = await Enquiry.aggregate([
-    {
-      $match: {
-        ...enquiryFilter,
-        "closure.status": "lost",
+          foreignField: "_id",
+
+          as: "salesPerson",
+        },
       },
-    },
-    {
-      $project: {
-        reason: {
-          $cond: [
-            { $eq: ["$closure.lostRemark", "others"] },
-            "$closure.lostRemarkOtherText",
-            "$closure.lostRemark",
+
+      {
+        $unwind: "$salesPerson",
+      },
+
+      {
+        $project: {
+          _id: 0,
+
+          salesPersonId:
+            "$salesPerson._id",
+
+          name:
+            "$salesPerson.name",
+
+          email:
+            "$salesPerson.email",
+
+          revenue: 1,
+
+          orders: 1,
+        },
+      },
+
+      {
+        $sort: {
+          revenue: -1,
+        },
+      },
+    ]);
+
+  const salesPersonRevenueWithPercentage =
+    salesPersonRevenue.map(
+      (person) => ({
+        ...person,
+
+        percentage:
+          totalRevenue > 0
+            ? Number(
+                (
+                  (person.revenue /
+                    totalRevenue) *
+                  100
+                ).toFixed(2)
+              )
+            : 0,
+      })
+    );
+
+  const gradeWiseQuantity =
+    await SalesOrder.aggregate([
+      {
+        $match:
+          approvedSalesOrderFilter,
+      },
+
+      {
+        $project: {
+          orderValue: 1,
+
+          sizeGradeQuantityRate: {
+            $ifNull: [
+              "$sizeGradeQuantityRate",
+              "",
+            ],
+          },
+        },
+      },
+
+      {
+        $addFields: {
+          gradeMatch: {
+            $regexFind: {
+              input:
+                "$sizeGradeQuantityRate",
+
+              regex:
+                /(?:grade|gr)\s*[:\-]?\s*([A-Za-z0-9.+\-\/]+)/i,
+            },
+          },
+        },
+      },
+
+      {
+        $addFields: {
+          extractedGrade: {
+            $arrayElemAt: [
+              "$gradeMatch.captures",
+              0,
+            ],
+          },
+        },
+      },
+
+      {
+        $project: {
+          orderValue: 1,
+
+          grade: {
+            $cond: [
+              {
+                $or: [
+                  {
+                    $eq: [
+                      "$extractedGrade",
+                      null,
+                    ],
+                  },
+
+                  {
+                    $eq: [
+                      "$extractedGrade",
+                      "",
+                    ],
+                  },
+                ],
+              },
+
+              "Not Specified",
+
+              {
+                $toUpper: {
+                  $trim: {
+                    input:
+                      "$extractedGrade",
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+
+      {
+        $group: {
+          _id: "$grade",
+
+          revenue: {
+            $sum: "$orderValue",
+          },
+
+          orders: {
+            $sum: 1,
+          },
+        },
+      },
+
+      {
+        $project: {
+          _id: 0,
+
+          grade: "$_id",
+
+          revenue: 1,
+
+          orders: 1,
+        },
+      },
+
+      {
+        $sort: {
+          orders: -1,
+
+          revenue: -1,
+        },
+      },
+
+      {
+        $limit: 10,
+      },
+    ]);
+
+  const delayedEmployeeData =
+    await Enquiry.aggregate([
+      {
+        $match: {
+          ...enquiryFilter,
+
+          "closure.status": {
+            $nin: ["won", "lost"],
+          },
+        },
+      },
+
+      {
+        $match: {
+          $or: [
+            {
+              $expr: {
+                $gt: [
+                  "$feasibility.actualDate",
+                  "$feasibility.planDate",
+                ],
+              },
+            },
+
+            {
+              $expr: {
+                $gt: [
+                  "$quotation.actualDate",
+                  "$quotation.planDate",
+                ],
+              },
+            },
           ],
         },
       },
-    },
-    {
-      $match: {
-        reason: { $exists: true, $nin: ["", null] },
-      },
-    },
-    {
-      $group: {
-        _id: "$reason",
-        count: { $sum: 1 },
-      },
-    },
-    { $sort: { count: -1 } },
-    { $limit: 1 },
-  ]);
 
-  const topLostReason = lostReasonData[0]
-    ? {
-        reason: formatLostReason(lostReasonData[0]._id),
-        rawReason: lostReasonData[0]._id,
-        count: lostReasonData[0].count,
-      }
-    : null;
+      {
+        $group: {
+          _id: "$salesPersonId",
+
+          delayedCount: {
+            $sum: 1,
+          },
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+
+          localField: "_id",
+
+          foreignField: "_id",
+
+          as: "salesPerson",
+        },
+      },
+
+      {
+        $unwind: "$salesPerson",
+      },
+
+      {
+        $project: {
+          _id: 0,
+
+          name:
+            "$salesPerson.name",
+
+          email:
+            "$salesPerson.email",
+
+          delayedCount: 1,
+        },
+      },
+
+      {
+        $sort: {
+          delayedCount: -1,
+        },
+      },
+
+      {
+        $limit: 1,
+      },
+    ]);
+
+  const lostEmployeeData =
+    await Enquiry.aggregate([
+      {
+        $match: {
+          ...enquiryFilter,
+
+          "closure.status":
+            "lost",
+        },
+      },
+
+      {
+        $group: {
+          _id: "$salesPersonId",
+
+          lostCount: {
+            $sum: 1,
+          },
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+
+          localField: "_id",
+
+          foreignField: "_id",
+
+          as: "salesPerson",
+        },
+      },
+
+      {
+        $unwind: "$salesPerson",
+      },
+
+      {
+        $project: {
+          _id: 0,
+
+          name:
+            "$salesPerson.name",
+
+          email:
+            "$salesPerson.email",
+
+          lostCount: 1,
+        },
+      },
+
+      {
+        $sort: {
+          lostCount: -1,
+        },
+      },
+
+      {
+        $limit: 1,
+      },
+    ]);
+
+  const wonEmployeeData =
+    await Enquiry.aggregate([
+      {
+        $match: {
+          ...enquiryFilter,
+
+          "closure.status":
+            "won",
+        },
+      },
+
+      {
+        $group: {
+          _id: "$salesPersonId",
+
+          wonCount: {
+            $sum: 1,
+          },
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+
+          localField: "_id",
+
+          foreignField: "_id",
+
+          as: "salesPerson",
+        },
+      },
+
+      {
+        $unwind: "$salesPerson",
+      },
+
+      {
+        $project: {
+          _id: 0,
+
+          name:
+            "$salesPerson.name",
+
+          email:
+            "$salesPerson.email",
+
+          wonCount: 1,
+        },
+      },
+
+      {
+        $sort: {
+          wonCount: -1,
+        },
+      },
+
+      {
+        $limit: 1,
+      },
+    ]);
+
+  const lostReasonData =
+    await Enquiry.aggregate([
+      {
+        $match: {
+          ...enquiryFilter,
+
+          "closure.status":
+            "lost",
+        },
+      },
+
+      {
+        $project: {
+          reason: {
+            $cond: [
+              {
+                $eq: [
+                  "$closure.lostRemark",
+                  "others",
+                ],
+              },
+
+              "$closure.lostRemarkOtherText",
+
+              "$closure.lostRemark",
+            ],
+          },
+        },
+      },
+
+      {
+        $match: {
+          reason: {
+            $exists: true,
+
+            $nin: ["", null],
+          },
+        },
+      },
+
+      {
+        $group: {
+          _id: "$reason",
+
+          count: {
+            $sum: 1,
+          },
+        },
+      },
+
+      {
+        $sort: {
+          count: -1,
+        },
+      },
+
+      {
+        $limit: 1,
+      },
+    ]);
+
+  const topLostReason =
+    lostReasonData[0]
+      ? {
+          reason:
+            formatLostReason(
+              lostReasonData[0]._id
+            ),
+
+          rawReason:
+            lostReasonData[0]._id,
+
+          count:
+            lostReasonData[0]
+              .count,
+        }
+      : null;
 
   return {
     totalRevenue,
+
     totalOrders,
+
     pendingOrders,
 
     totalEnquiries,
+
     feasibleEnquiries,
+
     notFeasibleEnquiries,
+
     wonEnquiries,
+
     lostEnquiries,
+
     delayedEnquiries,
+
     activeEnquiries,
 
-    salesPersonRevenue: salesPersonRevenueWithPercentage,
+    salesPersonRevenue:
+      salesPersonRevenueWithPercentage,
+
     gradeWiseQuantity,
 
-    topDelayedEmployee: delayedEmployeeData[0] || null,
-    topLostEmployee: lostEmployeeData[0] || null,
-    topWonEmployee: wonEmployeeData[0] || null,
+    topDelayedEmployee:
+      delayedEmployeeData[0] ||
+      null,
+
+    topLostEmployee:
+      lostEmployeeData[0] ||
+      null,
+
+    topWonEmployee:
+      wonEmployeeData[0] ||
+      null,
+
     topLostReason,
   };
 };
@@ -534,22 +849,42 @@ const getDashboardSummary = async (query, user) => {
 /* CASHFLOW DASHBOARD */
 /* ===================================== */
 
-const getCashflowSummary = async (query, user) => {
-  const { fromDate, toDate } = query;
+const getCashflowSummary = async (
+  query,
+  user
+) => {
+  const { fromDate, toDate } =
+    query;
 
   const invoiceDateFilter = {};
 
   if (fromDate || toDate) {
-    invoiceDateFilter["invoices.invoiceDate"] = {};
+    invoiceDateFilter[
+      "invoices.invoiceDate"
+    ] = {};
 
     if (fromDate) {
-      invoiceDateFilter["invoices.invoiceDate"].$gte = new Date(fromDate);
+      invoiceDateFilter[
+        "invoices.invoiceDate"
+      ].$gte = new Date(
+        fromDate
+      );
     }
 
     if (toDate) {
-      const endDate = new Date(toDate);
-      endDate.setHours(23, 59, 59, 999);
-      invoiceDateFilter["invoices.invoiceDate"].$lte = endDate;
+      const endDate =
+        new Date(toDate);
+
+      endDate.setHours(
+        23,
+        59,
+        59,
+        999
+      );
+
+      invoiceDateFilter[
+        "invoices.invoiceDate"
+      ].$lte = endDate;
     }
   }
 
@@ -557,732 +892,949 @@ const getCashflowSummary = async (query, user) => {
     isActive: true,
   };
 
-  if (user.role !== "admin" && user.role !== "super_admin" && user.role !== "accounts") {
-    baseFilter["salesPersons.userId"] = new mongoose.Types.ObjectId(
-      user._id || user.id
-    );
-  }
-
-  const summaryData = await Receivable.aggregate([
-    {
-      $match: baseFilter,
-    },
-    {
-      $unwind: "$invoices",
-    },
-    {
-      $match: invoiceDateFilter,
-    },
-    {
-      $group: {
-        _id: null,
-
-        totalRevenue: {
-          $sum: "$invoices.invoiceAmount",
-        },
-
-        totalPaid: {
-          $sum: "$invoices.receivedAmount",
-        },
-
-        totalPending: {
-          $sum: "$invoices.pendingAmount",
-        },
-
-        overdueAmount: {
-          $sum: {
-            $cond: [
-              {
-                $eq: ["$invoices.status", "overdue"],
-              },
-              "$invoices.pendingAmount",
-              0,
-            ],
-          },
-        },
-      },
-    },
-  ]);
-
-  const result = summaryData[0] || {
-    totalRevenue: 0,
-    totalPaid: 0,
-    totalPending: 0,
-    overdueAmount: 0,
-  };
-
-  const today = new Date();
-
-  const nextThreeDays = new Date();
-  nextThreeDays.setDate(today.getDate() + 3);
-  nextThreeDays.setHours(23, 59, 59, 999);
-
-  const upcomingDuePayments = await Receivable.aggregate([
-    {
-      $match: baseFilter,
-    },
-    {
-      $unwind: "$invoices",
-    },
-    {
-      $match: {
-        "invoices.status": {
-          $in: ["pending", "partial"],
-        },
-        "invoices.pendingAmount": {
-          $gt: 0,
-        },
-        "invoices.dueDate": {
-          $gte: today,
-          $lte: nextThreeDays,
-        },
-      },
-    },
-    {
-      $sort: {
-        "invoices.dueDate": 1,
-      },
-    },
-    {
-      $limit: 5,
-    },
-    {
-      $project: {
-        _id: 1,
-        companyName: 1,
-        tallyLedgerName: 1,
-        invoiceNumber: "$invoices.invoiceNumber",
-        invoiceDate: "$invoices.invoiceDate",
-        paymentDueDate: "$invoices.dueDate",
-        invoiceAmount: "$invoices.invoiceAmount",
-        paidAmount: "$invoices.receivedAmount",
-        pendingAmount: "$invoices.pendingAmount",
-        paymentStatus: "$invoices.status",
-        overdueDays: "$invoices.overdueDays",
-        salesPersons: 1,
-      },
-    },
-  ]);
-
-  const overduePayments = await Receivable.aggregate([
-    {
-      $match: baseFilter,
-    },
-    {
-      $unwind: "$invoices",
-    },
-    {
-      $match: {
-        "invoices.status": "overdue",
-        "invoices.pendingAmount": {
-          $gt: 0,
-        },
-      },
-    },
-    {
-      $sort: {
-        "invoices.dueDate": 1,
-      },
-    },
-    {
-      $limit: 5,
-    },
-    {
-      $project: {
-        _id: 1,
-        companyName: 1,
-        tallyLedgerName: 1,
-        invoiceNumber: "$invoices.invoiceNumber",
-        invoiceDate: "$invoices.invoiceDate",
-        paymentDueDate: "$invoices.dueDate",
-        invoiceAmount: "$invoices.invoiceAmount",
-        paidAmount: "$invoices.receivedAmount",
-        pendingAmount: "$invoices.pendingAmount",
-        paymentStatus: "$invoices.status",
-        overdueDays: "$invoices.overdueDays",
-        salesPersons: 1,
-      },
-    },
-  ]);
-
-  return {
-    ...result,
-    upcomingDuePayments,
-    overduePayments,
-  };
-};
-const getActionRequiredInsights = async (query, user) => {
-  const { fromDate, toDate } = query;
-
-  const enquiryFilter = {
-    ...getDateFilter(fromDate, toDate, "enquiryDate"),
-  };
-
-  if (user.role !== "admin" && user.role !== "super_admin") {
-    enquiryFilter.salesPersonId = user.id;
-  }
-
-  const today = new Date();
-
-  today.setHours(0, 0, 0, 0);
-
-  const activeOnlyFilter = {
-    ...enquiryFilter,
-
-    "closure.status": {
-      $nin: ["won", "lost"],
-    },
-  };
-
-  /* ========================= */
-  /* OVERDUE CONDITION */
-  /* ========================= */
-
-  const overdueCondition = {
-    $or: [
-      {
-        "feasibility.planDate": {
-          $lt: today,
-        },
-
-        "feasibility.completed": {
-          $ne: true,
-        },
-      },
-
-      {
-        "quotation.planDate": {
-          $lt: today,
-        },
-
-        "quotation.completed": {
-          $ne: true,
-        },
-      },
-
-      {
-        "closure.planDate": {
-          $lt: today,
-        },
-
-        "closure.completed": {
-          $ne: true,
-        },
-      },
-    ],
-  };
-
-  /* ========================= */
-  /* HIGH RISK DELAY */
-  /* ========================= */
-
-  const delayedRiskCondition = {
-    $or: [
-      {
-        "feasibility.planDate": {
-          $lt: new Date(
-            today.getTime() -
-              7 * 24 * 60 * 60 * 1000
-          ),
-        },
-
-        "feasibility.completed": {
-          $ne: true,
-        },
-      },
-
-      {
-        "quotation.planDate": {
-          $lt: new Date(
-            today.getTime() -
-              7 * 24 * 60 * 60 * 1000
-          ),
-        },
-
-        "quotation.completed": {
-          $ne: true,
-        },
-      },
-
-      {
-        "closure.planDate": {
-          $lt: new Date(
-            today.getTime() -
-              7 * 24 * 60 * 60 * 1000
-          ),
-        },
-
-        "closure.completed": {
-          $ne: true,
-        },
-      },
-    ],
-  };
-
-  /* ========================= */
-  /* DAYS OVERDUE */
-  /* ========================= */
-
-  const getDaysOverdue = (planDate) => {
-    if (!planDate) return 0;
-
-    const plan = new Date(planDate);
-
-    plan.setHours(0, 0, 0, 0);
-
-    return Math.max(
-      0,
-      Math.floor(
-        (today.getTime() - plan.getTime()) /
-          (1000 * 60 * 60 * 24)
-      )
-    );
-  };
-
-  /* ========================= */
-  /* FIND CURRENT OVERDUE STAGE */
-  /* ========================= */
-
-  const getOverdueStage = (enquiry) => {
-    const stages = [];
-
-    if (
-      enquiry.feasibility?.planDate &&
-      enquiry.feasibility?.completed !== true &&
-      new Date(
-        enquiry.feasibility.planDate
-      ) < today
-    ) {
-      stages.push({
-        stage: "Feasibility",
-
-        planDate:
-          enquiry.feasibility.planDate,
-
-        daysOverdue: getDaysOverdue(
-          enquiry.feasibility.planDate
-        ),
-      });
-    }
-
-    if (
-      enquiry.quotation?.planDate &&
-      enquiry.quotation?.completed !== true &&
-      new Date(
-        enquiry.quotation.planDate
-      ) < today
-    ) {
-      stages.push({
-        stage: "Quotation",
-
-        planDate:
-          enquiry.quotation.planDate,
-
-        daysOverdue: getDaysOverdue(
-          enquiry.quotation.planDate
-        ),
-      });
-    }
-
-    if (
-      enquiry.closure?.planDate &&
-      enquiry.closure?.completed !== true &&
-      new Date(
-        enquiry.closure.planDate
-      ) < today
-    ) {
-      stages.push({
-        stage: "Closure",
-
-        planDate:
-          enquiry.closure.planDate,
-
-        daysOverdue: getDaysOverdue(
-          enquiry.closure.planDate
-        ),
-      });
-    }
-
-    stages.sort(
-      (a, b) =>
-        b.daysOverdue -
-        a.daysOverdue
-    );
-
-    return (
-      stages[0] || {
-        stage: "-",
-        planDate: null,
-        daysOverdue: 0,
-      }
-    );
-  };
-
-  /* ========================= */
-  /* FORMAT RESPONSE */
-  /* ========================= */
-
-  const formatEnquiryItem = (
-    enquiry
-  ) => {
-    const overdue =
-      getOverdueStage(enquiry);
-
-    return {
-      enquiryId: enquiry._id,
-
-      companyName:
-        enquiry.companyName,
-
-      customerName:
-        enquiry.customerName,
-
-      salesPersonName:
-        enquiry.salesPersonId?.name ||
-        "-",
-
-      grade: enquiry.grade,
-
-      quantityInKg:
-        enquiry.quantityInKg,
-
-      overdueStage:
-        overdue.stage,
-
-      planDate:
-        overdue.planDate,
-
-      daysOverdue:
-        overdue.daysOverdue,
-
-      enquiryDate:
-        enquiry.enquiryDate,
-    };
-  };
-
-  /* ========================= */
-  /* OVERDUE */
-  /* ========================= */
-
-  const overdueEnquiriesRaw =
-    await Enquiry.find({
-      ...activeOnlyFilter,
-      ...overdueCondition,
-    })
-      .populate(
-        "salesPersonId",
-        "name email"
-      )
-      .sort({
-        updatedAt: -1,
-      })
-      .limit(5)
-      .lean();
-
-  const overdueEnquiriesCount =
-    await Enquiry.countDocuments({
-      ...activeOnlyFilter,
-      ...overdueCondition,
-    });
-
-  /* ========================= */
-  /* PENDING QUOTATION */
-  /* ========================= */
-
-  const pendingQuotationsRaw =
-    await Enquiry.find({
-      ...activeOnlyFilter,
-
-      "feasibility.completed":
-        true,
-
-      "quotation.completed": {
-        $ne: true,
-      },
-    })
-      .populate(
-        "salesPersonId",
-        "name email"
-      )
-      .sort({
-        updatedAt: -1,
-      })
-      .limit(5)
-      .lean();
-
-  const pendingQuotationsCount =
-    await Enquiry.countDocuments({
-      ...activeOnlyFilter,
-
-      "feasibility.completed":
-        true,
-
-      "quotation.completed": {
-        $ne: true,
-      },
-    });
-
-  /* ========================= */
-  /* PENDING CLOSURE */
-  /* ========================= */
-
-  const pendingClosuresRaw =
-    await Enquiry.find({
-      ...activeOnlyFilter,
-
-      "quotation.completed":
-        true,
-
-      "closure.completed": {
-        $ne: true,
-      },
-    })
-      .populate(
-        "salesPersonId",
-        "name email"
-      )
-      .sort({
-        updatedAt: -1,
-      })
-      .limit(5)
-      .lean();
-
-  const pendingClosuresCount =
-    await Enquiry.countDocuments({
-      ...activeOnlyFilter,
-
-      "quotation.completed":
-        true,
-
-      "closure.completed": {
-        $ne: true,
-      },
-    });
-
-  /* ========================= */
-  /* HIGH RISK */
-  /* ========================= */
-
-  const delayedRiskRaw =
-    await Enquiry.find({
-      ...activeOnlyFilter,
-      ...delayedRiskCondition,
-    })
-      .populate(
-        "salesPersonId",
-        "name email"
-      )
-      .sort({
-        updatedAt: -1,
-      })
-      .limit(5)
-      .lean();
-
-  const delayedRiskCount =
-    await Enquiry.countDocuments({
-      ...activeOnlyFilter,
-      ...delayedRiskCondition,
-    });
-
-  /* ========================= */
-  /* TOP DELAYED */
-  /* ========================= */
-
-  let topDelayedSalesperson =
-    null;
-
   if (
-    user.role === "admin" ||
-    user.role === "super_admin"
+    user.role !== "admin" &&
+    user.role !==
+      "super_admin" &&
+    user.role !== "accounts"
   ) {
-    const topDelayedData =
-      await Enquiry.aggregate([
-        {
-          $match: {
-            ...activeOnlyFilter,
-            ...overdueCondition,
+    baseFilter[
+      "salesPersons.userId"
+    ] =
+      new mongoose.Types.ObjectId(
+        user._id || user.id
+      );
+  }
+
+  const summaryData =
+    await Receivable.aggregate([
+      {
+        $match: baseFilter,
+      },
+
+      {
+        $unwind:
+          "$invoices",
+      },
+
+      {
+        $match:
+          invoiceDateFilter,
+      },
+
+      {
+        $group: {
+          _id: null,
+
+          totalRevenue: {
+            $sum:
+              "$invoices.invoiceAmount",
           },
-        },
 
-        {
-          $group: {
-            _id: "$salesPersonId",
+          totalPaid: {
+            $sum:
+              "$invoices.receivedAmount",
+          },
 
-            count: {
-              $sum: 1,
+          totalPending: {
+            $sum:
+              "$invoices.pendingAmount",
+          },
+
+          overdueAmount: {
+            $sum: {
+              $cond: [
+                {
+                  $eq: [
+                    "$invoices.status",
+                    "overdue",
+                  ],
+                },
+
+                "$invoices.pendingAmount",
+
+                0,
+              ],
             },
           },
         },
+      },
+    ]);
 
-        {
-          $lookup: {
-            from: "users",
-            localField: "_id",
-            foreignField: "_id",
-            as: "salesPerson",
-          },
-        },
+  const result =
+    summaryData[0] || {
+      totalRevenue: 0,
 
-        {
-          $unwind: "$salesPerson",
-        },
+      totalPaid: 0,
 
-        {
-          $project: {
-            _id: 0,
+      totalPending: 0,
 
-            salesPersonId:
-              "$salesPerson._id",
-
-            name:
-              "$salesPerson.name",
-
-            email:
-              "$salesPerson.email",
-
-            count: 1,
-          },
-        },
-
-        {
-          $sort: {
-            count: -1,
-          },
-        },
-
-        {
-          $limit: 1,
-        },
-      ]);
-
-    topDelayedSalesperson =
-      topDelayedData[0] || null;
-  } else {
-    topDelayedSalesperson = {
-      name:
-        user.name || "You",
-
-      count:
-        overdueEnquiriesCount,
+      overdueAmount: 0,
     };
-  }
 
-  /* ========================= */
-  /* SUMMARY */
-  /* ========================= */
+  const today =
+    new Date();
 
-  const totalActionCount =
-    overdueEnquiriesCount +
-    pendingQuotationsCount +
-    pendingClosuresCount +
-    delayedRiskCount;
+  const nextThreeDays =
+    new Date();
+
+  nextThreeDays.setDate(
+    today.getDate() + 3
+  );
+
+  nextThreeDays.setHours(
+    23,
+    59,
+    59,
+    999
+  );
+
+  const upcomingDuePayments =
+    await Receivable.aggregate([
+      {
+        $match: baseFilter,
+      },
+
+      {
+        $unwind:
+          "$invoices",
+      },
+
+      {
+        $match: {
+          "invoices.status": {
+            $in: [
+              "pending",
+              "partial",
+            ],
+          },
+
+          "invoices.pendingAmount": {
+            $gt: 0,
+          },
+
+          "invoices.dueDate": {
+            $gte: today,
+
+            $lte:
+              nextThreeDays,
+          },
+        },
+      },
+
+      {
+        $sort: {
+          "invoices.dueDate":
+            1,
+        },
+      },
+
+      {
+        $limit: 5,
+      },
+
+      {
+        $project: {
+          _id: 1,
+
+          companyName: 1,
+
+          tallyLedgerName: 1,
+
+          invoiceNumber:
+            "$invoices.invoiceNumber",
+
+          invoiceDate:
+            "$invoices.invoiceDate",
+
+          paymentDueDate:
+            "$invoices.dueDate",
+
+          invoiceAmount:
+            "$invoices.invoiceAmount",
+
+          paidAmount:
+            "$invoices.receivedAmount",
+
+          pendingAmount:
+            "$invoices.pendingAmount",
+
+          paymentStatus:
+            "$invoices.status",
+
+          overdueDays:
+            "$invoices.overdueDays",
+
+          salesPersons: 1,
+        },
+      },
+    ]);
+
+  const overduePayments =
+    await Receivable.aggregate([
+      {
+        $match: baseFilter,
+      },
+
+      {
+        $unwind:
+          "$invoices",
+      },
+
+      {
+        $match: {
+          "invoices.status":
+            "overdue",
+
+          "invoices.pendingAmount": {
+            $gt: 0,
+          },
+        },
+      },
+
+      {
+        $sort: {
+          "invoices.dueDate":
+            1,
+        },
+      },
+
+      {
+        $limit: 5,
+      },
+
+      {
+        $project: {
+          _id: 1,
+
+          companyName: 1,
+
+          tallyLedgerName: 1,
+
+          invoiceNumber:
+            "$invoices.invoiceNumber",
+
+          invoiceDate:
+            "$invoices.invoiceDate",
+
+          paymentDueDate:
+            "$invoices.dueDate",
+
+          invoiceAmount:
+            "$invoices.invoiceAmount",
+
+          paidAmount:
+            "$invoices.receivedAmount",
+
+          pendingAmount:
+            "$invoices.pendingAmount",
+
+          paymentStatus:
+            "$invoices.status",
+
+          overdueDays:
+            "$invoices.overdueDays",
+
+          salesPersons: 1,
+        },
+      },
+    ]);
 
   return {
-    overdueEnquiries: {
-      count:
-        overdueEnquiriesCount,
+    ...result,
 
-      items:
-        overdueEnquiriesRaw.map(
-          formatEnquiryItem
-        ),
-    },
+    upcomingDuePayments,
 
-    pendingQuotations: {
-      count:
-        pendingQuotationsCount,
-
-      items:
-        pendingQuotationsRaw.map(
-          (enquiry) => ({
-            enquiryId:
-              enquiry._id,
-
-            companyName:
-              enquiry.companyName,
-
-            customerName:
-              enquiry.customerName,
-
-            salesPersonName:
-              enquiry
-                .salesPersonId
-                ?.name || "-",
-
-            grade:
-              enquiry.grade,
-
-            quantityInKg:
-              enquiry.quantityInKg,
-
-            planDate:
-              enquiry.quotation
-                ?.planDate || null,
-
-            enquiryDate:
-              enquiry.enquiryDate,
-          })
-        ),
-    },
-
-    pendingClosures: {
-      count:
-        pendingClosuresCount,
-
-      items:
-        pendingClosuresRaw.map(
-          (enquiry) => ({
-            enquiryId:
-              enquiry._id,
-
-            companyName:
-              enquiry.companyName,
-
-            customerName:
-              enquiry.customerName,
-
-            salesPersonName:
-              enquiry
-                .salesPersonId
-                ?.name || "-",
-
-            grade:
-              enquiry.grade,
-
-            quantityInKg:
-              enquiry.quantityInKg,
-
-            planDate:
-              enquiry.closure
-                ?.planDate || null,
-
-            enquiryDate:
-              enquiry.enquiryDate,
-          })
-        ),
-    },
-
-    delayedRisk: {
-      count:
-        delayedRiskCount,
-
-      items:
-        delayedRiskRaw.map(
-          formatEnquiryItem
-        ),
-    },
-
-    topDelayedSalesperson,
-
-    summaryMessage:
-      totalActionCount > 0
-        ? `${totalActionCount} action item(s) need attention`
-        : "No urgent action required",
+    overduePayments,
   };
 };
 
-const getMisScoring = async (query, user) => {
-  const { fromDate, toDate } = query;
+const getActionRequiredInsights =
+  async (query, user) => {
+    const { fromDate, toDate } =
+      query;
+
+    const enquiryFilter = {
+      ...getDateFilter(
+        fromDate,
+        toDate,
+        "enquiryDate"
+      ),
+    };
+
+    if (
+      user.role !== "admin" &&
+      user.role !==
+        "super_admin"
+    ) {
+      enquiryFilter.salesPersonId =
+        user.id;
+    }
+
+    const today =
+      new Date();
+
+    today.setHours(
+      0,
+      0,
+      0,
+      0
+    );
+
+    const activeOnlyFilter = {
+      ...enquiryFilter,
+
+      "closure.status": {
+        $nin: ["won", "lost"],
+      },
+    };
+
+    /* ========================= */
+    /* OVERDUE CONDITION */
+    /* ========================= */
+
+    const overdueCondition = {
+      $or: [
+        {
+          "feasibility.planDate": {
+            $lt: today,
+          },
+
+          "feasibility.completed": {
+            $ne: true,
+          },
+        },
+
+        {
+          "quotation.planDate": {
+            $lt: today,
+          },
+
+          "quotation.completed": {
+            $ne: true,
+          },
+        },
+
+        {
+          "closure.planDate": {
+            $lt: today,
+          },
+
+          "closure.completed": {
+            $ne: true,
+          },
+        },
+      ],
+    };
+
+    /* ========================= */
+    /* HIGH RISK DELAY */
+    /* ========================= */
+
+    const delayedRiskCondition =
+      {
+        $or: [
+          {
+            "feasibility.planDate": {
+              $lt: new Date(
+                today.getTime() -
+                  7 *
+                    24 *
+                    60 *
+                    60 *
+                    1000
+              ),
+            },
+
+            "feasibility.completed": {
+              $ne: true,
+            },
+          },
+
+          {
+            "quotation.planDate": {
+              $lt: new Date(
+                today.getTime() -
+                  7 *
+                    24 *
+                    60 *
+                    60 *
+                    1000
+              ),
+            },
+
+            "quotation.completed": {
+              $ne: true,
+            },
+          },
+
+          {
+            "closure.planDate": {
+              $lt: new Date(
+                today.getTime() -
+                  7 *
+                    24 *
+                    60 *
+                    60 *
+                    1000
+              ),
+            },
+
+            "closure.completed": {
+              $ne: true,
+            },
+          },
+        ],
+      };
+
+    /* ========================= */
+    /* DAYS OVERDUE */
+    /* ========================= */
+
+    const getDaysOverdue = (
+      planDate
+    ) => {
+      if (!planDate)
+        return 0;
+
+      const plan =
+        new Date(planDate);
+
+      plan.setHours(
+        0,
+        0,
+        0,
+        0
+      );
+
+      return Math.max(
+        0,
+
+        Math.floor(
+          (today.getTime() -
+            plan.getTime()) /
+            (1000 *
+              60 *
+              60 *
+              24)
+        )
+      );
+    };
+
+    /* ========================= */
+    /* FIND CURRENT OVERDUE STAGE */
+    /* ========================= */
+
+    const getOverdueStage = (
+      enquiry
+    ) => {
+      const stages = [];
+
+      if (
+        enquiry.feasibility
+          ?.planDate &&
+        enquiry.feasibility
+          ?.completed !== true &&
+        new Date(
+          enquiry.feasibility
+            .planDate
+        ) < today
+      ) {
+        stages.push({
+          stage:
+            "Feasibility",
+
+          planDate:
+            enquiry
+              .feasibility
+              .planDate,
+
+          daysOverdue:
+            getDaysOverdue(
+              enquiry
+                .feasibility
+                .planDate
+            ),
+        });
+      }
+
+      if (
+        enquiry.quotation
+          ?.planDate &&
+        enquiry.quotation
+          ?.completed !== true &&
+        new Date(
+          enquiry.quotation
+            .planDate
+        ) < today
+      ) {
+        stages.push({
+          stage:
+            "Quotation",
+
+          planDate:
+            enquiry
+              .quotation
+              .planDate,
+
+          daysOverdue:
+            getDaysOverdue(
+              enquiry
+                .quotation
+                .planDate
+            ),
+        });
+      }
+
+      if (
+        enquiry.closure
+          ?.planDate &&
+        enquiry.closure
+          ?.completed !== true &&
+        new Date(
+          enquiry.closure
+            .planDate
+        ) < today
+      ) {
+        stages.push({
+          stage:
+            "Closure",
+
+          planDate:
+            enquiry
+              .closure
+              .planDate,
+
+          daysOverdue:
+            getDaysOverdue(
+              enquiry
+                .closure
+                .planDate
+            ),
+        });
+      }
+
+      stages.sort(
+        (a, b) =>
+          b.daysOverdue -
+          a.daysOverdue
+      );
+
+      return (
+        stages[0] || {
+          stage: "-",
+
+          planDate: null,
+
+          daysOverdue: 0,
+        }
+      );
+    };
+
+    /* ========================= */
+    /* FORMAT RESPONSE */
+    /* ========================= */
+
+    const formatEnquiryItem =
+      (enquiry) => {
+        const overdue =
+          getOverdueStage(
+            enquiry
+          );
+
+        return {
+          enquiryId:
+            enquiry._id,
+
+          companyName:
+            enquiry.companyName,
+
+          customerName:
+            enquiry.customerName,
+
+          salesPersonName:
+            enquiry
+              .salesPersonId
+              ?.name || "-",
+
+          grade:
+            enquiry.grade,
+
+          quantityInKg:
+            enquiry.quantityInKg,
+
+          overdueStage:
+            overdue.stage,
+
+          planDate:
+            overdue.planDate,
+
+          daysOverdue:
+            overdue.daysOverdue,
+
+          enquiryDate:
+            enquiry.enquiryDate,
+        };
+      };
+
+    /* ========================= */
+    /* OVERDUE */
+    /* ========================= */
+
+    const overdueEnquiriesRaw =
+      await Enquiry.find({
+        ...activeOnlyFilter,
+
+        ...overdueCondition,
+      })
+        .populate(
+          "salesPersonId",
+          "name email"
+        )
+        .sort({
+          updatedAt: -1,
+        })
+        .limit(5)
+        .lean();
+
+    const overdueEnquiriesCount =
+      await Enquiry.countDocuments(
+        {
+          ...activeOnlyFilter,
+
+          ...overdueCondition,
+        }
+      );
+
+    /* ========================= */
+    /* PENDING QUOTATION */
+    /* ========================= */
+
+    const pendingQuotationsRaw =
+      await Enquiry.find({
+        ...activeOnlyFilter,
+
+        "feasibility.completed":
+          true,
+
+        "quotation.completed": {
+          $ne: true,
+        },
+      })
+        .populate(
+          "salesPersonId",
+          "name email"
+        )
+        .sort({
+          updatedAt: -1,
+        })
+        .limit(5)
+        .lean();
+
+    const pendingQuotationsCount =
+      await Enquiry.countDocuments(
+        {
+          ...activeOnlyFilter,
+
+          "feasibility.completed":
+            true,
+
+          "quotation.completed": {
+            $ne: true,
+          },
+        }
+      );
+
+    /* ========================= */
+    /* PENDING CLOSURE */
+    /* ========================= */
+
+    const pendingClosuresRaw =
+      await Enquiry.find({
+        ...activeOnlyFilter,
+
+        "quotation.completed":
+          true,
+
+        "closure.completed": {
+          $ne: true,
+        },
+      })
+        .populate(
+          "salesPersonId",
+          "name email"
+        )
+        .sort({
+          updatedAt: -1,
+        })
+        .limit(5)
+        .lean();
+
+    const pendingClosuresCount =
+      await Enquiry.countDocuments(
+        {
+          ...activeOnlyFilter,
+
+          "quotation.completed":
+            true,
+
+          "closure.completed": {
+            $ne: true,
+          },
+        }
+      );
+
+    /* ========================= */
+    /* HIGH RISK */
+    /* ========================= */
+
+    const delayedRiskRaw =
+      await Enquiry.find({
+        ...activeOnlyFilter,
+
+        ...delayedRiskCondition,
+      })
+        .populate(
+          "salesPersonId",
+          "name email"
+        )
+        .sort({
+          updatedAt: -1,
+        })
+        .limit(5)
+        .lean();
+
+    const delayedRiskCount =
+      await Enquiry.countDocuments(
+        {
+          ...activeOnlyFilter,
+
+          ...delayedRiskCondition,
+        }
+      );
+
+    /* ========================= */
+    /* TOP DELAYED */
+    /* ========================= */
+
+    let topDelayedSalesperson =
+      null;
+
+    if (
+      user.role === "admin" ||
+      user.role ===
+        "super_admin"
+    ) {
+      const topDelayedData =
+        await Enquiry.aggregate([
+          {
+            $match: {
+              ...activeOnlyFilter,
+
+              ...overdueCondition,
+            },
+          },
+
+          {
+            $group: {
+              _id:
+                "$salesPersonId",
+
+              count: {
+                $sum: 1,
+              },
+            },
+          },
+
+          {
+            $lookup: {
+              from: "users",
+
+              localField:
+                "_id",
+
+              foreignField:
+                "_id",
+
+              as:
+                "salesPerson",
+            },
+          },
+
+          {
+            $unwind:
+              "$salesPerson",
+          },
+
+          {
+            $project: {
+              _id: 0,
+
+              salesPersonId:
+                "$salesPerson._id",
+
+              name:
+                "$salesPerson.name",
+
+              email:
+                "$salesPerson.email",
+
+              count: 1,
+            },
+          },
+
+          {
+            $sort: {
+              count: -1,
+            },
+          },
+
+          {
+            $limit: 1,
+          },
+        ]);
+
+      topDelayedSalesperson =
+        topDelayedData[0] ||
+        null;
+    } else {
+      topDelayedSalesperson =
+        {
+          name:
+            user.name ||
+            "You",
+
+          count:
+            overdueEnquiriesCount,
+        };
+    }
+
+    /* ========================= */
+    /* SUMMARY */
+    /* ========================= */
+
+    const totalActionCount =
+      overdueEnquiriesCount +
+      pendingQuotationsCount +
+      pendingClosuresCount +
+      delayedRiskCount;
+
+    return {
+      overdueEnquiries: {
+        count:
+          overdueEnquiriesCount,
+
+        items:
+          overdueEnquiriesRaw.map(
+            formatEnquiryItem
+          ),
+      },
+
+      pendingQuotations: {
+        count:
+          pendingQuotationsCount,
+
+        items:
+          pendingQuotationsRaw.map(
+            (enquiry) => ({
+              enquiryId:
+                enquiry._id,
+
+              companyName:
+                enquiry.companyName,
+
+              customerName:
+                enquiry.customerName,
+
+              salesPersonName:
+                enquiry
+                  .salesPersonId
+                  ?.name ||
+                "-",
+
+              grade:
+                enquiry.grade,
+
+              quantityInKg:
+                enquiry.quantityInKg,
+
+              planDate:
+                enquiry
+                  .quotation
+                  ?.planDate ||
+                null,
+
+              enquiryDate:
+                enquiry.enquiryDate,
+            })
+          ),
+      },
+
+      pendingClosures: {
+        count:
+          pendingClosuresCount,
+
+        items:
+          pendingClosuresRaw.map(
+            (enquiry) => ({
+              enquiryId:
+                enquiry._id,
+
+              companyName:
+                enquiry.companyName,
+
+              customerName:
+                enquiry.customerName,
+
+              salesPersonName:
+                enquiry
+                  .salesPersonId
+                  ?.name ||
+                "-",
+
+              grade:
+                enquiry.grade,
+
+              quantityInKg:
+                enquiry.quantityInKg,
+
+              planDate:
+                enquiry
+                  .closure
+                  ?.planDate ||
+                null,
+
+              enquiryDate:
+                enquiry.enquiryDate,
+            })
+          ),
+      },
+
+      delayedRisk: {
+        count:
+          delayedRiskCount,
+
+        items:
+          delayedRiskRaw.map(
+            formatEnquiryItem
+          ),
+      },
+
+      topDelayedSalesperson,
+
+      summaryMessage:
+        totalActionCount > 0
+          ? `${totalActionCount} action item(s) need attention`
+          : "No urgent action required",
+    };
+  };
+
+const getMisScoring = async (
+  query,
+  user
+) => {
+  const { fromDate, toDate } =
+    query;
 
   // =========================================================
   // MONTHLY MIS TARGETS
@@ -1292,15 +1844,15 @@ const getMisScoring = async (query, user) => {
       enquiry: 60,
       sales: 15000000,
       visits: 40,
-      orders: 10,
+      orders: 25,
       newCustomers: 5,
     },
 
     renu: {
       enquiry: 60,
-      sales: 15000000,
+      sales: 10000000,
       visits: 15,
-      orders: 25,
+      orders: 40,
       newCustomers: 5,
     },
 
@@ -1313,19 +1865,19 @@ const getMisScoring = async (query, user) => {
     },
 
     shalu: {
-      enquiry: 100,
+      enquiry: 60,
       sales: 10000000,
       visits: 15,
-      orders: 10,
+      orders: 25,
       newCustomers: 3,
     },
 
     saloni: {
-      enquiry: 70,
-      sales: 5000000,
+      enquiry: 60,
+      sales: 7000000,
       visits: 15,
-      orders: 10,
-      newCustomers: 2,
+      orders: 25,
+      newCustomers: 3,
     },
 
     kailash: {
@@ -1333,7 +1885,7 @@ const getMisScoring = async (query, user) => {
       sales: 20000000,
       visits: 40,
       orders: 20,
-      newCustomers: 4,
+      newCustomers: 5,
     },
   };
 
@@ -1359,11 +1911,20 @@ const getMisScoring = async (query, user) => {
   // =========================================================
   // HELPERS
   // =========================================================
-  const normalizeName = (name = "") =>
-    String(name).toLowerCase().trim().replace(/\s+/g, " ");
+  const normalizeName = (
+    name = ""
+  ) =>
+    String(name)
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " ");
 
-  const getTargetByName = (name = "") =>
-    MIS_TARGETS[normalizeName(name)] || {
+  const getTargetByName = (
+    name = ""
+  ) =>
+    MIS_TARGETS[
+      normalizeName(name)
+    ] || {
       enquiry: 0,
       sales: 0,
       visits: 0,
@@ -1371,116 +1932,178 @@ const getMisScoring = async (query, user) => {
       newCustomers: 0,
     };
 
-  const formatCurrency = (amount = 0) =>
-    `₹${Number(amount || 0).toLocaleString("en-IN")}`;
+  const formatCurrency = (
+    amount = 0
+  ) =>
+    `₹${Number(
+      amount || 0
+    ).toLocaleString(
+      "en-IN"
+    )}`;
 
-  const getPercent = (actual, target) => {
-    actual = Number(actual || 0);
-    target = Number(target || 0);
+  const getPercent = (
+    actual,
+    target
+  ) => {
+    actual = Number(
+      actual || 0
+    );
 
-    if (!target) return 0;
+    target = Number(
+      target || 0
+    );
+
+    if (!target)
+      return 0;
 
     return Math.min(
       100,
-      Number(((actual / target) * 100).toFixed(1))
+
+      Number(
+        (
+          (actual / target) *
+          100
+        ).toFixed(1)
+      )
     );
   };
 
-  const getShortBy = (actual, target) =>
+  const getShortBy = (
+    actual,
+    target
+  ) =>
     Math.max(
-      Number(target || 0) - Number(actual || 0),
+      Number(target || 0) -
+        Number(actual || 0),
+
       0
     );
 
   // =========================================================
   // WEIGHTED MIS SCORE
   // =========================================================
-  const calculateWeightedScore = ({
-    enquiryPercent,
-    visitPercent,
-    salesPercent,
-    orderPercent,
-    newCustomerPercent,
-  }) => {
-    const score =
-      (Number(enquiryPercent || 0) *
-        MIS_WEIGHTAGE.enquiry) /
-        100 +
+  const calculateWeightedScore =
+    ({
+      enquiryPercent,
+      visitPercent,
+      salesPercent,
+      orderPercent,
+      newCustomerPercent,
+    }) => {
+      const score =
+        (Number(
+          enquiryPercent || 0
+        ) *
+          MIS_WEIGHTAGE.enquiry) /
+          100 +
+        (Number(
+          visitPercent || 0
+        ) *
+          MIS_WEIGHTAGE.visits) /
+          100 +
+        (Number(
+          salesPercent || 0
+        ) *
+          MIS_WEIGHTAGE.salesVolume) /
+          100 +
+        (Number(
+          orderPercent || 0
+        ) *
+          MIS_WEIGHTAGE.ordersWon) /
+          100 +
+        (Number(
+          newCustomerPercent ||
+            0
+        ) *
+          MIS_WEIGHTAGE.newCustomers) /
+          100;
 
-      (Number(visitPercent || 0) *
-        MIS_WEIGHTAGE.visits) /
-        100 +
+      return Math.min(
+        100,
 
-      (Number(salesPercent || 0) *
-        MIS_WEIGHTAGE.salesVolume) /
-        100 +
-
-      (Number(orderPercent || 0) *
-        MIS_WEIGHTAGE.ordersWon) /
-        100 +
-
-      (Number(newCustomerPercent || 0) *
-        MIS_WEIGHTAGE.newCustomers) /
-        100;
-
-    return Math.min(
-      100,
-      Number(score.toFixed(1))
-    );
-  };
+        Number(
+          score.toFixed(1)
+        )
+      );
+    };
 
   // =========================================================
   // DATE RANGE
   // =========================================================
-  const getMonthDateRange = () => {
-    if (fromDate && toDate) {
+  const getMonthDateRange =
+    () => {
+      if (
+        fromDate &&
+        toDate
+      ) {
+        return {
+          startDate:
+            new Date(
+              `${fromDate}T00:00:00.000+05:30`
+            ),
+
+          endDate:
+            new Date(
+              `${toDate}T23:59:59.999+05:30`
+            ),
+        };
+      }
+
+      const now =
+        new Date();
+
+      const istNow =
+        new Date(
+          now.toLocaleString(
+            "en-US",
+            {
+              timeZone:
+                "Asia/Kolkata",
+            }
+          )
+        );
+
+      const year =
+        istNow.getFullYear();
+
+      const month =
+        istNow.getMonth() +
+        1;
+
+      const lastDay =
+        new Date(
+          year,
+          month,
+          0
+        ).getDate();
+
       return {
-        startDate: new Date(
-          `${fromDate}T00:00:00.000+05:30`
-        ),
+        startDate:
+          new Date(
+            `${year}-${String(
+              month
+            ).padStart(
+              2,
+              "0"
+            )}-01T00:00:00.000+05:30`
+          ),
 
-        endDate: new Date(
-          `${toDate}T23:59:59.999+05:30`
-        ),
+        endDate:
+          new Date(
+            `${year}-${String(
+              month
+            ).padStart(
+              2,
+              "0"
+            )}-${String(
+              lastDay
+            ).padStart(
+              2,
+              "0"
+            )}T23:59:59.999+05:30`
+          ),
       };
-    }
-
-    const now = new Date();
-
-    const istNow = new Date(
-      now.toLocaleString("en-US", {
-        timeZone: "Asia/Kolkata",
-      })
-    );
-
-    const year = istNow.getFullYear();
-    const month = istNow.getMonth() + 1;
-
-    const lastDay = new Date(
-      year,
-      month,
-      0
-    ).getDate();
-
-    return {
-      startDate: new Date(
-        `${year}-${String(month).padStart(
-          2,
-          "0"
-        )}-01T00:00:00.000+05:30`
-      ),
-
-      endDate: new Date(
-        `${year}-${String(month).padStart(
-          2,
-          "0"
-        )}-${String(lastDay).padStart(
-          2,
-          "0"
-        )}T23:59:59.999+05:30`
-      ),
     };
-  };
 
   // =========================================================
   // FOUR MIS WEEKS
@@ -1501,67 +2124,98 @@ const getMisScoring = async (query, user) => {
      * because production server may run in UTC.
      */
 
-    const istStart = new Date(
-      startDate.toLocaleString("en-US", {
-        timeZone: "Asia/Kolkata",
-      })
-    );
+    const istStart =
+      new Date(
+        startDate.toLocaleString(
+          "en-US",
+          {
+            timeZone:
+              "Asia/Kolkata",
+          }
+        )
+      );
 
-    const year = istStart.getFullYear();
-    const monthIndex = istStart.getMonth();
+    const year =
+      istStart.getFullYear();
 
-    const monthNumber = String(
-      monthIndex + 1
-    ).padStart(2, "0");
+    const monthIndex =
+      istStart.getMonth();
 
-    const lastDay = new Date(
-      year,
-      monthIndex + 1,
-      0
-    ).getDate();
+    const monthNumber =
+      String(
+        monthIndex + 1
+      ).padStart(2, "0");
+
+    const lastDay =
+      new Date(
+        year,
+        monthIndex + 1,
+        0
+      ).getDate();
 
     const ranges = [
       [1, 8],
+
       [9, 15],
+
       [16, 23],
+
       [24, lastDay],
     ];
 
-    const createIstBoundary = (
-      day,
-      isEnd = false
-    ) => {
-      const dayText = String(day).padStart(
-        2,
-        "0"
-      );
+    const createIstBoundary =
+      (
+        day,
+        isEnd = false
+      ) => {
+        const dayText =
+          String(
+            day
+          ).padStart(
+            2,
+            "0"
+          );
 
-      const timeText = isEnd
-        ? "23:59:59.999"
-        : "00:00:00.000";
+        const timeText =
+          isEnd
+            ? "23:59:59.999"
+            : "00:00:00.000";
 
-      return new Date(
-        `${year}-${monthNumber}-${dayText}T${timeText}+05:30`
-      );
-    };
+        return new Date(
+          `${year}-${monthNumber}-${dayText}T${timeText}+05:30`
+        );
+      };
 
     return ranges.map(
-      ([weekStartDay, weekEndDay], index) => ({
-        weekNo: index + 1,
-
-        label: `Week ${index + 1}`,
-
-        displayRange: `${weekStartDay}-${weekEndDay}`,
-
-        startDate: createIstBoundary(
+      (
+        [
           weekStartDay,
-          false
-        ),
-
-        endDate: createIstBoundary(
           weekEndDay,
-          true
-        ),
+        ],
+        index
+      ) => ({
+        weekNo:
+          index + 1,
+
+        label:
+          `Week ${
+            index + 1
+          }`,
+
+        displayRange:
+          `${weekStartDay}-${weekEndDay}`,
+
+        startDate:
+          createIstBoundary(
+            weekStartDay,
+            false
+          ),
+
+        endDate:
+          createIstBoundary(
+            weekEndDay,
+            true
+          ),
       })
     );
   };
@@ -1569,75 +2223,114 @@ const getMisScoring = async (query, user) => {
   // =========================================================
   // FIND WEEK
   // =========================================================
-  const findWeekIndex = (weeks, date) => {
-    if (!date) return -1;
+  const findWeekIndex = (
+    weeks,
+    date
+  ) => {
+    if (!date)
+      return -1;
 
-    const d = new Date(date);
+    const d =
+      new Date(date);
 
     return weeks.findIndex(
       (week) =>
-        d >= new Date(week.startDate) &&
-        d <= new Date(week.endDate)
+        d >=
+          new Date(
+            week.startDate
+          ) &&
+        d <=
+          new Date(
+            week.endDate
+          )
     );
   };
 
   // =========================================================
   // PERFORMANCE REASON
   // =========================================================
-  const getPerformanceReason = (person) => {
-    const reasons = [];
+  const getPerformanceReason =
+    (person) => {
+      const reasons = [];
 
-    /*
-     * New customer has highest MIS weightage,
-     * therefore checking it first.
-     */
-    if (
-      person.achievement.newCustomerPercent < 60
-    ) {
-      reasons.push("low new customer acquisition");
-    }
+      /*
+       * New customer has highest MIS weightage,
+       * therefore checking it first.
+       */
 
-    if (person.achievement.salesPercent < 60) {
-      reasons.push("lower sales order value");
-    }
+      if (
+        person.achievement
+          .newCustomerPercent <
+        60
+      ) {
+        reasons.push(
+          "low new customer acquisition"
+        );
+      }
 
-    if (person.achievement.orderPercent < 60) {
-      reasons.push(
-        "low number of approved orders"
+      if (
+        person.achievement
+          .salesPercent < 60
+      ) {
+        reasons.push(
+          "lower sales order value"
+        );
+      }
+
+      if (
+        person.achievement
+          .orderPercent < 60
+      ) {
+        reasons.push(
+          "low number of approved orders"
+        );
+      }
+
+      if (
+        person.achievement
+          .visitPercent < 60
+      ) {
+        reasons.push(
+          "less customer meeting/visit activity"
+        );
+      }
+
+      if (
+        person.achievement
+          .enquiryPercent <
+        60
+      ) {
+        reasons.push(
+          "less enquiry focus"
+        );
+      }
+
+      if (
+        !reasons.length
+      ) {
+        reasons.push(
+          "balanced performance across MIS parameters"
+        );
+      }
+
+      return reasons.join(
+        ", "
       );
-    }
-
-    if (person.achievement.visitPercent < 60) {
-      reasons.push(
-        "less customer meeting/visit activity"
-      );
-    }
-
-    if (
-      person.achievement.enquiryPercent < 60
-    ) {
-      reasons.push("less enquiry focus");
-    }
-
-    if (!reasons.length) {
-      reasons.push(
-        "balanced performance across MIS parameters"
-      );
-    }
-
-    return reasons.join(", ");
-  };
+    };
 
   // =========================================================
   // GET DATE RANGE + WEEKS
   // =========================================================
-  const { startDate, endDate } =
-    getMonthDateRange();
-
-  const weeks = getFourMonthWeeks(
+  const {
     startDate,
-    endDate
-  );
+    endDate,
+  } = getMonthDateRange();
+
+  const weeks =
+    getFourMonthWeeks(
+      startDate,
+      endDate
+    );
 
   // =========================================================
   // ENQUIRY FILTER
@@ -1645,6 +2338,7 @@ const getMisScoring = async (query, user) => {
   const enquiryFilter = {
     enquiryDate: {
       $gte: startDate,
+
       $lte: endDate,
     },
   };
@@ -1655,16 +2349,19 @@ const getMisScoring = async (query, user) => {
   // ONLY APPROVED SALES ORDERS ARE COUNTED
   // =========================================================
   const salesOrderFilter = {
-    approvalStatus: "approved",
+    approvalStatus:
+      "approved",
 
     isActive: {
       $ne: false,
     },
 
-    "managerApproval.approvedAt": {
-      $gte: startDate,
-      $lte: endDate,
-    },
+    "managerApproval.approvedAt":
+      {
+        $gte: startDate,
+
+        $lte: endDate,
+      },
   };
 
   // =========================================================
@@ -1680,19 +2377,26 @@ const getMisScoring = async (query, user) => {
         $or: [
           {
             date: {
-              $gte: startDate,
-              $lte: endDate,
+              $gte:
+                startDate,
+
+              $lte:
+                endDate,
             },
           },
 
           {
             date: {
-              $exists: false,
+              $exists:
+                false,
             },
 
             createdAt: {
-              $gte: startDate,
-              $lte: endDate,
+              $gte:
+                startDate,
+
+              $lte:
+                endDate,
             },
           },
 
@@ -1700,8 +2404,11 @@ const getMisScoring = async (query, user) => {
             date: null,
 
             createdAt: {
-              $gte: startDate,
-              $lte: endDate,
+              $gte:
+                startDate,
+
+              $lte:
+                endDate,
             },
           },
         ],
@@ -1714,31 +2421,42 @@ const getMisScoring = async (query, user) => {
         $or: [
           {
             activityType: {
-              $in: ["visit", "meeting"],
+              $in: [
+                "visit",
+                "meeting",
+              ],
             },
           },
 
           {
             callType: {
-              $in: ["visit", "meeting"],
+              $in: [
+                "visit",
+                "meeting",
+              ],
             },
           },
 
           {
             type: {
-              $in: ["visit", "meeting"],
+              $in: [
+                "visit",
+                "meeting",
+              ],
             },
           },
 
           {
             visitType: {
-              $exists: true,
+              $exists:
+                true,
             },
           },
 
           {
             meetingType: {
-              $exists: true,
+              $exists:
+                true,
             },
           },
         ],
@@ -1747,48 +2465,17 @@ const getMisScoring = async (query, user) => {
   };
 
   // =========================================================
-  // OPTIONAL USER FILTER
-  //
-  // CURRENT PRODUCTION LOGIC KEPT COMMENTED
-  // =========================================================
-
-  /*
-  if (
-    user.role !== "admin" &&
-    user.role !== "super_admin"
-  ) {
-    const userId = makeObjectId(
-      user.id || user._id
-    );
-
-    enquiryFilter.salesPersonId = userId;
-
-    salesOrderFilter.$or = [
-      {
-        salesPersonId: userId,
-      },
-      {
-        salesPersonId: String(
-          user.id || user._id
-        ),
-      },
-    ];
-
-    visitFilter.salesPersonId = userId;
-  }
-  */
-
-  // =========================================================
   // FETCH ENQUIRIES
   // =========================================================
-  const enquiries = await Enquiry.find(
-    enquiryFilter
-  )
-    .populate(
-      "salesPersonId",
-      "name email"
+  const enquiries =
+    await Enquiry.find(
+      enquiryFilter
     )
-    .lean();
+      .populate(
+        "salesPersonId",
+        "name email"
+      )
+      .lean();
 
   // =========================================================
   // FETCH APPROVED SALES ORDERS
@@ -1799,16 +2486,25 @@ const getMisScoring = async (query, user) => {
   // will count toward 30% new-customer MIS.
   // =========================================================
   const approvedSalesOrders =
-    await SalesOrder.find(salesOrderFilter)
+    await SalesOrder.find(
+      salesOrderFilter
+    )
       .select(
         [
           "salesPersonId",
+
           "salesPersonName",
+
           "salesPersonEmail",
+
           "orderValue",
+
           "orderDate",
+
           "customerType",
+
           "managerApproval.approvedAt",
+
           "approvalStatus",
         ].join(" ")
       )
@@ -1817,13 +2513,14 @@ const getMisScoring = async (query, user) => {
   // =========================================================
   // FETCH CUSTOMER MEETINGS / VISITS
   // =========================================================
-  const visits = await ColdCall.find(
-    visitFilter
-  )
-    .select(
-      "salesPersonId salesPersonName salesPersonEmail date createdAt"
+  const visits =
+    await ColdCall.find(
+      visitFilter
     )
-    .lean();
+      .select(
+        "salesPersonId salesPersonName salesPersonEmail date createdAt"
+      )
+      .lean();
 
   // =========================================================
   // SALES PERSON MAP
@@ -1835,17 +2532,27 @@ const getMisScoring = async (query, user) => {
     name,
     email,
   }) => {
-    if (!id) return null;
+    if (!id)
+      return null;
 
-    const salesPersonId = String(id);
+    const salesPersonId =
+      String(id);
 
-    if (!salesMap[salesPersonId]) {
-      salesMap[salesPersonId] = {
+    if (
+      !salesMap[
+        salesPersonId
+      ]
+    ) {
+      salesMap[
+        salesPersonId
+      ] = {
         salesPersonId: id,
 
-        name: name || "",
+        name:
+          name || "",
 
-        email: email || "",
+        email:
+          email || "",
 
         // Enquiry
         totalEnquiries: 0,
@@ -1857,7 +2564,8 @@ const getMisScoring = async (query, user) => {
         pendingEnquiries: 0,
 
         // Sales Order
-        approvedSalesValue: 0,
+        approvedSalesValue:
+          0,
 
         approvedOrders: 0,
 
@@ -1868,212 +2576,299 @@ const getMisScoring = async (query, user) => {
         newCustomers: 0,
 
         // Weekly report
-        weeklyReport: weeks.map(
-          (week) => ({
-            weekNo: week.weekNo,
+        weeklyReport:
+          weeks.map(
+            (week) => ({
+              weekNo:
+                week.weekNo,
 
-            label: week.label,
+              label:
+                week.label,
 
-            displayRange:
-              week.displayRange,
+              displayRange:
+                week.displayRange,
 
-            startDate: week.startDate,
+              startDate:
+                week.startDate,
 
-            endDate: week.endDate,
+              endDate:
+                week.endDate,
 
-            enquiries: 0,
+              enquiries: 0,
 
-            approvedSalesValue: 0,
+              approvedSalesValue:
+                0,
 
-            approvedOrders: 0,
+              approvedOrders:
+                0,
 
-            visits: 0,
+              visits: 0,
 
-            newCustomers: 0,
-          })
-        ),
+              newCustomers:
+                0,
+            })
+          ),
       };
     }
 
-    return salesMap[salesPersonId];
+    return salesMap[
+      salesPersonId
+    ];
   };
 
   // =========================================================
   // PROCESS ENQUIRIES
   // =========================================================
-  enquiries.forEach((enquiry) => {
-    const salesPerson =
-      enquiry.salesPersonId;
+  enquiries.forEach(
+    (enquiry) => {
+      const salesPerson =
+        enquiry.salesPersonId;
 
-    if (!salesPerson) return;
+      if (
+        !salesPerson
+      )
+        return;
 
-    const person = ensurePerson({
-      id: salesPerson._id,
+      const person =
+        ensurePerson({
+          id:
+            salesPerson._id,
 
-      name: salesPerson.name,
+          name:
+            salesPerson.name,
 
-      email: salesPerson.email,
-    });
+          email:
+            salesPerson.email,
+        });
 
-    if (!person) return;
+      if (!person)
+        return;
 
-    person.totalEnquiries += 1;
+      person.totalEnquiries +=
+        1;
 
-    if (
-      enquiry.closure?.status === "won"
-    ) {
-      person.wonEnquiries += 1;
-    } else if (
-      enquiry.closure?.status === "lost"
-    ) {
-      person.lostEnquiries += 1;
-    } else {
-      person.pendingEnquiries += 1;
+      if (
+        enquiry.closure
+          ?.status === "won"
+      ) {
+        person.wonEnquiries +=
+          1;
+      } else if (
+        enquiry.closure
+          ?.status === "lost"
+      ) {
+        person.lostEnquiries +=
+          1;
+      } else {
+        person.pendingEnquiries +=
+          1;
+      }
+
+      const weekIndex =
+        findWeekIndex(
+          weeks,
+          enquiry.enquiryDate
+        );
+
+      if (
+        weekIndex >= 0
+      ) {
+        person.weeklyReport[
+          weekIndex
+        ].enquiries += 1;
+      }
     }
-
-    const weekIndex = findWeekIndex(
-      weeks,
-      enquiry.enquiryDate
-    );
-
-    if (weekIndex >= 0) {
-      person.weeklyReport[
-        weekIndex
-      ].enquiries += 1;
-    }
-  });
+  );
 
   // =========================================================
   // PROCESS APPROVED SALES ORDERS
   // =========================================================
-  approvedSalesOrders.forEach((order) => {
-    const person = ensurePerson({
-      id: order.salesPersonId,
+  approvedSalesOrders.forEach(
+    (order) => {
+      const person =
+        ensurePerson({
+          id:
+            order.salesPersonId,
 
-      name: order.salesPersonName,
+          name:
+            order.salesPersonName,
 
-      email: order.salesPersonEmail,
-    });
+          email:
+            order.salesPersonEmail,
+        });
 
-    if (!person) return;
+      if (!person)
+        return;
 
-    const value = Number(
-      order.orderValue || 0
-    );
+      const value =
+        Number(
+          order.orderValue ||
+            0
+        );
 
-    // Approved sales value
-    person.approvedSalesValue += value;
+      // Approved sales value
+      person.approvedSalesValue +=
+        value;
 
-    // Number of approved orders
-    person.approvedOrders += 1;
+      // Number of approved orders
+      person.approvedOrders +=
+        1;
 
-    // =====================================================
-    // NEW CUSTOMER
-    //
-    // IMPORTANT:
-    // New customer comes directly from SalesOrder.customerType
-    //
-    // customerType = "new"      -> Count
-    // customerType = "existing" -> Do not count
-    // =====================================================
-    if (
-      String(
-        order.customerType || ""
-      ).toLowerCase() === "new"
-    ) {
-      person.newCustomers += 1;
-    }
-
-    const approvalDate =
-      order.managerApproval?.approvedAt ||
-      order.orderDate;
-
-    const weekIndex = findWeekIndex(
-      weeks,
-      approvalDate
-    );
-
-    if (weekIndex >= 0) {
-      person.weeklyReport[
-        weekIndex
-      ].approvedSalesValue += value;
-
-      person.weeklyReport[
-        weekIndex
-      ].approvedOrders += 1;
-
-      // Weekly new customer
+      // =====================================================
+      // NEW CUSTOMER
+      //
+      // IMPORTANT:
+      // New customer comes directly from SalesOrder.customerType
+      //
+      // customerType = "new"      -> Count
+      // customerType = "existing" -> Do not count
+      // =====================================================
       if (
         String(
-          order.customerType || ""
-        ).toLowerCase() === "new"
+          order.customerType ||
+            ""
+        ).toLowerCase() ===
+        "new"
+      ) {
+        person.newCustomers +=
+          1;
+      }
+
+      const approvalDate =
+        order.managerApproval
+          ?.approvedAt ||
+        order.orderDate;
+
+      const weekIndex =
+        findWeekIndex(
+          weeks,
+          approvalDate
+        );
+
+      if (
+        weekIndex >= 0
       ) {
         person.weeklyReport[
           weekIndex
-        ].newCustomers += 1;
+        ].approvedSalesValue +=
+          value;
+
+        person.weeklyReport[
+          weekIndex
+        ].approvedOrders +=
+          1;
+
+        // Weekly new customer
+        if (
+          String(
+            order.customerType ||
+              ""
+          ).toLowerCase() ===
+          "new"
+        ) {
+          person.weeklyReport[
+            weekIndex
+          ].newCustomers +=
+            1;
+        }
       }
     }
-  });
+  );
 
   // =========================================================
   // PROCESS CUSTOMER MEETINGS / VISITS
   // =========================================================
-  visits.forEach((visit) => {
-    const person = ensurePerson({
-      id: visit.salesPersonId,
+  visits.forEach(
+    (visit) => {
+      const person =
+        ensurePerson({
+          id:
+            visit.salesPersonId,
 
-      name: visit.salesPersonName,
+          name:
+            visit.salesPersonName,
 
-      email: visit.salesPersonEmail,
-    });
+          email:
+            visit.salesPersonEmail,
+        });
 
-    if (!person) return;
+      if (!person)
+        return;
 
-    person.visitsDone += 1;
+      person.visitsDone +=
+        1;
 
-    const visitActivityDate =
-      visit.date || visit.createdAt;
+      const visitActivityDate =
+        visit.date ||
+        visit.createdAt;
 
-    const weekIndex = findWeekIndex(
-      weeks,
-      visitActivityDate
-    );
+      const weekIndex =
+        findWeekIndex(
+          weeks,
+          visitActivityDate
+        );
 
-    if (weekIndex >= 0) {
-      person.weeklyReport[
-        weekIndex
-      ].visits += 1;
+      if (
+        weekIndex >= 0
+      ) {
+        person.weeklyReport[
+          weekIndex
+        ].visits += 1;
+      }
     }
-  });
+  );
 
   // =========================================================
   // FIND CURRENT WEEK IN IST
   // =========================================================
-  const now = new Date();
+  const now =
+    new Date();
 
-  const istNow = new Date(
-    now.toLocaleString("en-US", {
-      timeZone: "Asia/Kolkata",
-    })
-  );
+  const istNow =
+    new Date(
+      now.toLocaleString(
+        "en-US",
+        {
+          timeZone:
+            "Asia/Kolkata",
+        }
+      )
+    );
 
   /*
    * Convert IST wall-clock time into
    * Date with IST offset.
    */
-  const currentIstDate = new Date(
-    `${istNow.getFullYear()}-${String(
-      istNow.getMonth() + 1
-    ).padStart(2, "0")}-${String(
-      istNow.getDate()
-    ).padStart(2, "0")}T${String(
-      istNow.getHours()
-    ).padStart(2, "0")}:${String(
-      istNow.getMinutes()
-    ).padStart(2, "0")}:${String(
-      istNow.getSeconds()
-    ).padStart(2, "0")}+05:30`
-  );
+  const currentIstDate =
+    new Date(
+      `${istNow.getFullYear()}-${String(
+        istNow.getMonth() +
+          1
+      ).padStart(
+        2,
+        "0"
+      )}-${String(
+        istNow.getDate()
+      ).padStart(
+        2,
+        "0"
+      )}T${String(
+        istNow.getHours()
+      ).padStart(
+        2,
+        "0"
+      )}:${String(
+        istNow.getMinutes()
+      ).padStart(
+        2,
+        "0"
+      )}:${String(
+        istNow.getSeconds()
+      ).padStart(
+        2,
+        "0"
+      )}+05:30`
+    );
 
   let currentWeekIndex =
     findWeekIndex(
@@ -2081,16 +2876,22 @@ const getMisScoring = async (query, user) => {
       currentIstDate
     );
 
-  if (currentWeekIndex < 0) {
-    const firstWeekStart = new Date(
-      weeks[0]?.startDate
-    );
+  if (
+    currentWeekIndex < 0
+  ) {
+    const firstWeekStart =
+      new Date(
+        weeks[0]
+          ?.startDate
+      );
 
-    const lastWeekEnd = new Date(
-      weeks[
-        weeks.length - 1
-      ]?.endDate
-    );
+    const lastWeekEnd =
+      new Date(
+        weeks[
+          weeks.length -
+            1
+        ]?.endDate
+      );
 
     /*
      * Past selected month:
@@ -2100,7 +2901,8 @@ const getMisScoring = async (query, user) => {
      * show first week.
      */
     if (
-      currentIstDate > lastWeekEnd
+      currentIstDate >
+      lastWeekEnd
     ) {
       currentWeekIndex =
         weeks.length - 1;
@@ -2108,9 +2910,11 @@ const getMisScoring = async (query, user) => {
       currentIstDate <
       firstWeekStart
     ) {
-      currentWeekIndex = 0;
+      currentWeekIndex =
+        0;
     } else {
-      currentWeekIndex = 0;
+      currentWeekIndex =
+        0;
     }
   }
 
@@ -2118,7 +2922,9 @@ const getMisScoring = async (query, user) => {
   // CALCULATE SALES PERSON MIS SCORES
   // =========================================================
   const salesPersonScores =
-    Object.values(salesMap)
+    Object.values(
+      salesMap
+    )
       .map((person) => {
         const target =
           getTargetByName(
@@ -2130,78 +2936,92 @@ const getMisScoring = async (query, user) => {
         //
         // Monthly target / 4
         // ===================================================
-        const weeklyBaseTarget = {
-          enquiries: Number(
-            (
+        const weeklyBaseTarget =
+          {
+            enquiries:
               Number(
-                target.enquiry || 0
-              ) / 4
-            ).toFixed(1)
-          ),
+                (
+                  Number(
+                    target.enquiry ||
+                      0
+                  ) / 4
+                ).toFixed(1)
+              ),
 
-          salesValue: Number(
-            (
+            salesValue:
               Number(
-                target.sales || 0
-              ) / 4
-            ).toFixed(0)
-          ),
+                (
+                  Number(
+                    target.sales ||
+                      0
+                  ) / 4
+                ).toFixed(0)
+              ),
 
-          visits: Number(
-            (
+            visits:
               Number(
-                target.visits || 0
-              ) / 4
-            ).toFixed(1)
-          ),
+                (
+                  Number(
+                    target.visits ||
+                      0
+                  ) / 4
+                ).toFixed(1)
+              ),
 
-          orders: Number(
-            (
+            orders:
               Number(
-                target.orders || 0
-              ) / 4
-            ).toFixed(1)
-          ),
+                (
+                  Number(
+                    target.orders ||
+                      0
+                  ) / 4
+                ).toFixed(1)
+              ),
 
-          newCustomers: Number(
-            (
+            newCustomers:
               Number(
-                target.newCustomers ||
-                  0
-              ) / 4
-            ).toFixed(2)
-          ),
-        };
+                (
+                  Number(
+                    target.newCustomers ||
+                      0
+                  ) / 4
+                ).toFixed(2)
+              ),
+          };
 
         // ===================================================
         // CUMULATIVE TARGET
         // ===================================================
-        let cumulativeTarget = {
-          enquiries: 0,
+        let cumulativeTarget =
+          {
+            enquiries: 0,
 
-          salesValue: 0,
+            salesValue: 0,
 
-          visits: 0,
+            visits: 0,
 
-          orders: 0,
+            orders: 0,
 
-          newCustomers: 0,
-        };
+            newCustomers:
+              0,
+          };
 
         // ===================================================
         // CUMULATIVE ACTUAL
         // ===================================================
-        let cumulativeActual = {
-          enquiries: 0,
+        let cumulativeActual =
+          {
+            enquiries: 0,
 
-          salesValue: 0,
+            salesValue: 0,
 
-          visits: 0,
+            visits: 0,
 
-          orders: 0,
+            orders: 0,
 
-          newCustomers: 0,
-        };
+            newCustomers:
+              0,
+          };
 
         // ===================================================
         // CARRY FORWARD
@@ -2318,7 +3138,8 @@ const getMisScoring = async (query, user) => {
               // =============================================
               cumulativeActual.enquiries +=
                 Number(
-                  week.enquiries || 0
+                  week.enquiries ||
+                    0
                 );
 
               cumulativeActual.salesValue +=
@@ -2347,37 +3168,38 @@ const getMisScoring = async (query, user) => {
               // =============================================
               // WEEK ACHIEVEMENT
               // =============================================
-              const weekAchievement = {
-                enquiryPercent:
-                  getPercent(
-                    week.enquiries,
-                    targetWithCarryForward.enquiries
-                  ),
+              const weekAchievement =
+                {
+                  enquiryPercent:
+                    getPercent(
+                      week.enquiries,
+                      targetWithCarryForward.enquiries
+                    ),
 
-                salesPercent:
-                  getPercent(
-                    week.approvedSalesValue,
-                    targetWithCarryForward.salesValue
-                  ),
+                  salesPercent:
+                    getPercent(
+                      week.approvedSalesValue,
+                      targetWithCarryForward.salesValue
+                    ),
 
-                visitPercent:
-                  getPercent(
-                    week.visits,
-                    targetWithCarryForward.visits
-                  ),
+                  visitPercent:
+                    getPercent(
+                      week.visits,
+                      targetWithCarryForward.visits
+                    ),
 
-                orderPercent:
-                  getPercent(
-                    week.approvedOrders,
-                    targetWithCarryForward.orders
-                  ),
+                  orderPercent:
+                    getPercent(
+                      week.approvedOrders,
+                      targetWithCarryForward.orders
+                    ),
 
-                newCustomerPercent:
-                  getPercent(
-                    week.newCustomers,
-                    targetWithCarryForward.newCustomers
-                  ),
-              };
+                  newCustomerPercent:
+                    getPercent(
+                      week.newCustomers,
+                      targetWithCarryForward.newCustomers
+                    ),
+                };
 
               // =============================================
               // CUMULATIVE ACHIEVEMENT
@@ -2490,44 +3312,53 @@ const getMisScoring = async (query, user) => {
               // WEEKLY WEIGHTED MIS SCORE
               // =============================================
               const weekScore =
-                calculateWeightedScore({
-                  enquiryPercent:
-                    weekAchievement.enquiryPercent,
+                calculateWeightedScore(
+                  {
+                    enquiryPercent:
+                      weekAchievement.enquiryPercent,
 
-                  visitPercent:
-                    weekAchievement.visitPercent,
+                    visitPercent:
+                      weekAchievement.visitPercent,
 
-                  salesPercent:
-                    weekAchievement.salesPercent,
+                    salesPercent:
+                      weekAchievement.salesPercent,
 
-                  orderPercent:
-                    weekAchievement.orderPercent,
+                    orderPercent:
+                      weekAchievement.orderPercent,
 
-                  newCustomerPercent:
-                    weekAchievement.newCustomerPercent,
-                });
+                    newCustomerPercent:
+                      weekAchievement.newCustomerPercent,
+                  }
+                );
 
               // =============================================
               // NEXT WEEK CARRY FORWARD
               // =============================================
               const nextCarryForward =
                 {
-                  enquiries: Number(
-                    shortBy.enquiries || 0
-                  ),
+                  enquiries:
+                    Number(
+                      shortBy.enquiries ||
+                        0
+                    ),
 
-                  salesValue: Number(
-                    shortBy.salesValue ||
-                      0
-                  ),
+                  salesValue:
+                    Number(
+                      shortBy.salesValue ||
+                        0
+                    ),
 
-                  visits: Number(
-                    shortBy.visits || 0
-                  ),
+                  visits:
+                    Number(
+                      shortBy.visits ||
+                        0
+                    ),
 
-                  orders: Number(
-                    shortBy.orders || 0
-                  ),
+                  orders:
+                    Number(
+                      shortBy.orders ||
+                        0
+                    ),
 
                   newCustomers:
                     Number(
@@ -2539,306 +3370,361 @@ const getMisScoring = async (query, user) => {
               // =============================================
               // BUILD WEEK RESULT
               // =============================================
-              const weekResult = {
-                ...week,
+              const weekResult =
+                {
+                  ...week,
 
-                // -------------------------------------------
-                // BASE TARGET
-                // -------------------------------------------
-                baseTarget: {
-                  enquiries: Number(
-                    Number(
-                      weeklyBaseTarget.enquiries ||
-                        0
-                    ).toFixed(1)
-                  ),
+                  // -------------------------------------------
+                  // BASE TARGET
+                  // -------------------------------------------
+                  baseTarget: {
+                    enquiries:
+                      Number(
+                        Number(
+                          weeklyBaseTarget.enquiries ||
+                            0
+                        ).toFixed(
+                          1
+                        )
+                      ),
 
-                  salesValue: Number(
-                    Number(
-                      weeklyBaseTarget.salesValue ||
-                        0
-                    ).toFixed(0)
-                  ),
+                    salesValue:
+                      Number(
+                        Number(
+                          weeklyBaseTarget.salesValue ||
+                            0
+                        ).toFixed(
+                          0
+                        )
+                      ),
 
-                  visits: Number(
-                    Number(
-                      weeklyBaseTarget.visits ||
-                        0
-                    ).toFixed(1)
-                  ),
+                    visits:
+                      Number(
+                        Number(
+                          weeklyBaseTarget.visits ||
+                            0
+                        ).toFixed(
+                          1
+                        )
+                      ),
 
-                  orders: Number(
-                    Number(
-                      weeklyBaseTarget.orders ||
-                        0
-                    ).toFixed(1)
-                  ),
-
-                  newCustomers: Number(
-                    Number(
-                      weeklyBaseTarget.newCustomers ||
-                        0
-                    ).toFixed(2)
-                  ),
-                },
-
-                // -------------------------------------------
-                // TARGET WITH CARRY FORWARD
-                // -------------------------------------------
-                targetWithCarryForward:
-                  {
-                    enquiries: Number(
-                      targetWithCarryForward.enquiries.toFixed(
-                        1
-                      )
-                    ),
-
-                    salesValue: Number(
-                      targetWithCarryForward.salesValue.toFixed(
-                        0
-                      )
-                    ),
-
-                    visits: Number(
-                      targetWithCarryForward.visits.toFixed(
-                        1
-                      )
-                    ),
-
-                    orders: Number(
-                      targetWithCarryForward.orders.toFixed(
-                        1
-                      )
-                    ),
+                    orders:
+                      Number(
+                        Number(
+                          weeklyBaseTarget.orders ||
+                            0
+                        ).toFixed(
+                          1
+                        )
+                      ),
 
                     newCustomers:
                       Number(
-                        targetWithCarryForward.newCustomers.toFixed(
+                        Number(
+                          weeklyBaseTarget.newCustomers ||
+                            0
+                        ).toFixed(
                           2
                         )
                       ),
                   },
 
-                // -------------------------------------------
-                // PREVIOUS WEEK CARRY FORWARD
-                // -------------------------------------------
-                carryForwardFromPreviousWeek:
-                  {
-                    enquiries: Number(
-                      Number(
-                        carryForward.enquiries ||
-                          0
-                      ).toFixed(1)
-                    ),
+                  // -------------------------------------------
+                  // TARGET WITH CARRY FORWARD
+                  // -------------------------------------------
+                  targetWithCarryForward:
+                    {
+                      enquiries:
+                        Number(
+                          targetWithCarryForward.enquiries.toFixed(
+                            1
+                          )
+                        ),
 
-                    salesValue: Number(
-                      Number(
-                        carryForward.salesValue ||
-                          0
-                      ).toFixed(0)
-                    ),
+                      salesValue:
+                        Number(
+                          targetWithCarryForward.salesValue.toFixed(
+                            0
+                          )
+                        ),
 
-                    visits: Number(
-                      Number(
-                        carryForward.visits ||
-                          0
-                      ).toFixed(1)
-                    ),
+                      visits:
+                        Number(
+                          targetWithCarryForward.visits.toFixed(
+                            1
+                          )
+                        ),
 
-                    orders: Number(
+                      orders:
+                        Number(
+                          targetWithCarryForward.orders.toFixed(
+                            1
+                          )
+                        ),
+
+                      newCustomers:
+                        Number(
+                          targetWithCarryForward.newCustomers.toFixed(
+                            2
+                          )
+                        ),
+                    },
+
+                  // -------------------------------------------
+                  // PREVIOUS WEEK CARRY FORWARD
+                  // -------------------------------------------
+                  carryForwardFromPreviousWeek:
+                    {
+                      enquiries:
+                        Number(
+                          Number(
+                            carryForward.enquiries ||
+                              0
+                          ).toFixed(
+                            1
+                          )
+                        ),
+
+                      salesValue:
+                        Number(
+                          Number(
+                            carryForward.salesValue ||
+                              0
+                          ).toFixed(
+                            0
+                          )
+                        ),
+
+                      visits:
+                        Number(
+                          Number(
+                            carryForward.visits ||
+                              0
+                          ).toFixed(
+                            1
+                          )
+                        ),
+
+                      orders:
+                        Number(
+                          Number(
+                            carryForward.orders ||
+                              0
+                          ).toFixed(
+                            1
+                          )
+                        ),
+
+                      newCustomers:
+                        Number(
+                          Number(
+                            carryForward.newCustomers ||
+                              0
+                          ).toFixed(
+                            2
+                          )
+                        ),
+                    },
+
+                  // -------------------------------------------
+                  // CUMULATIVE TARGET
+                  // -------------------------------------------
+                  cumulativeTarget:
+                    {
+                      enquiries:
+                        Number(
+                          cumulativeTarget.enquiries.toFixed(
+                            1
+                          )
+                        ),
+
+                      salesValue:
+                        Number(
+                          cumulativeTarget.salesValue.toFixed(
+                            0
+                          )
+                        ),
+
+                      visits:
+                        Number(
+                          cumulativeTarget.visits.toFixed(
+                            1
+                          )
+                        ),
+
+                      orders:
+                        Number(
+                          cumulativeTarget.orders.toFixed(
+                            1
+                          )
+                        ),
+
+                      newCustomers:
+                        Number(
+                          cumulativeTarget.newCustomers.toFixed(
+                            2
+                          )
+                        ),
+                    },
+
+                  // -------------------------------------------
+                  // CUMULATIVE ACTUAL
+                  // -------------------------------------------
+                  cumulativeActual:
+                    {
+                      enquiries:
+                        Number(
+                          cumulativeActual.enquiries.toFixed(
+                            1
+                          )
+                        ),
+
+                      salesValue:
+                        Number(
+                          cumulativeActual.salesValue.toFixed(
+                            0
+                          )
+                        ),
+
+                      visits:
+                        Number(
+                          cumulativeActual.visits.toFixed(
+                            1
+                          )
+                        ),
+
+                      orders:
+                        Number(
+                          cumulativeActual.orders.toFixed(
+                            1
+                          )
+                        ),
+
+                      newCustomers:
+                        Number(
+                          cumulativeActual.newCustomers.toFixed(
+                            0
+                          )
+                        ),
+                    },
+
+                  // -------------------------------------------
+                  // WEEK SHORTAGE
+                  // -------------------------------------------
+                  shortBy: {
+                    enquiries:
+                      Math.ceil(
+                        shortBy.enquiries
+                      ),
+
+                    salesValue:
                       Number(
-                        carryForward.orders ||
+                        shortBy.salesValue.toFixed(
                           0
-                      ).toFixed(1)
-                    ),
+                        )
+                      ),
+
+                    visits:
+                      Math.ceil(
+                        shortBy.visits
+                      ),
+
+                    orders:
+                      Math.ceil(
+                        shortBy.orders
+                      ),
 
                     newCustomers:
-                      Number(
-                        Number(
-                          carryForward.newCustomers ||
-                            0
-                        ).toFixed(2)
+                      Math.ceil(
+                        shortBy.newCustomers
                       ),
                   },
 
-                // -------------------------------------------
-                // CUMULATIVE TARGET
-                // -------------------------------------------
-                cumulativeTarget: {
-                  enquiries: Number(
-                    cumulativeTarget.enquiries.toFixed(
-                      1
-                    )
-                  ),
+                  // -------------------------------------------
+                  // CUMULATIVE SHORTAGE
+                  // -------------------------------------------
+                  cumulativeShortBy:
+                    {
+                      enquiries:
+                        Math.ceil(
+                          cumulativeShortBy.enquiries
+                        ),
 
-                  salesValue: Number(
-                    cumulativeTarget.salesValue.toFixed(
+                      salesValue:
+                        Number(
+                          cumulativeShortBy.salesValue.toFixed(
+                            0
+                          )
+                        ),
+
+                      visits:
+                        Math.ceil(
+                          cumulativeShortBy.visits
+                        ),
+
+                      orders:
+                        Math.ceil(
+                          cumulativeShortBy.orders
+                        ),
+
+                      newCustomers:
+                        Math.ceil(
+                          cumulativeShortBy.newCustomers
+                        ),
+                    },
+
+                  achievement:
+                    cumulativeAchievement,
+
+                  weekAchievement,
+
+                  weekScore,
+
+                  // -------------------------------------------
+                  // WEEK INSIGHT
+                  // -------------------------------------------
+                  insight: {
+                    newCustomers:
+                      shortBy.newCustomers >
                       0
-                    )
-                  ),
+                        ? `Need ${Math.ceil(
+                            shortBy.newCustomers
+                          )} more new customer(s) in ${week.label}. The pending target will carry forward to the next week.`
+                        : `New customer target is on track in ${week.label}.`,
 
-                  visits: Number(
-                    cumulativeTarget.visits.toFixed(
-                      1
-                    )
-                  ),
-
-                  orders: Number(
-                    cumulativeTarget.orders.toFixed(
-                      1
-                    )
-                  ),
-
-                  newCustomers:
-                    Number(
-                      cumulativeTarget.newCustomers.toFixed(
-                        2
-                      )
-                    ),
-                },
-
-                // -------------------------------------------
-                // CUMULATIVE ACTUAL
-                // -------------------------------------------
-                cumulativeActual: {
-                  enquiries: Number(
-                    cumulativeActual.enquiries.toFixed(
-                      1
-                    )
-                  ),
-
-                  salesValue: Number(
-                    cumulativeActual.salesValue.toFixed(
+                    orders:
+                      shortBy.orders >
                       0
-                    )
-                  ),
+                        ? `Need ${Math.ceil(
+                            shortBy.orders
+                          )} more approved order(s) in ${week.label}. The pending target will carry forward to the next week.`
+                        : `Order target is on track in ${week.label}.`,
 
-                  visits: Number(
-                    cumulativeActual.visits.toFixed(
-                      1
-                    )
-                  ),
-
-                  orders: Number(
-                    cumulativeActual.orders.toFixed(
-                      1
-                    )
-                  ),
-
-                  newCustomers:
-                    Number(
-                      cumulativeActual.newCustomers.toFixed(
-                        0
-                      )
-                    ),
-                },
-
-                // -------------------------------------------
-                // WEEK SHORTAGE
-                // -------------------------------------------
-                shortBy: {
-                  enquiries: Math.ceil(
-                    shortBy.enquiries
-                  ),
-
-                  salesValue: Number(
-                    shortBy.salesValue.toFixed(
+                    sales:
+                      shortBy.salesValue >
                       0
-                    )
-                  ),
+                        ? `Need ${formatCurrency(
+                            shortBy.salesValue
+                          )} more sales value in ${week.label}. The pending value will carry forward to the next week.`
+                        : `Sales value target is on track in ${week.label}.`,
 
-                  visits: Math.ceil(
-                    shortBy.visits
-                  ),
-
-                  orders: Math.ceil(
-                    shortBy.orders
-                  ),
-
-                  newCustomers:
-                    Math.ceil(
-                      shortBy.newCustomers
-                    ),
-                },
-
-                // -------------------------------------------
-                // CUMULATIVE SHORTAGE
-                // -------------------------------------------
-                cumulativeShortBy: {
-                  enquiries: Math.ceil(
-                    cumulativeShortBy.enquiries
-                  ),
-
-                  salesValue: Number(
-                    cumulativeShortBy.salesValue.toFixed(
+                    enquiries:
+                      shortBy.enquiries >
                       0
-                    )
-                  ),
+                        ? `Need ${Math.ceil(
+                            shortBy.enquiries
+                          )} more enquiries in ${week.label}. The pending target will carry forward to the next week.`
+                        : `Enquiry target is on track in ${week.label}.`,
 
-                  visits: Math.ceil(
-                    cumulativeShortBy.visits
-                  ),
-
-                  orders: Math.ceil(
-                    cumulativeShortBy.orders
-                  ),
-
-                  newCustomers:
-                    Math.ceil(
-                      cumulativeShortBy.newCustomers
-                    ),
-                },
-
-                achievement:
-                  cumulativeAchievement,
-
-                weekAchievement,
-
-                weekScore,
-
-                // -------------------------------------------
-                // WEEK INSIGHT
-                // -------------------------------------------
-                insight: {
-                  newCustomers:
-                    shortBy.newCustomers >
-                    0
-                      ? `Need ${Math.ceil(
-                          shortBy.newCustomers
-                        )} more new customer(s) in ${week.label}. The pending target will carry forward to the next week.`
-                      : `New customer target is on track in ${week.label}.`,
-
-                  orders:
-                    shortBy.orders > 0
-                      ? `Need ${Math.ceil(
-                          shortBy.orders
-                        )} more approved order(s) in ${week.label}. The pending target will carry forward to the next week.`
-                      : `Order target is on track in ${week.label}.`,
-
-                  sales:
-                    shortBy.salesValue >
-                    0
-                      ? `Need ${formatCurrency(
-                          shortBy.salesValue
-                        )} more sales value in ${week.label}. The pending value will carry forward to the next week.`
-                      : `Sales value target is on track in ${week.label}.`,
-
-                  enquiries:
-                    shortBy.enquiries >
-                    0
-                      ? `Need ${Math.ceil(
-                          shortBy.enquiries
-                        )} more enquiries in ${week.label}. The pending target will carry forward to the next week.`
-                      : `Enquiry target is on track in ${week.label}.`,
-
-                  visits:
-                    shortBy.visits > 0
-                      ? `Need ${Math.ceil(
-                          shortBy.visits
-                        )} more customer meeting/visit(s) in ${week.label}. The pending target will carry forward to the next week.`
-                      : `Customer meeting/visit target is on track in ${week.label}.`,
-                },
-              };
+                    visits:
+                      shortBy.visits >
+                      0
+                        ? `Need ${Math.ceil(
+                            shortBy.visits
+                          )} more customer meeting/visit(s) in ${week.label}. The pending target will carry forward to the next week.`
+                        : `Customer meeting/visit target is on track in ${week.label}.`,
+                  },
+                };
 
               /*
                * Update carry-forward only after
@@ -2862,105 +3748,111 @@ const getMisScoring = async (query, user) => {
             currentWeekIndex
           ] ||
           weeklyReport[
-            weeklyReport.length - 1
+            weeklyReport.length -
+              1
           ];
 
         // ===================================================
         // MONTHLY ACHIEVEMENT
         // ===================================================
-        const monthlyAchievement = {
-          enquiryPercent:
-            getPercent(
-              person.totalEnquiries,
-              target.enquiry
-            ),
+        const monthlyAchievement =
+          {
+            enquiryPercent:
+              getPercent(
+                person.totalEnquiries,
+                target.enquiry
+              ),
 
-          salesPercent:
-            getPercent(
-              person.approvedSalesValue,
-              target.sales
-            ),
+            salesPercent:
+              getPercent(
+                person.approvedSalesValue,
+                target.sales
+              ),
 
-          visitPercent:
-            getPercent(
-              person.visitsDone,
-              target.visits
-            ),
+            visitPercent:
+              getPercent(
+                person.visitsDone,
+                target.visits
+              ),
 
-          orderPercent:
-            getPercent(
-              person.approvedOrders,
-              target.orders
-            ),
+            orderPercent:
+              getPercent(
+                person.approvedOrders,
+                target.orders
+              ),
 
-          newCustomerPercent:
-            getPercent(
-              person.newCustomers,
-              target.newCustomers
-            ),
-        };
+            newCustomerPercent:
+              getPercent(
+                person.newCustomers,
+                target.newCustomers
+              ),
+          };
 
         // ===================================================
         // MONTHLY MIS SCORE
         // ===================================================
         const monthlyScore =
-          calculateWeightedScore({
-            enquiryPercent:
-              monthlyAchievement.enquiryPercent,
+          calculateWeightedScore(
+            {
+              enquiryPercent:
+                monthlyAchievement.enquiryPercent,
 
-            visitPercent:
-              monthlyAchievement.visitPercent,
+              visitPercent:
+                monthlyAchievement.visitPercent,
 
-            salesPercent:
-              monthlyAchievement.salesPercent,
+              salesPercent:
+                monthlyAchievement.salesPercent,
 
-            orderPercent:
-              monthlyAchievement.orderPercent,
+              orderPercent:
+                monthlyAchievement.orderPercent,
 
-            newCustomerPercent:
-              monthlyAchievement.newCustomerPercent,
-          });
+              newCustomerPercent:
+                monthlyAchievement.newCustomerPercent,
+            }
+          );
 
         // ===================================================
         // MONTHLY SHORTAGE
         // ===================================================
-        const monthlyShortBy = {
-          enquiries:
-            getShortBy(
-              person.totalEnquiries,
-              target.enquiry
-            ),
+        const monthlyShortBy =
+          {
+            enquiries:
+              getShortBy(
+                person.totalEnquiries,
+                target.enquiry
+              ),
 
-          salesValue:
-            getShortBy(
-              person.approvedSalesValue,
-              target.sales
-            ),
+            salesValue:
+              getShortBy(
+                person.approvedSalesValue,
+                target.sales
+              ),
 
-          visits:
-            getShortBy(
-              person.visitsDone,
-              target.visits
-            ),
+            visits:
+              getShortBy(
+                person.visitsDone,
+                target.visits
+              ),
 
-          orders:
-            getShortBy(
-              person.approvedOrders,
-              target.orders
-            ),
+            orders:
+              getShortBy(
+                person.approvedOrders,
+                target.orders
+              ),
 
-          newCustomers:
-            getShortBy(
-              person.newCustomers,
-              target.newCustomers
-            ),
-        };
+            newCustomers:
+              getShortBy(
+                person.newCustomers,
+                target.newCustomers
+              ),
+          };
 
         // ===================================================
         // USER INSIGHT
         // ===================================================
         const userInsight = {
-          title: `${person.name}, MIS performance update`,
+          title:
+            `${person.name}, MIS performance update`,
 
           weekly:
             currentWeek?.weekScore >=
@@ -2973,13 +3865,15 @@ const getMisScoring = async (query, user) => {
 
           newCustomers:
             currentWeek?.shortBy
-              ?.newCustomers > 0
+              ?.newCustomers >
+            0
               ? `Need ${currentWeek.shortBy.newCustomers} more new customer(s) in ${currentWeek.label}. New customer carries the highest MIS weightage of 30%.`
               : `New customer target is on track in ${currentWeek?.label}.`,
 
           sales:
             currentWeek?.shortBy
-              ?.salesValue > 0
+              ?.salesValue >
+            0
               ? `Need ${formatCurrency(
                   currentWeek
                     .shortBy
@@ -2989,19 +3883,22 @@ const getMisScoring = async (query, user) => {
 
           orders:
             currentWeek?.shortBy
-              ?.orders > 0
+              ?.orders >
+            0
               ? `Need ${currentWeek.shortBy.orders} more approved order(s) in ${currentWeek.label}. Number of orders carries 20% MIS weightage.`
               : `Approved order target is on track in ${currentWeek?.label}.`,
 
           visits:
             currentWeek?.shortBy
-              ?.visits > 0
+              ?.visits >
+            0
               ? `Need ${currentWeek.shortBy.visits} more customer meeting/visit(s) in ${currentWeek.label}. Customer meetings carry 15% MIS weightage.`
               : `Customer meeting/visit target is on track in ${currentWeek?.label}.`,
 
           enquiries:
             currentWeek?.shortBy
-              ?.enquiries > 0
+              ?.enquiries >
+            0
               ? `Need ${currentWeek.shortBy.enquiries} more enquiries in ${currentWeek.label}. Enquiries carry 10% MIS weightage.`
               : `Enquiry target is on track in ${currentWeek?.label}.`,
 
@@ -3028,13 +3925,16 @@ const getMisScoring = async (query, user) => {
           salesPersonId:
             person.salesPersonId,
 
-          name: person.name,
+          name:
+            person.name,
 
-          email: person.email,
+          email:
+            person.email,
 
           monthlyScore,
 
-          score: monthlyScore,
+          score:
+            monthlyScore,
 
           weightage:
             MIS_WEIGHTAGE,
@@ -3094,20 +3994,23 @@ const getMisScoring = async (query, user) => {
             monthlyAchievement,
 
           shortBy: {
-            enquiries: Math.ceil(
-              monthlyShortBy.enquiries
-            ),
+            enquiries:
+              Math.ceil(
+                monthlyShortBy.enquiries
+              ),
 
             salesValue:
               monthlyShortBy.salesValue,
 
-            visits: Math.ceil(
-              monthlyShortBy.visits
-            ),
+            visits:
+              Math.ceil(
+                monthlyShortBy.visits
+              ),
 
-            orders: Math.ceil(
-              monthlyShortBy.orders
-            ),
+            orders:
+              Math.ceil(
+                monthlyShortBy.orders
+              ),
 
             newCustomers:
               Math.ceil(
@@ -3175,8 +4078,10 @@ const getMisScoring = async (query, user) => {
       (sum, item) =>
         sum +
         Number(
-          item.approvedOrders || 0
+          item.approvedOrders ||
+            0
         ),
+
       0
     );
 
@@ -3188,6 +4093,7 @@ const getMisScoring = async (query, user) => {
           item.approvedSalesValue ||
             0
         ),
+
       0
     );
 
@@ -3196,8 +4102,10 @@ const getMisScoring = async (query, user) => {
       (sum, item) =>
         sum +
         Number(
-          item.totalEnquiries || 0
+          item.totalEnquiries ||
+            0
         ),
+
       0
     );
 
@@ -3206,8 +4114,10 @@ const getMisScoring = async (query, user) => {
       (sum, item) =>
         sum +
         Number(
-          item.visitsDone || 0
+          item.visitsDone ||
+            0
         ),
+
       0
     );
 
@@ -3219,8 +4129,10 @@ const getMisScoring = async (query, user) => {
       (sum, item) =>
         sum +
         Number(
-          item.newCustomers || 0
+          item.newCustomers ||
+            0
         ),
+
       0
     );
 
@@ -3228,10 +4140,12 @@ const getMisScoring = async (query, user) => {
   // TOP / WORST PERFORMER
   // =========================================================
   const topPerformer =
-    salesPersonScores[0] || null;
+    salesPersonScores[0] ||
+    null;
 
   const worstPerformer =
-    salesPersonScores.length > 1
+    salesPersonScores.length >
+    1
       ? salesPersonScores[
           salesPersonScores.length -
             1
@@ -3255,35 +4169,36 @@ const getMisScoring = async (query, user) => {
     // -------------------------------------------------------
     // TOP PERFORMER
     // -------------------------------------------------------
-    topPerformer: topPerformer
-      ? {
-          salesPersonId:
-            topPerformer.salesPersonId,
+    topPerformer:
+      topPerformer
+        ? {
+            salesPersonId:
+              topPerformer.salesPersonId,
 
-          name:
-            topPerformer.name,
+            name:
+              topPerformer.name,
 
-          score:
-            topPerformer.monthlyScore,
+            score:
+              topPerformer.monthlyScore,
 
-          approvedOrders:
-            topPerformer.approvedOrders,
+            approvedOrders:
+              topPerformer.approvedOrders,
 
-          approvedSalesValue:
-            topPerformer.approvedSalesValue,
+            approvedSalesValue:
+              topPerformer.approvedSalesValue,
 
-          newCustomers:
-            topPerformer.newCustomers,
+            newCustomers:
+              topPerformer.newCustomers,
 
-          reason:
-            `Top performer with MIS score of ${topPerformer.monthlyScore}/100, ` +
-            `${topPerformer.newCustomers} new customer(s), ` +
-            `${topPerformer.approvedOrders} approved order(s) and ` +
-            `${formatCurrency(
-              topPerformer.approvedSalesValue
-            )} approved sales value.`,
-        }
-      : null,
+            reason:
+              `Top performer with MIS score of ${topPerformer.monthlyScore}/100, ` +
+              `${topPerformer.newCustomers} new customer(s), ` +
+              `${topPerformer.approvedOrders} approved order(s) and ` +
+              `${formatCurrency(
+                topPerformer.approvedSalesValue
+              )} approved sales value.`,
+          }
+        : null,
 
     // -------------------------------------------------------
     // WORST PERFORMER
@@ -3329,6 +4244,42 @@ const getMisScoring = async (query, user) => {
   };
 
   // =========================================================
+  // MIS SCORE VISIBILITY
+  //
+  // Admin / Super Admin -> all sales persons
+  // Other users         -> only their own MIS score
+  //
+  // IMPORTANT:
+  // Top performer / worst performer / business insight /
+  // summary / weeks / weightage are NOT filtered.
+  //
+  // Only salesPersonScores is restricted for normal users.
+  // =========================================================
+  const canViewAllMisScores =
+    user.role === "admin" ||
+    user.role ===
+      "super_admin";
+
+  const currentUserId =
+    String(
+      user._id ||
+        user.id ||
+        ""
+    );
+
+  const visibleSalesPersonScores =
+    canViewAllMisScores
+      ? salesPersonScores
+      : salesPersonScores.filter(
+          (person) =>
+            String(
+              person.salesPersonId ||
+                ""
+            ) ===
+            currentUserId
+        );
+
+  // =========================================================
   // FINAL RESPONSE
   // =========================================================
   return {
@@ -3336,9 +4287,11 @@ const getMisScoring = async (query, user) => {
       "monthly_weightage_mis",
 
     dateRange: {
-      fromDate: startDate,
+      fromDate:
+        startDate,
 
-      toDate: endDate,
+      toDate:
+        endDate,
     },
 
     // =======================================================
@@ -3373,7 +4326,12 @@ const getMisScoring = async (query, user) => {
 
     weeks,
 
-    salesPersonScores,
+    // =======================================================
+    // ADMIN / SUPER ADMIN -> ALL MIS
+    // NORMAL USER         -> HIS/HER MIS ONLY
+    // =======================================================
+    salesPersonScores:
+      visibleSalesPersonScores,
   };
 };
 
