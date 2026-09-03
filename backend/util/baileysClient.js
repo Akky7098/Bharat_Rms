@@ -11,7 +11,7 @@ const pino = require("pino");
    - NO Puppeteer
    - NO whatsapp-web.js
    - Uses WhatsApp multi-device WebSocket connection
-   - One connection per backend process
+   - One connection owner per backend runtime
    - Auth stored outside deployment folders
 ========================================================= */
 
@@ -71,6 +71,12 @@ let isOwner = false;
 
 let baileysModule = null;
 
+/*
+ * Prevent multiple logout-reset operations
+ * from running at the same time.
+ */
+let isResettingAuth = false;
+
 /* =========================================================
    CONFIG
 ========================================================= */
@@ -84,11 +90,11 @@ const OWNER_HEARTBEAT_MS =
 const OWNER_STALE_MS =
   60000;
 
+const QR_RECONNECT_DELAY_MS =
+  2000;
+
 /* =========================================================
    LOGGER
-
-   Keep Baileys logs silent.
-   This prevents JIDs / metadata from filling production logs.
 ========================================================= */
 
 const logger =
@@ -135,7 +141,7 @@ const ensureDirectory =
     } catch (
       error
     ) {
-      // Host may restrict chmod.
+      // Some hosting environments may block chmod.
     }
   };
 
@@ -162,7 +168,8 @@ const writeJson =
           2
         ),
         {
-          mode: 0o600,
+          mode:
+            0o600,
         }
       );
 
@@ -190,7 +197,9 @@ const writeJson =
   };
 
 const readJson =
-  (filePath) => {
+  (
+    filePath
+  ) => {
     try {
       if (
         !fs.existsSync(
@@ -214,7 +223,9 @@ const readJson =
   };
 
 const removeFile =
-  (filePath) => {
+  (
+    filePath
+  ) => {
     try {
       if (
         fs.existsSync(
@@ -230,15 +241,54 @@ const removeFile =
     ) {}
   };
 
+const removeDirectory =
+  (
+    directory
+  ) => {
+    try {
+      if (
+        fs.existsSync(
+          directory
+        )
+      ) {
+        fs.rmSync(
+          directory,
+          {
+            recursive:
+              true,
+
+            force:
+              true,
+          }
+        );
+      }
+    } catch (
+      error
+    ) {
+      console.log(
+        "BAILEYS AUTH DIRECTORY REMOVE ERROR =>",
+        error.message
+      );
+
+      throw error;
+    }
+  };
+
 const isPidAlive =
-  (pid) => {
-    if (!pid) {
+  (
+    pid
+  ) => {
+    if (
+      !pid
+    ) {
       return false;
     }
 
     try {
       process.kill(
-        Number(pid),
+        Number(
+          pid
+        ),
         0
       );
 
@@ -252,9 +302,6 @@ const isPidAlive =
 
 /* =========================================================
    BAILEYS IMPORT
-
-   Baileys 7 is ESM.
-   Our backend remains CommonJS.
 ========================================================= */
 
 const loadBaileys =
@@ -322,10 +369,15 @@ const getSharedStatus =
       !status
     ) {
       return {
-        ready: false,
+        ready:
+          false,
+
         state:
           "NOT_STARTED",
-        qr: null,
+
+        qr:
+          null,
+
         ownerPid:
           null,
       };
@@ -336,10 +388,6 @@ const getSharedStatus =
 
 /* =========================================================
    OWNER LOCK
-
-   Hostinger Passenger may start multiple Node workers.
-
-   Only ONE worker must own Baileys.
 ========================================================= */
 
 const hasFreshOwner =
@@ -400,6 +448,11 @@ const startOwnerHeartbeat =
           return;
         }
 
+        const existing =
+          readJson(
+            OWNER_LOCK_FILE
+          );
+
         writeJson(
           OWNER_LOCK_FILE,
           {
@@ -407,9 +460,7 @@ const startOwnerHeartbeat =
               process.pid,
 
             startedAt:
-              readJson(
-                OWNER_LOCK_FILE
-              )
+              existing
                 ?.startedAt ||
               new Date()
                 .toISOString(),
@@ -559,7 +610,10 @@ const releaseOwnership =
 ========================================================= */
 
 const scheduleReconnect =
-  () => {
+  (
+    delay =
+      RECONNECT_DELAY_MS
+  ) => {
     if (
       reconnectTimer
     ) {
@@ -585,11 +639,118 @@ const scheduleReconnect =
             scheduleReconnect();
           }
         },
-        RECONNECT_DELAY_MS
+        delay
       );
 
     reconnectTimer
       .unref?.();
+  };
+
+/* =========================================================
+   CLEAR INVALID LOGGED-OUT AUTH
+
+   IMPORTANT:
+   Only call this when WhatsApp explicitly reports
+   DisconnectReason.loggedOut, or when the QR page requests
+   a fresh pairing while status is already LOGGED_OUT.
+========================================================= */
+
+const clearLoggedOutAuth =
+  async () => {
+    if (
+      isResettingAuth
+    ) {
+      return;
+    }
+
+    isResettingAuth =
+      true;
+
+    try {
+      console.log(
+        "BAILEYS CLEARING INVALID LOGGED-OUT AUTH"
+      );
+
+      if (
+        reconnectTimer
+      ) {
+        clearTimeout(
+          reconnectTimer
+        );
+
+        reconnectTimer =
+          null;
+      }
+
+      if (
+        sock
+      ) {
+        try {
+          sock.ws?.close?.();
+        } catch (
+          error
+        ) {}
+
+        sock =
+          null;
+      }
+
+      isConnecting =
+        false;
+
+      latestQr =
+        null;
+
+      removeDirectory(
+        BAILEYS_AUTH_PATH
+      );
+
+      ensureDirectory(
+        BAILEYS_AUTH_PATH
+      );
+
+      writeStatus(
+        "PAIRING_REQUIRED"
+      );
+
+      console.log(
+        "BAILEYS OLD AUTH REMOVED - FRESH QR REQUIRED"
+      );
+    } finally {
+      isResettingAuth =
+        false;
+    }
+  };
+
+/* =========================================================
+   START FRESH QR SESSION
+
+   Used by /qr when current state is LOGGED_OUT.
+========================================================= */
+
+const startFreshQrSession =
+  async () => {
+    /*
+     * Only the owner process is allowed to modify
+     * the auth directory.
+     */
+    if (
+      !acquireOwnership()
+    ) {
+      console.log(
+        "BAILEYS FRESH QR SKIPPED - ANOTHER WORKER OWNS CONNECTION"
+      );
+
+      return null;
+    }
+
+    await clearLoggedOutAuth();
+
+    await sleep(
+      500
+    );
+
+    return initBaileysClient();
   };
 
 /* =========================================================
@@ -654,16 +815,6 @@ const initBaileysClient =
       } =
         baileys;
 
-      /*
-       * For initial production testing we're using
-       * Baileys' multi-file auth helper.
-       *
-       * At your scale:
-       * one number + 12-15 messages/day,
-       * this is acceptable for testing.
-       *
-       * Later we can move auth state to MongoDB.
-       */
       const {
         state,
         saveCreds,
@@ -672,12 +823,6 @@ const initBaileysClient =
           BAILEYS_AUTH_PATH
         );
 
-      /*
-       * Current Baileys RC has had reports where the
-       * bundled WA version became stale.
-       *
-       * Use the latest WA Web version.
-       */
       const {
         version,
       } =
@@ -755,6 +900,9 @@ const initBaileysClient =
           } =
             update;
 
+          /*
+           * QR RECEIVED
+           */
           if (
             qr
           ) {
@@ -770,15 +918,29 @@ const initBaileysClient =
             );
           }
 
+          /*
+           * CONNECTING
+           */
           if (
             connection ===
             "connecting"
           ) {
-            writeStatus(
-              "CONNECTING"
-            );
+            /*
+             * Don't overwrite QR_REQUIRED if a QR
+             * was already received in the same update.
+             */
+            if (
+              !qr
+            ) {
+              writeStatus(
+                "CONNECTING"
+              );
+            }
           }
 
+          /*
+           * CONNECTED
+           */
           if (
             connection ===
             "open"
@@ -806,6 +968,9 @@ const initBaileysClient =
             return;
           }
 
+          /*
+           * CONNECTION CLOSED
+           */
           if (
             connection ===
             "close"
@@ -844,11 +1009,17 @@ const initBaileysClient =
             );
 
             /*
+             * =================================================
              * LOGGED OUT
              *
-             * Do not reconnect endlessly.
-             * A fresh QR is required.
+             * WhatsApp invalidated this linked-device session.
+             * Old auth cannot produce a new QR reliably.
+             *
+             * Clear ONLY this invalid auth and create a fresh
+             * pairing socket.
+             * =================================================
              */
+
             if (
               statusCode ===
               DisconnectReason.loggedOut
@@ -861,18 +1032,37 @@ const initBaileysClient =
               );
 
               console.log(
-                "BAILEYS LOGGED OUT - QR REQUIRED"
+                "BAILEYS LOGGED OUT - PREPARING FRESH QR"
               );
+
+              try {
+                await clearLoggedOutAuth();
+
+                scheduleReconnect(
+                  QR_RECONNECT_DELAY_MS
+                );
+              } catch (
+                error
+              ) {
+                console.log(
+                  "BAILEYS LOGOUT RESET ERROR =>",
+                  error.message
+                );
+
+                writeStatus(
+                  "ERROR",
+                  {
+                    error:
+                      error.message,
+                  }
+                );
+              }
 
               return;
             }
 
             /*
-             * WhatsApp often intentionally closes the
-             * first socket after pairing.
-             *
-             * restartRequired means credentials are valid;
-             * simply reconnect.
+             * RESTART REQUIRED
              */
             if (
               statusCode ===
@@ -882,11 +1072,16 @@ const initBaileysClient =
                 "RESTART_REQUIRED"
               );
 
-              scheduleReconnect();
+              scheduleReconnect(
+                2000
+              );
 
               return;
             }
 
+            /*
+             * NORMAL TEMPORARY DISCONNECT
+             */
             writeStatus(
               "DISCONNECTED",
               {
@@ -900,6 +1095,11 @@ const initBaileysClient =
         }
       );
 
+      /*
+       * Important:
+       * Socket creation is complete, but connection
+       * may still be CONNECTING / QR_REQUIRED.
+       */
       isConnecting =
         false;
 
@@ -1022,7 +1222,7 @@ const sendTextMessage =
   };
 
 /* =========================================================
-   SEND TO PHONE
+   PHONE JID
 ========================================================= */
 
 const normalizePhoneJid =
@@ -1047,7 +1247,8 @@ const normalizePhoneJid =
     }
 
     const normalized =
-      cleaned.length === 10
+      cleaned.length ===
+        10
         ? `91${cleaned}`
         : cleaned;
 
@@ -1071,7 +1272,7 @@ const sendTextToPhone =
   };
 
 /* =========================================================
-   SEND TO GROUP
+   GROUP JID
 ========================================================= */
 
 const normalizeGroupJid =
@@ -1121,9 +1322,6 @@ const sendTextToGroup =
 
 /* =========================================================
    GET GROUPS
-
-   Useful once after login so we can obtain the
-   exact group ID for your Sales Order group.
 ========================================================= */
 
 const getParticipatingGroups =
@@ -1146,7 +1344,9 @@ const getParticipatingGroups =
     return Object.values(
       groups
     ).map(
-      (group) => ({
+      (
+        group
+      ) => ({
         id:
           group.id,
 
@@ -1155,7 +1355,8 @@ const getParticipatingGroups =
 
         size:
           group.size ||
-          group.participants
+          group
+            .participants
             ?.length ||
           0,
       })
@@ -1192,6 +1393,9 @@ const disconnectBaileys =
     sock =
       null;
 
+    latestQr =
+      null;
+
     connectionState =
       "DISCONNECTED";
 
@@ -1203,31 +1407,30 @@ const disconnectBaileys =
 /* =========================================================
    LOGOUT
 
-   IMPORTANT:
-   This unlinks the WhatsApp device and requires QR again.
+   This explicitly unlinks the WhatsApp linked device.
 ========================================================= */
 
 const logoutBaileys =
   async () => {
+    const currentSock =
+      getBaileysSocket();
+
     if (
-      !sock
+      !currentSock
     ) {
       throw new Error(
         "Baileys socket not connected."
       );
     }
 
-    await sock.logout();
-
-    sock =
-      null;
-
-    latestQr =
-      null;
-
-    writeStatus(
-      "LOGGED_OUT"
-    );
+    /*
+     * Calling logout() causes WhatsApp to invalidate
+     * the linked-device credentials.
+     *
+     * The connection.update loggedOut handler above
+     * will then clear the invalid auth and prepare QR.
+     */
+    await currentSock.logout();
   };
 
 /* =========================================================
@@ -1236,6 +1439,17 @@ const logoutBaileys =
 
 const cleanup =
   () => {
+    if (
+      reconnectTimer
+    ) {
+      clearTimeout(
+        reconnectTimer
+      );
+
+      reconnectTimer =
+        null;
+    }
+
     releaseOwnership();
   };
 
@@ -1260,6 +1474,8 @@ process.once(
 
 module.exports = {
   initBaileysClient,
+
+  startFreshQrSession,
 
   getBaileysStatus,
 
