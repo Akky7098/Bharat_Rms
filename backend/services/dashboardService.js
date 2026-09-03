@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const Receivable = require("../model/receivableModel");
 const ColdCall = require("../model/coldCallModel");
 
+console.log("DASHBOARD SERVICE RUNNING ON PRODUCTION");
+
 const getISTDateRange = (fromDate, toDate) => {
   const range = {};
 
