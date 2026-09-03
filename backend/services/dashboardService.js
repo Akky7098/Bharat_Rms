@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const Receivable = require("../model/receivableModel");
 const ColdCall = require("../model/coldCallModel");
 
-console.log("DASHBOARD SERVICE RUNNING ON PRODUCTION");
 
 const getISTDateRange = (fromDate, toDate) => {
   const range = {};
@@ -4157,93 +4156,147 @@ const getMisScoring = async (
   // =========================================================
   // BUSINESS INSIGHT
   // =========================================================
-  const businessInsight = {
-    totalMonthlyOrdersWon,
+  // =========================================================
+// BUSINESS INSIGHT
+//
+// COMPETITION DATA IS VISIBLE TO EVERY SALES USER:
+//
+// 1. Top Performer
+// 2. Needs Focus
+// 3. Orders Won By Salesperson
+//
+// Detailed MIS remains protected separately below.
+// =========================================================
+const businessInsight = {
+  totalMonthlyOrdersWon,
 
-    totalMonthlySalesVolume,
+  totalMonthlySalesVolume,
 
-    totalMonthlyEnquiries,
+  totalMonthlyEnquiries,
 
-    totalMonthlyVisits,
+  totalMonthlyVisits,
 
-    totalMonthlyNewCustomers,
+  totalMonthlyNewCustomers,
 
-    // -------------------------------------------------------
-    // TOP PERFORMER
-    // -------------------------------------------------------
-    topPerformer:
-      topPerformer
-        ? {
-            salesPersonId:
-              topPerformer.salesPersonId,
+  // =======================================================
+  // ORDERS WON BY SALESPERSON
+  //
+  // This contains ONLY:
+  // salesperson id
+  // salesperson name
+  // approved order count
+  //
+  // It does NOT expose detailed MIS.
+  // =======================================================
+  ordersWonBySalesperson:
+    salesPersonScores
+      .map(
+        (person) => ({
+          salesPersonId:
+            person.salesPersonId,
 
-            name:
-              topPerformer.name,
+          name:
+            person.name,
 
-            score:
-              topPerformer.monthlyScore,
+          approvedOrders:
+            Number(
+              person.approvedOrders ||
+                0
+            ),
+        })
+      )
+      .sort(
+        (a, b) =>
+          b.approvedOrders -
+          a.approvedOrders
+      ),
 
-            approvedOrders:
-              topPerformer.approvedOrders,
+  // =======================================================
+  // TOP PERFORMER
+  //
+  // Visible to every salesperson.
+  // =======================================================
+  topPerformer:
+    topPerformer
+      ? {
+          salesPersonId:
+            topPerformer.salesPersonId,
 
-            approvedSalesValue:
-              topPerformer.approvedSalesValue,
+          name:
+            topPerformer.name,
 
-            newCustomers:
-              topPerformer.newCustomers,
+          score:
+            topPerformer.monthlyScore,
 
-            reason:
-              `Top performer with MIS score of ${topPerformer.monthlyScore}/100, ` +
-              `${topPerformer.newCustomers} new customer(s), ` +
-              `${topPerformer.approvedOrders} approved order(s) and ` +
-              `${formatCurrency(
-                topPerformer.approvedSalesValue
-              )} approved sales value.`,
-          }
-        : null,
+          monthlyScore:
+            topPerformer.monthlyScore,
 
-    // -------------------------------------------------------
-    // WORST PERFORMER
-    // -------------------------------------------------------
-    worstPerformer:
-      worstPerformer
-        ? {
-            salesPersonId:
-              worstPerformer.salesPersonId,
+          approvedOrders:
+            topPerformer.approvedOrders,
 
-            name:
-              worstPerformer.name,
+          approvedSalesValue:
+            topPerformer.approvedSalesValue,
 
-            score:
-              worstPerformer.monthlyScore,
+          newCustomers:
+            topPerformer.newCustomers,
 
-            approvedOrders:
-              worstPerformer.approvedOrders,
+          reason:
+            `Top performer with MIS score of ${topPerformer.monthlyScore}/100, ` +
+            `${topPerformer.newCustomers} new customer(s), ` +
+            `${topPerformer.approvedOrders} approved order(s) and ` +
+            `${formatCurrency(
+              topPerformer.approvedSalesValue
+            )} approved sales value.`,
+        }
+      : null,
 
-            approvedSalesValue:
-              worstPerformer.approvedSalesValue,
+  // =======================================================
+  // NEEDS FOCUS / WORST PERFORMER
+  //
+  // Visible to every salesperson.
+  // =======================================================
+  worstPerformer:
+    worstPerformer
+      ? {
+          salesPersonId:
+            worstPerformer.salesPersonId,
 
-            newCustomers:
-              worstPerformer.newCustomers,
+          name:
+            worstPerformer.name,
 
-            reason:
-              getPerformanceReason(
-                worstPerformer
-              ),
-          }
-        : null,
+          score:
+            worstPerformer.monthlyScore,
 
-    // -------------------------------------------------------
-    // SUMMARY
-    // -------------------------------------------------------
-    summaryMessage:
-      topPerformer &&
-      worstPerformer
-        ? `${topPerformer.name} is leading this month with MIS score ${topPerformer.monthlyScore}/100, ${topPerformer.newCustomers} new customer(s) and ${topPerformer.approvedOrders} approved order(s). ${worstPerformer.name} needs focus on ${getPerformanceReason(
-            worstPerformer
-          )}.`
-        : "MIS business insight will appear once employee performance data is available.",
-  };
+          monthlyScore:
+            worstPerformer.monthlyScore,
+
+          approvedOrders:
+            worstPerformer.approvedOrders,
+
+          approvedSalesValue:
+            worstPerformer.approvedSalesValue,
+
+          newCustomers:
+            worstPerformer.newCustomers,
+
+          reason:
+            getPerformanceReason(
+              worstPerformer
+            ),
+        }
+      : null,
+
+  // =======================================================
+  // SUMMARY
+  // =======================================================
+  summaryMessage:
+    topPerformer &&
+    worstPerformer
+      ? `${topPerformer.name} is leading this month with MIS score ${topPerformer.monthlyScore}/100, ${topPerformer.newCustomers} new customer(s) and ${topPerformer.approvedOrders} approved order(s). ${worstPerformer.name} needs focus on ${getPerformanceReason(
+          worstPerformer
+        )}.`
+      : "MIS business insight will appear once employee performance data is available.",
+};
 
   // =========================================================
   // MIS SCORE VISIBILITY
