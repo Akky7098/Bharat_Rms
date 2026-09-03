@@ -65,13 +65,11 @@ const showQrPage =
        * Start client on demand if needed.
        */
       if (
-        status.state ===
-          "NOT_STARTED" ||
-        status.state ===
-          "DISCONNECTED" ||
-        status.state ===
-          "ERROR"
-      ) {
+  status.state === "NOT_STARTED" ||
+  status.state === "DISCONNECTED" ||
+  status.state === "ERROR" ||
+  status.state === "LOGGED_OUT"
+) {
         initBaileysClient()
           .catch(
             () => {}
