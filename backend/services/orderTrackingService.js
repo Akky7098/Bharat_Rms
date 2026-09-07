@@ -948,6 +948,312 @@ const buildMaterialSnapshot =
   });
 
 /* =========================================================
+   ENSURE PLANNING IS AUTO-COMPLETED
+
+   BUSINESS RULE:
+   Final Sales Order approval itself completes Planning.
+
+   This also repairs existing/older tracking records where
+   Planning was incorrectly left as the current milestone.
+========================================================= */
+
+const ensurePlanningAutoCompleted =
+  async ({
+    tracking,
+    salesOrder,
+    user,
+    session = null,
+  }) => {
+    if (
+      !tracking ||
+      !tracking.milestones ||
+      tracking.milestones.length === 0
+    ) {
+      return tracking;
+    }
+
+    const planning =
+      tracking.milestones.find(
+        (milestone) =>
+          milestone.code ===
+          "planning"
+      );
+
+    if (!planning) {
+      return tracking;
+    }
+
+    const approvedAt =
+      getSalesOrderApprovedAt(
+        salesOrder
+      );
+
+    const alreadyCorrect =
+      planning.status ===
+        "completed" &&
+      planning.isCurrent !==
+        true &&
+      tracking.currentStatus !==
+        "planning";
+
+    if (alreadyCorrect) {
+      return tracking;
+    }
+
+    let approvalSnapshot;
+
+    if (
+      tracking.approvedBy &&
+      tracking.approvedBy.userId
+    ) {
+      approvalSnapshot = {
+        userId:
+          tracking.approvedBy.userId,
+
+        name:
+          tracking.approvedBy.name ||
+          "",
+
+        email:
+          tracking.approvedBy.email ||
+          "",
+
+        role:
+          tracking.approvedBy.role ||
+          "user",
+      };
+    } else {
+      approvalSnapshot =
+        createUserSnapshot(
+          user
+        );
+    }
+
+    /* -----------------------------------------------------
+       COMPLETE PLANNING AT SALES ORDER APPROVAL TIME
+    ----------------------------------------------------- */
+
+    planning.actualDate =
+      new Date(
+        approvedAt
+      );
+
+    planning.status =
+      "completed";
+
+    planning.isCurrent =
+      false;
+
+    planning.completedBy =
+      approvalSnapshot;
+
+    planning.comment =
+      "Planning completed automatically on Sales Order approval.";
+
+    planning.updatedAt =
+      new Date(
+        approvedAt
+      );
+
+    /* -----------------------------------------------------
+       CLEAR STALE CURRENT FLAGS ON INCOMPLETE STAGES
+    ----------------------------------------------------- */
+
+    tracking.milestones.forEach(
+      (milestone) => {
+        if (
+          milestone.code ===
+          "planning"
+        ) {
+          milestone.isCurrent =
+            false;
+
+          return;
+        }
+
+        if (
+          ![
+            "completed",
+            "skipped",
+          ].includes(
+            milestone.status
+          )
+        ) {
+          milestone.status =
+            "pending";
+
+          milestone.isCurrent =
+            false;
+        }
+      }
+    );
+
+    const orderedMilestones =
+      [...tracking.milestones]
+        .sort(
+          (a, b) =>
+            Number(
+              a.sequence || 0
+            ) -
+            Number(
+              b.sequence || 0
+            )
+        );
+
+    const nextMilestone =
+      orderedMilestones.find(
+        (milestone) =>
+          milestone.code !==
+            "planning" &&
+          ![
+            "completed",
+            "skipped",
+          ].includes(
+            milestone.status
+          )
+      );
+
+    if (nextMilestone) {
+      nextMilestone.status =
+        "in_progress";
+
+      nextMilestone.isCurrent =
+        true;
+
+      nextMilestone.updatedAt =
+        new Date(
+          approvedAt
+        );
+
+      tracking.currentStatus =
+        nextMilestone.code;
+
+      tracking.currentStatusLabel =
+        nextMilestone.label;
+
+      tracking.currentMilestoneId =
+        nextMilestone._id;
+    } else {
+      tracking.currentStatus =
+        planning.code;
+
+      tracking.currentStatusLabel =
+        planning.label;
+
+      tracking.currentMilestoneId =
+        planning._id;
+    }
+
+    /* -----------------------------------------------------
+       RECALCULATE PROGRESS
+    ----------------------------------------------------- */
+
+    const completedCount =
+      tracking.milestones.filter(
+        (milestone) =>
+          [
+            "completed",
+            "skipped",
+          ].includes(
+            milestone.status
+          )
+      ).length;
+
+    tracking.progressPercentage =
+      tracking.milestones.length
+        ? Math.round(
+            (
+              completedCount /
+              tracking.milestones.length
+            ) *
+              100
+          )
+        : 0;
+
+    syncEstimatedSummaryDates(
+      tracking
+    );
+
+    tracking.lastUpdatedBy =
+      approvalSnapshot;
+
+    if (
+      !Array.isArray(
+        tracking.activityHistory
+      )
+    ) {
+      tracking.activityHistory =
+        [];
+    }
+
+    const autoPlanningHistoryExists =
+      tracking.activityHistory.some(
+        (item) =>
+          item.type ===
+            "milestone_completed" &&
+          item.status ===
+            "planning" &&
+          item.newValue &&
+          item.newValue.autoCompleted ===
+            true
+      );
+
+    if (
+      !autoPlanningHistoryExists
+    ) {
+      tracking.activityHistory.push({
+        type:
+          "milestone_completed",
+
+        status:
+          "planning",
+
+        message:
+          `${
+            approvalSnapshot.name ||
+            "Approver"
+          } completed Planning automatically through Sales Order approval.`,
+
+        previousValue: {
+          estimatedDate:
+            planning.estimatedDate,
+
+          originalEstimatedDate:
+            planning.originalEstimatedDate,
+        },
+
+        newValue: {
+          actualDate:
+            new Date(
+              approvedAt
+            ),
+
+          autoCompleted:
+            true,
+        },
+
+        updatedBy:
+          approvalSnapshot,
+
+        createdAt:
+          new Date(
+            approvedAt
+          ),
+      });
+    }
+
+    await tracking.save(
+      session
+        ? {
+            session,
+          }
+        : {}
+    );
+
+    return tracking;
+  };
+
+/* =========================================================
    CREATE TRACKING FROM APPROVED SALES ORDER
 
    trackingOrderType comes directly from Sales Order.
@@ -1041,7 +1347,17 @@ const createFromApprovedSalesOrder =
       await existingQuery;
 
     if (existing) {
-      return existing;
+      return await ensurePlanningAutoCompleted({
+        tracking:
+          existing,
+
+        salesOrder,
+
+        user:
+          approvedBy,
+
+        session,
+      });
     }
 
     /* =====================================================
@@ -1800,12 +2116,22 @@ const syncSalesOrder =
       });
 
     if (existing) {
+      const repairedTracking =
+        await ensurePlanningAutoCompleted({
+          tracking:
+            existing,
+
+          salesOrder,
+
+          user,
+        });
+
       return {
         alreadySynced:
           true,
 
         tracking:
-          existing,
+          repairedTracking,
       };
     }
 
@@ -1921,9 +2247,8 @@ const syncApprovedSalesOrders =
           true,
       })
         .select(
-          "_id salesOrderId trackingNumber salesOrderNo poNumber companyName orderType supplyCondition processType currentStatus milestones estimatedReadyDate estimatedLoadingDate estimatedShipDate estimatedDeliveryDate"
-        )
-        .lean();
+          "_id salesOrderId trackingNumber salesOrderNo poNumber companyName orderType supplyCondition processType currentStatus currentStatusLabel currentMilestoneId progressPercentage milestones approvedAt approvedBy lastUpdatedBy activityHistory estimatedReadyDate estimatedLoadingDate estimatedShipDate estimatedDeliveryDate"
+        );
 
     const existingMap =
       new Map();
@@ -1952,53 +2277,63 @@ const syncApprovedSalesOrders =
           );
 
         if (existing) {
+          const repairedTracking =
+            await ensurePlanningAutoCompleted({
+              tracking:
+                existing,
+
+              salesOrder,
+
+              user,
+            });
+
           result.alreadySynced.push({
             salesOrderId:
               salesOrder._id,
 
             trackingId:
-              existing._id,
+              repairedTracking._id,
 
             trackingNumber:
-              existing.trackingNumber,
+              repairedTracking.trackingNumber,
 
             salesOrderNo:
-              existing.salesOrderNo,
+              repairedTracking.salesOrderNo,
 
             poNumber:
-              existing.poNumber,
+              repairedTracking.poNumber,
 
             companyName:
-              existing.companyName,
+              repairedTracking.companyName,
 
             orderType:
-              existing.orderType,
+              repairedTracking.orderType,
 
             supplyCondition:
-              existing.supplyCondition,
+              repairedTracking.supplyCondition,
 
             processType:
-              existing.processType,
+              repairedTracking.processType,
 
             currentStatus:
-              existing.currentStatus,
+              repairedTracking.currentStatus,
 
             milestoneCount:
-              existing.milestones
+              repairedTracking.milestones
                 ?.length ||
               0,
 
             estimatedReadyDate:
-              existing.estimatedReadyDate,
+              repairedTracking.estimatedReadyDate,
 
             estimatedLoadingDate:
-              existing.estimatedLoadingDate,
+              repairedTracking.estimatedLoadingDate,
 
             estimatedShipDate:
-              existing.estimatedShipDate,
+              repairedTracking.estimatedShipDate,
 
             estimatedDeliveryDate:
-              existing.estimatedDeliveryDate,
+              repairedTracking.estimatedDeliveryDate,
           });
 
           continue;
@@ -2487,6 +2822,19 @@ const completeMilestone =
     if (!milestone) {
       throw new Error(
         "Milestone not found"
+      );
+    }
+
+    /*
+     * Planning is controlled by final Sales Order approval.
+     * It must never be manually completed later.
+     */
+    if (
+      milestone.code ===
+      "planning"
+    ) {
+      throw new Error(
+        "Planning is completed automatically on final Sales Order approval and cannot be completed manually."
       );
     }
 
@@ -3359,4 +3707,5 @@ module.exports = {
   /* HELPERS */
   resolveProcessType,
   generateMilestones,
+  ensurePlanningAutoCompleted,
 };
