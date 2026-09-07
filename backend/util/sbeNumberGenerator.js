@@ -3,150 +3,374 @@ const MtcSequence = require(
 );
 
 /* =========================================================
-   PAD 2 DIGITS
-========================================================= */
+   FILE:
+   util/sbeNumberGenerator.js
 
-const pad2 = (value) =>
-  String(value).padStart(
-    2,
-    "0"
-  );
+   PURPOSE:
 
-
-/* =========================================================
-   GET YYMMDD
+   Generate two independent 8-digit SBE numbers.
 
    Example:
 
-   27 Aug 2026
-   =>
-   260827
+   MTC 1
+   Fertigungsauftrag:
+   48372190
+
+   Kundenbestellnummer:
+   38673166
+
+
+   MTC 2
+   Fertigungsauftrag:
+   48372191
+
+   Kundenbestellnummer:
+   38673167
+
+
+   RULES:
+
+   - Both streams start from different random 8-digit numbers.
+   - Random start happens only once per stream.
+   - Every new MTC increases each number by +1.
+   - MongoDB stores the counters permanently.
+   - No daily reset.
+   - No date prefix.
+   - No 99-number limit.
+   - No duplicate within each sequence.
+   - Survives backend restart / redeploy.
 ========================================================= */
-
-const getDatePrefix = (
-  date = new Date()
-) => {
-  const d =
-    new Date(date);
-
-  if (
-    Number.isNaN(
-      d.getTime()
-    )
-  ) {
-    throw new Error(
-      "Invalid date for SBE number generation"
-    );
-  }
-
-  const yy =
-    String(
-      d.getFullYear()
-    ).slice(-2);
-
-  const mm =
-    pad2(
-      d.getMonth() + 1
-    );
-
-  const dd =
-    pad2(
-      d.getDate()
-    );
-
-  return `${yy}${mm}${dd}`;
-};
 
 
 /* =========================================================
-   GENERATE ONE 8-DIGIT NUMBER
+   COUNTER KEYS
 
-   Example:
-
-   26082711
-   26082712
-   ...
-   26082799
-
-   Every sequence is atomic in MongoDB.
+   These remain permanently stored in MongoDB.
 ========================================================= */
 
-const generateDailySbeNumber =
-  async (
-    sequenceType,
-    date = new Date()
+const PRODUCTION_COUNTER_KEY =
+  "sbe_production_8_digit";
+
+const CUSTOMER_PO_COUNTER_KEY =
+  "sbe_customer_po_8_digit";
+
+
+/* =========================================================
+   VALID 8-DIGIT RANGE
+========================================================= */
+
+const MIN_8_DIGIT =
+  10000000;
+
+const MAX_8_DIGIT =
+  99999999;
+
+
+/* =========================================================
+   SAFE RANDOM START RANGE
+
+   We intentionally do not start too near 99999999
+   so the counters have a large amount of headroom.
+========================================================= */
+
+const RANDOM_START_MIN =
+  20000000;
+
+const RANDOM_START_MAX =
+  80000000;
+
+
+/* =========================================================
+   GENERATE RANDOM 8-DIGIT NUMBER
+
+   IMPORTANT:
+
+   Random is used only when a counter does
+   not already exist in MongoDB.
+========================================================= */
+
+const generateRandom8DigitNumber =
+  () => {
+    return Math.floor(
+      Math.random() *
+        (
+          RANDOM_START_MAX -
+          RANDOM_START_MIN +
+          1
+        )
+    ) +
+      RANDOM_START_MIN;
+  };
+
+
+/* =========================================================
+   VALIDATE 8-DIGIT NUMBER
+========================================================= */
+
+const isValid8DigitNumber =
+  (
+    value
   ) => {
-    const prefix =
-      getDatePrefix(date);
+    const number =
+      Number(
+        value
+      );
 
-    /*
-     * Separate counters for each number type.
-     */
-    const key =
-      `${sequenceType}_${prefix}`;
+    return (
+      Number.isInteger(
+        number
+      ) &&
+      number >=
+        MIN_8_DIGIT &&
+      number <=
+        MAX_8_DIGIT
+    );
+  };
 
-    /*
-     * Start from 10 so first atomic increment
-     * returns 11.
-     */
-    const counter =
-      await MtcSequence.findOneAndUpdate(
+
+/* =========================================================
+   FIND EXISTING COUNTER
+========================================================= */
+
+const findCounter =
+  async (
+    key
+  ) => {
+    return MtcSequence.findOne(
+      {
+        key,
+      }
+    );
+  };
+
+
+/* =========================================================
+   CHECK WHETHER A RANDOM START COLLIDES
+
+   We keep the two initial starting ranges independent.
+
+   This check protects against accidentally starting both
+   streams at the same number.
+========================================================= */
+
+const isStartingNumberAlreadyUsed =
+  async (
+    randomStart
+  ) => {
+    const existing =
+      await MtcSequence.findOne(
         {
-          key,
-        },
-
-        {
-          $inc: {
-            sequence: 1,
+          sequence: {
+            $in: [
+              randomStart,
+              randomStart - 1,
+            ],
           },
-
-          $setOnInsert: {
-            key,
-          },
-        },
-
-        {
-          new: true,
-          upsert: true,
-          setDefaultsOnInsert:
-            true,
         }
       );
 
-    const sequence =
+    return Boolean(
+      existing
+    );
+  };
+
+
+/* =========================================================
+   GET UNIQUE RANDOM START
+
+   Very small chance of collision, but we still verify it.
+========================================================= */
+
+const getUniqueRandomStart =
+  async () => {
+    const MAX_ATTEMPTS =
+      20;
+
+    for (
+      let attempt = 1;
+      attempt <=
+        MAX_ATTEMPTS;
+      attempt += 1
+    ) {
+      const randomStart =
+        generateRandom8DigitNumber();
+
+      const alreadyUsed =
+        await isStartingNumberAlreadyUsed(
+          randomStart
+        );
+
+      if (
+        !alreadyUsed
+      ) {
+        return randomStart;
+      }
+    }
+
+    throw new Error(
+      "Unable to generate unique SBE 8-digit starting number"
+    );
+  };
+
+
+/* =========================================================
+   ENSURE COUNTER EXISTS
+
+   Example:
+
+   random start:
+   48372190
+
+   Mongo stores:
+   48372189
+
+   First increment:
+   48372190
+
+   Second increment:
+   48372191
+========================================================= */
+
+const ensureCounterExists =
+  async (
+    key
+  ) => {
+    const existing =
+      await findCounter(
+        key
+      );
+
+    if (
+      existing
+    ) {
+      return existing;
+    }
+
+    const randomStart =
+      await getUniqueRandomStart();
+
+    /*
+     * Store one number before the actual first
+     * generated document number.
+     */
+    const initialSequence =
+      randomStart -
+      1;
+
+    try {
+      const created =
+        await MtcSequence.create(
+          {
+            key,
+
+            sequence:
+              initialSequence,
+          }
+        );
+
+      console.log(
+        "SBE NUMBER COUNTER CREATED =>",
+        {
+          key,
+
+          firstNumber:
+            randomStart,
+        }
+      );
+
+      return created;
+    } catch (
+      error
+    ) {
+      /*
+       * If two requests try to create the
+       * same counter simultaneously, another
+       * request may win first.
+       */
+      if (
+        error?.code ===
+        11000
+      ) {
+        const existingAfterRace =
+          await findCounter(
+            key
+          );
+
+        if (
+          existingAfterRace
+        ) {
+          return existingAfterRace;
+        }
+      }
+
+      throw error;
+    }
+  };
+
+
+/* =========================================================
+   GET NEXT NUMBER
+
+   Mongo $inc is atomic.
+
+   This prevents duplicate numbers if multiple
+   certificates are created at nearly the same time.
+========================================================= */
+
+const generateNextNumber =
+  async (
+    key
+  ) => {
+    await ensureCounterExists(
+      key
+    );
+
+    const counter =
+      await MtcSequence
+        .findOneAndUpdate(
+          {
+            key,
+          },
+
+          {
+            $inc: {
+              sequence:
+                1,
+            },
+          },
+
+          {
+            new:
+              true,
+          }
+        );
+
+    if (
+      !counter
+    ) {
+      throw new Error(
+        `Unable to generate SBE number for ${key}`
+      );
+    }
+
+    const generatedNumber =
       Number(
         counter.sequence
       );
 
-    /*
-     * YYMMDD + NN allows max 89 documents
-     * when starting from 11.
-     */
     if (
-      sequence < 11 ||
-      sequence > 99
-    ) {
-      throw new Error(
-        `SBE number limit reached for ${prefix}. Maximum sequence is 99.`
-      );
-    }
-
-    const number =
-      `${prefix}${pad2(
-        sequence
-      )}`;
-
-    if (
-      !/^\d{8}$/.test(
-        number
+      !isValid8DigitNumber(
+        generatedNumber
       )
     ) {
       throw new Error(
-        "Generated SBE number is invalid"
+        `SBE 8-digit number range exhausted for ${key}`
       );
     }
 
-    return number;
+    return String(
+      generatedNumber
+    );
   };
 
 
@@ -154,16 +378,16 @@ const generateDailySbeNumber =
    FERTIGUNGSAUFTRAG
 
    Example:
-   26082711
+
+   48372190
+   48372191
+   48372192
 ========================================================= */
 
 const generateSbeProductionOrder =
-  async (
-    date = new Date()
-  ) => {
-    return generateDailySbeNumber(
-      "sbe_production",
-      date
+  async () => {
+    return generateNextNumber(
+      PRODUCTION_COUNTER_KEY
     );
   };
 
@@ -171,35 +395,93 @@ const generateSbeProductionOrder =
 /* =========================================================
    KUNDENBESTELLNUMMER
 
-   Uses another independent sequence.
+   Independent series.
 
    Example:
-   26082711
 
-   This may numerically match the production number because
-   they are separate document-number categories.
-
-   If you want BOTH numbers themselves to always be different,
-   use one shared counter instead. See below.
+   38673166
+   38673167
+   38673168
 ========================================================= */
 
 const generateSbeCustomerPoNumber =
-  async (
-    date = new Date()
-  ) => {
-    return generateDailySbeNumber(
-      "sbe_customer_order",
-      date
+  async () => {
+    return generateNextNumber(
+      CUSTOMER_PO_COUNTER_KEY
     );
   };
 
 
+/* =========================================================
+   GENERATE BOTH DOCUMENT NUMBERS
+
+   REQUIRED BY:
+   services/sbeGermanyMtcService.js
+
+   Example return:
+
+   {
+     productionOrder:
+       "48372190",
+
+     customerPoNumber:
+       "38673166"
+   }
+========================================================= */
+
+const generateSbeDocumentNumbers =
+  async () => {
+    /*
+     * Run sequentially.
+     *
+     * Easier to diagnose and keeps behaviour predictable.
+     */
+    const productionOrder =
+      await generateSbeProductionOrder();
+
+    let customerPoNumber =
+      await generateSbeCustomerPoNumber();
+
+    /*
+     * Extra protection:
+     *
+     * Two independent random sequences should almost
+     * never meet, but if they ever produce the same
+     * number, advance customer PO once more.
+     */
+    if (
+      productionOrder ===
+      customerPoNumber
+    ) {
+      customerPoNumber =
+        await generateSbeCustomerPoNumber();
+    }
+
+    console.log(
+      "SBE DOCUMENT NUMBERS GENERATED =>",
+      {
+        productionOrder,
+
+        customerPoNumber,
+      }
+    );
+
+    return {
+      productionOrder,
+
+      customerPoNumber,
+    };
+  };
+
+
+/* =========================================================
+   EXPORTS
+========================================================= */
+
 module.exports = {
-  getDatePrefix,
-
-  generateDailySbeNumber,
-
   generateSbeProductionOrder,
 
   generateSbeCustomerPoNumber,
+
+  generateSbeDocumentNumbers,
 };

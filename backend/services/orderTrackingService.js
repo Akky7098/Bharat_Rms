@@ -955,12 +955,44 @@ const buildMaterialSnapshot =
    processType is resolved automatically from them.
 ========================================================= */
 
+/* =========================================================
+   CREATE TRACKING FROM APPROVED SALES ORDER
+
+   BUSINESS RULES:
+
+   1. trackingOrderType comes directly from Sales Order.
+
+   2. supplyCondition comes directly from Sales Order.
+
+   3. processType is resolved automatically.
+
+   4. Sales Order approval date is the ORIGINAL timeline
+      baseline for every milestone.
+
+   5. PLANNING IS AUTOMATICALLY COMPLETED when the Sales
+      Order is approved.
+
+      Therefore:
+      - Planning does NOT need "Mark Done"
+      - Planning actualDate = Sales Order approval date
+      - Planning completedBy = approving/current user snapshot
+      - First operational milestone after Planning becomes current
+
+   6. originalEstimatedDate NEVER changes later.
+
+   7. estimatedDate remains the working/revised plan.
+========================================================= */
+
 const createFromApprovedSalesOrder =
   async ({
     salesOrder,
     approvedBy,
     session = null,
   }) => {
+    /* =====================================================
+       SALES ORDER REQUIRED
+    ===================================================== */
+
     if (
       !salesOrder ||
       !salesOrder._id
@@ -970,9 +1002,9 @@ const createFromApprovedSalesOrder =
       );
     }
 
-    /* -----------------------------------------------------
+    /* =====================================================
        ONLY APPROVED SALES ORDERS
-    ----------------------------------------------------- */
+    ===================================================== */
 
     if (
       salesOrder
@@ -986,9 +1018,9 @@ const createFromApprovedSalesOrder =
       );
     }
 
-    /* -----------------------------------------------------
+    /* =====================================================
        ALREADY SYNCED CHECK
-    ----------------------------------------------------- */
+    ===================================================== */
 
     const existingQuery =
       OrderTracking.findOne({
@@ -1012,14 +1044,19 @@ const createFromApprovedSalesOrder =
       return existing;
     }
 
-    /* -----------------------------------------------------
+    /* =====================================================
+       ORDER TYPE
+
+       IMPORTANT:
+       DO NOT use salesOrder.orderType.
+
+       salesOrder.orderType means:
+       domestic / international / SEZ.
+
+       Order Tracking uses:
+       trackingOrderType:
        H.O. / N.H.O.
-
-       DO NOT use salesOrder.orderType here.
-
-       Future Sales Order field:
-       salesOrder.trackingOrderType
-    ----------------------------------------------------- */
+    ===================================================== */
 
     const finalOrderType =
       normalizeOrderType(
@@ -1028,11 +1065,9 @@ const createFromApprovedSalesOrder =
           "N.H.O."
       );
 
-    /* -----------------------------------------------------
+    /* =====================================================
        SUPPLY CONDITION
-
-       Always read from Sales Order.
-    ----------------------------------------------------- */
+    ===================================================== */
 
     const supplyCondition =
       salesOrder
@@ -1054,9 +1089,9 @@ const createFromApprovedSalesOrder =
       );
     }
 
-    /* -----------------------------------------------------
-       RESOLVE PROCESS
-    ----------------------------------------------------- */
+    /* =====================================================
+       RESOLVE PROCESS TYPE
+    ===================================================== */
 
     const processType =
       resolveProcessType({
@@ -1068,18 +1103,39 @@ const createFromApprovedSalesOrder =
         otherSupplyConditions,
       });
 
-    /* -----------------------------------------------------
-       APPROVAL DATE = TIMELINE BASE DATE
-    ----------------------------------------------------- */
+    /* =====================================================
+       APPROVAL DATE
+
+       This is the permanent timeline baseline.
+
+       Example:
+       Manager approved:
+       03 Sept 2026
+
+       Planning actual:
+       03 Sept 2026
+
+       Stage Day 2:
+       originalEstimatedDate = 05 Sept 2026
+    ===================================================== */
 
     const approvedAt =
       getSalesOrderApprovedAt(
         salesOrder
       );
 
-    /* -----------------------------------------------------
-       GENERATE ALL ESTIMATED MILESTONES
-    ----------------------------------------------------- */
+    /* =====================================================
+       USER SNAPSHOT
+    ===================================================== */
+
+    const userSnapshot =
+      createUserSnapshot(
+        approvedBy
+      );
+
+    /* =====================================================
+       GENERATE MILESTONES
+    ===================================================== */
 
     const milestones =
       generateMilestones({
@@ -1095,20 +1151,201 @@ const createFromApprovedSalesOrder =
       );
     }
 
-    const firstMilestone =
+    /* =====================================================
+       AUTO COMPLETE PLANNING
+
+       Planning represents:
+       order received + manager approval + production
+       planning initiated.
+
+       Therefore approval itself closes Planning.
+    ===================================================== */
+
+    const planningIndex =
+      milestones.findIndex(
+        (
+          milestone
+        ) =>
+          milestone.code ===
+          "planning"
+      );
+
+    let planningMilestone =
+      null;
+
+    if (
+      planningIndex !== -1
+    ) {
+      planningMilestone =
+        milestones[
+          planningIndex
+        ];
+
+      /*
+       * Planning completes exactly at Sales Order approval.
+       */
+      planningMilestone.actualDate =
+        new Date(
+          approvedAt
+        );
+
+      planningMilestone.status =
+        "completed";
+
+      planningMilestone.isCurrent =
+        false;
+
+      planningMilestone.completedBy =
+        userSnapshot;
+
+      planningMilestone.comment =
+        "Planning completed automatically on Sales Order approval.";
+
+      planningMilestone.updatedAt =
+        new Date(
+          approvedAt
+        );
+    }
+
+    /* =====================================================
+       RESET NON-PLANNING MILESTONES
+
+       generateMilestones() currently makes index 0 current.
+
+       Because Planning is now automatically completed,
+       we explicitly reset remaining stages before selecting
+       the actual current operational milestone.
+    ===================================================== */
+
+    milestones.forEach(
+      (
+        milestone
+      ) => {
+        if (
+          milestone.code ===
+          "planning"
+        ) {
+          return;
+        }
+
+        milestone.status =
+          "pending";
+
+        milestone.isCurrent =
+          false;
+
+        milestone.actualDate =
+          milestone.actualDate ||
+          null;
+
+        milestone.completedBy =
+          milestone.completedBy ||
+          null;
+      }
+    );
+
+    /* =====================================================
+       FIRST REAL OPERATIONAL MILESTONE
+
+       Example:
+
+       Planning          -> completed automatically
+       Under Casting     -> current
+
+       or
+
+       Planning          -> completed automatically
+       Cutting           -> current
+
+       depending upon PROCESS_FLOWS.
+    ===================================================== */
+
+    const firstOperationalMilestone =
+      milestones.find(
+        (
+          milestone
+        ) =>
+          milestone.code !==
+            "planning" &&
+          milestone.status !==
+            "completed"
+      );
+
+    /*
+     * Normal case:
+     * activate first stage after Planning.
+     */
+    if (
+      firstOperationalMilestone
+    ) {
+      firstOperationalMilestone.status =
+        "in_progress";
+
+      firstOperationalMilestone.isCurrent =
+        true;
+
+      firstOperationalMilestone.updatedAt =
+        new Date(
+          approvedAt
+        );
+    }
+
+    /* =====================================================
+       CURRENT MILESTONE FALLBACK
+
+       In case a future process configuration contains only
+       Planning, keep the completed Planning milestone as the
+       final reference instead of crashing.
+    ===================================================== */
+
+    const initialCurrentMilestone =
+      firstOperationalMilestone ||
+      planningMilestone ||
       milestones[0];
 
-    const userSnapshot =
-      createUserSnapshot(
-        approvedBy
-      );
+    /* =====================================================
+       INITIAL PROGRESS
+
+       Planning now counts as completed.
+
+       Example:
+       1 completed stage / 8 total = 13%
+    ===================================================== */
+
+    const initialCompletedCount =
+      milestones.filter(
+        (
+          milestone
+        ) =>
+          [
+            "completed",
+            "skipped",
+          ].includes(
+            milestone.status
+          )
+      ).length;
+
+    const initialProgressPercentage =
+      milestones.length
+        ? Math.round(
+            (
+              initialCompletedCount /
+              milestones.length
+            ) *
+              100
+          )
+        : 0;
+
+    /* =====================================================
+       TRACKING NUMBER
+    ===================================================== */
 
     const trackingNumber =
       await generateTrackingNumber();
 
-    /* -----------------------------------------------------
+    /* =====================================================
        BUILD TRACKING DOCUMENT
-    ----------------------------------------------------- */
+    ===================================================== */
 
     const trackingData = {
       trackingNumber,
@@ -1117,14 +1354,22 @@ const createFromApprovedSalesOrder =
         salesOrder._id,
 
       salesOrderNo:
-        salesOrder.salesOrderNo ||
-        salesOrder.orderNo ||
+        salesOrder
+          .salesOrderNo ||
+        salesOrder
+          .orderNo ||
         "",
 
       poNumber:
-        salesOrder.poNumber ||
-        salesOrder.customerPONumber ||
+        salesOrder
+          .poNumber ||
+        salesOrder
+          .customerPONumber ||
         "",
+
+      /* ===================================================
+         ORDER / PROCESS
+      =================================================== */
 
       orderType:
         finalOrderType,
@@ -1133,14 +1378,22 @@ const createFromApprovedSalesOrder =
 
       supplyCondition,
 
+      /* ===================================================
+         CUSTOMER
+      =================================================== */
+
       companyName:
-        salesOrder.companyName ||
-        salesOrder.customerName ||
+        salesOrder
+          .companyName ||
+        salesOrder
+          .customerName ||
         "",
 
       companyAddress:
-        salesOrder.companyAddress ||
-        salesOrder.customerAddress ||
+        salesOrder
+          .companyAddress ||
+        salesOrder
+          .customerAddress ||
         "",
 
       shippingAddress:
@@ -1149,54 +1402,96 @@ const createFromApprovedSalesOrder =
         ),
 
       contactPersonName:
-        salesOrder.contactPersonName ||
+        salesOrder
+          .contactPersonName ||
         "",
 
       contactPersonNumber:
-        salesOrder.contactPersonNumber ||
-        salesOrder.contactNumber ||
+        salesOrder
+          .contactPersonNumber ||
+        salesOrder
+          .contactNumber ||
         "",
 
       contactPersonEmail:
-        salesOrder.contactPersonEmail ||
+        salesOrder
+          .contactPersonEmail ||
         "",
 
+      /* ===================================================
+         SALES PERSON
+      =================================================== */
+
       salesPersonId:
-        salesOrder.salesPersonId ||
+        salesOrder
+          .salesPersonId ||
         null,
 
       salesPersonName:
-        salesOrder.salesPersonName ||
+        salesOrder
+          .salesPersonName ||
         "",
 
       salesPersonEmail:
-        salesOrder.salesPersonEmail ||
+        salesOrder
+          .salesPersonEmail ||
         "",
+
+      /* ===================================================
+         MATERIAL
+      =================================================== */
 
       material:
         buildMaterialSnapshot(
           salesOrder
         ),
 
+      /* ===================================================
+         APPROVAL
+      =================================================== */
+
       approvedAt,
 
       approvedBy:
         userSnapshot,
 
+      /* ===================================================
+         CURRENT STATUS
+
+         Planning is already completed.
+
+         Therefore this points at the first actual production
+         stage.
+      =================================================== */
+
       currentStatus:
-        firstMilestone.code,
+        initialCurrentMilestone
+          .code,
 
       currentStatusLabel:
-        firstMilestone.label,
-
-      progressPercentage:
-        0,
+        initialCurrentMilestone
+          .label,
 
       /*
-       * IMPORTANT:
-       * Entire process timeline gets stored immediately.
+       * Planning already contributes to progress.
        */
+      progressPercentage:
+        initialProgressPercentage,
+
+      /* ===================================================
+         FULL TIMELINE
+      =================================================== */
+
       milestones,
+
+      /* ===================================================
+         ESTIMATED SUMMARY CARDS
+
+         These always use current working estimatedDate.
+
+         originalEstimatedDate remains inside milestones for
+         baseline/management health calculation.
+      =================================================== */
 
       estimatedReadyDate:
         getEstimatedDate(
@@ -1222,6 +1517,10 @@ const createFromApprovedSalesOrder =
           "delivered"
         ),
 
+      /* ===================================================
+         ACTUAL SUMMARY
+      =================================================== */
+
       actualReadyDate:
         null,
 
@@ -1234,11 +1533,19 @@ const createFromApprovedSalesOrder =
       actualDeliveryDate:
         null,
 
+      /* ===================================================
+         AUDIT
+      =================================================== */
+
       createdBy:
         userSnapshot,
 
       lastUpdatedBy:
         userSnapshot,
+
+      /* ===================================================
+         HISTORY
+      =================================================== */
 
       activityHistory: [
         {
@@ -1246,13 +1553,32 @@ const createFromApprovedSalesOrder =
             "tracking_created",
 
           status:
-            firstMilestone.code,
+            initialCurrentMilestone
+              .code,
 
           message:
-            `Order tracking created with ${milestones.length} milestones. Process: ${processType}. Supply condition: ${
-              supplyCondition ||
-              "H.O."
-            }.`,
+            planningMilestone
+              ? (
+                  `Order tracking created after Sales Order approval. ` +
+                  `Planning was completed automatically on ${approvedAt.toLocaleString(
+                    "en-IN"
+                  )}. ` +
+                  `${initialCurrentMilestone.label} is now the current stage. ` +
+                  `Process: ${processType}. ` +
+                  `Supply condition: ${
+                    supplyCondition ||
+                    "H.O."
+                  }.`
+                )
+              : (
+                  `Order tracking created with ${milestones.length} milestones. ` +
+                  `Current stage: ${initialCurrentMilestone.label}. ` +
+                  `Process: ${processType}. ` +
+                  `Supply condition: ${
+                    supplyCondition ||
+                    "H.O."
+                  }.`
+                ),
 
           updatedBy:
             userSnapshot,
@@ -1260,12 +1586,60 @@ const createFromApprovedSalesOrder =
           createdAt:
             new Date(),
         },
+
+        /*
+         * Separate Planning audit event.
+         *
+         * Useful later for management popup/history.
+         */
+        ...(planningMilestone
+          ? [
+              {
+                type:
+                  "milestone_completed",
+
+                status:
+                  "planning",
+
+                message:
+                  `${userSnapshot.name || "User"} completed Planning automatically through Sales Order approval.`,
+
+                previousValue: {
+                  estimatedDate:
+                    planningMilestone
+                      .estimatedDate,
+
+                  originalEstimatedDate:
+                    planningMilestone
+                      .originalEstimatedDate,
+                },
+
+                newValue: {
+                  actualDate:
+                    new Date(
+                      approvedAt
+                    ),
+
+                  autoCompleted:
+                    true,
+                },
+
+                updatedBy:
+                  userSnapshot,
+
+                createdAt:
+                  new Date(
+                    approvedAt
+                  ),
+              },
+            ]
+          : []),
       ],
     };
 
-    /* -----------------------------------------------------
-       CREATE
-    ----------------------------------------------------- */
+    /* =====================================================
+       CREATE TRACKING DOCUMENT
+    ===================================================== */
 
     let tracking;
 
@@ -1282,6 +1656,7 @@ const createFromApprovedSalesOrder =
 
       tracking =
         documents[0];
+
     } else {
       tracking =
         await OrderTracking.create(
@@ -1289,31 +1664,69 @@ const createFromApprovedSalesOrder =
         );
     }
 
-    /*
-     * Subdocument _id values exist only after Mongoose
-     * has created the tracking document.
-     */
+    /* =====================================================
+       VERIFY MILESTONES
+    ===================================================== */
+
     if (
       !tracking.milestones ||
-      !tracking.milestones.length
+      !tracking
+        .milestones
+        .length
     ) {
       throw new Error(
         "Tracking was created without milestones"
       );
     }
 
-    tracking.currentMilestoneId =
-      tracking.milestones[
-        0
-      ]._id;
+    /* =====================================================
+       FIND STORED CURRENT MILESTONE
+
+       Mongoose creates subdocument IDs only after document
+       creation, so currentMilestoneId must be set here.
+    ===================================================== */
+
+    const storedCurrentMilestone =
+      tracking
+        .milestones
+        .find(
+          (
+            milestone
+          ) =>
+            milestone
+              .isCurrent ===
+            true
+        );
 
     /*
-     * Make absolutely sure summary dates reflect
-     * the stored Mongoose milestone subdocuments.
+     * Normal:
+     * first operational stage ID.
+
+     * Fallback:
+     * planning/first milestone.
      */
+    tracking.currentMilestoneId =
+      storedCurrentMilestone
+        ?._id ||
+      tracking
+        .milestones[
+          0
+        ]
+        ._id;
+
+    /* =====================================================
+       SUMMARY DATES
+
+       Use stored Mongoose milestone subdocuments.
+    ===================================================== */
+
     syncEstimatedSummaryDates(
       tracking
     );
+
+    /* =====================================================
+       SAVE CURRENT MILESTONE ID
+    ===================================================== */
 
     await tracking.save(
       session
