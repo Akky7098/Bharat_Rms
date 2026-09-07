@@ -2584,31 +2584,46 @@ const getAllOrderTrackings =
       pageLimit;
 
     const [
-      items,
-      total,
-    ] =
-      await Promise.all([
-        OrderTracking.find(
-          filter
-        )
-          .sort({
-            updatedAt:
-              -1,
-          })
-          .skip(
-            skip
-          )
-          .limit(
-            pageLimit
-          )
-          .lean(),
+  items,
+  total,
+] =
+  await Promise.all([
+    OrderTracking.find(
+      filter
+    )
+      /*
+       * IMPORTANT:
+       *
+       * Order Tracking must always show newest
+       * approved/order date first.
+       *
+       * Do NOT use updatedAt because completing a stage
+       * on an old order would otherwise move that old
+       * order to the top.
+       */
+      .sort({
+        approvedAt:
+          -1,
 
-        OrderTracking
-          .countDocuments(
-            filter
-          ),
-      ]);
+        createdAt:
+          -1,
 
+        _id:
+          -1,
+      })
+      .skip(
+        skip
+      )
+      .limit(
+        pageLimit
+      )
+      .lean(),
+
+    OrderTracking
+      .countDocuments(
+        filter
+      ),
+  ]);
     return {
       items,
 
