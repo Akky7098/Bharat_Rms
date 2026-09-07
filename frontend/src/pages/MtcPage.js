@@ -27,8 +27,16 @@ import {
 import MtcForm from "./MtcForm";
 
 
+// const API_ORIGIN =
+//   "https://bharatspecialsteels.bharatspecialsteels.com";
+
+// LOCAL MTC TESTING
 const API_ORIGIN =
-  "https://bharatspecialsteels.bharatspecialsteels.com";
+  "http://localhost:5002";
+
+// PRODUCTION
+// const API_ORIGIN =
+//   "https://bharatspecialsteels.bharatspecialsteels.com";
 
 const EMPTY_FILTERS = {
   companyName: "",
@@ -45,6 +53,10 @@ const DEFAULT_PROVIDER_OPTIONS = [
   {
     value: "bharat",
     label: "Bharat Special Steel",
+  },
+  {
+    value: "sbe_germany",
+    label: "SBE Germany",
   },
 ];
 
@@ -122,7 +134,9 @@ const getCompanyName = (item) => {
     firstValue(
       item?.messers,
       item?.customerName,
-      item?.companyName
+      item?.companyName,
+      item?.customer?.companyName,
+      item?.customer?.name
     ),
     "No company"
   );
@@ -134,7 +148,11 @@ const getOrderNumber = (item) => {
       item?.orderNo,
       item?.salesOrderNo,
       item?.poNo,
-      item?.poNumber
+      item?.poNumber,
+
+      // SBE Germany
+      item?.productionOrder,
+      item?.fertigungsauftrag
     )
   );
 };
@@ -145,7 +163,11 @@ const getCertificateNumber = (item) => {
       item?.tcNo,
       item?.certificateNo,
       item?.mtcNumber,
-      item?.fileNo
+      item?.fileNo,
+
+      // SBE Germany
+      item?.customerPoNumber,
+      item?.kundenbestellnummer
     )
   );
 };
@@ -154,6 +176,11 @@ const getCertificateDate = (item) => {
   return firstValue(
     item?.mtcDate,
     item?.issueDate,
+
+    // SBE Germany
+    item?.certificateDate,
+    item?.testDate,
+
     item?.createdAt
   );
 };
@@ -173,7 +200,12 @@ const getGrade = (item) => {
   return cleanText(
     firstValue(
       item?.grade,
-      item?.purchaseSpecification
+      item?.purchaseSpecification,
+
+      // SBE Germany
+      item?.materialGrade,
+      item?.werkstoff,
+      item?.specification
     )
   );
 };
@@ -185,6 +217,12 @@ const getSize = (item) => {
   return cleanText(
     firstValue(
       item?.size,
+
+      // SBE Germany
+      item?.dimensions,
+      item?.dimension,
+      item?.materialSize,
+
       primaryItem?.size,
       primaryItem?.materialSize
     )
@@ -199,6 +237,11 @@ const getWeight = (item) => {
     firstValue(
       item?.weight,
       item?.quantityInKgs,
+
+      // SBE Germany
+      item?.totalWeight,
+      item?.weightKg,
+
       primaryItem?.quantityInKgs,
       primaryItem?.quantity,
       primaryItem?.weight
@@ -213,6 +256,11 @@ const getPieces = (item) => {
   return cleanText(
     firstValue(
       item?.pcs,
+
+      // SBE Germany
+      item?.pieces,
+      item?.quantityPcs,
+
       primaryItem?.noOfPcs,
       primaryItem?.pcs,
       primaryItem?.quantityPcs
@@ -228,6 +276,12 @@ const getHeatNumber = (item) => {
     firstValue(
       item?.heatLotNo,
       item?.heatNo,
+
+      // SBE Germany
+      item?.heatNumber,
+      item?.chargeNo,
+      item?.chargeNumber,
+
       primaryItem?.heatNo,
       primaryItem?.heatNumber
     )
@@ -239,19 +293,25 @@ const getCondition = (item) => {
     firstValue(
       item?.condition,
       item?.manufacturingRoute,
-      item?.product
+      item?.product,
+
+      // SBE Germany
+      item?.deliveryCondition,
+      item?.heatTreatment,
+      item?.materialCondition
     )
   );
 };
-
 const hasPdf = (item) => {
   return Boolean(
     item?.pdfUrl ||
+      item?.pdfPath ||
+      item?.pdfFile ||
       item?.pdf?.fileUrl ||
-      item?.pdf?.filePath
+      item?.pdf?.filePath ||
+      item?._id
   );
 };
-
 const formatDate = (date) => {
   if (!date) {
     return "-";
@@ -691,49 +751,61 @@ function MtcPage() {
   };
 
   const openPdf = (item) => {
-    const directPdfUrl =
-      item?.pdfUrl ||
-      item?.pdf?.fileUrl ||
-      "";
+  if (!item) {
+    return;
+  }
 
-    if (directPdfUrl) {
-      const finalUrl =
-        /^https?:\/\//i.test(
-          directPdfUrl
-        )
-          ? directPdfUrl
-          : `${API_ORIGIN}${directPdfUrl}`;
+  const directPdfUrl =
+    item?.pdfUrl ||
+    item?.pdfPath ||
+    item?.pdfFile ||
+    item?.pdf?.fileUrl ||
+    item?.pdf?.filePath ||
+    "";
 
-      window.open(
-        finalUrl,
-        "_blank",
-        "noopener,noreferrer"
-      );
+  if (directPdfUrl) {
+    const finalUrl =
+      /^https?:\/\//i.test(
+        directPdfUrl
+      )
+        ? directPdfUrl
+        : `${API_ORIGIN}${
+            directPdfUrl.startsWith("/")
+              ? ""
+              : "/"
+          }${directPdfUrl}`;
 
-      return;
-    }
+    window.open(
+      finalUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
 
-    if (!item?._id) {
-      return;
-    }
+    return;
+  }
 
-    const provider =
-      normalizeProvider(
-        item.mtcProvider
-      );
+  if (!item?._id) {
+    return;
+  }
 
-    const queryString = provider
+  const provider =
+    normalizeProvider(
+      item.mtcProvider
+    );
+
+  const queryString =
+    provider
       ? `?mtcProvider=${encodeURIComponent(
           provider
         )}`
       : "";
 
-    window.open(
-      `${API_ORIGIN}/api/mtc/${item._id}/pdf${queryString}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
-  };
+  window.open(
+    `${API_ORIGIN}/api/mtc/${item._id}/download${queryString}`,
+    "_blank",
+    "noopener,noreferrer"
+  );
+};
 
   /* =======================================================
      PWA FILTER SHEET

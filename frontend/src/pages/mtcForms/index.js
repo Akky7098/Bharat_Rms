@@ -1,13 +1,22 @@
 import GloriaMtcForm from "./GloriaMtcForm";
 import BharatMtcForm from "./BharatMtcForm";
+import SbeGermanyMtcForm from "./SbeGermanyMtcForm";
 
 /*
- * Add every new provider form here.
+ * Every MTC provider form is registered here.
  *
- * The key must match mtcProvider sent
- * by the backend.
+ * IMPORTANT:
+ *
+ * Key must exactly match the backend
+ * mtcProvider value.
  */
 export const MTC_FORM_REGISTRY = {
-  gloria: GloriaMtcForm,
-  bharat: BharatMtcForm,
+  gloria:
+    GloriaMtcForm,
+
+  bharat:
+    BharatMtcForm,
+
+  sbe_germany:
+    SbeGermanyMtcForm,
 };

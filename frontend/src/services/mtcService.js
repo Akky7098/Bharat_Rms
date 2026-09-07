@@ -1,152 +1,251 @@
 import axios from "axios";
 
+/* =========================================================
+   API
+========================================================= */
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL ||
-  "https://bharatspecialsteels.bharatspecialsteels.com/api";
+ const API_URL = "http://localhost:5002/api";
+// const API_URL =
+//   process.env.REACT_APP_API_URL ||
+//   "https://bharatspecialsteels.bharatspecialsteels.com/api";
+
+const MTC_API_URL =
+  `${API_URL}/mtc`;
+
+/* =========================================================
+   AUTH
+========================================================= */
 
 const getToken = () =>
   localStorage.getItem("token");
 
 const authHeaders = () => ({
-  headers: {
-    Authorization: `Bearer ${getToken()}`,
-  },
+  Authorization:
+    `Bearer ${getToken()}`,
 });
 
 /* =========================================================
-   CREATE MTC CERTIFICATE
+   ERROR NORMALIZER
 ========================================================= */
 
-export const createMtcCertificate = async (
-  payload
+const getApiError = (
+  error,
+  fallback
 ) => {
-  const response = await axios.post(
-    `${API_BASE_URL}/mtc`,
-    payload,
-    authHeaders()
+  return (
+    error?.response?.data?.message ||
+    error?.message ||
+    fallback
   );
-
-  return response.data;
 };
 
 /* =========================================================
-   GET MTC CERTIFICATES
-========================================================= */
-
-export const getMtcCertificates = async (
-  filters = {}
-) => {
-  const params = new URLSearchParams();
-
-  if (filters.companyName) {
-    params.append(
-      "companyName",
-      filters.companyName
-    );
-  }
-
-  if (filters.grade) {
-    params.append("grade", filters.grade);
-  }
-
-  if (filters.mtcProvider) {
-    params.append(
-      "mtcProvider",
-      filters.mtcProvider
-    );
-  }
-
-  if (filters.fromDate) {
-    params.append(
-      "fromDate",
-      filters.fromDate
-    );
-  }
-
-  if (filters.toDate) {
-    params.append(
-      "toDate",
-      filters.toDate
-    );
-  }
-
-  if (filters.limit) {
-    params.append("limit", filters.limit);
-  }
-
-  const response = await axios.get(
-    `${API_BASE_URL}/mtc?${params.toString()}`,
-    authHeaders()
-  );
-
-  return response.data;
-};
-
-/* =========================================================
-   DOWNLOAD MTC PDF
-========================================================= */
-
-export const downloadMtcPdf = async (
-  id,
-  mtcProvider = ""
-) => {
-  const params = new URLSearchParams();
-
-  if (mtcProvider) {
-    params.append(
-      "mtcProvider",
-      mtcProvider
-    );
-  }
-
-  const response = await axios.get(
-    `${API_BASE_URL}/mtc/${id}/pdf?${params.toString()}`,
-    {
-      ...authHeaders(),
-      responseType: "blob",
-    }
-  );
-
-  return response.data;
-};
-
-/* =========================================================
-   GET CHEMICAL SPECIFICATIONS
-========================================================= */
-
-export const getMtcChemicalSpecs = async (
-  mtcProvider = "gloria"
-) => {
-  const response = await axios.get(
-    `${API_BASE_URL}/mtc/chemical-specs`,
-    {
-      ...authHeaders(),
-      params: {
-        mtcProvider,
-      },
-    }
-  );
-
-  return response.data;
-};
-
-/* =========================================================
-   GET AVAILABLE MTC PROVIDERS
+   GET PROVIDERS
 ========================================================= */
 
 export const getMtcProviders =
   async () => {
-    const response = await axios.get(
-      `${API_BASE_URL}/mtc/providers`,
-      authHeaders()
-    );
+    try {
+      const response =
+        await axios.get(
+          `${MTC_API_URL}/providers`,
+          {
+            headers:
+              authHeaders(),
+          }
+        );
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        getApiError(
+          error,
+          "Unable to load MTC providers"
+        )
+      );
+    }
   };
 
 /* =========================================================
-   REGENERATE MTC PDF
+   GET PROVIDER CONFIG / CHEMICAL SPECS
+========================================================= */
+
+export const getMtcChemicalSpecs =
+  async (
+    mtcProvider
+  ) => {
+    try {
+      const response =
+        await axios.get(
+          `${MTC_API_URL}/chemical-specs`,
+          {
+            headers:
+              authHeaders(),
+
+            params: {
+              mtcProvider,
+            },
+          }
+        );
+
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        getApiError(
+          error,
+          "Unable to load MTC configuration"
+        )
+      );
+    }
+  };
+
+/* =========================================================
+   GET ALL MTC CERTIFICATES
+========================================================= */
+
+export const getMtcCertificates =
+  async (
+    params = {}
+  ) => {
+    try {
+      const response =
+        await axios.get(
+          MTC_API_URL,
+          {
+            headers:
+              authHeaders(),
+
+            params,
+          }
+        );
+
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        getApiError(
+          error,
+          "Unable to load MTC certificates"
+        )
+      );
+    }
+  };
+
+/* =========================================================
+   GET SINGLE MTC
+========================================================= */
+
+export const getMtcCertificateById =
+  async (
+    id,
+    mtcProvider = ""
+  ) => {
+    try {
+      const response =
+        await axios.get(
+          `${MTC_API_URL}/${id}`,
+          {
+            headers:
+              authHeaders(),
+
+            params:
+              mtcProvider
+                ? {
+                    mtcProvider,
+                  }
+                : {},
+          }
+        );
+
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        getApiError(
+          error,
+          "Unable to load MTC certificate"
+        )
+      );
+    }
+  };
+
+/* =========================================================
+   CREATE MTC
+========================================================= */
+
+export const createMtcCertificate =
+  async (
+    payload
+  ) => {
+    try {
+      const response =
+        await axios.post(
+          MTC_API_URL,
+          payload,
+          {
+            headers: {
+              ...authHeaders(),
+
+              "Content-Type":
+                "application/json",
+            },
+          }
+        );
+
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        getApiError(
+          error,
+          "Unable to create MTC certificate"
+        )
+      );
+    }
+  };
+
+/* =========================================================
+   UPDATE MTC
+========================================================= */
+
+export const updateMtcCertificate =
+  async (
+    id,
+    payload,
+    mtcProvider = ""
+  ) => {
+    try {
+      const response =
+        await axios.patch(
+          `${MTC_API_URL}/${id}`,
+          payload,
+          {
+            headers: {
+              ...authHeaders(),
+
+              "Content-Type":
+                "application/json",
+            },
+
+            params:
+              mtcProvider
+                ? {
+                    mtcProvider,
+                  }
+                : {},
+          }
+        );
+
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        getApiError(
+          error,
+          "Unable to update MTC certificate"
+        )
+      );
+    }
+  };
+
+/* =========================================================
+   REGENERATE PDF
 ========================================================= */
 
 export const regenerateMtcPdf =
@@ -154,13 +253,160 @@ export const regenerateMtcPdf =
     id,
     mtcProvider = ""
   ) => {
-    const response = await axios.post(
-      `${API_BASE_URL}/mtc/${id}/regenerate-pdf`,
-      {
-        mtcProvider,
-      },
-      authHeaders()
+    try {
+      const response =
+        await axios.post(
+          `${MTC_API_URL}/${id}/regenerate`,
+
+          mtcProvider
+            ? {
+                mtcProvider,
+              }
+            : {},
+
+          {
+            headers:
+              authHeaders(),
+
+            params:
+              mtcProvider
+                ? {
+                    mtcProvider,
+                  }
+                : {},
+          }
+        );
+
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        getApiError(
+          error,
+          "Unable to regenerate MTC PDF"
+        )
+      );
+    }
+  };
+
+/* =========================================================
+   DOWNLOAD PDF AS BLOB
+========================================================= */
+
+export const downloadMtcPdf =
+  async (
+    id,
+    mtcProvider = ""
+  ) => {
+    try {
+      const response =
+        await axios.get(
+          `${MTC_API_URL}/${id}/download`,
+          {
+            headers:
+              authHeaders(),
+
+            params:
+              mtcProvider
+                ? {
+                    mtcProvider,
+                  }
+                : {},
+
+            responseType:
+              "blob",
+          }
+        );
+
+      return response;
+    } catch (error) {
+      throw new Error(
+        getApiError(
+          error,
+          "Unable to download MTC PDF"
+        )
+      );
+    }
+  };
+
+/* =========================================================
+   DOWNLOAD HELPER
+========================================================= */
+
+export const saveMtcPdfToDevice =
+  async (
+    id,
+    mtcProvider = "",
+    preferredFileName =
+      ""
+  ) => {
+    const response =
+      await downloadMtcPdf(
+        id,
+        mtcProvider
+      );
+
+    const blob =
+      new Blob(
+        [response.data],
+        {
+          type:
+            response.headers[
+              "content-type"
+            ] ||
+            "application/pdf",
+        }
+      );
+
+    const objectUrl =
+      window.URL.createObjectURL(
+        blob
+      );
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+    link.href =
+      objectUrl;
+
+    const contentDisposition =
+      response.headers[
+        "content-disposition"
+      ];
+
+    let fileName =
+      preferredFileName ||
+      "material-test-certificate.pdf";
+
+    if (
+      contentDisposition
+    ) {
+      const fileNameMatch =
+        contentDisposition.match(
+          /filename="?([^"]+)"?/i
+        );
+
+      if (
+        fileNameMatch?.[1]
+      ) {
+        fileName =
+          fileNameMatch[1];
+      }
+    }
+
+    link.download =
+      fileName;
+
+    document.body.appendChild(
+      link
     );
 
-    return response.data;
+    link.click();
+
+    link.remove();
+
+    window.URL.revokeObjectURL(
+      objectUrl
+    );
   };

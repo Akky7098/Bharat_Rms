@@ -66,6 +66,7 @@ import {
   employeeIdOf,
   formatDate,
   formatMinutes,
+  getBrowserLocation,
   getDateKey,
   getHealth,
   isLeadership,
@@ -1682,26 +1683,213 @@ export default function AttendancePage() {
       }
     };
 
-  /* =========================================================
-     CHECK IN
+/* =========================================================
+   BUILD CURRENT ATTENDANCE LOCATION
 
-     No periodic timer here.
+   IMPORTANT:
+   Backend requires GPS coordinates directly in the
+   Check-In / Check-Out request.
 
-     Global tracker continues separately.
-  ========================================================= */
+   Existing browser permission may already be granted,
+   therefore the browser may NOT show another popup.
 
-  const handleCheckIn =
-    async () => {
-      try {
-        setActionLoading(
-          "checkin"
+   It will simply return the current GPS position.
+========================================================= */
+
+const getCurrentAttendanceLocationPayload =
+  async () => {
+    if (
+      !navigator.geolocation
+    ) {
+      throw new Error(
+        "Location is not supported on this device."
+      );
+    }
+
+    let position;
+
+    try {
+      position =
+        await getBrowserLocation();
+    } catch (error) {
+      /*
+       * Translate browser GPS errors into something
+       * understandable for the employee.
+       */
+
+      if (
+        error?.code === 1
+      ) {
+        throw new Error(
+          "Location permission is blocked. Please allow location access for Bharat RMS and try again."
         );
+      }
 
-        await checkInAttendance();
+      if (
+        error?.code === 2
+      ) {
+        throw new Error(
+          "Current location is unavailable. Please turn on GPS/location services and try again."
+        );
+      }
 
-        /*
-         * Explicit immediate checkpoint.
-         */
+      if (
+        error?.code === 3
+      ) {
+        throw new Error(
+          "Location request timed out. Please try again."
+        );
+      }
+
+      throw new Error(
+        error?.message ||
+        "Unable to get your current location."
+      );
+    }
+
+    if (
+      !position?.coords
+    ) {
+      throw new Error(
+        "Current GPS location could not be obtained."
+      );
+    }
+
+    const latitude =
+      Number(
+        position.coords.latitude
+      );
+
+    const longitude =
+      Number(
+        position.coords.longitude
+      );
+
+    const accuracy =
+      Number(
+        position.coords.accuracy
+      );
+
+    if (
+      !Number.isFinite(
+        latitude
+      ) ||
+      !Number.isFinite(
+        longitude
+      )
+    ) {
+      throw new Error(
+        "Invalid GPS location received."
+      );
+    }
+
+    if (
+      latitude === 0 &&
+      longitude === 0
+    ) {
+      throw new Error(
+        "Valid GPS location could not be obtained."
+      );
+    }
+
+    const userAgent =
+      navigator.userAgent ||
+      "";
+
+    const deviceType =
+      /ipad|tablet/i.test(
+        userAgent
+      )
+        ? "tablet"
+        : /mobile|android|iphone|ipod/i.test(
+            userAgent
+          )
+        ? "mobile"
+        : "desktop";
+
+    return {
+      latitude,
+      longitude,
+
+      accuracy:
+        Number.isFinite(
+          accuracy
+        )
+          ? accuracy
+          : 0,
+
+      userAgent,
+      deviceType,
+    };
+  };
+
+
+/* =========================================================
+   CHECK IN
+
+   GPS is captured FIRST.
+
+   Then the same GPS is sent directly with Check-In.
+
+   After successful Check-In, an explicit location
+   checkpoint is also created for location history.
+========================================================= */
+
+const handleCheckIn =
+  async () => {
+    try {
+      setActionLoading(
+        "checkin"
+      );
+
+      /* ===============================================
+         1. GET CURRENT DEVICE GPS FIRST
+      =============================================== */
+
+      const locationPayload =
+        await getCurrentAttendanceLocationPayload();
+
+
+      console.log(
+        "CHECK-IN LOCATION READY =>",
+        {
+          latitude:
+            locationPayload.latitude,
+
+          longitude:
+            locationPayload.longitude,
+
+          accuracy:
+            locationPayload.accuracy,
+
+          deviceType:
+            locationPayload.deviceType,
+        }
+      );
+
+
+      /* ===============================================
+         2. SEND LOCATION WITH CHECK-IN REQUEST
+
+         This is what your backend buildLocationObject()
+         requires.
+      =============================================== */
+
+      await checkInAttendance(
+        locationPayload
+      );
+
+
+      /* ===============================================
+         3. CREATE INITIAL LOCATION HISTORY CHECKPOINT
+
+         Check-In has now succeeded.
+
+         Keep this because it feeds EmployeeLocationLog /
+         location history.
+      =============================================== */
+
+      try {
         await captureAttendanceLocationNow(
           "check_in",
           {
@@ -1709,23 +1897,52 @@ export default function AttendancePage() {
             verifyStatus: false,
           }
         );
-
-        await refreshAll();
-      } catch (error) {
-        window.alert(
-          error
+      } catch (
+        checkpointError
+      ) {
+        /*
+         * Attendance has already been successfully marked.
+         * A checkpoint failure should NOT make employee
+         * think Check-In failed.
+         */
+        console.warn(
+          "CHECK-IN CHECKPOINT WARNING =>",
+          checkpointError
             ?.response
             ?.data
             ?.message ||
-            error?.message ||
-            "Check-in failed."
-        );
-      } finally {
-        setActionLoading(
-          ""
+            checkpointError
+              ?.message ||
+            checkpointError
         );
       }
-    };
+
+
+      /* ===============================================
+         4. REFRESH ATTENDANCE
+      =============================================== */
+
+      await refreshAll();
+    } catch (error) {
+      console.error(
+        "CHECK-IN FAILED =>",
+        error
+      );
+
+      window.alert(
+        error
+          ?.response
+          ?.data
+          ?.message ||
+        error?.message ||
+        "Check-in failed."
+      );
+    } finally {
+      setActionLoading(
+        ""
+      );
+    }
+  };
 
   /* =========================================================
      CHECK OUT
@@ -1734,12 +1951,50 @@ export default function AttendancePage() {
   ========================================================= */
 
   const handleCheckOut =
-    async () => {
-      try {
-        setActionLoading(
-          "checkout"
-        );
+  async () => {
+    try {
+      setActionLoading(
+        "checkout"
+      );
 
+
+      /* ===============================================
+         1. GET CURRENT DEVICE GPS
+      =============================================== */
+
+      const locationPayload =
+        await getCurrentAttendanceLocationPayload();
+
+
+      console.log(
+        "CHECK-OUT LOCATION READY =>",
+        {
+          latitude:
+            locationPayload.latitude,
+
+          longitude:
+            locationPayload.longitude,
+
+          accuracy:
+            locationPayload.accuracy,
+
+          deviceType:
+            locationPayload.deviceType,
+        }
+      );
+
+
+      /* ===============================================
+         2. CAPTURE FINAL LOCATION HISTORY POINT
+
+         Attendance is still active here, so create the
+         final historical checkpoint before closing it.
+
+         Do NOT block Checkout if only the historical
+         checkpoint fails.
+      =============================================== */
+
+      try {
         await captureAttendanceLocationNow(
           "check_out",
           {
@@ -1747,25 +2002,58 @@ export default function AttendancePage() {
             verifyStatus: false,
           }
         );
-
-        await checkOutAttendance();
-
-        await refreshAll();
-      } catch (error) {
-        window.alert(
-          error
+      } catch (
+        checkpointError
+      ) {
+        console.warn(
+          "CHECK-OUT CHECKPOINT WARNING =>",
+          checkpointError
             ?.response
             ?.data
             ?.message ||
-            error?.message ||
-            "Check-out failed."
-        );
-      } finally {
-        setActionLoading(
-          ""
+            checkpointError
+              ?.message ||
+            checkpointError
         );
       }
-    };
+
+
+      /* ===============================================
+         3. SEND SAME CURRENT GPS WITH CHECK-OUT
+
+         Backend requires latitude / longitude here too.
+      =============================================== */
+
+      await checkOutAttendance(
+        locationPayload
+      );
+
+
+      /* ===============================================
+         4. REFRESH
+      =============================================== */
+
+      await refreshAll();
+    } catch (error) {
+      console.error(
+        "CHECK-OUT FAILED =>",
+        error
+      );
+
+      window.alert(
+        error
+          ?.response
+          ?.data
+          ?.message ||
+        error?.message ||
+        "Check-out failed."
+      );
+    } finally {
+      setActionLoading(
+        ""
+      );
+    }
+  };
 
   /* =========================================================
      APPROVE REGULARIZATION

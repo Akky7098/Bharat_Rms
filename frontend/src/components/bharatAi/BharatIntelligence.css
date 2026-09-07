@@ -4524,3 +4524,1384 @@
       none;
   }
 }
+
+/* ========================================================================
+   BHARAT AI — FINAL PWA / MOBILE OVERRIDE
+   ADD AT ABSOLUTE END OF BharatIntelligence.css
+
+   DESKTOP:
+   - No change
+   - Existing full "Ask Bharat Intelligence" launcher remains
+
+   MOBILE / PWA:
+   - Compact floating AI button
+   - Moves away from pagination / Next button
+   - Safe-area support
+   - Full-screen AI panel
+======================================================================== */
+
+@media screen and (max-width: 650px) {
+
+  /* =========================================================
+     MOBILE AI LAUNCHER
+  ========================================================= */
+
+  .bharat-ai-launcher,
+  .bharat-ai-launcher-next {
+    position: fixed !important;
+
+    top: auto !important;
+    left: auto !important;
+
+    right:
+      max(
+        14px,
+        env(safe-area-inset-right)
+      ) !important;
+
+    /*
+       Keep AI button above page pagination / bottom actions.
+       This prevents it covering Next / Previous.
+    */
+    bottom:
+      calc(
+        76px +
+        env(safe-area-inset-bottom)
+      ) !important;
+
+    width: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
+
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+
+    padding: 0 !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    gap: 0 !important;
+
+    border-radius: 16px !important;
+
+    overflow: visible !important;
+
+    z-index: 9997 !important;
+
+    box-shadow:
+      0 12px 30px
+      rgba(10, 14, 23, 0.25) !important;
+
+    -webkit-tap-highlight-color:
+      transparent;
+
+    touch-action:
+      manipulation;
+  }
+
+
+  /* =========================================================
+     REMOVE DESKTOP LAUNCHER TEXT ON MOBILE
+  ========================================================= */
+
+  .bharat-ai-launcher-copy,
+  .bharat-ai-launcher-chevron {
+    display: none !important;
+  }
+
+
+  /* =========================================================
+     MOBILE AI ICON
+  ========================================================= */
+
+  .bharat-ai-launcher-icon,
+  .bharat-ai-launcher-icon-next {
+    width: 42px !important;
+    min-width: 42px !important;
+
+    height: 42px !important;
+    min-height: 42px !important;
+
+    flex:
+      0 0 42px !important;
+
+    margin: 0 !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    border-radius: 13px !important;
+  }
+
+  .bharat-ai-launcher-icon svg,
+  .bharat-ai-launcher-icon-next svg {
+    width: 21px !important;
+    height: 21px !important;
+  }
+
+
+  /* =========================================================
+     LAUNCHER GLOW
+  ========================================================= */
+
+  .bharat-ai-launcher-glow {
+    width: auto !important;
+    height: auto !important;
+
+    inset: -5px !important;
+
+    left: -5px !important;
+    right: -5px !important;
+    top: -5px !important;
+    bottom: -5px !important;
+
+    border-radius: 20px !important;
+
+    pointer-events: none !important;
+  }
+
+
+  /* =========================================================
+     AI PANEL — TRUE PWA FULL SCREEN
+  ========================================================= */
+
+  .bharat-ai-panel,
+  .bharat-ai-panel-next {
+    position: fixed !important;
+
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+
+    width: 100% !important;
+    max-width: none !important;
+
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+
+    margin: 0 !important;
+
+    border: 0 !important;
+    border-left: 0 !important;
+
+    border-radius: 0 !important;
+
+    z-index: 9999 !important;
+
+    overflow: hidden !important;
+  }
+
+
+  /* =========================================================
+     PANEL OPEN STATE
+  ========================================================= */
+
+  .bharat-ai-panel-open {
+    transform:
+      translateX(0) !important;
+
+    visibility:
+      visible !important;
+  }
+
+
+  /* =========================================================
+     HEADER — NOTCH / SAFE AREA SUPPORT
+  ========================================================= */
+
+  .bharat-ai-header,
+  .bharat-ai-header-next {
+    flex:
+      0 0 auto !important;
+
+    min-height:
+      calc(
+        68px +
+        env(safe-area-inset-top)
+      ) !important;
+
+    padding:
+      calc(
+        10px +
+        env(safe-area-inset-top)
+      )
+      12px
+      10px
+      14px !important;
+
+    gap: 10px !important;
+  }
+
+
+  /* =========================================================
+     BRAND
+  ========================================================= */
+
+  .bharat-ai-brand {
+    min-width: 0 !important;
+
+    gap: 9px !important;
+  }
+
+  .bharat-ai-brand-logo,
+  .bharat-ai-brand-logo-next {
+    width: 38px !important;
+    height: 38px !important;
+
+    flex:
+      0 0 38px !important;
+
+    border-radius:
+      11px !important;
+  }
+
+  .bharat-ai-brand h3 {
+    font-size:
+      13px !important;
+
+    line-height:
+      17px !important;
+  }
+
+  .bharat-ai-brand p {
+    max-width:
+      180px !important;
+
+    overflow:
+      hidden !important;
+
+    text-overflow:
+      ellipsis !important;
+
+    white-space:
+      nowrap !important;
+
+    font-size:
+      9px !important;
+  }
+
+
+  /* =========================================================
+     HEADER BUTTONS
+  ========================================================= */
+
+  .bharat-ai-header-actions {
+    flex:
+      0 0 auto !important;
+
+    gap: 3px !important;
+  }
+
+  .bharat-ai-header-button {
+    width: 34px !important;
+    height: 34px !important;
+
+    border-radius:
+      10px !important;
+  }
+
+
+  /* =========================================================
+     USER STRIP
+  ========================================================= */
+
+  .bharat-ai-user-strip,
+  .bharat-ai-user-strip-next {
+    flex:
+      0 0 auto !important;
+
+    min-height:
+      46px !important;
+
+    padding:
+      7px 14px !important;
+  }
+
+  .bharat-ai-online-indicator {
+    display:
+      none !important;
+  }
+
+
+  /* =========================================================
+     BODY — ONLY CHAT AREA SCROLLS
+  ========================================================= */
+
+  .bharat-ai-body {
+    flex: 1 1 auto !important;
+
+    min-height: 0 !important;
+
+    overflow-x:
+      hidden !important;
+
+    overflow-y:
+      auto !important;
+
+    -webkit-overflow-scrolling:
+      touch !important;
+
+    overscroll-behavior:
+      contain !important;
+
+    touch-action:
+      pan-y;
+  }
+
+
+  /* =========================================================
+     MOBILE WELCOME SCREEN
+  ========================================================= */
+
+  .bharat-ai-welcome,
+  .bharat-ai-welcome-premium,
+  .bharat-ai-welcome-next {
+    min-height:
+      auto !important;
+
+    padding:
+      25px 16px
+      24px !important;
+  }
+
+  .bharat-ai-welcome-hero {
+    gap:
+      11px !important;
+  }
+
+  .bharat-ai-welcome-orb {
+    width: 47px !important;
+    height: 47px !important;
+
+    flex:
+      0 0 47px !important;
+
+    border-radius:
+      15px !important;
+  }
+
+  .bharat-ai-welcome-next
+    .bharat-ai-welcome-greeting
+    h2 {
+    font-size:
+      23px !important;
+
+    line-height:
+      28px !important;
+  }
+
+  .bharat-ai-welcome-subtitle-next {
+    margin-top:
+      14px !important;
+
+    font-size:
+      11px !important;
+
+    line-height:
+      17px !important;
+  }
+
+
+  /* =========================================================
+     CAPABILITY CHIPS
+  ========================================================= */
+
+  .bharat-ai-capability-row {
+    margin-top:
+      13px !important;
+
+    gap:
+      5px !important;
+  }
+
+  .bharat-ai-capability-row span {
+    padding:
+      4px 7px !important;
+
+    font-size:
+      7.5px !important;
+  }
+
+
+  /* =========================================================
+     STARTER CARDS
+  ========================================================= */
+
+  .bharat-ai-starter-grid,
+  .bharat-ai-starter-grid-premium,
+  .bharat-ai-starter-grid-next {
+    grid-template-columns:
+      1fr !important;
+
+    gap:
+      7px !important;
+
+    margin-top:
+      18px !important;
+  }
+
+  .bharat-ai-starter-grid button,
+  .bharat-ai-starter-grid-premium button,
+  .bharat-ai-starter-grid-next button {
+    min-height:
+      65px !important;
+
+    padding:
+      10px 30px
+      10px 11px !important;
+
+    border-radius:
+      12px !important;
+  }
+
+
+  /* =========================================================
+     CONVERSATION
+  ========================================================= */
+
+  .bharat-ai-conversation,
+  .bharat-ai-conversation-next {
+    padding:
+      16px 13px
+      24px !important;
+  }
+
+  .bharat-ai-conversation-next
+    .bharat-ai-message-user,
+  .bharat-ai-message-user {
+    padding-left:
+      38px !important;
+  }
+
+
+  /* =========================================================
+     COMPOSER — FIXED INSIDE AI PANEL
+  ========================================================= */
+
+  .bharat-ai-composer-section,
+  .bharat-ai-composer-section-next {
+    position:
+      relative !important;
+
+    flex:
+      0 0 auto !important;
+
+    padding:
+      8px
+      10px
+      calc(
+        8px +
+        env(safe-area-inset-bottom)
+      ) !important;
+
+    background:
+      rgba(
+        248,
+        249,
+        251,
+        0.98
+      ) !important;
+
+    z-index:
+      5 !important;
+  }
+
+  .bharat-ai-composer,
+  .bharat-ai-composer-next {
+    padding:
+      9px 8px
+      6px 10px !important;
+
+    border-radius:
+      14px !important;
+  }
+
+  .bharat-ai-composer textarea,
+  .bharat-ai-composer-next textarea {
+    max-height:
+      110px !important;
+
+    font-size:
+      11px !important;
+
+    line-height:
+      17px !important;
+  }
+
+
+  /* =========================================================
+     MOBILE COMPOSER TOOLS
+  ========================================================= */
+
+  .bharat-ai-composer-bottom,
+  .bharat-ai-composer-bottom-next {
+    min-height:
+      31px !important;
+
+    padding-top:
+      5px !important;
+  }
+
+  .bharat-ai-composer-hint {
+    display:
+      none !important;
+  }
+
+  .bharat-ai-tool-button {
+    width:
+      29px !important;
+
+    height:
+      29px !important;
+
+    flex:
+      0 0 29px !important;
+  }
+
+  .bharat-ai-send-button,
+  .bharat-ai-send-button-next {
+    width:
+      31px !important;
+
+    height:
+      31px !important;
+
+    flex:
+      0 0 31px !important;
+  }
+
+
+  /* =========================================================
+     ATTACHMENTS
+  ========================================================= */
+
+  .bharat-ai-attachment-tray {
+    max-width:
+      100% !important;
+
+    overflow-x:
+      auto !important;
+
+    overflow-y:
+      hidden !important;
+  }
+
+
+  /* =========================================================
+     OVERLAY
+  ========================================================= */
+
+  .bharat-ai-overlay {
+    z-index:
+      9998 !important;
+  }
+}
+
+
+/* ========================================================================
+   EXTRA SMALL PWA
+======================================================================== */
+
+@media screen and (max-width: 420px) {
+
+  .bharat-ai-launcher,
+  .bharat-ai-launcher-next {
+    right:
+      max(
+        12px,
+        env(safe-area-inset-right)
+      ) !important;
+
+    bottom:
+      calc(
+        72px +
+        env(safe-area-inset-bottom)
+      ) !important;
+
+    width:
+      48px !important;
+
+    min-width:
+      48px !important;
+
+    max-width:
+      48px !important;
+
+    height:
+      48px !important;
+
+    min-height:
+      48px !important;
+
+    max-height:
+      48px !important;
+
+    border-radius:
+      15px !important;
+  }
+
+  .bharat-ai-launcher-icon,
+  .bharat-ai-launcher-icon-next {
+    width:
+      39px !important;
+
+    min-width:
+      39px !important;
+
+    height:
+      39px !important;
+
+    min-height:
+      39px !important;
+
+    flex:
+      0 0 39px !important;
+
+    border-radius:
+      12px !important;
+  }
+
+  .bharat-ai-launcher-icon svg,
+  .bharat-ai-launcher-icon-next svg {
+    width:
+      20px !important;
+
+    height:
+      20px !important;
+  }
+
+  .bharat-ai-brand p {
+    max-width:
+      150px !important;
+  }
+
+  .bharat-ai-capability-row
+    span:nth-child(3) {
+    display:
+      none !important;
+  }
+}
+
+
+/* ========================================================================
+   LANDSCAPE PHONE
+======================================================================== */
+
+@media screen
+  and (max-width: 900px)
+  and (orientation: landscape)
+  and (max-height: 500px) {
+
+  .bharat-ai-launcher,
+  .bharat-ai-launcher-next {
+    bottom:
+      calc(
+        16px +
+        env(safe-area-inset-bottom)
+      ) !important;
+  }
+
+  .bharat-ai-header,
+  .bharat-ai-header-next {
+    min-height:
+      calc(
+        58px +
+        env(safe-area-inset-top)
+      ) !important;
+
+    padding-top:
+      calc(
+        7px +
+        env(safe-area-inset-top)
+      ) !important;
+
+    padding-bottom:
+      7px !important;
+  }
+
+  .bharat-ai-user-strip,
+  .bharat-ai-user-strip-next {
+    min-height:
+      40px !important;
+
+    padding-top:
+      5px !important;
+
+    padding-bottom:
+      5px !important;
+  }
+}
+
+
+/* ========================================================================
+   END — BHARAT AI MOBILE / PWA OVERRIDE
+======================================================================== */
+
+/* ========================================================================
+   BHARAT INTELLIGENCE
+   FINAL PREMIUM MOBILE / PWA LAUNCHER
+   ------------------------------------------------------------------------
+   IMPORTANT:
+   KEEP THIS AS THE ABSOLUTE LAST CODE IN BharatIntelligence.css
+
+   DESKTOP:
+   - Completely unchanged.
+
+   MOBILE / PWA:
+   - Logo only
+   - No long black bar
+   - Premium floating AI orb
+   - Does not cover module text/buttons
+   - Safe-area aware
+======================================================================== */
+
+@media screen and (max-width: 650px) {
+
+  /* =========================================================
+     OUTER LAUNCHER BUTTON
+
+     Reset every older launcher width/min-width/background.
+  ========================================================= */
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next {
+    position: fixed !important;
+
+    top: auto !important;
+    left: auto !important;
+
+    right:
+      max(
+        16px,
+        env(safe-area-inset-right)
+      ) !important;
+
+    bottom:
+      calc(
+        82px +
+        env(safe-area-inset-bottom)
+      ) !important;
+
+    width: 54px !important;
+    min-width: 54px !important;
+    max-width: 54px !important;
+
+    height: 54px !important;
+    min-height: 54px !important;
+    max-height: 54px !important;
+
+    flex:
+      0 0 54px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    gap: 0 !important;
+
+    border: 0 !important;
+
+    border-radius: 18px !important;
+
+    /*
+     * Important:
+     * remove old large black capsule.
+     */
+    background:
+      transparent !important;
+
+    color:
+      #ffffff !important;
+
+    box-shadow:
+      none !important;
+
+    overflow:
+      visible !important;
+
+    z-index:
+      9997 !important;
+
+    cursor:
+      pointer !important;
+
+    transform:
+      none !important;
+
+    -webkit-appearance:
+      none !important;
+
+    appearance:
+      none !important;
+
+    -webkit-tap-highlight-color:
+      transparent !important;
+
+    touch-action:
+      manipulation !important;
+  }
+
+
+  /* =========================================================
+     REMOVE DESKTOP TEXT COMPLETELY
+  ========================================================= */
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-copy,
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-chevron {
+
+    display:
+      none !important;
+
+    width:
+      0 !important;
+
+    min-width:
+      0 !important;
+
+    max-width:
+      0 !important;
+
+    height:
+      0 !important;
+
+    margin:
+      0 !important;
+
+    padding:
+      0 !important;
+
+    overflow:
+      hidden !important;
+  }
+
+
+  /* =========================================================
+     PREMIUM AI ORB
+
+     The icon itself becomes the complete launcher.
+  ========================================================= */
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-icon,
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-icon-next {
+
+    position:
+      relative !important;
+
+    z-index:
+      2 !important;
+
+    width:
+      54px !important;
+
+    min-width:
+      54px !important;
+
+    max-width:
+      54px !important;
+
+    height:
+      54px !important;
+
+    min-height:
+      54px !important;
+
+    max-height:
+      54px !important;
+
+    flex:
+      0 0 54px !important;
+
+    margin:
+      0 !important;
+
+    padding:
+      0 !important;
+
+    display:
+      flex !important;
+
+    align-items:
+      center !important;
+
+    justify-content:
+      center !important;
+
+    border:
+      1px solid
+      rgba(
+        255,
+        255,
+        255,
+        0.22
+      ) !important;
+
+    border-radius:
+      18px !important;
+
+    color:
+      #ffffff !important;
+
+    background:
+      linear-gradient(
+        145deg,
+        #786cff 0%,
+        #6357f4 44%,
+        #5045d9 100%
+      ) !important;
+
+    box-shadow:
+      0 12px 30px
+      rgba(
+        61,
+        52,
+        176,
+        0.34
+      ),
+      0 4px 10px
+      rgba(
+        15,
+        23,
+        42,
+        0.15
+      ),
+      inset
+      0 1px 0
+      rgba(
+        255,
+        255,
+        255,
+        0.30
+      ) !important;
+
+    overflow:
+      hidden !important;
+
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease !important;
+  }
+
+
+  /* =========================================================
+     SUBTLE PREMIUM LIGHT EFFECT
+  ========================================================= */
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-icon-next::before {
+
+    content:
+      "";
+
+    position:
+      absolute;
+
+    width:
+      38px;
+
+    height:
+      38px;
+
+    top:
+      -20px;
+
+    right:
+      -15px;
+
+    border-radius:
+      999px;
+
+    background:
+      rgba(
+        255,
+        255,
+        255,
+        0.28
+      );
+
+    filter:
+      blur(10px);
+
+    pointer-events:
+      none;
+  }
+
+
+  /* =========================================================
+     ICON
+  ========================================================= */
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-icon
+    svg,
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-icon-next
+    svg {
+
+    position:
+      relative !important;
+
+    z-index:
+      3 !important;
+
+    width:
+      23px !important;
+
+    height:
+      23px !important;
+
+    stroke-width:
+      2 !important;
+  }
+
+
+  /* =========================================================
+     REMOVE OLD LARGE GLOW
+
+     The previous glow was designed for the desktop capsule.
+  ========================================================= */
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-glow {
+
+    display:
+      none !important;
+  }
+
+
+  /* =========================================================
+     TOUCH FEEDBACK
+  ========================================================= */
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next:active
+    .bharat-ai-launcher-icon-next {
+
+    transform:
+      scale(0.93) !important;
+
+    box-shadow:
+      0 7px 19px
+      rgba(
+        61,
+        52,
+        176,
+        0.28
+      ),
+      0 3px 7px
+      rgba(
+        15,
+        23,
+        42,
+        0.12
+      ) !important;
+  }
+
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next:hover {
+    transform:
+      none !important;
+
+    background:
+      transparent !important;
+
+    box-shadow:
+      none !important;
+  }
+
+
+  /* =========================================================
+     AI OPEN PANEL
+     TRUE MOBILE APP EXPERIENCE
+  ========================================================= */
+
+  .bharat-ai-panel.bharat-ai-panel-next {
+    position:
+      fixed !important;
+
+    inset:
+      0 !important;
+
+    width:
+      100vw !important;
+
+    min-width:
+      100vw !important;
+
+    max-width:
+      100vw !important;
+
+    height:
+      100dvh !important;
+
+    min-height:
+      100dvh !important;
+
+    max-height:
+      100dvh !important;
+
+    border:
+      0 !important;
+
+    border-radius:
+      0 !important;
+
+    overflow:
+      hidden !important;
+
+    z-index:
+      9999 !important;
+  }
+
+
+  /* =========================================================
+     SAFE MOBILE HEADER
+  ========================================================= */
+
+  .bharat-ai-panel-next
+    .bharat-ai-header-next {
+
+    min-height:
+      calc(
+        66px +
+        env(
+          safe-area-inset-top
+        )
+      ) !important;
+
+    padding:
+      calc(
+        9px +
+        env(
+          safe-area-inset-top
+        )
+      )
+      12px
+      9px
+      14px !important;
+  }
+
+
+  /* =========================================================
+     CHAT BODY
+  ========================================================= */
+
+  .bharat-ai-panel-next
+    .bharat-ai-body {
+
+    min-height:
+      0 !important;
+
+    flex:
+      1 1 auto !important;
+
+    overflow-x:
+      hidden !important;
+
+    overflow-y:
+      auto !important;
+
+    -webkit-overflow-scrolling:
+      touch !important;
+  }
+
+
+  /* =========================================================
+     SAFE COMPOSER
+  ========================================================= */
+
+  .bharat-ai-panel-next
+    .bharat-ai-composer-section-next {
+
+    padding-bottom:
+      calc(
+        9px +
+        env(
+          safe-area-inset-bottom
+        )
+      ) !important;
+  }
+}
+
+
+/* ========================================================================
+   SMALL PHONES
+======================================================================== */
+
+@media screen and (max-width: 420px) {
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next {
+
+    right:
+      max(
+        14px,
+        env(
+          safe-area-inset-right
+        )
+      ) !important;
+
+    bottom:
+      calc(
+        78px +
+        env(
+          safe-area-inset-bottom
+        )
+      ) !important;
+
+    width:
+      50px !important;
+
+    min-width:
+      50px !important;
+
+    max-width:
+      50px !important;
+
+    height:
+      50px !important;
+
+    min-height:
+      50px !important;
+
+    max-height:
+      50px !important;
+
+    flex:
+      0 0 50px !important;
+  }
+
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-icon,
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-icon-next {
+
+    width:
+      50px !important;
+
+    min-width:
+      50px !important;
+
+    max-width:
+      50px !important;
+
+    height:
+      50px !important;
+
+    min-height:
+      50px !important;
+
+    max-height:
+      50px !important;
+
+    flex:
+      0 0 50px !important;
+
+    border-radius:
+      16px !important;
+  }
+
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-icon
+    svg,
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next
+    .bharat-ai-launcher-icon-next
+    svg {
+
+    width:
+      21px !important;
+
+    height:
+      21px !important;
+  }
+}
+
+
+/* ========================================================================
+   LANDSCAPE PHONE
+======================================================================== */
+
+@media screen
+  and (max-width: 900px)
+  and (orientation: landscape)
+  and (max-height: 500px) {
+
+  button.bharat-ai-launcher.bharat-ai-launcher-next {
+
+    right:
+      14px !important;
+
+    bottom:
+      calc(
+        18px +
+        env(
+          safe-area-inset-bottom
+        )
+      ) !important;
+  }
+}
+
+
+/* ========================================================================
+   END — FINAL BHARAT AI PWA LAUNCHER
+======================================================================== */
+
+/* ========================================================================
+   BHARAT AI — DESKTOP FLOATING POSITION FIX
+   KEEP AT ABSOLUTE END OF BharatIntelligence.css
+
+   Purpose:
+   - Keep AI launcher away from pagination
+   - Preserve standard bottom-right assistant position
+   - No change to AI panel
+   - Mobile positioning remains handled by existing mobile CSS
+======================================================================== */
+
+@media screen and (min-width: 651px) {
+
+  button.bharat-ai-launcher,
+  button.bharat-ai-launcher.bharat-ai-launcher-next {
+    position: fixed !important;
+
+    right: 24px !important;
+
+    /*
+     * Reserve the bottom area for:
+     * pagination / Previous / Next / table actions.
+     */
+    bottom: 88px !important;
+
+    z-index: 9997 !important;
+  }
+}
+
+
+/* ========================================================================
+   SHORT DESKTOP / LAPTOP SCREENS
+======================================================================== */
+
+@media screen
+  and (min-width: 651px)
+  and (max-height: 800px) {
+
+  button.bharat-ai-launcher,
+  button.bharat-ai-launcher.bharat-ai-launcher-next {
+    bottom: 76px !important;
+  }
+}

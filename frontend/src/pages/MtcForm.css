@@ -1362,3 +1362,485 @@ x/* =========================================================
     font-size: 13px;
   }
 }
+
+/* =========================================================
+   SBE GERMANY MTC
+========================================================= */
+
+.sbe-mtc-page {
+  width: 100%;
+}
+
+.sbe-primary-card {
+  border-color: #c7d7f2;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fbfdff 100%
+    );
+}
+
+/* =========================================================
+   FIELD HELP
+========================================================= */
+
+.sbe-field-help {
+  display: block;
+  margin-top: 6px;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.sbe-loading-state {
+  min-height: 220px;
+  border: 1px solid #e4e7ec;
+  border-radius: 22px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  color: #06429c;
+}
+
+.sbe-loading-state > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sbe-loading-state strong {
+  color: #101828;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.sbe-loading-state span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   SUCCESS
+========================================================= */
+
+.sbe-success-message {
+  margin-bottom: 15px;
+  padding: 13px 15px;
+  border: 1px solid #abefc6;
+  border-radius: 15px;
+  background: #ecfdf3;
+  color: #067647;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* =========================================================
+   CREATED CERTIFICATE
+========================================================= */
+
+.sbe-created-card {
+  margin-bottom: 16px;
+  padding: 17px;
+  border: 1px solid #abefc6;
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      135deg,
+      #ecfdf3,
+      #f6fef9
+    );
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.sbe-created-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 15px;
+  background: #067647;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sbe-created-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.sbe-created-content > span {
+  display: block;
+  color: #067647;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sbe-created-content > strong {
+  display: block;
+  margin-top: 3px;
+  color: #101828;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* =========================================================
+   GENERATED NUMBERS
+========================================================= */
+
+.sbe-generated-numbers {
+  margin-top: 13px;
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sbe-generated-numbers > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #d1fadf;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.sbe-generated-numbers small {
+  display: block;
+  margin-bottom: 4px;
+  color: #475467;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.sbe-generated-numbers strong {
+  display: block;
+  color: #067647;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+/* =========================================================
+   CONTROLLED DATA GRID
+========================================================= */
+
+.sbe-controlled-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sbe-readonly-item {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #e4e7ec;
+  border-radius: 15px;
+  background: #f8fafc;
+}
+
+.sbe-readonly-wide {
+  grid-column: span 2;
+}
+
+.sbe-readonly-item span {
+  display: block;
+  margin-bottom: 6px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.sbe-readonly-item strong {
+  display: block;
+  color: #101828;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   EMPTY CONFIG
+========================================================= */
+
+.sbe-empty-config {
+  min-height: 130px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 18px;
+  background: #f8fafc;
+  color: #667085;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 5px;
+  padding: 20px;
+}
+
+.sbe-empty-config svg {
+  color: #06429c;
+  margin-bottom: 3px;
+}
+
+.sbe-empty-config strong {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.sbe-empty-config span {
+  max-width: 360px;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   CHEMISTRY
+========================================================= */
+
+.sbe-chemistry-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sbe-chemical-card {
+  min-height: 84px;
+  border: 1px solid #dbe4f0;
+  border-radius: 15px;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff,
+      #f8fafc
+    );
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.sbe-chemical-card strong {
+  color: #06429c;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.sbe-chemical-card span {
+  margin-top: 7px;
+  color: #101828;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.sbe-controlled-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 13px;
+  background: #eef4ff;
+  color: #175cd3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+/* =========================================================
+   TEST / INSPECTION DATA
+========================================================= */
+
+.sbe-test-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sbe-test-item {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #e4e7ec;
+  border-radius: 15px;
+  background: #f8fafc;
+}
+
+.sbe-test-wide {
+  grid-column: span 3;
+}
+
+.sbe-test-item span {
+  display: block;
+  margin-bottom: 6px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.sbe-test-item strong {
+  display: block;
+  color: #101828;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   GENERATED NUMBER INFORMATION
+========================================================= */
+
+.sbe-generation-info {
+  padding: 14px 16px;
+  border: 1px solid #b2ddff;
+  border-radius: 17px;
+  background: #eff8ff;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  color: #175cd3;
+}
+
+.sbe-generation-info svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.sbe-generation-info > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sbe-generation-info strong {
+  color: #175cd3;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.sbe-generation-info span {
+  color: #344054;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+  .sbe-controlled-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .sbe-chemistry-grid {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+  }
+
+  .sbe-test-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .sbe-test-wide {
+    grid-column:
+      span 2;
+  }
+}
+
+/* =========================================================
+   MOBILE / PWA
+========================================================= */
+
+@media (max-width: 768px) {
+  .sbe-created-card {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .sbe-created-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+  }
+
+  .sbe-generated-numbers {
+    grid-template-columns: 1fr;
+  }
+
+  .sbe-controlled-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sbe-readonly-wide {
+    grid-column: auto;
+  }
+
+  .sbe-chemistry-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .sbe-chemical-card {
+    min-height: 76px;
+    border-radius: 14px;
+  }
+
+  .sbe-chemical-card strong {
+    font-size: 13px;
+  }
+
+  .sbe-chemical-card span {
+    font-size: 13px;
+  }
+
+  .sbe-test-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sbe-test-wide {
+    grid-column: auto;
+  }
+
+  .sbe-generation-info {
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .sbe-chemistry-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}

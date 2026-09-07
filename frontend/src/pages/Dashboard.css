@@ -1392,19 +1392,21 @@
 }
 
 /* =========================================================
-   ORDER TRACKING PWA DASHBOARD VIEWPORT
-   Keep at the absolute end of Dashboard.css
-========================================================= */
-
-/* =========================================================
-   ORDER TRACKING PWA DASHBOARD SHELL
-   Keep at absolute end of Dashboard.css
+   ORDER TRACKING PWA
+   FINAL PRODUCTION SHELL
+   ---------------------------------------------------------
+   - Hide normal dashboard chrome
+   - Keep app inside mobile viewport
+   - Allow Order Tracking to scroll
+   - Do NOT affect desktop
 ========================================================= */
 
 @media screen and (max-width: 900px) {
-  /*
-   * Support both possible module class names.
-   */
+
+  /* =====================================================
+     HIDE NORMAL DASHBOARD CHROME
+  ===================================================== */
+
   .dashboard.pwa-module-orderToDispatch
     > .mobile-topbar,
   .dashboard.pwa-module-orderTracking
@@ -1432,32 +1434,34 @@
     .sidebar,
   .dashboard:has(.ot-page)
     .sidebar {
+
     display: none !important;
   }
 
-  /*
-   * Remove the global notification bell because
-   * Order Tracking has its own header controls.
-   */
+
+  /* =====================================================
+     HIDE GLOBAL NOTIFICATION BELL
+  ===================================================== */
+
   .dashboard.pwa-module-orderToDispatch
     .notification-widget,
   .dashboard.pwa-module-orderTracking
     .notification-widget,
   .dashboard:has(.ot-page)
     .notification-widget {
+
     display: none !important;
   }
 
+
+  /* =====================================================
+     DASHBOARD ROOT
+  ===================================================== */
+
   .dashboard.pwa-module-orderToDispatch,
   .dashboard.pwa-module-orderTracking,
-  .dashboard:has(.ot-page),
+  .dashboard:has(.ot-page) {
 
-  .dashboard.pwa-module-orderToDispatch
-    .dashboard-layout,
-  .dashboard.pwa-module-orderTracking
-    .dashboard-layout,
-  .dashboard:has(.ot-page)
-    .dashboard-layout {
     width: 100% !important;
 
     height: 100dvh !important;
@@ -1472,14 +1476,39 @@
     background: #f3f6f4 !important;
   }
 
+
+  /* =====================================================
+     DASHBOARD LAYOUT
+  ===================================================== */
+
   .dashboard.pwa-module-orderToDispatch
     .dashboard-layout,
   .dashboard.pwa-module-orderTracking
     .dashboard-layout,
   .dashboard:has(.ot-page)
     .dashboard-layout {
+
     display: block !important;
+
+    width: 100% !important;
+
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+
+    background: #f3f6f4 !important;
   }
+
+
+  /* =====================================================
+     MAIN BECOMES THE SCROLL CONTAINER
+     THIS IS THE IMPORTANT FIX
+  ===================================================== */
 
   .dashboard.pwa-module-orderToDispatch
     .main,
@@ -1487,6 +1516,7 @@
     .main,
   .dashboard:has(.ot-page)
     .main {
+
     position: relative !important;
 
     display: block !important;
@@ -1494,16 +1524,41 @@
     width: 100% !important;
 
     height: 100dvh !important;
-    min-height: 100dvh !important;
+    min-height: 0 !important;
     max-height: 100dvh !important;
 
     margin: 0 !important;
     padding: 0 !important;
 
-    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+
+    -webkit-overflow-scrolling: touch !important;
+
+    overscroll-behavior-y: contain;
+
+    touch-action: pan-y;
 
     background: #f3f6f4 !important;
+
+    scrollbar-width: none;
   }
+
+
+  .dashboard.pwa-module-orderToDispatch
+    .main::-webkit-scrollbar,
+  .dashboard.pwa-module-orderTracking
+    .main::-webkit-scrollbar,
+  .dashboard:has(.ot-page)
+    .main::-webkit-scrollbar {
+
+    display: none;
+  }
+
+
+  /* =====================================================
+     ORDER TRACKING PAGE
+  ===================================================== */
 
   .dashboard.pwa-module-orderToDispatch
     .ot-page,
@@ -1511,7 +1566,53 @@
     .ot-page,
   .dashboard:has(.ot-page)
     .ot-page {
+
+    position: relative !important;
+
+    width: 100% !important;
+
+    min-height: 100dvh !important;
+    height: auto !important;
+    max-height: none !important;
+
     margin: 0 !important;
     padding: 0 !important;
+
+    overflow: visible !important;
+
+    background: #f3f6f4 !important;
+  }
+
+
+  /* =====================================================
+     PREVENT HORIZONTAL PAGE MOVEMENT
+  ===================================================== */
+
+  .dashboard.pwa-module-orderToDispatch
+    .ot-page,
+  .dashboard.pwa-module-orderTracking
+    .ot-page,
+  .dashboard:has(.ot-page)
+    .ot-page {
+
+    max-width: 100vw !important;
+  }
+
+
+  .dashboard.pwa-module-orderToDispatch
+    .ot-list-card,
+  .dashboard.pwa-module-orderTracking
+    .ot-list-card,
+  .dashboard:has(.ot-page)
+    .ot-list-card,
+
+  .dashboard.pwa-module-orderToDispatch
+    .ot-detail,
+  .dashboard.pwa-module-orderTracking
+    .ot-detail,
+  .dashboard:has(.ot-page)
+    .ot-detail {
+
+    max-width: 100% !important;
   }
 }

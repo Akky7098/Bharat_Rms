@@ -22,6 +22,7 @@ import {
   getCurrentMilestone,
   getOrderHealth,
   getStatusMeta,
+  prettyOrderType,
   prettyProcessType,
   prettySupplyCondition,
 } from "../orderTrackingUtils";
@@ -135,8 +136,10 @@ const OrderTrackingDetail = ({
             </span>
 
             <span className="ot-order-type ot-order-type--hero">
-              {tracking.orderType}
-            </span>
+  {prettyOrderType(
+    tracking.orderType
+  )}
+</span>
           </div>
 
           <h1>

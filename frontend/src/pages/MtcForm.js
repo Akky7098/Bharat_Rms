@@ -24,21 +24,41 @@ import {
 } from "./mtcForms";
 
 /* =========================================================
-   DEVELOPMENT FALLBACK PROVIDERS
+   DEVELOPMENT / NETWORK FALLBACK PROVIDERS
 ========================================================= */
 
 const DEFAULT_PROVIDERS = [
   {
-    value: "gloria",
-    label: "Gloria",
+    value:
+      "gloria",
+
+    label:
+      "Gloria",
+
     description:
       "Generate Gloria Material Test Certificate",
   },
+
   {
-    value: "bharat",
-    label: "Bharat Special Steel",
+    value:
+      "bharat",
+
+    label:
+      "Bharat Special Steel",
+
     description:
       "Generate Bharat Special Steel Test Certificate",
+  },
+
+  {
+    value:
+      "sbe_germany",
+
+    label:
+      "SBE Germany",
+
+    description:
+      "Generate SBE Germany Material Test Certificate",
   },
 ];
 
@@ -46,73 +66,104 @@ const DEFAULT_PROVIDERS = [
    HELPERS
 ========================================================= */
 
-const normalizeProvider = (value) =>
-  String(value || "")
+const normalizeProvider = (
+  value
+) =>
+  String(
+    value || ""
+  )
     .trim()
     .toLowerCase();
 
-const formatProviderLabel = (value) => {
-  return String(value || "")
+const formatProviderLabel = (
+  value
+) => {
+  return String(
+    value || ""
+  )
     .trim()
     .split(/[_-]/)
     .filter(Boolean)
     .map(
       (word) =>
-        word.charAt(0).toUpperCase() +
+        word
+          .charAt(0)
+          .toUpperCase() +
         word.slice(1)
     )
     .join(" ");
 };
 
-const normalizeProviderResponse = (
-  response
-) => {
-  const data = Array.isArray(response?.data)
-    ? response.data
-    : [];
+const normalizeProviderResponse =
+  (
+    response
+  ) => {
+    const data =
+      Array.isArray(
+        response?.data
+      )
+        ? response.data
+        : [];
 
-  return data
-    .map((provider) => {
-      if (typeof provider === "string") {
-        return {
-          value:
-            normalizeProvider(provider),
-          label:
-            formatProviderLabel(provider),
-          description: `Generate ${formatProviderLabel(
-            provider
-          )} test certificate`,
-        };
-      }
+    return data
+      .map(
+        (provider) => {
+          if (
+            typeof provider ===
+            "string"
+          ) {
+            const value =
+              normalizeProvider(
+                provider
+              );
 
-      const value = normalizeProvider(
-        provider?.value ||
-          provider?.provider ||
-          provider?.key
-      );
+            const label =
+              formatProviderLabel(
+                provider
+              );
 
-      if (!value) {
-        return null;
-      }
+            return {
+              value,
 
-      return {
-        value,
-        label:
-          provider?.label ||
-          provider?.name ||
-          formatProviderLabel(value),
+              label,
 
-        description:
-          provider?.description ||
-          `Generate ${
+              description:
+                `Generate ${label} test certificate`,
+            };
+          }
+
+          const value =
+            normalizeProvider(
+              provider?.value ||
+                provider?.provider ||
+                provider?.key
+            );
+
+          if (!value) {
+            return null;
+          }
+
+          const label =
             provider?.label ||
             provider?.name ||
-            formatProviderLabel(value)
-          } test certificate`,
-      };
-    })
-    .filter(Boolean);
-};
+            formatProviderLabel(
+              value
+            );
+
+          return {
+            value,
+
+            label,
+
+            description:
+              provider
+                ?.description ||
+              `Generate ${label} test certificate`,
+          };
+        }
+      )
+      .filter(Boolean);
+  };
 
 /* =========================================================
    MAIN MTC FORM WRAPPER
@@ -130,7 +181,9 @@ function MtcForm({
   const [
     providers,
     setProviders,
-  ] = useState(DEFAULT_PROVIDERS);
+  ] = useState(
+    DEFAULT_PROVIDERS
+  );
 
   const [
     loadingProviders,
@@ -147,136 +200,186 @@ function MtcForm({
   ======================================================= */
 
   const loadProviders =
-    useCallback(async () => {
-      try {
-        setLoadingProviders(true);
-        setProviderError("");
-
-        const response =
-          await getMtcProviders();
-
-        const normalizedProviders =
-          normalizeProviderResponse(
-            response
+    useCallback(
+      async () => {
+        try {
+          setLoadingProviders(
+            true
           );
 
-        if (
-          normalizedProviders.length > 0
-        ) {
-          setProviders(
+          setProviderError(
+            ""
+          );
+
+          const response =
+            await getMtcProviders();
+
+          const normalizedProviders =
+            normalizeProviderResponse(
+              response
+            );
+
+          if (
             normalizedProviders
+              .length >
+            0
+          ) {
+            setProviders(
+              normalizedProviders
+            );
+          } else {
+            setProviders(
+              DEFAULT_PROVIDERS
+            );
+          }
+        } catch (
+          error
+        ) {
+          console.error(
+            "GET MTC PROVIDERS ERROR =>",
+            error
           );
-        } else {
+
+          /*
+           * Keep UI usable if provider
+           * API temporarily fails.
+           */
           setProviders(
             DEFAULT_PROVIDERS
           );
+
+          setProviderError(
+            "Unable to load providers from server. Showing configured providers."
+          );
+        } finally {
+          setLoadingProviders(
+            false
+          );
         }
-      } catch (error) {
-        console.log(
-          "GET MTC PROVIDERS ERROR =>",
-          error
-        );
+      },
+      []
+    );
 
-        /*
-         * Development fallback keeps the page
-         * usable even when provider API fails.
-         */
-        setProviders(
-          DEFAULT_PROVIDERS
-        );
-
-        setProviderError(
-          "Unable to load providers from server. Showing configured providers."
-        );
-      } finally {
-        setLoadingProviders(false);
-      }
-    }, []);
-
-  useEffect(() => {
-    loadProviders();
-  }, [loadProviders]);
+  useEffect(
+    () => {
+      loadProviders();
+    },
+    [loadProviders]
+  );
 
   /* =======================================================
      AVAILABLE PROVIDERS WITH FRONTEND FORMS
   ======================================================= */
 
   const availableProviders =
-    useMemo(() => {
-      return providers.map(
-        (provider) => ({
-          ...provider,
-
-          hasForm: Boolean(
-            MTC_FORM_REGISTRY[
+    useMemo(
+      () => {
+        return providers.map(
+          (
+            provider
+          ) => {
+            const providerKey =
               normalizeProvider(
                 provider.value
-              )
-            ]
-          ),
-        })
-      );
-    }, [providers]);
+              );
+
+            return {
+              ...provider,
+
+              value:
+                providerKey,
+
+              hasForm:
+                Boolean(
+                  MTC_FORM_REGISTRY[
+                    providerKey
+                  ]
+                ),
+            };
+          }
+        );
+      },
+      [providers]
+    );
 
   /* =======================================================
-     SELECTED FORM COMPONENT
+     SELECTED FORM
   ======================================================= */
 
   const SelectedProviderForm =
-    useMemo(() => {
-      if (!selectedProvider) {
-        return null;
+    useMemo(
+      () => {
+        if (
+          !selectedProvider
+        ) {
+          return null;
+        }
+
+        return (
+          MTC_FORM_REGISTRY[
+            normalizeProvider(
+              selectedProvider
+            )
+          ] ||
+          null
+        );
+      },
+      [selectedProvider]
+    );
+
+  /* =======================================================
+     SELECT PROVIDER
+  ======================================================= */
+
+  const handleProviderSelect =
+    (
+      provider
+    ) => {
+      const providerValue =
+        normalizeProvider(
+          provider?.value
+        );
+
+      if (
+        !providerValue ||
+        !MTC_FORM_REGISTRY[
+          providerValue
+        ]
+      ) {
+        setProviderError(
+          `${
+            provider?.label ||
+            formatProviderLabel(
+              providerValue
+            )
+          } form has not been configured yet.`
+        );
+
+        return;
       }
 
-      return (
-        MTC_FORM_REGISTRY[
-          normalizeProvider(
-            selectedProvider
-          )
-        ] || null
-      );
-    }, [selectedProvider]);
-
-  const handleProviderSelect = (
-    provider
-  ) => {
-    const providerValue =
-      normalizeProvider(
-        provider?.value
-      );
-
-    if (
-      !providerValue ||
-      !MTC_FORM_REGISTRY[
-        providerValue
-      ]
-    ) {
       setProviderError(
-        `${
-          provider?.label ||
-          formatProviderLabel(
-            providerValue
-          )
-        } form has not been configured yet.`
+        ""
       );
 
-      return;
-    }
-
-    setProviderError("");
-    setSelectedProvider(
-      providerValue
-    );
-  };
+      setSelectedProvider(
+        providerValue
+      );
+    };
 
   const handleBackFromProviderForm =
     () => {
-      setSelectedProvider("");
-      setProviderError("");
+      setSelectedProvider(
+        ""
+      );
+
+      setProviderError(
+        ""
+      );
     };
 
   /* =======================================================
-     RENDER PROVIDER FORM
+     PROVIDER FORM
   ======================================================= */
 
   if (
@@ -288,8 +391,12 @@ function MtcForm({
         onBack={
           handleBackFromProviderForm
         }
-        onCancel={onBack}
-        onCreated={onCreated}
+        onCancel={
+          onBack
+        }
+        onCreated={
+          onCreated
+        }
         mtcProvider={
           selectedProvider
         }
@@ -298,7 +405,7 @@ function MtcForm({
   }
 
   /* =======================================================
-     PROVIDER SELECTION SCREEN
+     PROVIDER SELECTION
   ======================================================= */
 
   return (
@@ -307,10 +414,17 @@ function MtcForm({
         <button
           type="button"
           className="mtc-form-back"
-          onClick={onBack}
+          onClick={
+            onBack
+          }
         >
-          <ArrowLeft size={18} />
-          Back
+          <ArrowLeft
+            size={18}
+          />
+
+          <span className="mtc-back-text">
+            Back
+          </span>
         </button>
 
         <div>
@@ -333,18 +447,22 @@ function MtcForm({
       <section className="mtc-form-card">
         <div className="mtc-card-title">
           <div>
-            <Building2 size={20} />
+            <Building2
+              size={20}
+            />
           </div>
 
           <span>
             <h3>
-              Test Certificate Provider
+              Test Certificate
+              Provider
             </h3>
 
             <p>
-              Select the provider whose
-              certificate you want to
-              generate.
+              Select the
+              provider whose
+              certificate you
+              want to generate.
             </p>
           </span>
         </div>
@@ -357,16 +475,21 @@ function MtcForm({
             />
 
             <span>
-              Loading TC providers...
+              Loading TC
+              providers...
             </span>
           </div>
         ) : (
           <div className="mtc-provider-selection-grid">
             {availableProviders.map(
-              (provider) => (
+              (
+                provider
+              ) => (
                 <button
                   type="button"
-                  key={provider.value}
+                  key={
+                    provider.value
+                  }
                   className={`mtc-provider-selection-card ${
                     !provider.hasForm
                       ? "disabled"
@@ -389,16 +512,21 @@ function MtcForm({
 
                   <div className="mtc-provider-selection-content">
                     <strong>
-                      {provider.label}
+                      {
+                        provider.label
+                      }
                     </strong>
 
                     <span>
-                      {provider.description}
+                      {
+                        provider.description
+                      }
                     </span>
 
                     {!provider.hasForm && (
                       <small>
-                        Form configuration
+                        Form
+                        configuration
                         pending
                       </small>
                     )}
@@ -418,9 +546,14 @@ function MtcForm({
           <button
             type="button"
             className="mtc-provider-refresh-btn"
-            onClick={loadProviders}
+            onClick={
+              loadProviders
+            }
           >
-            <RefreshCcw size={15} />
+            <RefreshCcw
+              size={15}
+            />
+
             Refresh Providers
           </button>
         )}

@@ -785,3 +785,24 @@
     border-left-color: #067647;
   }
 }
+
+/* =========================================================
+   SBE GERMANY PROVIDER
+========================================================= */
+
+.mtc-provider-badge-sbe_germany {
+  background: #fff4e5;
+  color: #b54708;
+  border: 1px solid #fedf89;
+}
+
+@media (max-width: 900px) {
+  .ios-mtc-status-sbe_germany {
+    background: #fff4e5;
+    color: #b54708;
+  }
+
+  .ios-mtc-card-provider-sbe_germany {
+    border-left-color: #f79009;
+  }
+}

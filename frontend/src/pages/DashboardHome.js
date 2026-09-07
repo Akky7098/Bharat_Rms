@@ -512,37 +512,73 @@ const handleRefresh = () => {
 
   if (!data) return <div>Loading...</div>;
 
-  const misChartData = (misScoring?.salesPersonScores || []).filter(isSalesMisUser);
-const weeklyMisChartData = getMisChartData(misChartData);
+const misChartData =
+  (misScoring?.salesPersonScores || [])
+    .filter(isSalesMisUser);
 
-const sortedSalesUsers = [...misChartData].sort((a, b) => {
-  if (Number(b.monthlyScore || 0) !== Number(a.monthlyScore || 0)) {
-    return Number(b.monthlyScore || 0) - Number(a.monthlyScore || 0);
-  }
+/*
+ * Detailed MIS remains restricted by backend.
+ *
+ * Admin / Super Admin:
+ * misChartData contains all salespersons.
+ *
+ * Normal salesperson:
+ * misChartData contains only logged-in salesperson.
+ */
+const weeklyMisChartData =
+  getMisChartData(misChartData);
 
-  if (Number(b.newCustomers || 0) !== Number(a.newCustomers || 0)) {
-    return Number(b.newCustomers || 0) - Number(a.newCustomers || 0);
-  }
+/* =================================================
+   TEAM-WIDE COMPETITION DATA
 
-  if (Number(b.approvedOrders || 0) !== Number(a.approvedOrders || 0)) {
-    return Number(b.approvedOrders || 0) - Number(a.approvedOrders || 0);
-  }
+   These 3 items are intentionally visible
+   to every salesperson:
 
-  return Number(b.approvedSalesValue || 0) - Number(a.approvedSalesValue || 0);
-});
+   1. Top Performer
+   2. Needs Focus
+   3. Orders Won by Salesperson
 
-const topPerformer = sortedSalesUsers[0] || null;
+   They come from businessInsight instead of
+   the protected salesPersonScores array.
+================================================= */
+
+const topPerformer =
+  misScoring?.businessInsight
+    ?.topPerformer ||
+  null;
+
 const worstPerformer =
-  sortedSalesUsers.length > 1 ? sortedSalesUsers[sortedSalesUsers.length - 1] : null;
+  misScoring?.businessInsight
+    ?.worstPerformer ||
+  null;
 
-const orderWonChartData = [...misChartData]
-  .map((item) => ({
-    name: item.name || "Unknown",
-    salesPersonId: item.salesPersonId,
-    approvedOrders: Number(item.approvedOrders || 0),
-  }))
-  .sort((a, b) => b.approvedOrders - a.approvedOrders);
+const orderWonChartData =
+  [
+    ...(
+      misScoring?.businessInsight
+        ?.ordersWonBySalesperson ||
+      []
+    ),
+  ]
+    .map((item) => ({
+      name:
+        item?.name ||
+        "Unknown",
 
+      salesPersonId:
+        item?.salesPersonId,
+
+      approvedOrders:
+        Number(
+          item?.approvedOrders ||
+            0
+        ),
+    }))
+    .sort(
+      (a, b) =>
+        b.approvedOrders -
+        a.approvedOrders
+    );
 
   const revenueShare = data?.salesPersonRevenue || [];
   const grades = data?.gradeWiseQuantity || [];
@@ -1505,9 +1541,13 @@ const orderWonChartData = [...misChartData]
   name={topPerformer?.name || "No data"}
   desc={
     topPerformer
-      ? `${topPerformer.approvedOrders || 0} orders · ${formatCurrency(
-          topPerformer.approvedSalesValue || 0
-        )} · ${topPerformer.monthlyScore || 0}/100`
+      ?`${topPerformer.approvedOrders || 0} orders · ${formatCurrency(
+  topPerformer.approvedSalesValue || 0
+)} · ${Number(
+  topPerformer.monthlyScore ??
+    topPerformer.score ??
+    0
+)}/100`
       : "No sales data available"
   }
   className="top-performer-card"
@@ -1526,8 +1566,12 @@ const orderWonChartData = [...misChartData]
   desc={
     worstPerformer
       ? `${worstPerformer.approvedOrders || 0} orders · ${formatCurrency(
-          worstPerformer.approvedSalesValue || 0
-        )} · ${worstPerformer.monthlyScore || 0}/100`
+  worstPerformer.approvedSalesValue || 0
+)} · ${Number(
+  worstPerformer.monthlyScore ??
+    worstPerformer.score ??
+    0
+)}/100`
       : "No sales data available"
   }
   className="focus-performer-card"

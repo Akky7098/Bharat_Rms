@@ -16,6 +16,7 @@ import {
   getStatusMeta,
   prettyProcessType,
   prettySupplyCondition,
+  prettyOrderType,
 } from "../orderTrackingUtils";
 
 const OrderTrackingTable = ({
@@ -153,8 +154,10 @@ const OrderTrackingTable = ({
                       <div className="ot-type-cell">
                         <div>
                           <span className="ot-order-type">
-                            {tracking.orderType}
-                          </span>
+  {prettyOrderType(
+    tracking.orderType
+  )}
+</span>
 
                           <strong>
                             {prettyProcessType(
@@ -314,16 +317,18 @@ const OrderTrackingTable = ({
                 </div>
 
                 <div className="ot-mobile-order__meta">
-                  <span>
-                    {tracking.orderType}
-                  </span>
+  <span>
+    {prettyOrderType(
+      tracking.orderType
+    )}
+  </span>
 
-                  <span>
-                    {prettyProcessType(
-                      tracking.processType
-                    )}
-                  </span>
-                </div>
+  <span>
+    {prettyProcessType(
+      tracking.processType
+    )}
+  </span>
+</div>
 
                 <div className="ot-mobile-order__status">
                   <span
