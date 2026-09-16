@@ -355,11 +355,38 @@ const rejectSalesOrderByManager = async (req, res) => {
 //
 // Does NOT affect HOLD / APPROVE.
 // ===============================
+// ===============================
+// SALES ORDER DISCUSSION
+// ===============================
+
+// GET COMPLETE DISCUSSION HISTORY
+const getSalesOrderComments = async (req, res) => {
+  try {
+    const comments =
+      await salesOrderService.getSalesOrderComments(
+        req.params.id,
+        req.user
+      );
+
+    return res.status(200).json({
+      success: true,
+      comments,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// ADD COMMENT / REPLY
 const addSalesOrderComment = async (req, res) => {
   try {
-    const { message } = req.body;
+    const { comment } = req.body;
 
-    if (!message || !String(message).trim()) {
+    if (!comment || !String(comment).trim()) {
       return res.status(400).json({
         success: false,
         message: "Comment is required",
@@ -369,14 +396,20 @@ const addSalesOrderComment = async (req, res) => {
     const salesOrder =
       await salesOrderService.addSalesOrderComment(
         req.params.id,
-        message,
+        String(comment).trim(),
         req.user
       );
 
     return res.status(200).json({
       success: true,
       message: "Comment added successfully",
+
+      // Keep complete order for existing compatibility
       data: salesOrder,
+
+      // Frontend discussion modal can directly consume this
+      comments:
+        salesOrder.managementDiscussion || [],
     });
   } catch (error) {
     return res.status(400).json({
@@ -613,6 +646,7 @@ module.exports = {
   approveSalesOrderByManager,
   rejectSalesOrderByManager,
   addSalesOrderComment,
+  getSalesOrderComments,
   updatePdfDetails,
   updateWhatsappGroupStatus,
   searchPendingDispatchSalesOrders,

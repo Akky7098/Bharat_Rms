@@ -2200,6 +2200,70 @@ const addSalesOrderComment = async (
   }
 };
 
+
+// ========================================
+// GET SALES ORDER DISCUSSION HISTORY
+//
+// Allowed:
+// - admin
+// - super_admin / MD
+// - salesperson who owns the Sales Order
+//
+// Approved orders:
+// - discussion can still be viewed
+// - new comments cannot be added
+// ========================================
+const getSalesOrderComments = async (
+  salesOrderId,
+  loggedInUser
+) => {
+  try {
+    const salesOrder = await SalesOrder.findOne({
+      _id: salesOrderId,
+      isActive: { $ne: false },
+    }).populate(
+      "salesPersonId",
+      "name email mobileNumber whatsappNumber"
+    );
+
+    if (!salesOrder) {
+      throw new Error("Sales order not found");
+    }
+
+    const userId =
+      loggedInUser._id ||
+      loggedInUser.id;
+
+    const role = loggedInUser.role;
+
+    const isAdmin =
+      role === "admin";
+
+    const isManager =
+      role === "super_admin";
+
+    const isSalesPerson =
+      String(
+        salesOrder.salesPersonId?._id ||
+        salesOrder.salesPersonId
+      ) === String(userId);
+
+    if (
+      !isAdmin &&
+      !isManager &&
+      !isSalesPerson
+    ) {
+      throw new Error(
+        "You are not allowed to view comments on this sales order."
+      );
+    }
+
+    return salesOrder.managementDiscussion || [];
+  } catch (error) {
+    throw error;
+  }
+};
+
 const updatePdfDetails = async (salesOrderId, pdfData) => {
   try {
     const salesOrder = await SalesOrder.findById(salesOrderId);
@@ -2483,6 +2547,7 @@ module.exports = {
   rejectSalesOrderByAdmin,
   approveSalesOrderByManager,
   rejectSalesOrderByManager,
+  getSalesOrderComments,
   addSalesOrderComment,
   updatePdfDetails,
   updateWhatsappGroupStatus,
