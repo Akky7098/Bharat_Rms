@@ -54,6 +54,9 @@ action: {
     "manager_direct_approved",
     "manager_direct_rejected",
 
+    "management_comment",
+    "salesperson_comment",
+
     "pdf_generated",
     "whatsapp_group_sent",
     "email_sent",
@@ -73,6 +76,49 @@ action: {
     },
   },
   { _id: false }
+);
+
+
+
+// =========================
+// SALES ORDER DISCUSSION
+// Flat chronological thread:
+// Admin -> Salesperson -> MD -> Salesperson -> ...
+// =========================
+const managementDiscussionSchema = new mongoose.Schema(
+  {
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    senderName: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+
+    senderRole: {
+      type: String,
+      enum: ["salesperson", "admin", "manager"],
+      required: true,
+    },
+
+    message: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    _id: true,
+  }
 );
 
 const salesOrderSchema = new mongoose.Schema(
@@ -612,9 +658,19 @@ deletedBy: {
     // =========================
     // EDIT / RESUBMIT LOOP
     // =========================
-    isEditableBySalesPerson: {
+        isEditableBySalesPerson: {
       type: Boolean,
       default: false,
+    },
+
+    // =========================
+    // MANAGEMENT / SALESPERSON DISCUSSION
+    // Independent from HOLD / APPROVE flow.
+    // Discussion remains available until final approval.
+    // =========================
+    managementDiscussion: {
+      type: [managementDiscussionSchema],
+      default: [],
     },
 
     revisionCount: {

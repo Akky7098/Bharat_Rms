@@ -68,7 +68,122 @@ const {
 const PORT =
   process.env.PORT || 5000;
 
+/* =========================================================
+   SERVER STATE
+========================================================= */
+
 let booted = false;
+let server = null;
+let isShuttingDown = false;
+
+/* =========================================================
+   GRACEFUL SHUTDOWN
+
+   IMPORTANT:
+   This makes Ctrl+C / SIGTERM close the HTTP listener
+   cleanly before the Node process exits.
+
+   It does NOT:
+   - change Chromium
+   - start Chromium
+   - change Puppeteer
+   - change npm packages
+   - change approval/background-job logic
+========================================================= */
+
+const shutdown = (signal) => {
+  if (isShuttingDown) {
+    return;
+  }
+
+  isShuttingDown = true;
+
+  console.log("");
+  console.log(
+    `${signal} received. Shutting down backend gracefully...`
+  );
+
+  /*
+   * If the HTTP server was never created or is not
+   * listening, there is nothing to close.
+   */
+  if (!server || !server.listening) {
+    console.log(
+      "HTTP server is not listening. Exiting."
+    );
+
+    process.exit(0);
+    return;
+  }
+
+  /*
+   * Stop accepting new HTTP connections.
+   *
+   * Existing requests are allowed to finish before
+   * the callback executes.
+   */
+  server.close((error) => {
+    if (error) {
+      console.error(
+        "Error while closing HTTP server:",
+        error
+      );
+
+      process.exit(1);
+      return;
+    }
+
+    console.log(
+      `Port ${PORT} released successfully.`
+    );
+
+    console.log(
+      "Backend shutdown completed."
+    );
+
+    process.exit(0);
+  });
+
+  /*
+   * Node 18.2+ supports closeIdleConnections().
+   * This helps close idle keep-alive HTTP connections.
+   */
+  if (
+    typeof server.closeIdleConnections ===
+    "function"
+  ) {
+    server.closeIdleConnections();
+  }
+
+  /*
+   * Safety fallback.
+   *
+   * If some connection refuses to close, do not leave
+   * the backend hanging forever.
+   */
+  const forceShutdownTimer =
+    setTimeout(() => {
+      console.error(
+        "Graceful shutdown timed out. Forcing process exit."
+      );
+
+      process.exit(1);
+    }, 10000);
+
+  forceShutdownTimer.unref();
+};
+
+/* =========================================================
+   OS SIGNAL HANDLERS
+========================================================= */
+
+process.on("SIGINT", () => {
+  shutdown("SIGINT");
+});
+
+process.on("SIGTERM", () => {
+  shutdown("SIGTERM");
+});
 
 /* =========================================================
    START APPLICATION
@@ -99,11 +214,11 @@ const startApp = async () => {
        Redis is only a cache layer.
 
        Do not await Redis here because Redis failure
-       must never stop the Bharat backend.
+       must never stop the backend.
 
        If Redis is unavailable:
        - MongoDB will continue working
-       - Bharat AI tools will continue working
+       - AI tools will continue working
        - Cache will simply be skipped
     ===================================================== */
 
@@ -136,12 +251,48 @@ const startApp = async () => {
 
     /* =====================================================
        HTTP + SOCKET SERVER
+
+       IMPORTANT:
+       server is module-level so shutdown() can access it.
     ===================================================== */
 
-    const server =
-      http.createServer(app);
+    server = http.createServer(app);
 
     initSocket(server);
+
+    /* =====================================================
+       SERVER ERROR HANDLER
+    ===================================================== */
+
+    server.on("error", (error) => {
+      if (
+        error &&
+        error.code === "EADDRINUSE"
+      ) {
+        console.error("");
+        console.error(
+          `Port ${PORT} is already in use.`
+        );
+
+        console.error(
+          "Another backend process is already running."
+        );
+
+        console.error(
+          `Check it with: lsof -nP -iTCP:${PORT} -sTCP:LISTEN`
+        );
+
+        process.exit(1);
+        return;
+      }
+
+      console.error(
+        "HTTP server error:",
+        error
+      );
+
+      process.exit(1);
+    });
 
     /* =====================================================
        LISTEN
@@ -202,9 +353,6 @@ const startApp = async () => {
 
           /* ===============================================
              PAYMENT REMINDER CRON
-
-             Runs every day at 11:00 AM IST.
-             Existing normal scheduled job only.
           =============================================== */
 
           startPaymentReminderCron();
@@ -241,8 +389,6 @@ const startApp = async () => {
              OLD WHATSAPP WEB HEALTH CRON
 
              Must remain disabled.
-             Baileys manages its connection/reconnect through
-             connection.update inside baileysClient.js.
           =============================================== */
 
           // startWhatsappHealthCron();

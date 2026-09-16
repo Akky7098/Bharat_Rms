@@ -12,6 +12,9 @@ const authRoutes =
 const enquiryRoutes =
   require("./routes/enquiryRoutes");
 
+// const pdfDocumentRoutes =
+//   require("./routes/pdfDocumentRoutes");
+
 const salesOrderRoutes =
   require("./routes/salesOrderRoutes");
 
@@ -75,21 +78,23 @@ const orderTrackingRoutes =
 const bharatAiRoutes =
   require("./routes/bharatAiRoutes");
 
-  const customerOrderTrackingRoutes =
+const customerOrderTrackingRoutes =
   require(
     "./routes/customerOrderTrackingRoutes"
   );
 
-  const customerOrderTrackingPageRoutes =
+const customerOrderTrackingPageRoutes =
   require(
     "./routes/customerOrderTrackingPageRoutes"
   );
+
 
 /* =========================================================
    APP
 ========================================================= */
 
 const app = express();
+
 
 /* =========================================================
    TRUST PROXY
@@ -106,6 +111,7 @@ app.set(
   "trust proxy",
   1
 );
+
 
 /* =========================================================
    CORS
@@ -149,6 +155,7 @@ app.use(
   cors()
 );
 
+
 /* =========================================================
    REQUEST BODY PARSING
 
@@ -180,6 +187,7 @@ app.use(
     limit: "5mb",
   })
 );
+
 
 /* =========================================================
    JSON PARSING ERROR HANDLER
@@ -250,6 +258,7 @@ app.use(
   }
 );
 
+
 /* =========================================================
    EXISTING UPLOADS
 
@@ -265,6 +274,7 @@ app.use(
     )
   )
 );
+
 
 /* =========================================================
    DOCUMENTS - PERSISTENT UPLOAD PATH
@@ -286,6 +296,7 @@ app.use(
   )
 );
 
+
 /* =========================================================
    ENQUIRY SIZE PDF - PERSISTENT UPLOAD PATH
 ========================================================= */
@@ -305,6 +316,7 @@ app.use(
     enquirySizePdfUploadDir
   )
 );
+
 
 /* =========================================================
    DISPATCH - PERSISTENT UPLOAD PATH
@@ -326,6 +338,7 @@ app.use(
   )
 );
 
+
 /* =========================================================
    SUPPORT TICKET - PERSISTENT UPLOAD PATH
 ========================================================= */
@@ -343,6 +356,7 @@ app.use(
   )
 );
 
+
 /* =========================================================
    SALES ORDER PDF
 ========================================================= */
@@ -359,6 +373,31 @@ app.use(
       )
   )
 );
+
+
+/* =========================================================
+   PDF GENERATOR - PRICE CONTRACT PDF FILES
+
+   Current PDF type:
+   price_contract
+
+   Future PDF types can have their own upload directories
+   without changing the /api/pdf-documents API.
+========================================================= */
+
+app.use(
+  "/uploads/price-contracts",
+  express.static(
+    process.env
+      .PRICE_CONTRACT_PDF_STORAGE_PATH ||
+      path.join(
+        __dirname,
+        "uploads",
+        "price-contracts"
+      )
+  )
+);
+
 
 /* =========================================================
    ORDER TRACKING FILES
@@ -458,6 +497,7 @@ app.use(
   )
 );
 
+
 /* =========================================================
    MTC PDF - PERSISTENT UPLOAD PATH
 ========================================================= */
@@ -474,6 +514,7 @@ app.use(
       )
   )
 );
+
 
 /* =========================================================
    CUSTOMER PO
@@ -492,6 +533,7 @@ app.use(
   )
 );
 
+
 /* =========================================================
    FEASIBILITY REPORT
 ========================================================= */
@@ -508,6 +550,7 @@ app.use(
       )
   )
 );
+
 
 /* =========================================================
    IT SUPPORT - PERSISTENT UPLOAD PATH
@@ -526,6 +569,7 @@ app.use(
   )
 );
 
+
 /* =========================================================
    LOGO
 ========================================================= */
@@ -540,6 +584,7 @@ app.use(
     )
   )
 );
+
 
 /* =========================================================
    CORS / API HEALTH TEST
@@ -559,6 +604,7 @@ app.get(
   }
 );
 
+
 /* =========================================================
    VIEW ENGINE
 ========================================================= */
@@ -575,6 +621,7 @@ app.set(
     "views"
   )
 );
+
 
 /* =========================================================
    API ROUTES
@@ -594,6 +641,29 @@ app.use(
   "/api/sales-order",
   salesOrderRoutes
 );
+
+
+/* =========================================================
+   PDF DOCUMENT GENERATOR
+
+   Current:
+   - Price Contract
+
+   Future:
+   - Quotation
+   - Commercial Offer
+   - Certificate
+   - Other PDF templates
+
+   Endpoints are handled by:
+   ./routes/pdfDocumentRoutes.js
+========================================================= */
+
+// app.use(
+//   "/api/pdf-documents",
+//   pdfDocumentRoutes
+// );
+
 
 app.use(
   "/api/user",
@@ -690,19 +760,16 @@ app.use(
   orderTrackingRoutes
 );
 
-
 app.use(
   "/api/customer-order-tracking",
-
   customerOrderTrackingRoutes
 );
 
-
 app.use(
   "/track-order",
-
   customerOrderTrackingPageRoutes
 );
+
 
 /* =========================================================
    BHARAT INTELLIGENCE
@@ -720,9 +787,9 @@ app.use(
 
 app.use(
   "/api/customer-order-tracking",
-
   customerOrderTrackingRoutes
 );
+
 
 /* =========================================================
    API 404
@@ -753,6 +820,7 @@ app.use(
       });
   }
 );
+
 
 /* =========================================================
    GLOBAL ERROR HANDLER
@@ -805,6 +873,7 @@ app.use(
       );
     }
 
+
     /* =====================================================
        PAYLOAD TOO LARGE
     ===================================================== */
@@ -828,6 +897,7 @@ app.use(
         });
     }
 
+
     /* =====================================================
        INVALID JSON FALLBACK
     ===================================================== */
@@ -850,6 +920,7 @@ app.use(
             "Invalid request body.",
         });
     }
+
 
     /* =====================================================
        STATUS
@@ -889,6 +960,7 @@ app.use(
       });
   }
 );
+
 
 /* =========================================================
    EXPORT

@@ -95,6 +95,16 @@ router.patch(
   salesOrderController.rejectSalesOrderByManager
 );
 
+router.post(
+
+  "/:id/comment",
+
+  authMiddleware,
+
+  salesOrderController.addSalesOrderComment
+
+);
+
 // UPDATE PDF DETAILS
 router.patch(
   "/:id/pdf",

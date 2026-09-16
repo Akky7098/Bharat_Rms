@@ -280,6 +280,92 @@ Please coordinate with the salesperson.`;
 };
 
 // ========================================
+// MANAGEMENT COMMENT -> SALESPERSON WHATSAPP
+// ========================================
+const sendManagementCommentToSalesPersonWhatsapp = async (
+  salesOrder,
+  message,
+  senderName
+) => {
+  const salesPersonNumber =
+    getSalesPersonWhatsappNumber(salesOrder);
+
+  const whatsappMessage = `💬 *New Comment on Sales Order*
+
+Hello *${salesOrder.salesPersonName || "Sales Team"}*,
+
+*${senderName || "Management"}* has added a comment/question.
+
+${buildSalesOrderWhatsappBlock(salesOrder)}
+
+💬 *Comment:*
+${message}
+
+Please open the dashboard and reply.
+
+🔗 ${getDashboardLink()}`;
+
+  return sendSafeWhatsappMessage(
+    salesPersonNumber,
+    whatsappMessage
+  );
+};
+
+
+// ========================================
+// SALESPERSON COMMENT -> MANAGEMENT WHATSAPP
+// ========================================
+const sendSalesPersonCommentToManagementWhatsapp = async (
+  salesOrder,
+  message
+) => {
+  const whatsappMessage = `💬 *Salesperson Comment on Sales Order*
+
+*${salesOrder.salesPersonName || "Sales Team"}* has added a comment/reply.
+
+${buildSalesOrderWhatsappBlock(salesOrder)}
+
+💬 *Comment:*
+${message}
+
+🔗 ${getDashboardLink()}`;
+
+  // Send to Admin / Sonia
+  if (process.env.ADMIN_WHATSAPP_NUMBER) {
+    await sendSafeWhatsappMessage(
+      process.env.ADMIN_WHATSAPP_NUMBER,
+      whatsappMessage
+    );
+  }
+
+  // Send to MD also when MD WhatsApp number exists on Sales Order.
+  const managerNumber =
+    salesOrder?.managerApproval?.managerWhatsappNumber ||
+    process.env.MANAGER_WHATSAPP_NUMBER ||
+    "";
+
+  if (managerNumber) {
+    const cleanedAdminNumber = cleanWhatsappNumber(
+      process.env.ADMIN_WHATSAPP_NUMBER || ""
+    );
+
+    const cleanedManagerNumber =
+      cleanWhatsappNumber(managerNumber);
+
+    // Avoid duplicate if both numbers are accidentally same.
+    if (
+      !cleanedAdminNumber ||
+      cleanedAdminNumber !== cleanedManagerNumber
+    ) {
+      await sendSafeWhatsappMessage(
+        managerNumber,
+        whatsappMessage
+      );
+    }
+  }
+};
+
+// ========================================
 // CREATE SALES ORDER
 // ========================================
 const createSalesOrder = async (
@@ -1138,6 +1224,7 @@ const filteredApprovedSummary =
           customerPOFile: 1,
           managerApproval: 1,
           adminApproval: 1,
+          managementDiscussion: 1,
           approvalHistory: 1,
           "salesPersonId._id": 1,
           "salesPersonId.name": 1,
@@ -1835,6 +1922,284 @@ const rejectSalesOrderByManager = async (
     throw error;
   }
 };
+
+
+// ========================================
+// ADD SALES ORDER DISCUSSION MESSAGE
+//
+// Allowed:
+// - admin
+// - super_admin / MD
+// - salesperson who owns the Sales Order
+//
+// Allowed while:
+// - pending admin review
+// - pending manager approval
+// - admin hold
+// - manager hold
+//
+// Closed only after final approval.
+//
+// IMPORTANT:
+// This function NEVER changes approvalStatus.
+// This function NEVER changes isEditableBySalesPerson.
+// ========================================
+const addSalesOrderComment = async (
+  salesOrderId,
+  message,
+  loggedInUser
+) => {
+  try {
+    const cleanMessage = String(message || "").trim();
+
+    if (!cleanMessage) {
+      throw new Error("Comment is required.");
+    }
+
+    const salesOrder = await SalesOrder.findOne({
+      _id: salesOrderId,
+      isActive: { $ne: false },
+    }).populate(
+      "salesPersonId",
+      "name email mobileNumber whatsappNumber"
+    );
+
+    if (!salesOrder) {
+      throw new Error("Sales order not found");
+    }
+
+    // ========================================
+    // DISCUSSION CLOSES ONLY AFTER APPROVAL
+    // ========================================
+    if (salesOrder.approvalStatus === "approved") {
+      throw new Error(
+        "Discussion is closed because the sales order is already approved."
+      );
+    }
+
+    const userId =
+      loggedInUser._id ||
+      loggedInUser.id;
+
+    const role = loggedInUser.role;
+
+    // ========================================
+    // ACCESS CHECK
+    // ========================================
+    const isAdmin =
+      role === "admin";
+
+    const isManager =
+      role === "super_admin";
+
+    const isSalesPerson =
+      String(salesOrder.salesPersonId?._id || salesOrder.salesPersonId) ===
+      String(userId);
+
+    if (!isAdmin && !isManager && !isSalesPerson) {
+      throw new Error(
+        "You are not allowed to comment on this sales order."
+      );
+    }
+
+    // ========================================
+    // NORMALIZE ROLE FOR DISCUSSION
+    // ========================================
+    let senderRole = "salesperson";
+
+    if (isAdmin) {
+      senderRole = "admin";
+    } else if (isManager) {
+      senderRole = "manager";
+    }
+
+    const senderName =
+      loggedInUser.name ||
+      (senderRole === "manager"
+        ? "MD Sir"
+        : senderRole === "admin"
+        ? "Admin"
+        : salesOrder.salesPersonName || "Salesperson");
+
+    // ========================================
+    // ADD CHRONOLOGICAL MESSAGE
+    // ========================================
+    salesOrder.managementDiscussion.push({
+      senderId: userId,
+      senderName,
+      senderRole,
+      message: cleanMessage,
+    });
+
+    // ========================================
+    // APPROVAL HISTORY
+    // ========================================
+    salesOrder.approvalHistory.push({
+      actionBy: userId,
+      role: senderRole,
+      action:
+        senderRole === "salesperson"
+          ? "salesperson_comment"
+          : "management_comment",
+      comment: cleanMessage,
+    });
+
+    /*
+     * VERY IMPORTANT:
+     *
+     * DO NOT SET:
+     * salesOrder.approvalStatus
+     *
+     * DO NOT SET:
+     * salesOrder.isEditableBySalesPerson
+     *
+     * If order is on HOLD, it stays on HOLD and remains editable.
+     * If order is pending, it stays pending and remains non-editable.
+     */
+
+    await salesOrder.save();
+
+    // ========================================
+    // NOTIFICATION
+    // ========================================
+    if (senderRole === "salesperson") {
+      await safeCreateNotification({
+        module: "sales_order",
+        event: "salesperson_comment",
+        title: "Salesperson Comment on Sales Order",
+        message: `${senderName} commented on sales order for ${salesOrder.companyName}`,
+        priority: "high",
+
+        targetRoles: [
+          "admin",
+          "super_admin",
+        ],
+
+        createdBy: userId,
+
+        referenceId: salesOrder._id,
+        referenceModel: "SalesOrder",
+
+        actionUrl:
+          "/dashboard#sales-order",
+
+        meta: {
+          companyName:
+            salesOrder.companyName,
+
+          poNumber:
+            salesOrder.poNumber,
+
+          salesPersonName:
+            salesOrder.salesPersonName,
+
+          comment:
+            cleanMessage,
+        },
+      });
+    } else {
+      await safeCreateNotification({
+        module: "sales_order",
+        event: "management_comment",
+        title: "Management Comment on Sales Order",
+        message: `${senderName} commented on sales order for ${salesOrder.companyName}`,
+        priority: "high",
+
+        targetUserIds: [
+          salesOrder.salesPersonId?._id ||
+            salesOrder.salesPersonId,
+        ],
+
+        createdBy: userId,
+
+        referenceId:
+          salesOrder._id,
+
+        referenceModel:
+          "SalesOrder",
+
+        actionUrl:
+          "/dashboard#sales-order",
+
+        meta: {
+          companyName:
+            salesOrder.companyName,
+
+          poNumber:
+            salesOrder.poNumber,
+
+          senderName,
+
+          senderRole,
+
+          comment:
+            cleanMessage,
+        },
+      });
+    }
+
+    // ========================================
+    // WHATSAPP
+    // ========================================
+    const savedOrderId =
+      salesOrder._id;
+
+    setImmediate(() => {
+      enqueueWhatsapp(async () => {
+        const freshOrder =
+          await SalesOrder.findById(
+            savedOrderId
+          ).populate(
+            "salesPersonId",
+            "name email mobileNumber whatsappNumber"
+          );
+
+        if (!freshOrder) {
+          return;
+        }
+
+        try {
+          if (senderRole === "salesperson") {
+            await sendSalesPersonCommentToManagementWhatsapp(
+              freshOrder,
+              cleanMessage
+            );
+          } else {
+            await sendManagementCommentToSalesPersonWhatsapp(
+              freshOrder,
+              cleanMessage,
+              senderName
+            );
+          }
+
+          await addHistoryAndSave(
+            freshOrder,
+            "whatsapp_group_sent",
+            senderRole === "salesperson"
+              ? "Salesperson comment WhatsApp sent to management"
+              : `${senderName} comment WhatsApp sent to salesperson`
+          );
+        } catch (waError) {
+          console.log(
+            "SALES ORDER COMMENT WHATSAPP ERROR =>",
+            waError.message
+          );
+
+          await addHistoryAndSave(
+            freshOrder,
+            "failed",
+            `Sales order comment WhatsApp failed: ${waError.message}`
+          );
+        }
+      });
+    });
+
+    return salesOrder;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const updatePdfDetails = async (salesOrderId, pdfData) => {
   try {
     const salesOrder = await SalesOrder.findById(salesOrderId);
@@ -2118,6 +2483,7 @@ module.exports = {
   rejectSalesOrderByAdmin,
   approveSalesOrderByManager,
   rejectSalesOrderByManager,
+  addSalesOrderComment,
   updatePdfDetails,
   updateWhatsappGroupStatus,
   deleteSalesOrder,

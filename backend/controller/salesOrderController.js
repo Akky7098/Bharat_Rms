@@ -344,6 +344,53 @@ const rejectSalesOrderByManager = async (req, res) => {
 // UPDATE PDF DETAILS
 // System use after PDF generated
 // ===============================
+// ===============================
+// SALES ORDER COMMENT / DISCUSSION
+//
+// Admin / MD:
+// Can ask question or add comment.
+//
+// Salesperson:
+// Can reply/add another comment.
+//
+// Does NOT affect HOLD / APPROVE.
+// ===============================
+const addSalesOrderComment = async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Comment is required",
+      });
+    }
+
+    const salesOrder =
+      await salesOrderService.addSalesOrderComment(
+        req.params.id,
+        message,
+        req.user
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Comment added successfully",
+      data: salesOrder,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// ===============================
+// UPDATE PDF DETAILS
+// System use after PDF generated
+// ===============================
 const updatePdfDetails = async (req, res) => {
   try {
     const salesOrder = await salesOrderService.updatePdfDetails(
@@ -565,6 +612,7 @@ module.exports = {
   rejectSalesOrderByAdmin,
   approveSalesOrderByManager,
   rejectSalesOrderByManager,
+  addSalesOrderComment,
   updatePdfDetails,
   updateWhatsappGroupStatus,
   searchPendingDispatchSalesOrders,
