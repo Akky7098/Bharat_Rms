@@ -204,6 +204,8 @@ const generateSalesOrderPdfBuffer = async (
         browser =
           await puppeteer.launch({
             executablePath,
+            
+            pipe: true,
 
             headless: true,
 
