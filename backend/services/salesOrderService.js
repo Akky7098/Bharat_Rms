@@ -365,9 +365,27 @@ ${message}
   }
 };
 
+
+
 // ========================================
 // CREATE SALES ORDER
 // ========================================
+const STEEL_MILLS = [
+  "Punjab General",
+  "Polystud Lifting",
+  "Jassar Forging",
+  "S.S. Steel - Sirhind",
+  "Skyway - Ludhiana",
+  "Kuber Concast - Mandi Gobindgarh",
+  "Pushpanjali Strip",
+  "Shakti Rolling - Mandi Gobindgarh",
+  "AV Alloys - Mandi Gobindgarh",
+  "Kesari Alloys - Bhiwadi",
+  "East India - Durgapur",
+  "Behari Lal - Mandi Gobindgarh",
+  "Others",
+];
+
 const createSalesOrder = async (
   payload,
   loggedInUser,
@@ -379,10 +397,9 @@ const createSalesOrder = async (
        ENQUIRY VALIDATION
     ===================================================== */
 
-    const enquiryNumber =
-      String(
-        payload.enquiryNumber || ""
-      ).trim();
+    const enquiryNumber = String(
+      payload.enquiryNumber || ""
+    ).trim();
 
     if (!enquiryNumber) {
       throw new Error(
@@ -390,10 +407,9 @@ const createSalesOrder = async (
       );
     }
 
-    const enquiry =
-      await Enquiry.findOne({
-        enquiryNumber,
-      }).lean();
+    const enquiry = await Enquiry.findOne({
+      enquiryNumber,
+    }).lean();
 
     if (!enquiry) {
       throw new Error(
@@ -401,31 +417,21 @@ const createSalesOrder = async (
       );
     }
 
-    if (
-      enquiry.closure?.status !==
-      "won"
-    ) {
+    if (enquiry.closure?.status !== "won") {
       throw new Error(
         `Sales order can be created only for won enquiries. Current enquiry status is ${
-          enquiry.closure?.status ||
-          "pending"
+          enquiry.closure?.status || "pending"
         }.`
       );
     }
 
     if (
-      String(
-        enquiry.salesPersonId
-      ) !==
-        String(
-          loggedInUser._id
-        ) &&
+      String(enquiry.salesPersonId) !==
+        String(loggedInUser._id) &&
       ![
         "admin",
         "super_admin",
-      ].includes(
-        loggedInUser.role
-      )
+      ].includes(loggedInUser.role)
     ) {
       throw new Error(
         "You cannot create sales order for another salesperson's enquiry."
@@ -461,15 +467,13 @@ const createSalesOrder = async (
     ===================================================== */
 
     const businessOrderType =
-      payload.orderType ||
-      "domestic";
+      payload.orderType || "domestic";
 
-    const validBusinessOrderTypes =
-      [
-        "domestic",
-        "international",
-        "special_economic_zone",
-      ];
+    const validBusinessOrderTypes = [
+      "domestic",
+      "international",
+      "special_economic_zone",
+    ];
 
     if (
       !validBusinessOrderTypes.includes(
@@ -484,31 +488,23 @@ const createSalesOrder = async (
     /* =====================================================
        ORDER TRACKING TYPE
 
-       NEW FIELD:
-
        H.O.
        N.H.O.
 
        IMPORTANT:
        This is different from orderType above.
-
-       For now default is N.H.O.
     ===================================================== */
 
-    const trackingOrderType =
-      String(
-        payload.trackingOrderType ||
-          "N.H.O."
-      )
-        .trim()
-        .toUpperCase();
+    const trackingOrderType = String(
+      payload.trackingOrderType || "N.H.O."
+    )
+      .trim()
+      .toUpperCase();
 
     const normalizedTrackingOrderType =
-      trackingOrderType ===
-        "HO"
+      trackingOrderType === "HO"
         ? "H.O."
-        : trackingOrderType ===
-          "NHO"
+        : trackingOrderType === "NHO"
         ? "N.H.O."
         : trackingOrderType;
 
@@ -526,8 +522,120 @@ const createSalesOrder = async (
     }
 
     /* =====================================================
+       STEEL MILL VALIDATION
+
+       H.O.
+       - steelMill = ""
+       - otherSteelMill = ""
+
+       N.H.O.
+       - steelMill is mandatory
+
+       N.H.O. + Others
+       - otherSteelMill is mandatory
+    ===================================================== */
+
+    const requestedSteelMill =
+      String(
+        payload.steelMill || ""
+      ).trim();
+
+    const requestedOtherSteelMill =
+      String(
+        payload.otherSteelMill || ""
+      ).trim();
+
+    /*
+     * These are the ONLY values that will be stored.
+     *
+     * This prevents stale frontend values from remaining
+     * if user selects N.H.O. first and later changes to H.O.
+     */
+    let normalizedSteelMill = "";
+    let normalizedOtherSteelMill = "";
+
+    if (
+      normalizedTrackingOrderType ===
+      "N.H.O."
+    ) {
+      if (!requestedSteelMill) {
+        throw new Error(
+          "Steel mill is required for N.H.O. sales order."
+        );
+      }
+
+      if (
+        !STEEL_MILLS.includes(
+          requestedSteelMill
+        )
+      ) {
+        throw new Error(
+          "Invalid steel mill selected."
+        );
+      }
+
+      normalizedSteelMill =
+        requestedSteelMill;
+
+      /*
+       * CUSTOM / OTHER MILL
+       */
+      if (
+        normalizedSteelMill === "Others"
+      ) {
+        if (!requestedOtherSteelMill) {
+          throw new Error(
+            "Please enter steel mill name when Others is selected."
+          );
+        }
+
+        if (
+          requestedOtherSteelMill.length < 2
+        ) {
+          throw new Error(
+            "Please enter a valid steel mill name."
+          );
+        }
+
+        if (
+          requestedOtherSteelMill.length >
+          150
+        ) {
+          throw new Error(
+            "Steel mill name is too long."
+          );
+        }
+
+        normalizedOtherSteelMill =
+          requestedOtherSteelMill;
+      }
+    }
+
+    /* =====================================================
+       FINAL STEEL MILL DISPLAY NAME
+
+       Examples:
+
+       Jassar Forging
+       OR
+       ABC Steel (when Others selected)
+
+       H.O. = ""
+    ===================================================== */
+
+    const finalSteelMillName =
+      normalizedTrackingOrderType ===
+      "N.H.O."
+        ? normalizedSteelMill ===
+          "Others"
+          ? normalizedOtherSteelMill
+          : normalizedSteelMill
+        : "";
+
+    /* =====================================================
        N.H.O. VALIDATION
 
+       Existing behaviour remains unchanged.
        N.H.O. depends on supplyCondition
        for Order Tracking process generation.
     ===================================================== */
@@ -563,11 +671,33 @@ const createSalesOrder = async (
           businessOrderType,
 
         /* -----------------------------------------------
-           NEW H.O. / N.H.O. field
+           H.O. / N.H.O.
         ----------------------------------------------- */
 
         trackingOrderType:
           normalizedTrackingOrderType,
+
+        /* -----------------------------------------------
+           STEEL MILL
+
+           H.O.
+           steelMill = ""
+           otherSteelMill = ""
+
+           N.H.O. predefined mill
+           steelMill = selected mill
+           otherSteelMill = ""
+
+           N.H.O. + Others
+           steelMill = "Others"
+           otherSteelMill = typed mill
+        ----------------------------------------------- */
+
+        steelMill:
+          normalizedSteelMill,
+
+        otherSteelMill:
+          normalizedOtherSteelMill,
 
         /* -----------------------------------------------
            Logged-in salesperson
@@ -635,6 +765,9 @@ const createSalesOrder = async (
 
         /* -----------------------------------------------
            APPROVAL HISTORY
+
+           Existing file-based wording preserved.
+           Steel mill appended for N.H.O.
         ----------------------------------------------- */
 
         approvalHistory: [
@@ -651,12 +784,28 @@ const createSalesOrder = async (
             comment:
               uploadedPOFile &&
               uploadedFeasibilityReportFile
-                ? `Sales order created with customer PO file and feasibility report for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}`
+                ? `Sales order created with customer PO file and feasibility report for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}${
+                    finalSteelMillName
+                      ? `. Steel Mill: ${finalSteelMillName}`
+                      : ""
+                  }`
                 : uploadedPOFile
-                ? `Sales order created with customer PO file for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}`
+                ? `Sales order created with customer PO file for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}${
+                    finalSteelMillName
+                      ? `. Steel Mill: ${finalSteelMillName}`
+                      : ""
+                  }`
                 : uploadedFeasibilityReportFile
-                ? `Sales order created with feasibility report for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}`
-                : `Sales order created for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}`,
+                ? `Sales order created with feasibility report for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}${
+                    finalSteelMillName
+                      ? `. Steel Mill: ${finalSteelMillName}`
+                      : ""
+                  }`
+                : `Sales order created for won enquiry ${enquiryNumber}. Tracking type: ${normalizedTrackingOrderType}${
+                    finalSteelMillName
+                      ? `. Steel Mill: ${finalSteelMillName}`
+                      : ""
+                  }`,
           },
         ],
       });
@@ -705,60 +854,57 @@ const createSalesOrder = async (
           new Date(),
       };
 
-      savedOrder.finalSalesOrderPackage =
-        {
-          generated: true,
+      savedOrder.finalSalesOrderPackage = {
+        generated: true,
 
-          fileName:
-            pdfDetails.fileName,
+        fileName:
+          pdfDetails.fileName,
 
-          filePath:
-            pdfDetails.filePath,
+        filePath:
+          pdfDetails.filePath,
 
-          fileUrl:
-            pdfDetails.fileUrl,
+        fileUrl:
+          pdfDetails.fileUrl,
 
-          generatedAt:
-            new Date(),
-        };
+        generatedAt:
+          new Date(),
+      };
 
-      savedOrder.preShipmentInspectionPdf =
-        {
-          generated: true,
+      savedOrder.preShipmentInspectionPdf = {
+        generated: true,
 
-          fileName:
-            pdfDetails.fileName,
+        fileName:
+          pdfDetails.fileName,
 
-          filePath:
-            pdfDetails.filePath,
+        filePath:
+          pdfDetails.filePath,
 
-          fileUrl:
-            pdfDetails.fileUrl,
+        fileUrl:
+          pdfDetails.fileUrl,
 
-          generatedAt:
-            new Date(),
-        };
+        generatedAt:
+          new Date(),
+      };
 
-      savedOrder.approvalHistory.push(
-        {
-          role:
-            "system",
+      savedOrder.approvalHistory.push({
+        role:
+          "system",
 
-          action:
-            "pdf_generated",
+        action:
+          "pdf_generated",
 
-          comment:
-            "Sales order PDF generated successfully during creation",
-        }
-      );
+        comment:
+          "Sales order PDF generated successfully during creation",
+      });
 
       savedOrder =
         await savedOrder.save();
     } catch (pdfError) {
       /*
-       * Existing behaviour:
-       * Sales Order should not remain
-       * if PDF generation fails.
+       * EXISTING BEHAVIOUR:
+       *
+       * If PDF generation fails,
+       * remove the Sales Order.
        */
 
       await SalesOrder.deleteOne({
@@ -827,13 +973,39 @@ const createSalesOrder = async (
           savedOrder.orderType,
 
         /*
-         * NEW H.O. / N.H.O.
+         * H.O. / N.H.O.
          */
         trackingOrderType:
           savedOrder.trackingOrderType,
 
         /*
-         * Useful later for tracking
+         * STEEL MILL
+         *
+         * steelMill:
+         * predefined name OR "Others"
+         *
+         * otherSteelMill:
+         * custom name only when Others
+         *
+         * steelMillDisplayName:
+         * actual mill name useful for UI/reporting
+         */
+        steelMill:
+          savedOrder.steelMill || "",
+
+        otherSteelMill:
+          savedOrder.otherSteelMill || "",
+
+        steelMillDisplayName:
+          savedOrder.steelMill ===
+          "Others"
+            ? savedOrder.otherSteelMill ||
+              ""
+            : savedOrder.steelMill ||
+              "",
+
+        /*
+         * Existing supply condition
          */
         supplyCondition:
           savedOrder.supplyCondition,
@@ -842,6 +1014,8 @@ const createSalesOrder = async (
 
     /* =====================================================
        WHATSAPP
+
+       Existing behaviour unchanged.
     ===================================================== */
 
     setImmediate(() => {
@@ -866,9 +1040,7 @@ const createSalesOrder = async (
               "whatsapp_group_sent",
               "Sales order creation WhatsApp sent to Sonia"
             );
-          } catch (
-            waError
-          ) {
+          } catch (waError) {
             console.log(
               "SALES ORDER CREATE ADMIN WHATSAPP ERROR =>",
               waError.message

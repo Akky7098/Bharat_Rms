@@ -12,8 +12,8 @@ const authRoutes =
 const enquiryRoutes =
   require("./routes/enquiryRoutes");
 
-// const pdfDocumentRoutes =
-//   require("./routes/pdfDocumentRoutes");
+const pdfDocumentRoutes =
+  require("./routes/pdfDocumentRoutes");
 
 const salesOrderRoutes =
   require("./routes/salesOrderRoutes");
@@ -36,6 +36,9 @@ const notificationRoutes =
 const dispatchRoutes =
   require("./routes/dispatchRoutes");
 
+  const steelAnalyticsRoutes =
+  require("./routes/steelAnalyticsRoutes");
+
 const whatsappApprovalRoutes =
   require("./routes/whatsappApprovalRoutes");
 
@@ -57,8 +60,8 @@ const pushSubscriptionRoutes =
 const appPushRoutes =
   require("./routes/appPushRoutes");
 
-// const mtcRoutes =
-//   require("./routes/mtcRoutes");
+const mtcRoutes =
+  require("./routes/mtcRoutes");
 
 const supportTicketRoutes =
   require("./routes/supportTicketRoutes");
@@ -659,10 +662,10 @@ app.use(
    ./routes/pdfDocumentRoutes.js
 ========================================================= */
 
-// app.use(
-//   "/api/pdf-documents",
-//   pdfDocumentRoutes
-// );
+app.use(
+  "/api/pdf-documents",
+  pdfDocumentRoutes
+);
 
 
 app.use(
@@ -693,6 +696,18 @@ app.use(
 app.use(
   "/api/dispatch",
   dispatchRoutes
+);
+
+/* =========================================================
+   STEEL ANALYTICS
+
+   H.O. / STEEL MILL
+   GRADE / MILL / ORDER / DISPATCH ANALYTICS
+========================================================= */
+
+app.use(
+  "/api/steel-analytics",
+  steelAnalyticsRoutes
 );
 
 app.use(
@@ -735,10 +750,10 @@ app.use(
   supportTicketRoutes
 );
 
-// app.use(
-//   "/api/mtc",
-//   mtcRoutes
-// );
+app.use(
+  "/api/mtc",
+  mtcRoutes
+);
 
 app.use(
   "/api/enquiry-lookup",

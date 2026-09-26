@@ -184,7 +184,7 @@ const SBE_GRADE_CONFIG = {
         max:
           null,
         result:
-          0.001,
+          0.0015,
       },
 
       {
@@ -195,7 +195,7 @@ const SBE_GRADE_CONFIG = {
         max:
           null,
         result:
-          0.014,
+          0.015,
       },
 
       {
@@ -228,7 +228,7 @@ const SBE_GRADE_CONFIG = {
         max:
           null,
         result:
-          1.58,
+          1.56,
       },
 
       {

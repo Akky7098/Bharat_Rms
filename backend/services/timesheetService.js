@@ -1,7 +1,7 @@
 const Timesheet = require("../model/timesheetModel");
 const transporter = require("../util/mailTransporter");
 require('dotenv').config();
-const ADMIN_EMAIL = process.env.MANAGER_EMAIL || "info@bharatspecialsteels.com"
+const ADMIN_EMAIL =  ""
 
 /* =========================
    DATE RANGE
@@ -72,45 +72,45 @@ const createTimesheet = async (body, user) => {
     minute: "2-digit",
   });
 
-  /* =========================
-     SEND MAIL
-  ========================= */
-  await transporter.sendMail({
-    from: `"Timesheet" <admin@bharatspecialsteels.com>`,
-    to: ADMIN_EMAIL,
-    cc: user.email,
-    replyTo: user.email,
+  // /* =========================
+  //    SEND MAIL
+  // ========================= */
+  // await transporter.sendMail({
+  //   from: `"Timesheet" <admin@bharatspecialsteels.com>`,
+  //   to: ADMIN_EMAIL,
+  //   cc: user.email,
+  //   replyTo: user.email,
 
-    // IMPORTANT → prevents mail grouping
-    subject: `WORK REPORT || ${start.toLocaleDateString("en-IN")} || ${user.name} || ${submittedTime}`,
+  //   // IMPORTANT → prevents mail grouping
+  //   subject: `WORK REPORT || ${start.toLocaleDateString("en-IN")} || ${user.name} || ${submittedTime}`,
 
-    html: `
-      <div style="font-family: Arial, sans-serif; padding:20px;">
+  //   html: `
+  //     <div style="font-family: Arial, sans-serif; padding:20px;">
 
-        <h2>Daily Work Report</h2>
+  //       <h2>Daily Work Report</h2>
 
-        <p><b>Employee:</b> ${user.name}</p>
-        <p><b>Email:</b> ${user.email}</p>
-        <p><b>Date:</b> ${start.toLocaleDateString("en-IN")}</p>
+  //       <p><b>Employee:</b> ${user.name}</p>
+  //       <p><b>Email:</b> ${user.email}</p>
+  //       <p><b>Date:</b> ${start.toLocaleDateString("en-IN")}</p>
 
-        <h3>Work Summary</h3>
-        <div style="line-height:1.6;">
-          ${formatTextForMail(workSummary)}
-        </div>
+  //       <h3>Work Summary</h3>
+  //       <div style="line-height:1.6;">
+  //         ${formatTextForMail(workSummary)}
+  //       </div>
 
-        <h3>Challenges</h3>
-        <div style="line-height:1.6;">
-          ${formatTextForMail(challenges)}
-        </div>
+  //       <h3>Challenges</h3>
+  //       <div style="line-height:1.6;">
+  //         ${formatTextForMail(challenges)}
+  //       </div>
 
-        <h3>Next Day Plan</h3>
-        <div style="line-height:1.6;">
-          ${formatTextForMail(nextDayPlan)}
-        </div>
+  //       <h3>Next Day Plan</h3>
+  //       <div style="line-height:1.6;">
+  //         ${formatTextForMail(nextDayPlan)}
+  //       </div>
 
-      </div>
-    `,
-  });
+  //     </div>
+  //   `,
+  // });
 
   return timesheet;
 };

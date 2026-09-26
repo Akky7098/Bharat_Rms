@@ -192,7 +192,26 @@ trackingOrderType: {
   default: "N.H.O.",
   index: true,
 },
-    companyName: {
+
+// =========================
+// STEEL MILL DETAILS
+// Only applicable for N.H.O.
+// =========================
+steelMill: {
+  type: String,
+  trim: true,
+  default: "",
+  index: true,
+},
+
+// Filled only when steelMill === "Others"
+otherSteelMill: {
+  type: String,
+  trim: true,
+  default: "",
+},
+
+companyName: {
       type: String,
       required: true,
       trim: true,
