@@ -1,0 +1,2978 @@
+/* =========================================================
+   PRICE CONTRACT FORM OVERLAY
+========================================================= */
+
+.pc-form-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+
+  padding: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+
+  background: rgba(3, 15, 25, 0.76);
+
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.pc-form-modal {
+  width: min(1040px, 97vw);
+  max-height: 95vh;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  background: #f5f8f8;
+
+  border:
+    1px solid rgba(
+      255,
+      255,
+      255,
+      0.35
+    );
+
+  border-radius: 24px;
+
+  box-shadow:
+    0 35px 100px
+    rgba(0, 0, 0, 0.38);
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.pc-form-header {
+  flex-shrink: 0;
+
+  padding: 20px 24px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #061b29 0%,
+      #0a3943 58%,
+      #0f766e 100%
+    );
+}
+
+.pc-form-header-left {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.pc-form-eyebrow {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #5eead4;
+
+  font-size: 9px;
+  font-weight: 950;
+
+  letter-spacing: 1.5px;
+}
+
+.pc-form-header h2 {
+  margin: 0;
+
+  font-size: 23px;
+  font-weight: 900;
+
+  letter-spacing: -0.3px;
+}
+
+.pc-form-header p {
+  margin: 5px 0 0;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.68
+    );
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.pc-form-back,
+.pc-form-close {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.17
+    );
+
+  border-radius: 11px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.1
+    );
+
+  color: #ffffff;
+
+  cursor: pointer;
+}
+
+.pc-form-back {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.pc-form-close {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.pc-form-back:hover,
+.pc-form-close:hover {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.2
+    );
+}
+
+
+/* =========================================================
+   EXISTING DOCUMENT INFORMATION
+========================================================= */
+
+.pc-document-info {
+  flex-shrink: 0;
+
+  padding: 9px 24px;
+
+  display: flex;
+  align-items: center;
+  gap: 35px;
+
+  background: #e9f6f4;
+
+  border-bottom:
+    1px solid #cce7e2;
+}
+
+.pc-document-info > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pc-document-info span {
+  color: #64748b;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+}
+
+.pc-document-info strong {
+  color: #0f766e;
+
+  font-size: 10px;
+  font-weight: 900;
+
+  text-transform: capitalize;
+}
+
+
+/* =========================================================
+   FORM SCROLL AREA
+========================================================= */
+
+.pc-form {
+  flex: 1;
+  min-height: 0;
+
+  padding: 18px 22px 0;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+
+/* =========================================================
+   ALERTS
+========================================================= */
+
+.pc-alert {
+  margin-bottom: 14px;
+  padding: 10px 13px;
+
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  border-radius: 11px;
+
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.pc-alert span {
+  width: 25px;
+  height: 25px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  font-weight: 950;
+}
+
+.pc-alert p {
+  margin: 0;
+}
+
+.pc-alert-error {
+  background: #fff1f2;
+  color: #9f1239;
+
+  border: 1px solid #fecdd3;
+}
+
+.pc-alert-error span {
+  background: #e11d48;
+  color: #ffffff;
+}
+
+.pc-alert-success {
+  background: #ecfdf5;
+  color: #166534;
+
+  border: 1px solid #bbf7d0;
+}
+
+.pc-alert-success span {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   SECTIONS
+========================================================= */
+
+.pc-section {
+  margin-bottom: 15px;
+  padding: 16px;
+
+  background: #ffffff;
+
+  border: 1px solid #e1e8e8;
+  border-radius: 16px;
+
+  box-shadow:
+    0 6px 18px
+    rgba(
+      15,
+      23,
+      42,
+      0.045
+    );
+}
+
+.pc-section-heading {
+  margin-bottom: 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pc-section-number {
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #0f766e,
+      #07525a
+    );
+
+  color: #ffffff;
+
+  font-size: 9px;
+  font-weight: 950;
+
+  box-shadow:
+    0 6px 13px
+    rgba(
+      15,
+      118,
+      110,
+      0.18
+    );
+}
+
+.pc-section-heading h3 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.pc-section-heading p {
+  margin: 2px 0 0;
+
+  color: #94a3b8;
+
+  font-size: 9.5px;
+  font-weight: 650;
+}
+
+
+/* =========================================================
+   GRID
+========================================================= */
+
+.pc-form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px 15px;
+}
+
+
+/* =========================================================
+   FIELD
+========================================================= */
+
+.pc-field {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.pc-field.pc-full {
+  grid-column: span 2;
+}
+
+.pc-field label {
+  margin-bottom: 5px;
+
+  color: #334155;
+
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.pc-field label em {
+  margin-left: 3px;
+
+  color: #dc2626;
+
+  font-style: normal;
+}
+
+.pc-field input,
+.pc-field select,
+.pc-field textarea {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+
+  outline: none;
+
+  background: #f8fafc;
+  color: #0f172a;
+
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.pc-field input,
+.pc-field select {
+  height: 39px;
+
+  padding: 0 11px;
+}
+
+.pc-field textarea {
+  min-height: 75px;
+
+  padding: 10px 11px;
+
+  resize: vertical;
+
+  line-height: 1.45;
+}
+
+.pc-field input::placeholder,
+.pc-field textarea::placeholder {
+  color: #a8b3c2;
+
+  font-weight: 500;
+}
+
+.pc-field input:focus,
+.pc-field select:focus,
+.pc-field textarea:focus {
+  border-color: #0d9488;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      13,
+      148,
+      136,
+      0.1
+    );
+}
+
+
+/* =========================================================
+   ACTION BAR
+========================================================= */
+
+.pc-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+
+  margin:
+    4px -22px 0;
+
+  padding: 13px 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.97
+    );
+
+  border-top:
+    1px solid #dfe7e7;
+
+  box-shadow:
+    0 -8px 20px
+    rgba(
+      15,
+      23,
+      42,
+      0.06
+    );
+
+  backdrop-filter: blur(10px);
+}
+
+.pc-action-note {
+  max-width: 460px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pc-action-note > span {
+  width: 25px;
+  height: 25px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #e6f6f3;
+  color: #0f766e;
+
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.pc-action-note p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 9.5px;
+  font-weight: 650;
+
+  line-height: 1.4;
+}
+
+.pc-action-buttons {
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pc-cancel-btn,
+.pc-generate-btn {
+  height: 40px;
+
+  padding: 0 16px;
+
+  border: none;
+  border-radius: 10px;
+
+  font-size: 10.5px;
+  font-weight: 900;
+
+  cursor: pointer;
+}
+
+.pc-cancel-btn {
+  background: #eef2f4;
+  color: #475569;
+}
+
+.pc-cancel-btn:hover {
+  background: #e2e8f0;
+}
+
+.pc-generate-btn {
+  min-width: 185px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0f766e,
+      #07525a
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 7px 17px
+    rgba(
+      15,
+      118,
+      110,
+      0.23
+    );
+}
+
+.pc-generate-btn > span:not(
+  .pc-spinner
+) {
+  padding: 3px 5px;
+
+  border-radius: 5px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.16
+    );
+
+  font-size: 7px;
+  font-weight: 950;
+}
+
+.pc-generate-btn:hover:not(
+  :disabled
+) {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 10px 20px
+    rgba(
+      15,
+      118,
+      110,
+      0.28
+    );
+}
+
+.pc-generate-btn:disabled,
+.pc-cancel-btn:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   LOADING SPINNER
+========================================================= */
+
+.pc-spinner {
+  width: 14px;
+  height: 14px;
+
+  border:
+    2px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.35
+    );
+
+  border-top-color:
+    #ffffff;
+
+  border-radius: 50%;
+
+  animation:
+    pcSpinner
+    0.7s
+    linear
+    infinite;
+}
+
+@keyframes pcSpinner {
+  to {
+    transform:
+      rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+.pc-form::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pc-form::-webkit-scrollbar-track {
+  background: #edf2f2;
+}
+
+.pc-form::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+
+  border-radius: 20px;
+}
+
+.pc-form::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media screen and (max-width: 850px) {
+  .pc-form-modal {
+    width: 98vw;
+  }
+
+  .pc-action-note {
+    max-width: 330px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE / PWA
+========================================================= */
+
+@media screen and (max-width: 700px) {
+  .pc-form-overlay {
+    padding: 0;
+
+    align-items: flex-end;
+  }
+
+  .pc-form-modal {
+    width: 100%;
+    max-height: 96dvh;
+
+    border-radius:
+      24px
+      24px
+      0
+      0;
+  }
+
+  .pc-form-header {
+    padding:
+      16px
+      15px;
+  }
+
+  .pc-form-header-left {
+    gap: 9px;
+  }
+
+  .pc-form-header h2 {
+    font-size: 18px;
+  }
+
+  .pc-form-header p {
+    display: none;
+  }
+
+  .pc-form-eyebrow {
+    font-size: 8px;
+  }
+
+  .pc-form-back,
+  .pc-form-close {
+    width: 35px;
+    height: 35px;
+  }
+
+  .pc-document-info {
+    padding: 8px 14px;
+
+    gap: 14px;
+
+    overflow-x: auto;
+  }
+
+  .pc-document-info > div {
+    flex-shrink: 0;
+  }
+
+  .pc-form {
+    padding:
+      12px
+      10px
+      0;
+  }
+
+  .pc-section {
+    margin-bottom: 10px;
+
+    padding: 13px 11px;
+
+    border-radius: 14px;
+  }
+
+  .pc-section-heading {
+    margin-bottom: 12px;
+  }
+
+  .pc-section-number {
+    width: 31px;
+    height: 31px;
+
+    border-radius: 9px;
+  }
+
+  .pc-section-heading h3 {
+    font-size: 12px;
+  }
+
+  .pc-section-heading p {
+    font-size: 8.5px;
+  }
+
+  .pc-form-grid {
+    grid-template-columns: 1fr;
+
+    gap: 11px;
+  }
+
+  .pc-field.pc-full {
+    grid-column: span 1;
+  }
+
+  .pc-field label {
+    font-size: 10px;
+  }
+
+  .pc-field input,
+  .pc-field select {
+    height: 43px;
+
+    font-size: 12px;
+  }
+
+  .pc-field textarea {
+    min-height: 88px;
+
+    font-size: 12px;
+  }
+
+  .pc-form-actions {
+    margin:
+      4px -10px 0;
+
+    padding:
+      10px
+      10px
+      calc(
+        10px +
+        env(
+          safe-area-inset-bottom
+        )
+      );
+
+    flex-direction: column;
+
+    gap: 8px;
+  }
+
+  .pc-action-note {
+    width: 100%;
+    max-width: none;
+  }
+
+  .pc-action-buttons {
+    width: 100%;
+  }
+
+  .pc-cancel-btn {
+    flex: 0.75;
+  }
+
+  .pc-generate-btn {
+    flex: 1.5;
+
+    min-width: 0;
+  }
+
+  .pc-cancel-btn,
+  .pc-generate-btn {
+    height: 43px;
+
+    padding:
+      0 10px;
+
+    font-size: 10px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media screen and (max-width: 380px) {
+  .pc-form-header {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .pc-form-header h2 {
+    font-size: 16px;
+  }
+
+  .pc-form {
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .pc-form-actions {
+    margin-left: -7px;
+    margin-right: -7px;
+
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+}
+/* =========================================================
+   PRICE CONTRACT
+   SIMPLE 5-FIELD GENERATION FORM
+========================================================= */
+
+.pc-simple-form-modal {
+  width: min(820px, 96vw);
+}
+
+
+/* =========================================================
+   INTRODUCTION CARD
+========================================================= */
+
+.pc-simple-intro {
+  margin-bottom: 14px;
+  padding: 13px 15px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  border: 1px solid #cce7e2;
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #effaf8,
+      #f8fcfb
+    );
+}
+
+.pc-simple-intro-icon {
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #0f766e,
+      #07525a
+    );
+
+  color: #ffffff;
+
+  font-size: 10px;
+  font-weight: 950;
+
+  box-shadow:
+    0 7px 16px
+    rgba(
+      15,
+      118,
+      110,
+      0.18
+    );
+}
+
+.pc-simple-intro strong {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #0f172a;
+
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.pc-simple-intro p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 10px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   SIMPLE SECTION
+========================================================= */
+
+.pc-simple-section {
+  margin-bottom: 14px;
+}
+
+
+/* =========================================================
+   FIELD HELP
+========================================================= */
+
+.pc-field-help {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #94a3b8;
+
+  font-size: 8.5px;
+  line-height: 1.4;
+  font-weight: 650;
+}
+
+.pc-penalty-help {
+  color: #64748b;
+}
+
+
+/* =========================================================
+   BACKEND TEMPLATE INFO
+========================================================= */
+
+.pc-template-info {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 13px;
+
+  background: #f0fdf4;
+}
+
+.pc-template-info-icon {
+  width: 28px;
+  height: 28px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #16a34a;
+  color: #ffffff;
+
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.pc-template-info strong {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #166534;
+
+  font-size: 10.5px;
+  font-weight: 900;
+}
+
+.pc-template-info p {
+  margin: 0;
+
+  color: #3f7050;
+
+  font-size: 9px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media screen and (max-width: 700px) {
+
+  .pc-simple-form-modal {
+    width: 100%;
+  }
+
+  .pc-simple-intro {
+    margin-bottom: 10px;
+    padding: 11px;
+  }
+
+  .pc-simple-intro-icon {
+    width: 37px;
+    height: 37px;
+  }
+
+  .pc-simple-intro p {
+    font-size: 9px;
+  }
+
+  .pc-template-info {
+    margin-bottom: 10px;
+  }
+}
+/* =========================================================
+   FINAL PRICE CONTRACT FORM POLISH
+   ---------------------------------------------------------
+   Applies to:
+   - Price Basis
+   - Validity
+   - Payment Terms
+   - Penalty
+   - Remarks
+========================================================= */
+
+
+/* =========================================================
+   COMPACT MODAL SIZE
+========================================================= */
+
+.pc-simple-form-modal {
+  width: min(760px, 95vw) !important;
+  max-height: 92vh !important;
+
+  background: #f6f9f9 !important;
+
+  border-radius: 22px !important;
+
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.34) !important;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.pc-simple-form-modal .pc-form-header {
+  padding: 18px 22px !important;
+
+  align-items: center !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #061b29 0%,
+      #0a3842 55%,
+      #0e766e 100%
+    ) !important;
+}
+
+
+.pc-simple-form-modal
+.pc-form-header-left {
+  min-width: 0;
+
+  align-items: center !important;
+}
+
+
+.pc-simple-form-modal
+.pc-form-header h2 {
+  font-size: 21px !important;
+
+  line-height: 1.15 !important;
+}
+
+
+.pc-simple-form-modal
+.pc-form-header p {
+  max-width: 520px;
+
+  margin-top: 4px !important;
+
+  font-size: 10.5px !important;
+
+  line-height: 1.45 !important;
+}
+
+
+/* =========================================================
+   BACK / CLOSE BUTTON
+
+   Clearer white button style.
+========================================================= */
+
+.pc-simple-form-modal
+.pc-form-back,
+
+.pc-simple-form-modal
+.pc-form-close {
+  width: 38px !important;
+  height: 38px !important;
+
+  display: flex !important;
+
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 0 !important;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.28)
+    !important;
+
+  border-radius: 11px !important;
+
+  background:
+    rgba(255, 255, 255, 0.12)
+    !important;
+
+  color: #ffffff !important;
+
+  line-height: 1 !important;
+
+  box-shadow:
+    inset 0 1px 0
+    rgba(255, 255, 255, 0.1);
+
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease !important;
+}
+
+
+.pc-simple-form-modal
+.pc-form-back:hover,
+
+.pc-simple-form-modal
+.pc-form-close:hover {
+  background:
+    rgba(255, 255, 255, 0.22)
+    !important;
+
+  transform:
+    translateY(-1px);
+}
+
+
+.pc-simple-form-modal
+.pc-form-back:disabled,
+
+.pc-simple-form-modal
+.pc-form-close:disabled {
+  opacity: 0.45 !important;
+
+  cursor: not-allowed !important;
+
+  transform: none !important;
+}
+
+
+/* =========================================================
+   DOCUMENT INFO BAR
+========================================================= */
+
+.pc-simple-form-modal
+.pc-document-info {
+  padding: 8px 22px !important;
+
+  gap: 28px !important;
+
+  background:
+    #edf8f6 !important;
+}
+
+
+/* =========================================================
+   FORM BODY
+========================================================= */
+
+.pc-simple-form {
+  padding:
+    15px 18px 0
+    !important;
+
+  background:
+    #f6f9f9 !important;
+}
+
+
+/* =========================================================
+   INTRO CARD
+========================================================= */
+
+.pc-simple-form
+.pc-simple-intro {
+  margin-bottom: 12px !important;
+
+  padding: 11px 13px !important;
+
+  border:
+    1px solid
+    #cfe6e2 !important;
+
+  border-radius:
+    13px !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #eef9f7,
+      #ffffff
+    ) !important;
+}
+
+
+.pc-simple-form
+.pc-simple-intro-icon {
+  width: 39px !important;
+  height: 39px !important;
+
+  border-radius:
+    11px !important;
+}
+
+
+/* =========================================================
+   MAIN SECTION
+========================================================= */
+
+.pc-simple-form
+.pc-simple-section {
+  margin-bottom:
+    12px !important;
+
+  padding:
+    14px !important;
+
+  background:
+    #ffffff !important;
+
+  border:
+    1px solid
+    #dde8e7 !important;
+
+  border-radius:
+    15px !important;
+
+  box-shadow:
+    0 5px 16px
+    rgba(15, 23, 42, 0.045)
+    !important;
+}
+
+
+/* =========================================================
+   FORM GRID
+========================================================= */
+
+.pc-simple-form
+.pc-form-grid {
+  gap:
+    13px 14px !important;
+}
+
+
+/* =========================================================
+   LABELS
+========================================================= */
+
+.pc-simple-form
+.pc-field label {
+  margin-bottom:
+    6px !important;
+
+  color:
+    #1e293b !important;
+
+  font-size:
+    10.5px !important;
+
+  font-weight:
+    800 !important;
+}
+
+
+/* =========================================================
+   ALL INPUTS
+   Force clean white appearance.
+========================================================= */
+
+.pc-simple-form
+.pc-field input,
+
+.pc-simple-form
+.pc-field select,
+
+.pc-simple-form
+.pc-field textarea {
+  width:
+    100% !important;
+
+  border:
+    1px solid
+    #cbd5e1 !important;
+
+  border-radius:
+    10px !important;
+
+  background:
+    #ffffff !important;
+
+  color:
+    #0f172a !important;
+
+  box-shadow:
+    0 1px 2px
+    rgba(15, 23, 42, 0.025);
+
+  font-family:
+    inherit !important;
+
+  font-weight:
+    600 !important;
+
+  opacity:
+    1 !important;
+
+  -webkit-text-fill-color:
+    #0f172a !important;
+}
+
+
+.pc-simple-form
+.pc-field input {
+  height:
+    42px !important;
+
+  padding:
+    0 12px !important;
+
+  font-size:
+    11.5px !important;
+}
+
+
+.pc-simple-form
+.pc-field textarea {
+  min-height:
+    72px !important;
+
+  padding:
+    10px 12px !important;
+
+  font-size:
+    11.5px !important;
+
+  line-height:
+    1.45 !important;
+
+  resize:
+    vertical !important;
+}
+
+
+/* =========================================================
+   FOCUS
+========================================================= */
+
+.pc-simple-form
+.pc-field input:focus,
+
+.pc-simple-form
+.pc-field select:focus,
+
+.pc-simple-form
+.pc-field textarea:focus {
+  border-color:
+    #0d9488 !important;
+
+  background:
+    #ffffff !important;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(13, 148, 136, 0.11)
+    !important;
+}
+
+
+/* =========================================================
+   DISABLED
+
+   Keep values visible while generating.
+========================================================= */
+
+.pc-simple-form
+.pc-field input:disabled,
+
+.pc-simple-form
+.pc-field select:disabled,
+
+.pc-simple-form
+.pc-field textarea:disabled {
+  background:
+    #f8fafc !important;
+
+  color:
+    #475569 !important;
+
+  -webkit-text-fill-color:
+    #475569 !important;
+
+  opacity:
+    1 !important;
+
+  cursor:
+    not-allowed !important;
+}
+
+
+/* =========================================================
+   VALIDITY DATE FIELD
+
+   Fix Safari / Chrome grey appearance.
+========================================================= */
+
+.pc-simple-form
+.pc-field input[type="date"] {
+  position:
+    relative;
+
+  height:
+    42px !important;
+
+  padding:
+    0 10px 0 12px
+    !important;
+
+  background:
+    #ffffff !important;
+
+  color:
+    #0f172a !important;
+
+  -webkit-text-fill-color:
+    #0f172a !important;
+
+  color-scheme:
+    light;
+
+  appearance:
+    none;
+
+  -webkit-appearance:
+    none;
+}
+
+
+/* Chrome / Safari date text */
+
+.pc-simple-form
+.pc-field
+input[type="date"]
+::-webkit-datetime-edit {
+  color:
+    #0f172a;
+
+  opacity:
+    1;
+}
+
+
+.pc-simple-form
+.pc-field
+input[type="date"]
+::-webkit-datetime-edit-fields-wrapper {
+  padding:
+    0;
+}
+
+
+.pc-simple-form
+.pc-field
+input[type="date"]
+::-webkit-date-and-time-value {
+  text-align:
+    left;
+
+  color:
+    #0f172a;
+}
+
+
+/* Calendar icon */
+
+.pc-simple-form
+.pc-field
+input[type="date"]
+::-webkit-calendar-picker-indicator {
+  opacity:
+    0.72;
+
+  cursor:
+    pointer;
+
+  padding:
+    5px;
+
+  border-radius:
+    6px;
+}
+
+
+.pc-simple-form
+.pc-field
+input[type="date"]
+::-webkit-calendar-picker-indicator:hover {
+  background:
+    #eef8f6;
+
+  opacity:
+    1;
+}
+
+
+/* =========================================================
+   EMPTY DATE PLACEHOLDER-LIKE COLOR
+========================================================= */
+
+.pc-simple-form
+.pc-field
+input[type="date"]:invalid {
+  color:
+    #94a3b8 !important;
+}
+
+
+/* =========================================================
+   PAYMENT / PENALTY / REMARKS
+========================================================= */
+
+.pc-simple-form
+.pc-field textarea[name="paymentTerms"] {
+  min-height:
+    68px !important;
+}
+
+
+.pc-simple-form
+.pc-field textarea[name="penalty"] {
+  min-height:
+    74px !important;
+
+  background:
+    #fffef9 !important;
+
+  border-color:
+    #e7dfc8 !important;
+}
+
+
+.pc-simple-form
+.pc-field textarea[name="penalty"]:focus {
+  border-color:
+    #0d9488 !important;
+
+  background:
+    #ffffff !important;
+}
+
+
+.pc-simple-form
+.pc-field textarea[name="remarks"] {
+  min-height:
+    68px !important;
+}
+
+
+/* =========================================================
+   HELP TEXT
+========================================================= */
+
+.pc-simple-form
+.pc-field-help {
+  margin-top:
+    5px !important;
+
+  padding-left:
+    1px;
+
+  color:
+    #7b8796 !important;
+
+  font-size:
+    8.5px !important;
+
+  line-height:
+    1.4 !important;
+}
+
+
+/* =========================================================
+   TEMPLATE INFO
+========================================================= */
+
+.pc-simple-form
+.pc-template-info {
+  margin-bottom:
+    12px !important;
+
+  padding:
+    10px 12px !important;
+
+  border-radius:
+    12px !important;
+
+  background:
+    #f0faf5 !important;
+
+  border:
+    1px solid
+    #c9ead8 !important;
+}
+
+
+/* =========================================================
+   ACTION BAR
+========================================================= */
+
+.pc-simple-form
+.pc-form-actions {
+  margin:
+    4px -18px 0
+    !important;
+
+  padding:
+    11px 18px
+    !important;
+
+  min-height:
+    62px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.98
+    ) !important;
+
+  border-top:
+    1px solid
+    #dce6e5 !important;
+
+  box-shadow:
+    0 -6px 16px
+    rgba(15, 23, 42, 0.055)
+    !important;
+}
+
+
+/* =========================================================
+   CANCEL BUTTON
+
+   Clean white/neutral secondary action.
+========================================================= */
+
+.pc-simple-form
+.pc-cancel-btn {
+  min-width:
+    92px;
+
+  height:
+    40px !important;
+
+  border:
+    1px solid
+    #d5dee4 !important;
+
+  background:
+    #ffffff !important;
+
+  color:
+    #475569 !important;
+
+  box-shadow:
+    0 2px 5px
+    rgba(15, 23, 42, 0.04);
+
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+
+.pc-simple-form
+.pc-cancel-btn:hover:not(:disabled) {
+  background:
+    #f1f5f9 !important;
+
+  transform:
+    translateY(-1px);
+}
+
+
+/* =========================================================
+   GENERATE BUTTON
+========================================================= */
+
+.pc-simple-form
+.pc-generate-btn {
+  min-width:
+    190px;
+
+  height:
+    40px !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0f766e 0%,
+      #08645f 48%,
+      #07525a 100%
+    ) !important;
+
+  color:
+    #ffffff !important;
+
+  box-shadow:
+    0 7px 18px
+    rgba(15, 118, 110, 0.22)
+    !important;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+
+.pc-simple-form
+.pc-generate-btn:hover:not(:disabled) {
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    0 10px 22px
+    rgba(15, 118, 110, 0.28)
+    !important;
+}
+
+
+/* =========================================================
+   GENERATING STATE
+
+   Keep strong visible disabled state.
+========================================================= */
+
+.pc-simple-form
+.pc-generate-btn:disabled {
+  opacity:
+    1 !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #64748b,
+      #475569
+    ) !important;
+
+  color:
+    #ffffff !important;
+
+  cursor:
+    wait !important;
+
+  box-shadow:
+    none !important;
+
+  transform:
+    none !important;
+}
+
+
+.pc-simple-form
+.pc-cancel-btn:disabled {
+  opacity:
+    0.55 !important;
+
+  cursor:
+    not-allowed !important;
+}
+
+
+/* =========================================================
+   MOBILE / PWA
+========================================================= */
+
+@media screen and (max-width: 700px) {
+
+  .pc-simple-form-modal {
+    width:
+      100% !important;
+
+    max-width:
+      100% !important;
+
+    max-height:
+      96dvh !important;
+
+    border-radius:
+      22px
+      22px
+      0
+      0
+      !important;
+  }
+
+
+  .pc-simple-form-modal
+  .pc-form-header {
+    padding:
+      15px 13px
+      !important;
+  }
+
+
+  .pc-simple-form-modal
+  .pc-form-header h2 {
+    font-size:
+      17px !important;
+  }
+
+
+  .pc-simple-form-modal
+  .pc-form-header p {
+    display:
+      none !important;
+  }
+
+
+  .pc-simple-form-modal
+  .pc-form-back,
+
+  .pc-simple-form-modal
+  .pc-form-close {
+    width:
+      36px !important;
+
+    height:
+      36px !important;
+  }
+
+
+  .pc-simple-form {
+    padding:
+      10px
+      9px
+      0
+      !important;
+  }
+
+
+  .pc-simple-form
+  .pc-simple-intro {
+    padding:
+      10px !important;
+
+    margin-bottom:
+      9px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-simple-intro-icon {
+    width:
+      36px !important;
+
+    height:
+      36px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-simple-section {
+    padding:
+      12px
+      10px
+      !important;
+
+    margin-bottom:
+      9px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-form-grid {
+    grid-template-columns:
+      1fr !important;
+
+    gap:
+      11px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-field.pc-full {
+    grid-column:
+      span 1 !important;
+  }
+
+
+  .pc-simple-form
+  .pc-field input,
+
+  .pc-simple-form
+  .pc-field input[type="date"] {
+    height:
+      44px !important;
+
+    font-size:
+      12px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-field textarea {
+    font-size:
+      12px !important;
+
+    min-height:
+      76px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-template-info {
+    padding:
+      10px !important;
+
+    margin-bottom:
+      9px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-form-actions {
+    margin:
+      3px
+      -9px
+      0
+      !important;
+
+    padding:
+      9px
+      9px
+      calc(
+        9px +
+        env(
+          safe-area-inset-bottom
+        )
+      )
+      !important;
+
+    gap:
+      8px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-action-buttons {
+    width:
+      100% !important;
+
+    display:
+      grid !important;
+
+    grid-template-columns:
+      0.8fr
+      1.5fr !important;
+
+    gap:
+      7px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-cancel-btn,
+
+  .pc-simple-form
+  .pc-generate-btn {
+    width:
+      100% !important;
+
+    min-width:
+      0 !important;
+
+    height:
+      44px !important;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media screen and (max-width: 380px) {
+
+  .pc-simple-form-modal
+  .pc-form-header {
+    padding-left:
+      10px !important;
+
+    padding-right:
+      10px !important;
+  }
+
+
+  .pc-simple-form {
+    padding-left:
+      7px !important;
+
+    padding-right:
+      7px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-form-actions {
+    margin-left:
+      -7px !important;
+
+    margin-right:
+      -7px !important;
+
+    padding-left:
+      7px !important;
+
+    padding-right:
+      7px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-action-note p {
+    font-size:
+      8.5px !important;
+  }
+}
+/* =========================================================
+   PRICE CONTRACT — CUSTOMER NAME FIELD
+   FINAL OVERRIDE
+   KEEP AT ABSOLUTE END OF PriceContractForm.css
+========================================================= */
+
+.pc-simple-form
+.pc-customer-name-field {
+  grid-column:
+    1 / -1 !important;
+
+  margin-bottom:
+    1px !important;
+}
+
+
+.pc-simple-form
+.pc-customer-name-field label {
+  color:
+    #0f4f56 !important;
+
+  font-size:
+    10.5px !important;
+
+  font-weight:
+    850 !important;
+}
+
+
+.pc-simple-form
+.pc-customer-name-field input {
+  height:
+    44px !important;
+
+  border:
+    1px solid
+    #b9d7d3 !important;
+
+  border-radius:
+    11px !important;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fbfefd 100%
+    ) !important;
+
+  color:
+    #0f172a !important;
+
+  font-size:
+    12px !important;
+
+  font-weight:
+    700 !important;
+
+  letter-spacing:
+    0.01em !important;
+
+  box-shadow:
+    0 1px 3px
+    rgba(
+      15,
+      118,
+      110,
+      0.04
+    ) !important;
+}
+
+
+.pc-simple-form
+.pc-customer-name-field input::placeholder {
+  color:
+    #94a3b8 !important;
+
+  font-weight:
+    500 !important;
+}
+
+
+.pc-simple-form
+.pc-customer-name-field input:focus {
+  border-color:
+    #0d9488 !important;
+
+  background:
+    #ffffff !important;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      13,
+      148,
+      136,
+      0.11
+    ) !important;
+}
+
+
+.pc-simple-form
+.pc-customer-name-field
+.pc-field-help {
+  color:
+    #6f7f8f !important;
+
+  font-size:
+    8.5px !important;
+
+  line-height:
+    1.4 !important;
+}
+
+
+@media screen and (max-width: 700px) {
+
+  .pc-simple-form
+  .pc-customer-name-field {
+    grid-column:
+      span 1 !important;
+  }
+
+
+  .pc-simple-form
+  .pc-customer-name-field input {
+    height:
+      43px !important;
+
+    font-size:
+      12px !important;
+  }
+
+}
+
+/* =========================================================
+   END — CUSTOMER NAME FIELD
+========================================================= */
+
+/* =========================================================
+   PRICE CONTRACT — VALIDITY FROM / TO RANGE
+   FINAL OVERRIDE
+   KEEP AT ABSOLUTE END OF PriceContractForm.css
+========================================================= */
+
+.pc-simple-form
+.pc-validity-field {
+  min-width:
+    0 !important;
+}
+
+
+.pc-simple-form
+.pc-validity-range {
+  width:
+    100%;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    34px
+    minmax(0, 1fr);
+
+  align-items:
+    end;
+
+  gap:
+    8px;
+}
+
+
+.pc-simple-form
+.pc-validity-date-box {
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    5px;
+}
+
+
+.pc-simple-form
+.pc-validity-date-label {
+  color:
+    #64748b;
+
+  font-size:
+    8.5px;
+
+  line-height:
+    1;
+
+  font-weight:
+    800;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    0.05em;
+}
+
+
+.pc-simple-form
+.pc-validity-range-separator {
+  height:
+    42px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  color:
+    #0f766e;
+
+  font-size:
+    9px;
+
+  line-height:
+    1;
+
+  font-weight:
+    950;
+
+  letter-spacing:
+    0.06em;
+}
+
+
+.pc-simple-form
+.pc-validity-date-box input[type="date"] {
+  width:
+    100% !important;
+
+  min-width:
+    0 !important;
+
+  height:
+    42px !important;
+
+  padding:
+    0 9px 0 11px !important;
+
+  border:
+    1px solid
+    #cbd5e1 !important;
+
+  border-radius:
+    10px !important;
+
+  background:
+    #ffffff !important;
+
+  color:
+    #0f172a !important;
+
+  -webkit-text-fill-color:
+    #0f172a !important;
+
+  font-size:
+    11px !important;
+
+  font-weight:
+    650 !important;
+
+  color-scheme:
+    light;
+
+  appearance:
+    auto !important;
+
+  -webkit-appearance:
+    auto !important;
+
+  box-shadow:
+    0 1px 2px
+    rgba(
+      15,
+      23,
+      42,
+      0.025
+    ) !important;
+}
+
+
+.pc-simple-form
+.pc-validity-date-box input[type="date"]:focus {
+  border-color:
+    #0d9488 !important;
+
+  background:
+    #ffffff !important;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      13,
+      148,
+      136,
+      0.11
+    ) !important;
+}
+
+
+.pc-simple-form
+.pc-validity-date-box input[type="date"]:disabled {
+  background:
+    #f8fafc !important;
+
+  color:
+    #475569 !important;
+
+  -webkit-text-fill-color:
+    #475569 !important;
+
+  opacity:
+    1 !important;
+
+  cursor:
+    not-allowed !important;
+}
+
+
+/* =========================================================
+   VALIDITY RANGE — TABLET / MOBILE
+========================================================= */
+
+@media screen and (max-width: 700px) {
+
+  .pc-simple-form
+  .pc-validity-range {
+    grid-template-columns:
+      1fr;
+
+    gap:
+      7px;
+  }
+
+
+  .pc-simple-form
+  .pc-validity-range-separator {
+    height:
+      18px;
+
+    justify-content:
+      flex-start;
+
+    padding-left:
+      2px;
+
+    font-size:
+      8.5px;
+  }
+
+
+  .pc-simple-form
+  .pc-validity-date-box input[type="date"] {
+    height:
+      43px !important;
+
+    font-size:
+      12px !important;
+  }
+
+}
+
+/* =========================================================
+   END — VALIDITY FROM / TO RANGE
+========================================================= */
+
+/* =========================================================
+   PRICE CONTRACT — STEEL TYPE
+   FINAL OVERRIDE
+   KEEP AT ABSOLUTE END OF PriceContractForm.css
+========================================================= */
+
+.pc-simple-form
+.pc-steel-type-field {
+  grid-column:
+    1 / -1 !important;
+
+  margin-bottom:
+    1px !important;
+}
+
+
+.pc-simple-form
+.pc-steel-type-field label {
+  color:
+    #0f4f56 !important;
+
+  font-size:
+    10.5px !important;
+
+  font-weight:
+    850 !important;
+}
+
+
+.pc-simple-form
+.pc-steel-type-field select {
+  width:
+    100% !important;
+
+  height:
+    44px !important;
+
+  padding:
+    0 38px
+    0 12px !important;
+
+  border:
+    1px solid
+    #b9d7d3 !important;
+
+  border-radius:
+    11px !important;
+
+  background-color:
+    #ffffff !important;
+
+  color:
+    #0f172a !important;
+
+  font-family:
+    inherit !important;
+
+  font-size:
+    12px !important;
+
+  font-weight:
+    700 !important;
+
+  line-height:
+    1.2 !important;
+
+  outline:
+    none !important;
+
+  cursor:
+    pointer !important;
+
+  box-shadow:
+    0 1px 3px
+    rgba(
+      15,
+      118,
+      110,
+      0.04
+    ) !important;
+
+  transition:
+    border-color
+    0.18s
+    ease,
+    box-shadow
+    0.18s
+    ease,
+    background
+    0.18s
+    ease !important;
+}
+
+
+.pc-simple-form
+.pc-steel-type-field select:hover:not(:disabled) {
+  border-color:
+    #94c7c1 !important;
+
+  background-color:
+    #fbfefd !important;
+}
+
+
+.pc-simple-form
+.pc-steel-type-field select:focus {
+  border-color:
+    #0d9488 !important;
+
+  background-color:
+    #ffffff !important;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      13,
+      148,
+      136,
+      0.11
+    ) !important;
+}
+
+
+.pc-simple-form
+.pc-steel-type-field select:disabled {
+  background-color:
+    #f8fafc !important;
+
+  color:
+    #475569 !important;
+
+  -webkit-text-fill-color:
+    #475569 !important;
+
+  opacity:
+    1 !important;
+
+  cursor:
+    not-allowed !important;
+}
+
+
+.pc-simple-form
+.pc-steel-type-field
+.pc-field-help {
+  color:
+    #6f7f8f !important;
+
+  font-size:
+    8.5px !important;
+
+  line-height:
+    1.4 !important;
+}
+
+
+/* =========================================================
+   STEEL TYPE + VALIDITY LAYOUT
+========================================================= */
+
+.pc-simple-form
+.pc-validity-field {
+  min-width:
+    0 !important;
+}
+
+
+.pc-simple-form
+.pc-validity-range {
+  width:
+    100%;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    34px
+    minmax(0, 1fr);
+
+  align-items:
+    end;
+
+  gap:
+    8px;
+}
+
+
+.pc-simple-form
+.pc-validity-date-box {
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    5px;
+}
+
+
+.pc-simple-form
+.pc-validity-date-label {
+  color:
+    #64748b;
+
+  font-size:
+    8.5px;
+
+  line-height:
+    1;
+
+  font-weight:
+    800;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    0.05em;
+}
+
+
+.pc-simple-form
+.pc-validity-range-separator {
+  height:
+    42px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  color:
+    #0f766e;
+
+  font-size:
+    9px;
+
+  line-height:
+    1;
+
+  font-weight:
+    950;
+
+  letter-spacing:
+    0.06em;
+}
+
+
+.pc-simple-form
+.pc-validity-date-box
+input[type="date"] {
+  width:
+    100% !important;
+
+  min-width:
+    0 !important;
+
+  height:
+    42px !important;
+
+  padding:
+    0 9px
+    0 11px !important;
+
+  border:
+    1px solid
+    #cbd5e1 !important;
+
+  border-radius:
+    10px !important;
+
+  background:
+    #ffffff !important;
+
+  color:
+    #0f172a !important;
+
+  -webkit-text-fill-color:
+    #0f172a !important;
+
+  font-size:
+    11px !important;
+
+  font-weight:
+    650 !important;
+
+  color-scheme:
+    light;
+
+  appearance:
+    auto !important;
+
+  -webkit-appearance:
+    auto !important;
+
+  box-shadow:
+    0 1px 2px
+    rgba(
+      15,
+      23,
+      42,
+      0.025
+    ) !important;
+}
+
+
+.pc-simple-form
+.pc-validity-date-box
+input[type="date"]:focus {
+  border-color:
+    #0d9488 !important;
+
+  background:
+    #ffffff !important;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      13,
+      148,
+      136,
+      0.11
+    ) !important;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media screen and (max-width: 700px) {
+
+  .pc-simple-form
+  .pc-steel-type-field {
+    grid-column:
+      span 1 !important;
+  }
+
+
+  .pc-simple-form
+  .pc-steel-type-field select {
+    height:
+      43px !important;
+
+    font-size:
+      12px !important;
+  }
+
+
+  .pc-simple-form
+  .pc-validity-range {
+    grid-template-columns:
+      1fr;
+
+    gap:
+      7px;
+  }
+
+
+  .pc-simple-form
+  .pc-validity-range-separator {
+    height:
+      18px;
+
+    justify-content:
+      flex-start;
+
+    padding-left:
+      2px;
+
+    font-size:
+      8.5px;
+  }
+
+
+  .pc-simple-form
+  .pc-validity-date-box
+  input[type="date"] {
+    height:
+      43px !important;
+
+    font-size:
+      12px !important;
+  }
+
+}
+
+/* =========================================================
+   END — STEEL TYPE / VALIDITY
+========================================================= */

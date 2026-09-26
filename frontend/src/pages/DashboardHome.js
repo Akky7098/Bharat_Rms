@@ -1506,10 +1506,10 @@ const orderWonChartData =
           </div>
 
           <div className="dashboard-top-actions">
-            <button type="button" className="notification-icon-btn" onClick={() => setShowNotifications(true)} title="Notifications">
+            {/* <button type="button" className="notification-icon-btn" onClick={() => setShowNotifications(true)} title="Notifications">
               🔔
               {notifications?.total > 0 && <span className="notification-count">{notifications.total}</span>}
-            </button>
+            </button> */}
 
             <div className="month-filter">
               <select name="month" value={filters.month} onChange={handleMonthYearChange}>

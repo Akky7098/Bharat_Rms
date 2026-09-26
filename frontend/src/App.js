@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 import AppRoutes from "./routes/AppRoutes";
 
-import BharatIntelligence from "./components/bharatAi/BharatIntelligence";
-
 function App() {
   useEffect(() => {
     if ("serviceWorker" in navigator) {
@@ -20,13 +18,7 @@ function App() {
     }
   }, []);
 
-  return (
-    <>
-      <AppRoutes />
-
-      <BharatIntelligence />
-    </>
-  );
+  return <AppRoutes />;
 }
 
 export default App;

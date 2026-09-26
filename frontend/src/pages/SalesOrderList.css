@@ -3746,3 +3746,1373 @@ body.sales-order-browser-scroll-page .sales-pagination {
     height: 20px;
   }
 }
+
+
+/* =====================================================
+   SALES ORDER - MANAGER COMMENT
+   Premium Comment Button + Comment Modal
+   Add at VERY END of SalesOrder.css
+===================================================== */
+
+/* =====================================================
+   DESKTOP COMMENT BUTTON
+===================================================== */
+
+.comment-btn {
+  height: 36px !important;
+  min-width: 78px !important;
+  padding: 0 13px !important;
+
+  border: none !important;
+  border-radius: 9px !important;
+
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #1d4ed8
+  ) !important;
+
+  color: #ffffff !important;
+
+  font-size: 12px !important;
+  font-weight: 900 !important;
+
+  cursor: pointer !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  white-space: nowrap !important;
+
+  box-shadow:
+    0 6px 14px
+    rgba(37, 99, 235, 0.22) !important;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease !important;
+}
+
+.comment-btn:hover {
+  transform: translateY(-1px) !important;
+
+  filter: brightness(1.06) !important;
+
+  box-shadow:
+    0 9px 20px
+    rgba(37, 99, 235, 0.30) !important;
+}
+
+.comment-btn:active {
+  transform: translateY(0) !important;
+}
+
+.comment-btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+
+/* =====================================================
+   COMMENT MODAL
+   Uses your existing approval-modal structure
+===================================================== */
+
+.manager-comment-modal
+  .approval-modal-card {
+  border-top: 4px solid #2563eb !important;
+}
+
+
+/* Comment icon */
+
+.manager-comment-icon {
+  background:
+    linear-gradient(
+      135deg,
+      #dbeafe,
+      #bfdbfe
+    ) !important;
+
+  color: #1d4ed8 !important;
+
+  box-shadow:
+    0 8px 20px
+    rgba(37, 99, 235, 0.15) !important;
+}
+
+
+/* Comment title */
+
+.manager-comment-modal
+  .approval-modal-card h3 {
+  color: #0f172a !important;
+}
+
+
+/* Comment description */
+
+.manager-comment-modal
+  .approval-modal-card p {
+  color: #475569 !important;
+}
+
+
+/* =====================================================
+   COMMENT TEXTAREA
+===================================================== */
+
+.manager-comment-textarea {
+  width: 100% !important;
+
+  min-height: 125px !important;
+  max-height: 280px !important;
+
+  resize: vertical !important;
+
+  padding: 14px 15px !important;
+
+  border:
+    1px solid
+    #cbd5e1 !important;
+
+  border-radius: 16px !important;
+
+  background: #f8fafc !important;
+
+  color: #0f172a !important;
+
+  font-family: inherit !important;
+
+  font-size: 14px !important;
+  font-weight: 700 !important;
+
+  line-height: 1.5 !important;
+
+  outline: none !important;
+
+  box-sizing: border-box !important;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease !important;
+}
+
+.manager-comment-textarea::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+}
+
+.manager-comment-textarea:focus {
+  border-color: #2563eb !important;
+
+  background: #ffffff !important;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(37, 99, 235, 0.12) !important;
+}
+
+.manager-comment-textarea:disabled {
+  background: #e2e8f0 !important;
+  cursor: not-allowed !important;
+}
+
+
+/* =====================================================
+   COMMENT MODAL SEND BUTTON
+===================================================== */
+
+.manager-comment-send-btn {
+  flex: 1 !important;
+
+  height: 44px !important;
+
+  border: none !important;
+  border-radius: 12px !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #1d4ed8
+    ) !important;
+
+  color: #ffffff !important;
+
+  font-size: 14px !important;
+  font-weight: 900 !important;
+
+  cursor: pointer !important;
+
+  box-shadow:
+    0 8px 18px
+    rgba(37, 99, 235, 0.24) !important;
+
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease,
+    box-shadow 0.18s ease !important;
+}
+
+.manager-comment-send-btn:hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.06) !important;
+
+  box-shadow:
+    0 11px 24px
+    rgba(37, 99, 235, 0.30) !important;
+}
+
+.manager-comment-send-btn:disabled {
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+
+/* =====================================================
+   COMMENT MODAL PROGRESS MESSAGE
+===================================================== */
+
+.manager-comment-progress {
+  margin-top: 14px !important;
+
+  padding: 10px 12px !important;
+
+  border-radius: 12px !important;
+
+  background: #eff6ff !important;
+
+  border:
+    1px solid
+    #bfdbfe !important;
+
+  color: #1d4ed8 !important;
+
+  font-size: 12px !important;
+  font-weight: 900 !important;
+
+  line-height: 1.4 !important;
+
+  text-align: center !important;
+}
+
+
+/* =====================================================
+   MOBILE / PWA COMMENT BUTTON
+===================================================== */
+
+@media (max-width: 900px) {
+
+  .ios-sales-comment-btn {
+    min-height: 42px !important;
+
+    padding:
+      0 15px !important;
+
+    border: none !important;
+
+    border-radius: 999px !important;
+
+    background:
+      linear-gradient(
+        135deg,
+        #2563eb,
+        #1d4ed8
+      ) !important;
+
+    color: #ffffff !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    font-size: 12px !important;
+    font-weight: 900 !important;
+
+    white-space: nowrap !important;
+
+    box-shadow:
+      0 7px 16px
+      rgba(37, 99, 235, 0.22) !important;
+
+    cursor: pointer !important;
+
+    transition:
+      transform 0.18s ease,
+      filter 0.18s ease !important;
+  }
+
+  .ios-sales-comment-btn:hover {
+    transform: translateY(-1px) !important;
+    filter: brightness(1.05) !important;
+  }
+
+  .ios-sales-comment-btn:active {
+    transform: scale(0.98) !important;
+  }
+
+  .ios-sales-comment-btn:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+  }
+
+
+  /* ===================================================
+     MOBILE COMMENT MODAL
+  =================================================== */
+
+  .manager-comment-modal
+    .approval-modal-card {
+    width: 100% !important;
+
+    max-width: 390px !important;
+
+    border-radius: 26px !important;
+
+    padding:
+      24px 18px 18px !important;
+
+    border-top:
+      4px solid #2563eb !important;
+
+    box-shadow:
+      0 30px 80px
+      rgba(15, 23, 42, 0.42) !important;
+  }
+
+
+  .manager-comment-modal
+    .approval-icon {
+    width: 60px !important;
+    height: 60px !important;
+
+    border-radius: 20px !important;
+
+    margin-bottom: 14px !important;
+
+    font-size: 30px !important;
+  }
+
+
+  .manager-comment-modal
+    .approval-modal-card h3 {
+    font-size: 20px !important;
+
+    line-height: 1.2 !important;
+  }
+
+
+  .manager-comment-modal
+    .approval-modal-card p {
+    font-size: 12px !important;
+
+    line-height: 1.45 !important;
+
+    margin-bottom: 15px !important;
+  }
+
+
+  /* ===================================================
+     MOBILE COMMENT TEXTAREA
+  =================================================== */
+
+  .manager-comment-textarea {
+    min-height: 130px !important;
+    max-height: 240px !important;
+
+    padding:
+      14px !important;
+
+    border-radius: 17px !important;
+
+    font-size: 14px !important;
+
+    line-height: 1.5 !important;
+
+    background: #f8fafc !important;
+  }
+
+
+  /* ===================================================
+     MOBILE COMMENT ACTIONS
+  =================================================== */
+
+  .manager-comment-modal
+    .approval-modal-actions {
+    display: grid !important;
+
+    grid-template-columns: 1fr !important;
+
+    gap: 9px !important;
+
+    margin-top: 14px !important;
+  }
+
+
+  .manager-comment-modal
+    .modal-cancel-btn,
+  .manager-comment-modal
+    .manager-comment-send-btn {
+    width: 100% !important;
+
+    min-height: 48px !important;
+
+    height: 48px !important;
+
+    border-radius: 15px !important;
+
+    font-size: 14px !important;
+
+    font-weight: 900 !important;
+  }
+
+
+  .manager-comment-modal
+    .manager-comment-send-btn {
+    order: 1 !important;
+  }
+
+
+  .manager-comment-modal
+    .modal-cancel-btn {
+    order: 2 !important;
+  }
+
+
+  .manager-comment-progress {
+    margin-top: 12px !important;
+
+    padding: 10px !important;
+
+    border-radius: 13px !important;
+
+    font-size: 11px !important;
+  }
+}
+
+
+/* =====================================================
+   VERY SMALL PHONES
+===================================================== */
+
+@media (max-width: 390px) {
+
+  .manager-comment-modal
+    .approval-modal-card {
+    max-width: 360px !important;
+
+    padding:
+      22px 15px 16px !important;
+  }
+
+  .manager-comment-textarea {
+    min-height: 115px !important;
+  }
+
+  .ios-sales-comment-btn {
+    min-height: 40px !important;
+
+    padding:
+      0 13px !important;
+
+    font-size: 11px !important;
+  }
+}
+
+
+/* =====================================================
+   ACTION STACK SUPPORT
+   Keeps Comment aligned with existing buttons
+===================================================== */
+
+.action-stack .comment-btn {
+  flex-shrink: 0 !important;
+}
+
+.ios-sales-action-row
+  .ios-sales-comment-btn {
+  flex-shrink: 0 !important;
+}
+
+
+/* =====================================================
+   COMMENT MODAL ACCESSIBILITY / SAFE STATES
+===================================================== */
+
+.manager-comment-modal
+  button:focus-visible,
+.manager-comment-modal
+  textarea:focus-visible {
+  outline:
+    3px solid
+    rgba(37, 99, 235, 0.22) !important;
+
+  outline-offset: 2px !important;
+}
+
+/* Fix spacing between Web/Desktop action buttons */
+@media (min-width: 769px) {
+  .sales-order-action-row button {
+    margin-right: 8px;
+  }
+
+  .sales-order-action-row button:last-child {
+    margin-right: 0;
+  }
+}
+/* =========================================================
+   DESKTOP SALES ORDER ACTION BUTTON GAP
+   ========================================================= */
+
+@media (min-width: 769px) {
+  .sales-order-action-cell button {
+    margin-right: 8px;
+  }
+
+  .sales-order-action-cell button:last-child {
+    margin-right: 0;
+  }
+}
+/* =========================================================
+   SALES ORDER DISCUSSION
+   ADMIN / MD / SALES PERSON
+   DESKTOP + PWA + MOBILE
+   ADD AT ABSOLUTE END OF SalesOrderList.css
+========================================================= */
+
+.sales-discussion-btn,
+.ios-sales-discussion-btn {
+  border: 0 !important;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 800;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.sales-discussion-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 9px !important;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 5px 13px rgba(37, 99, 235, 0.22);
+}
+
+.sales-discussion-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+
+.sales-discussion-btn-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sales-discussion-count {
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.sales-discussion-btn:disabled,
+.ios-sales-discussion-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* OVERLAY */
+
+.sales-discussion-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1000000 !important;
+  padding: 22px;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* DESKTOP MODAL */
+
+.sales-discussion-modal {
+  width: min(620px, 100%);
+  height: min(760px, calc(100vh - 44px));
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: #f8fafc;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.32);
+  display: flex;
+  flex-direction: column;
+  animation: salesDiscussionOpen 0.2s ease-out;
+}
+
+@keyframes salesDiscussionOpen {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* HEADER */
+
+.sales-discussion-header {
+  flex-shrink: 0;
+  padding: 19px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.sales-discussion-header-icon {
+  width: 47px;
+  height: 47px;
+  flex: 0 0 47px;
+  border-radius: 15px;
+  background: #dbeafe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.sales-discussion-header-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.sales-discussion-header-copy > span {
+  display: block;
+  margin-bottom: 3px;
+  color: #2563eb;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+}
+
+.sales-discussion-header-copy h3 {
+  margin: 0;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sales-discussion-header-copy p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sales-discussion-close {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #475569;
+  cursor: pointer;
+  font-size: 25px;
+  line-height: 1;
+}
+
+/* CONTEXT */
+
+.sales-discussion-context {
+  flex-shrink: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sales-discussion-context div:first-child span {
+  display: block;
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.sales-discussion-context div:first-child strong {
+  display: block;
+  margin-top: 2px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sales-discussion-status {
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.sales-discussion-status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.sales-discussion-status.approved {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* HOLD REASON */
+
+.sales-discussion-hold-reason {
+  flex-shrink: 0;
+  margin: 10px 15px 0;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff1f2;
+}
+
+.sales-discussion-hold-reason span {
+  display: block;
+  margin-bottom: 3px;
+  color: #b91c1c;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.sales-discussion-hold-reason strong {
+  display: block;
+  color: #7f1d1d;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+/* MESSAGE AREA */
+
+.sales-discussion-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 20px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sales-discussion-message-row {
+  width: 100%;
+  margin-bottom: 17px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sales-discussion-message-row.other {
+  align-items: flex-start;
+}
+
+.sales-discussion-message-row.own {
+  align-items: flex-end;
+}
+
+.sales-discussion-message-meta {
+  margin: 0 4px 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sales-discussion-message-meta strong {
+  color: #334155;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.sales-discussion-message-meta span {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.sales-discussion-bubble {
+  max-width: 78%;
+  padding: 11px 14px;
+  word-break: break-word;
+  white-space: pre-wrap;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.48;
+}
+
+.sales-discussion-message-row.other
+  .sales-discussion-bubble {
+  border: 1px solid #e2e8f0;
+  border-radius: 5px 17px 17px 17px;
+  background: #fff;
+  color: #1e293b;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+}
+
+.sales-discussion-message-row.own
+  .sales-discussion-bubble {
+  border-radius: 17px 5px 17px 17px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  box-shadow: 0 5px 13px rgba(37, 99, 235, 0.18);
+}
+
+.sales-discussion-time {
+  margin: 5px 4px 0;
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+/* EMPTY / LOADING */
+
+.sales-discussion-empty,
+.sales-discussion-state {
+  min-height: 100%;
+  padding: 35px 20px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+.sales-discussion-empty > div {
+  width: 58px;
+  height: 58px;
+  margin-bottom: 13px;
+  border-radius: 18px;
+  background: #dbeafe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 25px;
+}
+
+.sales-discussion-empty strong,
+.sales-discussion-state strong {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.sales-discussion-empty span,
+.sales-discussion-state span {
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.sales-discussion-loader {
+  width: 29px;
+  height: 29px;
+  margin-bottom: 13px;
+  border: 3px solid #dbeafe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: salesDiscussionSpin 0.7s linear infinite;
+}
+
+@keyframes salesDiscussionSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sales-discussion-state.error button {
+  margin-top: 13px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.sales-discussion-inline-error {
+  flex-shrink: 0;
+  padding: 7px 15px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* COMPOSER */
+
+.sales-discussion-composer {
+  flex-shrink: 0;
+  padding: 13px 15px 15px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.sales-discussion-compose-label {
+  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sales-discussion-compose-label strong {
+  color: #334155;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.sales-discussion-compose-label span {
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.sales-discussion-composer textarea {
+  width: 100%;
+  min-height: 76px;
+  max-height: 145px;
+  padding: 11px 12px;
+  resize: vertical;
+  border: 1px solid #cbd5e1;
+  border-radius: 13px;
+  outline: none;
+  background: #f8fafc;
+  color: #0f172a;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.sales-discussion-composer textarea:focus {
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.sales-discussion-compose-bottom {
+  margin-top: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sales-discussion-compose-bottom > span {
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.sales-discussion-send {
+  min-width: 125px;
+  height: 38px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 5px 13px rgba(37, 99, 235, 0.2);
+}
+
+.sales-discussion-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* READ ONLY */
+
+.sales-discussion-readonly {
+  flex-shrink: 0;
+  padding: 13px 16px;
+  border-top: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sales-discussion-readonly > span {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
+.sales-discussion-readonly strong {
+  display: block;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.sales-discussion-readonly p {
+  margin: 2px 0 0;
+  color: #4b7c5b;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+/* =========================================================
+   PHONE / PWA
+========================================================= */
+
+@media (max-width: 900px) {
+  .ios-sales-discussion-btn {
+    min-height: 42px !important;
+    padding: 0 14px !important;
+    border-radius: 999px !important;
+    background: linear-gradient(
+      135deg,
+      #2563eb,
+      #1d4ed8
+    ) !important;
+    color: #fff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    box-shadow: 0 6px 15px rgba(37, 99, 235, 0.2);
+  }
+
+  .sales-discussion-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+    background: rgba(15, 23, 42, 0.7) !important;
+  }
+
+  .sales-discussion-modal {
+    width: 100% !important;
+    max-width: none !important;
+    height: min(92dvh, 820px) !important;
+    max-height: 92dvh !important;
+    border: 0 !important;
+    border-radius: 25px 25px 0 0 !important;
+    box-shadow: 0 -20px 60px rgba(15, 23, 42, 0.3) !important;
+  }
+
+  .sales-discussion-modal::before {
+    content: "";
+    width: 42px;
+    height: 4px;
+    flex: 0 0 4px;
+    margin: 8px auto 0;
+    border-radius: 999px;
+    background: #cbd5e1;
+  }
+
+  .sales-discussion-header {
+    padding: 11px 15px 13px !important;
+  }
+
+  .sales-discussion-header-icon {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    border-radius: 13px;
+    font-size: 19px;
+  }
+
+  .sales-discussion-header-copy h3 {
+    font-size: 15px;
+  }
+
+  .sales-discussion-header-copy p {
+    font-size: 9px;
+  }
+
+  .sales-discussion-context {
+    padding: 9px 15px;
+  }
+
+  .sales-discussion-messages {
+    padding: 16px 13px;
+  }
+
+  .sales-discussion-bubble {
+    max-width: 85%;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .sales-discussion-hold-reason {
+    margin: 8px 12px 0;
+  }
+
+  .sales-discussion-composer {
+    padding:
+      10px 12px
+      calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .sales-discussion-composer textarea {
+    min-height: 65px;
+    max-height: 110px;
+    resize: none;
+    font-size: 16px;
+  }
+
+  .sales-discussion-compose-bottom {
+    align-items: stretch;
+  }
+
+  .sales-discussion-compose-bottom > span {
+    display: none;
+  }
+
+  .sales-discussion-send {
+    width: 100%;
+    height: 44px;
+    font-size: 12px;
+  }
+
+  .sales-discussion-readonly {
+    padding:
+      12px 14px
+      calc(12px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 390px) {
+  .sales-discussion-modal {
+    height: 94dvh !important;
+    max-height: 94dvh !important;
+  }
+
+  .sales-discussion-header-copy > span {
+    font-size: 8px;
+  }
+
+  .sales-discussion-header-copy h3 {
+    font-size: 14px;
+  }
+
+  .sales-discussion-bubble {
+    max-width: 88%;
+  }
+
+  .ios-sales-discussion-btn {
+    min-height: 40px !important;
+    padding: 0 12px !important;
+    font-size: 10px !important;
+  }
+}
+/* =========================================================
+   SALES ORDER - DISCUSSION / LATEST COMMENT ENHANCEMENTS
+   ========================================================= */
+
+/* Latest discussion comment shown below order status */
+.sales-latest-comment {
+  margin-top: 7px;
+  max-width: 230px;
+  padding: 6px 8px;
+  border-left: 3px solid #dc2626;
+  border-radius: 4px;
+  background: #fff1f2;
+  color: #b91c1c;
+  font-size: 10px;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.sales-latest-comment-label {
+  display: block;
+  margin-bottom: 2px;
+  color: #991b1b;
+  font-weight: 800;
+}
+
+.sales-latest-comment-text {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #dc2626;
+  font-weight: 600;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Mobile / PWA latest comment */
+.ios-sales-latest-comment {
+  margin-top: 8px;
+  padding: 9px 11px;
+  border-left: 3px solid #dc2626;
+  border-radius: 8px;
+  background: #fff1f2;
+}
+
+.ios-sales-latest-comment span {
+  display: block;
+  margin-bottom: 3px;
+  color: #991b1b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.ios-sales-latest-comment strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+
+/* =========================================================
+   WHATSAPP-LIKE DISCUSSION MESSAGES
+   ========================================================= */
+
+.sales-discussion-message-row {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 13px;
+}
+
+.sales-discussion-message-row.other {
+  align-items: flex-start;
+}
+
+.sales-discussion-message-row.own {
+  align-items: flex-end;
+}
+
+.sales-discussion-message-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 4px 4px;
+}
+
+.sales-discussion-message-meta strong {
+  color: #172033;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sales-discussion-role {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #e8eefc;
+  color: #52698d;
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.sales-discussion-bubble {
+  width: fit-content;
+  max-width: 72%;
+  padding: 10px 13px;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+  word-break: break-word;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+/* Received message */
+.sales-discussion-message-row.other .sales-discussion-bubble {
+  border: 1px solid #e2e8f0;
+  border-top-left-radius: 4px;
+  background: #ffffff;
+  color: #172033;
+}
+
+/* Logged-in user's message */
+.sales-discussion-message-row.own .sales-discussion-bubble {
+  border: 1px solid #b7e4c7;
+  border-top-right-radius: 4px;
+  background: #dcf8c6;
+  color: #172033;
+}
+
+.sales-discussion-time {
+  margin: 4px 5px 0;
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.sales-discussion-message-row.own .sales-discussion-message-meta,
+.sales-discussion-message-row.own .sales-discussion-time {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .sales-discussion-bubble {
+    max-width: 84%;
+  }
+}

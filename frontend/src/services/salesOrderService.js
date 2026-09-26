@@ -48,8 +48,6 @@ export const getSalesOrderById = async (salesOrderId) => {
 };
 
 // UPDATE / RESUBMIT
-// UPDATE / RESUBMIT
-// UPDATE / RESUBMIT
 export const updateSalesOrder = async (salesOrderId, data) => {
   const isFormData = data instanceof FormData;
 
@@ -103,6 +101,67 @@ export const rejectSalesOrderByAdmin = async (
     payload,
     {
       headers: authHeaders(),
+    }
+  );
+
+  return response.data;
+};
+
+// =========================================================
+// MANAGER COMMENT ON ADMIN HOLD
+// Manager can add multiple comments
+// without changing approval status
+// =========================================================
+export const addManagerCommentToAdminHeldSalesOrder = async (
+  salesOrderId,
+  comment
+) => {
+  const response = await axios.patch(
+    `${API_URL}/${salesOrderId}/manager-comment`,
+    {
+      comment,
+    },
+    {
+      headers: authHeaders(),
+    }
+  );
+
+  return response.data;
+};
+
+// =========================================================
+// SALES ORDER DISCUSSION / COMMENTS
+// Admin, MD and Sales Person can add multiple comments
+// without changing approval status
+// =========================================================
+
+// GET COMPLETE COMMENT / DISCUSSION HISTORY
+export const getSalesOrderComments = async (salesOrderId) => {
+  const response = await axios.get(
+    `${API_URL}/${salesOrderId}/comments`,
+    {
+      headers: authHeaders(),
+    }
+  );
+
+  return response.data;
+};
+
+// ADD COMMENT / REPLY
+export const addSalesOrderComment = async (
+  salesOrderId,
+  comment
+) => {
+  const response = await axios.post(
+    `${API_URL}/${salesOrderId}/comments`,
+    {
+      comment,
+    },
+    {
+      headers: {
+        ...authHeaders(),
+        "Content-Type": "application/json",
+      },
     }
   );
 

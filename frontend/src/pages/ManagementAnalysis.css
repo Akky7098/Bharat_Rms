@@ -1,0 +1,6084 @@
+/* =========================================================
+   MANAGEMENT ANALYSIS
+   Super Admin Management Intelligence
+
+   Theme:
+   Indigo / Violet / Amber
+   NOT Sales Order green.
+========================================================= */
+
+.management-analysis {
+  --ma-ink: #111827;
+  --ma-muted: #64748b;
+  --ma-line: #e2e8f0;
+  --ma-bg: #f5f6fb;
+
+  --ma-primary: #4f46e5;
+  --ma-primary-dark: #312e81;
+  --ma-violet: #7c3aed;
+  --ma-amber: #d97706;
+  --ma-blue: #2563eb;
+
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(124, 58, 237, 0.07),
+      transparent 26%
+    ),
+    #f5f6fb;
+
+  color: var(--ma-ink);
+
+  overflow: hidden;
+
+  box-sizing: border-box;
+}
+
+.management-analysis *,
+.management-analysis *::before,
+.management-analysis *::after {
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.ma-app-header {
+  flex: 0 0 auto;
+
+  min-height: 76px;
+
+  padding: 13px 18px;
+
+  display: grid;
+
+  grid-template-columns:
+    44px
+    minmax(0, 1fr)
+    44px;
+
+  gap: 13px;
+
+  align-items: center;
+
+  color: #ffffff;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(245, 158, 11, 0.24),
+      transparent 32%
+    ),
+    linear-gradient(
+      135deg,
+      #111827 0%,
+      #312e81 52%,
+      #4f46e5 100%
+    );
+
+  box-shadow:
+    0 12px 32px
+      rgba(49, 46, 129, 0.22);
+
+  position: relative;
+
+  z-index: 20;
+}
+
+.ma-header-btn {
+  width: 42px;
+  height: 42px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.18);
+
+  border-radius: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  margin: 0;
+
+  color: #ffffff;
+
+  background:
+    rgba(255, 255, 255, 0.12);
+
+  cursor: pointer;
+
+  backdrop-filter: blur(10px);
+
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease;
+}
+
+.ma-header-btn:hover {
+  background:
+    rgba(255, 255, 255, 0.2);
+
+  transform:
+    translateY(-1px);
+}
+
+.ma-header-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.ma-header-title {
+  min-width: 0;
+}
+
+.ma-header-title > span {
+  display: block;
+
+  margin-bottom: 2px;
+
+  color: #c7d2fe;
+
+  font-size: 9px;
+
+  line-height: 1;
+
+  font-weight: 900;
+
+  letter-spacing: 1.2px;
+}
+
+.ma-header-title > strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: #ffffff;
+
+  font-size: 19px;
+
+  line-height: 1.15;
+
+  font-weight: 950;
+
+  letter-spacing: -0.25px;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+.ma-header-title > small {
+  display: block;
+
+  margin-top: 3px;
+
+  overflow: hidden;
+
+  color: #e0e7ff;
+
+  font-size: 10.5px;
+
+  line-height: 1.2;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   SCROLL AREA
+========================================================= */
+
+.ma-scroll-area {
+  flex: 1 1 auto;
+
+  min-height: 0;
+
+  width: 100%;
+
+  padding:
+    20px
+    20px
+    28px;
+
+  overflow-y: auto;
+
+  overflow-x: hidden;
+
+  -webkit-overflow-scrolling: touch;
+
+  overscroll-behavior: contain;
+}
+
+.ma-scroll-area::-webkit-scrollbar {
+  width: 7px;
+}
+
+.ma-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ma-scroll-area::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+
+  background: #cbd5e1;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.ma-hero {
+  max-width: 1220px;
+
+  min-height: 190px;
+
+  margin: 0 auto 18px;
+
+  padding: 30px;
+
+  border-radius: 28px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 24px;
+
+  color: #ffffff;
+
+  background:
+    radial-gradient(
+      circle at 88% 20%,
+      rgba(245, 158, 11, 0.35),
+      transparent 22%
+    ),
+    linear-gradient(
+      135deg,
+      #18181b,
+      #312e81 52%,
+      #6d28d9
+    );
+
+  box-shadow:
+    0 22px 55px
+      rgba(49, 46, 129, 0.18);
+
+  overflow: hidden;
+}
+
+.ma-hero-label {
+  display: block;
+
+  margin-bottom: 9px;
+
+  color: #c7d2fe;
+
+  font-size: 11px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.1px;
+}
+
+.ma-hero strong {
+  display: block;
+
+  font-size:
+    clamp(29px, 4vw, 45px);
+
+  line-height: 1;
+
+  font-weight: 950;
+
+  letter-spacing: -1.3px;
+}
+
+.ma-hero p {
+  margin: 10px 0 0;
+
+  color: #e0e7ff;
+
+  font-size: 13px;
+
+  font-weight: 750;
+}
+
+.ma-hero-badge {
+  width: 68px;
+  height: 68px;
+
+  flex: 0 0 auto;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.18);
+
+  border-radius: 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    rgba(255, 255, 255, 0.12);
+
+  box-shadow:
+    inset 0 1px
+      rgba(255, 255, 255, 0.18);
+}
+
+
+/* =========================================================
+   SUMMARY
+========================================================= */
+
+.ma-summary-grid {
+  max-width: 1220px;
+
+  margin: 0 auto 18px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+}
+
+.ma-summary-card {
+  min-width: 0;
+
+  padding: 17px;
+
+  border: 1px solid
+    #e2e8f0;
+
+  border-radius: 21px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 8px 24px
+      rgba(15, 23, 42, 0.05);
+}
+
+.ma-summary-icon {
+  width: 43px;
+  height: 43px;
+
+  flex: 0 0 auto;
+
+  border-radius: 14px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #4338ca;
+
+  background: #eef2ff;
+}
+
+.ma-summary-card.value
+.ma-summary-icon {
+  color: #b45309;
+  background: #fffbeb;
+}
+
+.ma-summary-card.quantity
+.ma-summary-icon {
+  color: #0369a1;
+  background: #f0f9ff;
+}
+
+.ma-summary-card.grades
+.ma-summary-icon {
+  color: #7e22ce;
+  background: #faf5ff;
+}
+
+.ma-summary-copy {
+  min-width: 0;
+}
+
+.ma-summary-copy span {
+  display: block;
+
+  color: #64748b;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  letter-spacing: 0.45px;
+
+  text-transform: uppercase;
+}
+
+.ma-summary-copy strong {
+  display: block;
+
+  margin-top: 4px;
+
+  overflow: hidden;
+
+  color: #111827;
+
+  font-size: 18px;
+
+  font-weight: 950;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+.ma-summary-copy small {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.ma-section {
+  max-width: 1220px;
+
+  margin: 0 auto 18px;
+
+  padding: 21px;
+
+  border: 1px solid
+    #e2e8f0;
+
+  border-radius: 25px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 10px 30px
+      rgba(15, 23, 42, 0.05);
+}
+
+.ma-section-heading {
+  margin-bottom: 16px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 14px;
+}
+
+.ma-section-heading span {
+  display: block;
+
+  color: #6366f1;
+
+  font-size: 9px;
+
+  font-weight: 950;
+
+  letter-spacing: 1px;
+}
+
+.ma-section-heading h2 {
+  margin: 3px 0 0;
+
+  color: #111827;
+
+  font-size: 20px;
+
+  line-height: 1.15;
+
+  font-weight: 950;
+
+  letter-spacing: -0.35px;
+}
+
+.ma-section-heading > svg {
+  color: #6366f1;
+}
+
+
+/* =========================================================
+   ANALYSIS NAVIGATION
+========================================================= */
+
+.ma-analysis-navigation {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+}
+
+.ma-nav-card {
+  min-width: 0;
+
+  min-height: 170px;
+
+  padding: 17px;
+
+  border: 1px solid
+    #e2e8f0;
+
+  border-radius: 21px;
+
+  display: grid;
+
+  grid-template-columns:
+    45px
+    minmax(0, 1fr)
+    18px;
+
+  gap: 11px;
+
+  align-items: start;
+
+  text-align: left;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #f8fafc
+    );
+
+  cursor: pointer;
+
+  box-shadow:
+    0 7px 20px
+      rgba(15, 23, 42, 0.04);
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.ma-nav-card:hover {
+  transform:
+    translateY(-3px);
+
+  border-color:
+    #c7d2fe;
+
+  box-shadow:
+    0 16px 32px
+      rgba(79, 70, 229, 0.1);
+}
+
+.ma-nav-card-icon {
+  width: 45px;
+  height: 45px;
+
+  border-radius: 15px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #4338ca;
+
+  background: #eef2ff;
+}
+
+.ma-nav-card.mill
+.ma-nav-card-icon {
+  color: #b45309;
+
+  background: #fffbeb;
+}
+
+.ma-nav-card.grade
+.ma-nav-card-icon {
+  color: #7e22ce;
+
+  background: #faf5ff;
+}
+
+.ma-nav-card.all
+.ma-nav-card-icon {
+  color: #0369a1;
+
+  background: #f0f9ff;
+}
+
+.ma-nav-card-copy {
+  min-width: 0;
+}
+
+.ma-nav-card-copy > span {
+  display: block;
+
+  color: #64748b;
+
+  font-size: 9px;
+
+  font-weight: 950;
+
+  letter-spacing: 0.7px;
+}
+
+.ma-nav-card-copy > strong {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #111827;
+
+  font-size: 14px;
+
+  font-weight: 950;
+}
+
+.ma-nav-card-copy > b {
+  display: block;
+
+  margin-top: 16px;
+
+  color: #312e81;
+
+  font-size: 19px;
+
+  font-weight: 950;
+}
+
+.ma-nav-card-copy > small {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #64748b;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  line-height: 1.35;
+}
+
+.ma-nav-arrow {
+  margin-top: 12px;
+
+  color: #94a3b8;
+}
+
+
+/* =========================================================
+   MIX
+========================================================= */
+
+.ma-mix-card {
+  display: grid;
+
+  gap: 11px;
+}
+
+.ma-mix-row {
+  display: flex;
+
+  align-items: flex-end;
+
+  justify-content: space-between;
+
+  gap: 15px;
+}
+
+.ma-mix-row span {
+  display: block;
+
+  color: #64748b;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  text-transform: uppercase;
+}
+
+.ma-mix-row strong {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #111827;
+
+  font-size: 15px;
+
+  font-weight: 950;
+}
+
+.ma-mix-row > b {
+  color: #312e81;
+
+  font-size: 18px;
+
+  font-weight: 950;
+}
+
+.ma-progress {
+  height: 9px;
+
+  margin-bottom: 5px;
+
+  border-radius: 999px;
+
+  background: #eef2f7;
+
+  overflow: hidden;
+}
+
+.ma-progress span {
+  display: block;
+
+  height: 100%;
+
+  border-radius: inherit;
+}
+
+.ma-progress-ho {
+  background:
+    linear-gradient(
+      90deg,
+      #4f46e5,
+      #818cf8
+    );
+}
+
+.ma-progress-mill {
+  background:
+    linear-gradient(
+      90deg,
+      #d97706,
+      #fbbf24
+    );
+}
+
+
+/* =========================================================
+   DETAIL HERO
+========================================================= */
+
+.ma-detail-hero {
+  max-width: 1220px;
+
+  margin: 0 auto 18px;
+
+  padding: 24px;
+
+  border-radius: 25px;
+
+  color: #ffffff;
+
+  box-shadow:
+    0 18px 40px
+      rgba(15, 23, 42, 0.13);
+}
+
+.ma-detail-hero.ho {
+  background:
+    linear-gradient(
+      135deg,
+      #312e81,
+      #4f46e5
+    );
+}
+
+.ma-detail-hero.mill {
+  background:
+    linear-gradient(
+      135deg,
+      #78350f,
+      #b45309,
+      #d97706
+    );
+}
+
+.ma-detail-hero > span {
+  display: block;
+
+  color:
+    rgba(255, 255, 255, 0.76);
+
+  font-size: 10px;
+
+  font-weight: 950;
+
+  letter-spacing: 1px;
+}
+
+.ma-detail-hero > strong {
+  display: block;
+
+  margin-top: 6px;
+
+  font-size: 32px;
+
+  line-height: 1;
+
+  font-weight: 950;
+
+  letter-spacing: -0.8px;
+}
+
+.ma-detail-hero-grid {
+  margin-top: 22px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+}
+
+.ma-detail-hero-grid > div {
+  padding: 12px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.16);
+
+  border-radius: 15px;
+
+  background:
+    rgba(255, 255, 255, 0.1);
+}
+
+.ma-detail-hero-grid small {
+  display: block;
+
+  color:
+    rgba(255, 255, 255, 0.72);
+
+  font-size: 9px;
+
+  font-weight: 800;
+}
+
+.ma-detail-hero-grid b {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #ffffff;
+
+  font-size: 14px;
+
+  font-weight: 950;
+}
+
+
+/* =========================================================
+   MILL LIST
+========================================================= */
+
+.ma-mill-list {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+}
+
+.ma-mill-card {
+  min-width: 0;
+
+  padding: 14px;
+
+  border: 1px solid
+    #e2e8f0;
+
+  border-radius: 18px;
+
+  display: grid;
+
+  grid-template-columns:
+    38px
+    minmax(0, 1fr)
+    auto;
+
+  gap: 11px;
+
+  align-items: center;
+
+  background: #fafafa;
+}
+
+.ma-rank {
+  width: 38px;
+  height: 38px;
+
+  border-radius: 12px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #92400e;
+
+  background: #fef3c7;
+
+  font-size: 11px;
+
+  font-weight: 950;
+}
+
+.ma-mill-copy {
+  min-width: 0;
+}
+
+.ma-mill-copy strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: #111827;
+
+  font-size: 13px;
+
+  font-weight: 950;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+.ma-mill-copy span,
+.ma-mill-copy small {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #64748b;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+.ma-mill-card > b {
+  color: #78350f;
+
+  font-size: 12px;
+
+  font-weight: 950;
+
+  text-align: right;
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.ma-search-wrap {
+  max-width: 1220px;
+
+  min-height: 48px;
+
+  margin: 0 auto 15px;
+
+  padding: 0 14px;
+
+  border: 1px solid
+    #dbe3ee;
+
+  border-radius: 16px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 5px 18px
+      rgba(15, 23, 42, 0.04);
+}
+
+.ma-search-wrap > svg {
+  flex: 0 0 auto;
+
+  color: #64748b;
+}
+
+.ma-search-wrap input {
+  width: 100% !important;
+
+  min-width: 0;
+
+  height: 46px;
+
+  margin: 0 !important;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+
+  outline: 0 !important;
+
+  color: #111827;
+
+  background: transparent !important;
+
+  box-shadow: none !important;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+.ma-search-wrap button {
+  width: 30px !important;
+  height: 30px;
+
+  flex: 0 0 auto;
+
+  padding: 0 !important;
+
+  border: 0;
+
+  border-radius: 9px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #64748b;
+
+  background: #f1f5f9;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   ORDER LIST
+========================================================= */
+
+.ma-order-list {
+  max-width: 1220px;
+
+  margin: 0 auto;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+}
+
+.ma-order-card {
+  min-width: 0;
+
+  padding: 18px;
+
+  border: 1px solid
+    #e2e8f0;
+
+  border-radius: 22px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 8px 26px
+      rgba(15, 23, 42, 0.05);
+}
+
+.ma-order-top {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 12px;
+}
+
+.ma-order-top > div:first-child {
+  min-width: 0;
+}
+
+.ma-order-top span {
+  display: inline-flex;
+
+  padding: 5px 8px;
+
+  border-radius: 999px;
+
+  color: #4338ca;
+
+  background: #eef2ff;
+
+  font-size: 8.5px;
+
+  font-weight: 950;
+
+  letter-spacing: 0.55px;
+}
+
+.ma-order-top h3 {
+  margin: 9px 0 0;
+
+  overflow: hidden;
+
+  color: #111827;
+
+  font-size: 15px;
+
+  font-weight: 950;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+.ma-order-top small {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #64748b;
+
+  font-size: 10px;
+
+  font-weight: 750;
+}
+
+.ma-order-date {
+  flex: 0 0 auto;
+
+  color: #64748b;
+
+  font-size: 10px;
+
+  font-weight: 800;
+}
+
+.ma-order-value {
+  margin-top: 14px;
+
+  padding: 13px;
+
+  border-radius: 15px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #eef2ff,
+      #f5f3ff
+    );
+}
+
+.ma-order-value span {
+  display: block;
+
+  color: #6366f1;
+
+  font-size: 8px;
+
+  font-weight: 950;
+
+  letter-spacing: 0.6px;
+}
+
+.ma-order-value strong {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #312e81;
+
+  font-size: 20px;
+
+  font-weight: 950;
+}
+
+.ma-order-meta-grid {
+  margin-top: 11px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 8px;
+}
+
+.ma-order-meta-grid > div {
+  min-width: 0;
+
+  padding: 10px;
+
+  border: 1px solid
+    #e5e7eb;
+
+  border-radius: 13px;
+
+  background: #f8fafc;
+}
+
+.ma-order-meta-grid span {
+  display: block;
+
+  color: #64748b;
+
+  font-size: 8px;
+
+  font-weight: 900;
+
+  text-transform: uppercase;
+}
+
+.ma-order-meta-grid strong {
+  display: block;
+
+  margin-top: 3px;
+
+  overflow: hidden;
+
+  color: #111827;
+
+  font-size: 11px;
+
+  font-weight: 900;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+.ma-meta-wide {
+  grid-column:
+    1 / -1;
+}
+
+.ma-grade-chips {
+  margin-top: 11px;
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+}
+
+.ma-grade-chips span {
+  padding: 6px 9px;
+
+  border-radius: 999px;
+
+  color: #6b21a8;
+
+  background: #faf5ff;
+
+  font-size: 9px;
+
+  font-weight: 950;
+}
+
+.ma-material-box {
+  margin-top: 11px;
+
+  padding: 12px;
+
+  border-left:
+    3px solid #6366f1;
+
+  border-radius: 0 12px 12px 0;
+
+  background: #f8fafc;
+}
+
+.ma-material-box span {
+  display: block;
+
+  color: #64748b;
+
+  font-size: 8px;
+
+  font-weight: 950;
+
+  letter-spacing: 0.5px;
+}
+
+.ma-material-box p {
+  margin: 5px 0 0;
+
+  color: #334155;
+
+  font-size: 10.5px;
+
+  font-weight: 700;
+
+  line-height: 1.5;
+
+  white-space: pre-wrap;
+}
+
+
+/* =========================================================
+   GRADES
+========================================================= */
+
+.ma-grade-list {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+}
+
+.ma-grade-card {
+  width: 100%;
+
+  min-width: 0;
+
+  min-height: 82px;
+
+  padding: 13px;
+
+  border: 1px solid
+    #e2e8f0;
+
+  border-radius: 17px;
+
+  display: grid;
+
+  grid-template-columns:
+    38px
+    minmax(0, 1fr)
+    auto;
+
+  gap: 11px;
+
+  align-items: center;
+
+  text-align: left;
+
+  background: #ffffff;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.ma-grade-card:hover {
+  transform:
+    translateY(-2px);
+
+  border-color: #c4b5fd;
+}
+
+.ma-grade-number {
+  width: 38px;
+  height: 38px;
+
+  border-radius: 12px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #6b21a8;
+
+  background: #faf5ff;
+
+  font-size: 10px;
+
+  font-weight: 950;
+}
+
+.ma-grade-main {
+  min-width: 0;
+}
+
+.ma-grade-main strong {
+  display: block;
+
+  color: #111827;
+
+  font-size: 15px;
+
+  font-weight: 950;
+}
+
+.ma-grade-main span,
+.ma-grade-main small {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #64748b;
+
+  font-size: 9px;
+
+  font-weight: 750;
+}
+
+.ma-grade-value {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  color: #7c3aed;
+}
+
+.ma-grade-value b {
+  font-size: 11px;
+
+  font-weight: 950;
+}
+
+.ma-selected-grade {
+  max-width: 1220px;
+
+  width: 100%;
+
+  min-height: 48px;
+
+  margin: 0 auto 14px;
+
+  padding: 10px 14px;
+
+  border: 1px solid #ddd6fe;
+
+  border-radius: 15px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  color: #5b21b6;
+
+  background: #f5f3ff;
+
+  cursor: pointer;
+}
+
+.ma-selected-grade span {
+  font-size: 11px;
+
+  font-weight: 750;
+}
+
+.ma-selected-grade strong {
+  font-size: 13px;
+
+  font-weight: 950;
+}
+
+
+/* =========================================================
+   ORDERS HEADING
+========================================================= */
+
+.ma-orders-heading {
+  max-width: 1220px;
+
+  margin: 0 auto 14px;
+
+  padding: 20px;
+
+  border-radius: 22px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #1e1b4b,
+      #4338ca
+    );
+}
+
+.ma-orders-heading span {
+  display: block;
+
+  color: #c7d2fe;
+
+  font-size: 9px;
+
+  font-weight: 950;
+
+  letter-spacing: 0.8px;
+}
+
+.ma-orders-heading strong {
+  display: block;
+
+  margin-top: 4px;
+
+  font-size: 29px;
+
+  font-weight: 950;
+}
+
+.ma-orders-heading small {
+  color: #e0e7ff;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   NOTE / WARNING
+========================================================= */
+
+.ma-data-note,
+.ma-inline-warning {
+  max-width: 1220px;
+
+  margin: 0 auto 18px;
+
+  padding: 12px 14px;
+
+  border: 1px solid #fde68a;
+
+  border-radius: 15px;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 9px;
+
+  color: #92400e;
+
+  background: #fffbeb;
+}
+
+.ma-data-note svg,
+.ma-inline-warning svg {
+  flex: 0 0 auto;
+
+  margin-top: 1px;
+}
+
+.ma-data-note p {
+  margin: 0;
+
+  font-size: 10.5px;
+
+  font-weight: 750;
+
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   EMPTY / ERROR / LOADING
+========================================================= */
+
+.ma-empty,
+.ma-loading-screen,
+.ma-error-screen,
+.ma-access-denied {
+  max-width: 520px;
+
+  margin: 60px auto;
+
+  padding: 30px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 24px;
+
+  text-align: center;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 15px 40px
+      rgba(15, 23, 42, 0.07);
+}
+
+.ma-empty {
+  grid-column: 1 / -1;
+
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.ma-empty svg,
+.ma-error-screen svg,
+.ma-access-denied svg {
+  color: #6366f1;
+}
+
+.ma-empty strong,
+.ma-loading-screen strong,
+.ma-error-screen strong,
+.ma-access-denied h2 {
+  display: block;
+
+  margin-top: 10px;
+
+  color: #111827;
+
+  font-size: 16px;
+
+  font-weight: 950;
+}
+
+.ma-empty p,
+.ma-loading-screen span,
+.ma-error-screen p,
+.ma-access-denied p {
+  margin: 6px 0 0;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  line-height: 1.5;
+}
+
+.ma-loader {
+  width: 38px;
+  height: 38px;
+
+  margin: 0 auto 13px;
+
+  border: 4px solid #e0e7ff;
+
+  border-top-color: #4f46e5;
+
+  border-radius: 50%;
+
+  animation:
+    maRotate 0.7s linear infinite;
+}
+
+.ma-error-actions {
+  margin-top: 17px;
+
+  display: flex;
+
+  justify-content: center;
+
+  gap: 8px;
+}
+
+.ma-error-actions button,
+.ma-access-denied button {
+  min-height: 40px;
+
+  padding: 0 14px;
+
+  border: 0;
+
+  border-radius: 12px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  color: #ffffff;
+
+  background: #4f46e5;
+
+  font-size: 11px;
+
+  font-weight: 900;
+
+  cursor: pointer;
+}
+
+.ma-access-denied button {
+  margin-top: 17px;
+}
+
+.ma-bottom-space {
+  height: 10px;
+}
+
+
+/* =========================================================
+   ANIMATION
+========================================================= */
+
+.ma-spin {
+  animation:
+    maRotate 0.7s linear infinite;
+}
+
+@keyframes maRotate {
+  to {
+    transform:
+      rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+  .ma-summary-grid,
+  .ma-analysis-navigation {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+
+/* =========================================================
+   PWA / MOBILE
+
+   IMPORTANT:
+   Header remains fixed in the module layout.
+   ONLY .ma-scroll-area scrolls.
+
+   Therefore:
+   - no double scrolling
+   - no disappearing header
+   - back/refresh always visible
+   - behaves like Sales Order/MTC app pages
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .management-analysis {
+    width: 100%;
+
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+
+    overflow: hidden;
+
+    background: #f4f5fa;
+  }
+
+  .ma-app-header {
+    min-height:
+      calc(
+        68px +
+        env(
+          safe-area-inset-top
+        )
+      );
+
+    padding:
+      calc(
+        9px +
+        env(
+          safe-area-inset-top
+        )
+      )
+      12px
+      9px;
+
+    grid-template-columns:
+      42px
+      minmax(0, 1fr)
+      42px;
+
+    gap: 10px;
+
+    border-radius:
+      0 0 22px 22px;
+
+    box-shadow:
+      0 10px 26px
+        rgba(
+          49,
+          46,
+          129,
+          0.2
+        );
+  }
+
+  .ma-header-btn {
+    width: 42px;
+    height: 42px;
+
+    border-radius: 13px;
+  }
+
+  .ma-header-title > strong {
+    font-size: 17px;
+  }
+
+  .ma-header-title > small {
+    font-size: 9.5px;
+  }
+
+  .ma-scroll-area {
+    padding:
+      13px
+      12px
+      calc(
+        24px +
+        env(
+          safe-area-inset-bottom
+        )
+      );
+
+    overscroll-behavior-y:
+      contain;
+  }
+
+  .ma-scroll-area::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  .ma-hero {
+    min-height: 145px;
+
+    margin-bottom: 12px;
+
+    padding: 20px;
+
+    border-radius: 22px;
+  }
+
+  .ma-hero strong {
+    font-size: 28px;
+
+    letter-spacing: -0.8px;
+  }
+
+  .ma-hero p {
+    font-size: 11px;
+  }
+
+  .ma-hero-badge {
+    width: 52px;
+    height: 52px;
+
+    border-radius: 17px;
+  }
+
+  .ma-summary-grid {
+    margin-bottom: 12px;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 9px;
+  }
+
+  .ma-summary-card {
+    min-height: 105px;
+
+    padding: 13px;
+
+    border-radius: 18px;
+
+    display: block;
+  }
+
+  .ma-summary-icon {
+    width: 35px;
+    height: 35px;
+
+    margin-bottom: 10px;
+
+    border-radius: 11px;
+  }
+
+  .ma-summary-copy strong {
+    font-size: 15px;
+  }
+
+  .ma-summary-copy small {
+    font-size: 8.5px;
+  }
+
+  .ma-section {
+    margin-bottom: 12px;
+
+    padding: 15px;
+
+    border-radius: 21px;
+  }
+
+  .ma-section-heading {
+    margin-bottom: 13px;
+  }
+
+  .ma-section-heading h2 {
+    font-size: 17px;
+  }
+
+  /*
+   * ONE-BY-ONE MOBILE ANALYSIS NAV
+   *
+   * This directly satisfies the PWA requirement:
+   * don't dump H.O., Steel Mill, grades and
+   * every detail onto one giant page.
+   */
+
+  .ma-analysis-navigation {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 9px;
+  }
+
+  .ma-nav-card {
+    min-height: 105px;
+
+    width: 100%;
+
+    padding: 13px;
+
+    border-radius: 18px;
+
+    grid-template-columns:
+      43px
+      minmax(0, 1fr)
+      18px;
+
+    align-items: center;
+  }
+
+  .ma-nav-card-icon {
+    width: 43px;
+    height: 43px;
+
+    border-radius: 14px;
+  }
+
+  .ma-nav-card-copy > b {
+    margin-top: 7px;
+
+    font-size: 16px;
+  }
+
+  .ma-nav-card-copy > small {
+    font-size: 9px;
+  }
+
+  .ma-nav-arrow {
+    margin-top: 0;
+  }
+
+  .ma-detail-hero {
+    margin-bottom: 12px;
+
+    padding: 18px;
+
+    border-radius: 21px;
+  }
+
+  .ma-detail-hero > strong {
+    font-size: 27px;
+  }
+
+  .ma-detail-hero-grid {
+    margin-top: 17px;
+
+    gap: 7px;
+  }
+
+  .ma-detail-hero-grid > div {
+    padding: 9px;
+
+    border-radius: 12px;
+  }
+
+  .ma-detail-hero-grid small {
+    font-size: 8px;
+  }
+
+  .ma-detail-hero-grid b {
+    font-size: 11px;
+  }
+
+  .ma-mill-list,
+  .ma-order-list,
+  .ma-grade-list {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .ma-mill-card {
+    grid-template-columns:
+      36px
+      minmax(0, 1fr)
+      auto;
+
+    padding: 12px;
+  }
+
+  .ma-mill-card > b {
+    max-width: 110px;
+
+    font-size: 10px;
+  }
+
+  .ma-search-wrap {
+    min-height: 46px;
+
+    margin-bottom: 11px;
+
+    border-radius: 14px;
+  }
+
+  .ma-search-wrap input {
+    height: 44px;
+
+    font-size: 12px;
+  }
+
+  .ma-order-list {
+    gap: 10px;
+  }
+
+  .ma-order-card {
+    padding: 15px;
+
+    border-radius: 19px;
+  }
+
+  .ma-order-top h3 {
+    font-size: 14px;
+  }
+
+  .ma-order-value {
+    margin-top: 12px;
+
+    padding: 11px;
+  }
+
+  .ma-order-value strong {
+    font-size: 18px;
+  }
+
+  .ma-order-meta-grid {
+    gap: 7px;
+  }
+
+  .ma-order-meta-grid > div {
+    padding: 9px;
+  }
+
+  .ma-material-box {
+    padding: 10px;
+  }
+
+  .ma-grade-card {
+    min-height: 78px;
+
+    padding: 11px;
+  }
+
+  .ma-grade-value b {
+    max-width: 100px;
+
+    overflow: hidden;
+
+    font-size: 9px;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+  }
+
+  .ma-orders-heading {
+    margin-bottom: 11px;
+
+    padding: 17px;
+
+    border-radius: 19px;
+  }
+
+  .ma-orders-heading strong {
+    font-size: 26px;
+  }
+
+  .ma-data-note {
+    margin-bottom: 12px;
+  }
+
+  .ma-loading-screen,
+  .ma-error-screen,
+  .ma-access-denied {
+    margin:
+      auto 14px;
+
+    padding: 24px;
+
+    border-radius: 21px;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONE
+========================================================= */
+
+@media (max-width: 390px) {
+
+  .ma-header-title > strong {
+    font-size: 16px;
+  }
+
+  .ma-header-title > small {
+    max-width: 210px;
+  }
+
+  .ma-hero {
+    padding: 17px;
+  }
+
+  .ma-hero strong {
+    font-size: 24px;
+  }
+
+  .ma-hero-badge {
+    width: 46px;
+    height: 46px;
+  }
+
+  .ma-summary-card {
+    min-height: 100px;
+
+    padding: 11px;
+  }
+
+  .ma-summary-copy strong {
+    font-size: 14px;
+  }
+
+  .ma-detail-hero-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .ma-detail-hero-grid > div {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+  }
+
+  .ma-detail-hero-grid b {
+    margin-top: 0;
+  }
+
+  .ma-order-meta-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .ma-meta-wide {
+    grid-column: auto;
+  }
+}
+/* =========================================================
+   MANAGEMENT ANALYSIS V2
+   ADD AT ABSOLUTE END OF ManagementAnalysis.css
+
+   - Full-width premium desktop layout
+   - Removes unnecessary corner/side gaps
+   - New quantity matrix
+   - Date filters
+   - Metric drill-down
+   - Keeps existing theme
+========================================================= */
+
+/* =========================================================
+   DESKTOP WIDTH / GAP FIX
+========================================================= */
+
+.management-analysis {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+.management-analysis .ma-scroll-area {
+  width: 100% !important;
+  max-width: none !important;
+
+  padding:
+    18px
+    18px
+    28px !important;
+}
+
+/*
+ * Existing stylesheet has max-width: 1220px.
+ * Remove that restriction on the management module.
+ */
+
+.management-analysis .ma-hero,
+.management-analysis .ma-summary-grid,
+.management-analysis .ma-section,
+.management-analysis .ma-detail-hero,
+.management-analysis .ma-search-wrap,
+.management-analysis .ma-orders-heading,
+.management-analysis .ma-selected-grade,
+.management-analysis .ma-filter-bar,
+.management-analysis .ma-drill-hero,
+.management-analysis .ma-order-list,
+.management-analysis .ma-empty {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.management-analysis .ma-app-header {
+  width: 100%;
+  border-radius: 0;
+}
+
+/* =========================================================
+   DATE FILTER BAR
+========================================================= */
+
+.ma-filter-bar {
+  margin:
+    0
+    auto
+    16px;
+
+  padding:
+    14px
+    16px;
+
+  border:
+    1px solid
+    #e2e8f0;
+
+  border-radius:
+    20px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    18px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.96
+    );
+
+  box-shadow:
+    0
+    8px
+    24px
+    rgba(
+      15,
+      23,
+      42,
+      0.045
+    );
+}
+
+.ma-filter-title {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    11px;
+
+  min-width:
+    180px;
+}
+
+.ma-filter-icon {
+  width:
+    42px;
+
+  height:
+    42px;
+
+  flex:
+    0 0
+    42px;
+
+  border-radius:
+    14px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  color:
+    #4338ca;
+
+  background:
+    #eef2ff;
+}
+
+.ma-filter-title span {
+  display:
+    block;
+
+  color:
+    #6366f1;
+
+  font-size:
+    9px;
+
+  font-weight:
+    950;
+
+  letter-spacing:
+    0.8px;
+}
+
+.ma-filter-title strong {
+  display:
+    block;
+
+  margin-top:
+    2px;
+
+  color:
+    #111827;
+
+  font-size:
+    14px;
+
+  font-weight:
+    950;
+}
+
+.ma-date-fields {
+  flex:
+    1;
+
+  display:
+    flex;
+
+  align-items:
+    flex-end;
+
+  justify-content:
+    flex-end;
+
+  gap:
+    9px;
+}
+
+.ma-date-fields label {
+  min-width:
+    155px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    5px;
+}
+
+.ma-date-fields label > span {
+  color:
+    #64748b;
+
+  font-size:
+    8.5px;
+
+  font-weight:
+    950;
+
+  letter-spacing:
+    0.65px;
+}
+
+.ma-date-fields input {
+  width:
+    100%;
+
+  height:
+    39px;
+
+  margin:
+    0;
+
+  padding:
+    0
+    11px;
+
+  border:
+    1px solid
+    #dbe3ee;
+
+  border-radius:
+    11px;
+
+  outline:
+    none;
+
+  color:
+    #111827;
+
+  background:
+    #f8fafc;
+
+  font-size:
+    12px;
+
+  font-weight:
+    750;
+
+  box-shadow:
+    none;
+}
+
+.ma-date-fields input:focus {
+  border-color:
+    #818cf8;
+
+  background:
+    #ffffff;
+
+  box-shadow:
+    0
+    0
+    0
+    3px
+    rgba(
+      99,
+      102,
+      241,
+      0.1
+    );
+}
+
+.ma-filter-apply {
+  height:
+    39px;
+
+  min-width:
+    82px;
+
+  padding:
+    0
+    17px;
+
+  border:
+    0;
+
+  border-radius:
+    11px;
+
+  color:
+    #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #4338ca,
+      #6366f1
+    );
+
+  font-size:
+    11px;
+
+  font-weight:
+    900;
+
+  cursor:
+    pointer;
+
+  box-shadow:
+    0
+    7px
+    18px
+    rgba(
+      79,
+      70,
+      229,
+      0.18
+    );
+}
+
+.ma-filter-reset {
+  width:
+    39px;
+
+  height:
+    39px;
+
+  padding:
+    0;
+
+  border:
+    1px solid
+    #e2e8f0;
+
+  border-radius:
+    11px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  color:
+    #64748b;
+
+  background:
+    #ffffff;
+
+  cursor:
+    pointer;
+}
+
+/* =========================================================
+   HERO - MORE COMPACT / PREMIUM
+========================================================= */
+
+.management-analysis .ma-hero {
+  min-height:
+    165px;
+
+  padding:
+    26px
+    30px;
+
+  border-radius:
+    24px;
+}
+
+/* =========================================================
+   FIVE SUMMARY CARDS
+========================================================= */
+
+.management-analysis .ma-summary-grid-new {
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(
+        0,
+        1fr
+      )
+    );
+}
+
+.ma-summary-clickable {
+  width:
+    100%;
+
+  margin:
+    0;
+
+  text-align:
+    left;
+
+  cursor:
+    pointer;
+
+  appearance:
+    none;
+
+  transition:
+    transform
+      0.18s
+      ease,
+    border-color
+      0.18s
+      ease,
+    box-shadow
+      0.18s
+      ease;
+}
+
+.ma-summary-clickable:hover {
+  transform:
+    translateY(
+      -2px
+    );
+
+  border-color:
+    #c7d2fe;
+
+  box-shadow:
+    0
+    14px
+    28px
+    rgba(
+      79,
+      70,
+      229,
+      0.09
+    );
+}
+
+.ma-summary-card.target
+.ma-summary-icon {
+  color:
+    #7c3aed;
+
+  background:
+    #f5f3ff;
+}
+
+.ma-summary-card.dispatch
+.ma-summary-icon {
+  color:
+    #0369a1;
+
+  background:
+    #f0f9ff;
+}
+
+.ma-summary-card.pending
+.ma-summary-icon {
+  color:
+    #b45309;
+
+  background:
+    #fffbeb;
+}
+
+.ma-summary-card.balance
+.ma-summary-icon {
+  color:
+    #be123c;
+
+  background:
+    #fff1f2;
+}
+
+/* =========================================================
+   MANAGEMENT QUANTITY TABLE
+========================================================= */
+
+.ma-metric-section {
+  overflow:
+    hidden;
+}
+
+.ma-metric-table {
+  width:
+    100%;
+
+  border:
+    1px solid
+    #e2e8f0;
+
+  border-radius:
+    18px;
+
+  overflow:
+    hidden;
+
+  background:
+    #ffffff;
+}
+
+.ma-metric-head,
+.ma-metric-row {
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(
+      220px,
+      1.45fr
+    )
+    repeat(
+      3,
+      minmax(
+        130px,
+        1fr
+      )
+    );
+
+  align-items:
+    center;
+}
+
+.ma-metric-head {
+  min-height:
+    44px;
+
+  color:
+    #64748b;
+
+  background:
+    #f8fafc;
+
+  border-bottom:
+    1px solid
+    #e2e8f0;
+}
+
+.ma-metric-head > div {
+  padding:
+    11px
+    15px;
+
+  font-size:
+    9px;
+
+  font-weight:
+    950;
+
+  letter-spacing:
+    0.6px;
+
+  text-transform:
+    uppercase;
+}
+
+.ma-metric-head > div:not(:first-child) {
+  text-align:
+    center;
+}
+
+.ma-metric-row {
+  min-height:
+    65px;
+
+  border-bottom:
+    1px solid
+    #eef2f7;
+}
+
+.ma-metric-row:last-child {
+  border-bottom:
+    0;
+}
+
+.ma-metric-row:hover {
+  background:
+    #fafbff;
+}
+
+.ma-metric-name {
+  min-width:
+    0;
+
+  padding:
+    12px
+    15px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    11px;
+}
+
+.ma-metric-icon {
+  width:
+    36px;
+
+  height:
+    36px;
+
+  flex:
+    0 0
+    36px;
+
+  border-radius:
+    11px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  color:
+    #4338ca;
+
+  background:
+    #eef2ff;
+}
+
+.ma-metric-name strong {
+  color:
+    #1e293b;
+
+  font-size:
+    12px;
+
+  font-weight:
+    900;
+}
+
+.ma-metric-value {
+  min-height:
+    64px;
+
+  width:
+    100%;
+
+  padding:
+    10px;
+
+  border:
+    0;
+
+  border-left:
+    1px solid
+    #eef2f7;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    4px;
+
+  color:
+    #312e81;
+
+  background:
+    transparent;
+
+  font-size:
+    13px;
+
+  font-weight:
+    950;
+
+  cursor:
+    pointer;
+}
+
+.ma-metric-value:not(:disabled):hover {
+  color:
+    #4338ca;
+
+  background:
+    #eef2ff;
+}
+
+.ma-metric-value:disabled {
+  color:
+    #94a3b8;
+
+  cursor:
+    default;
+}
+
+/* =========================================================
+   DRILL DOWN HERO
+========================================================= */
+
+.ma-drill-hero {
+  margin:
+    0
+    auto
+    15px;
+
+  padding:
+    20px
+    22px;
+
+  border-radius:
+    20px;
+
+  color:
+    #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #172554,
+      #312e81,
+      #4f46e5
+    );
+
+  box-shadow:
+    0
+    14px
+    34px
+    rgba(
+      49,
+      46,
+      129,
+      0.16
+    );
+}
+
+.ma-drill-hero > span {
+  display:
+    block;
+
+  color:
+    #c7d2fe;
+
+  font-size:
+    9px;
+
+  font-weight:
+    950;
+
+  letter-spacing:
+    1px;
+}
+
+.ma-drill-hero > strong {
+  display:
+    block;
+
+  margin-top:
+    5px;
+
+  font-size:
+    23px;
+
+  font-weight:
+    950;
+}
+
+.ma-drill-hero > p {
+  margin:
+    5px
+    0
+    0;
+
+  color:
+    #e0e7ff;
+
+  font-size:
+    11px;
+
+  font-weight:
+    700;
+}
+
+/* =========================================================
+   MILL BUTTON
+========================================================= */
+
+.ma-mill-card-button {
+  width:
+    100%;
+
+  margin:
+    0;
+
+  text-align:
+    left;
+
+  cursor:
+    pointer;
+
+  appearance:
+    none;
+
+  transition:
+    transform
+      0.18s
+      ease,
+    box-shadow
+      0.18s
+      ease,
+    border-color
+      0.18s
+      ease;
+}
+
+.ma-mill-card-button:hover {
+  transform:
+    translateY(
+      -2px
+    );
+
+  border-color:
+    #fcd34d;
+
+  box-shadow:
+    0
+    10px
+    24px
+    rgba(
+      180,
+      83,
+      9,
+      0.08
+    );
+}
+
+/* =========================================================
+   GRADE BALANCE
+========================================================= */
+
+.ma-grade-value {
+  min-width:
+    100px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    flex-end;
+}
+
+.ma-grade-value small {
+  margin-top:
+    2px;
+
+  color:
+    #94a3b8;
+
+  font-size:
+    8px;
+
+  font-weight:
+    800;
+}
+
+/* =========================================================
+   ORDER QUANTITY
+========================================================= */
+
+.ma-order-quantity-main {
+  margin-top:
+    13px;
+
+  padding:
+    13px
+    14px;
+
+  border:
+    1px solid
+    #e0e7ff;
+
+  border-radius:
+    14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #eef2ff,
+      #f5f3ff
+    );
+}
+
+.ma-order-quantity-main span {
+  display:
+    block;
+
+  color:
+    #6366f1;
+
+  font-size:
+    8.5px;
+
+  font-weight:
+    950;
+
+  letter-spacing:
+    0.65px;
+}
+
+.ma-order-quantity-main strong {
+  display:
+    block;
+
+  margin-top:
+    3px;
+
+  color:
+    #312e81;
+
+  font-size:
+    20px;
+
+  font-weight:
+    950;
+}
+
+.ma-order-metrics {
+  margin-top:
+    10px;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap:
+    8px;
+}
+
+.ma-order-metrics > div {
+  min-width:
+    0;
+
+  padding:
+    10px;
+
+  border:
+    1px solid
+    #e2e8f0;
+
+  border-radius:
+    12px;
+
+  background:
+    #f8fafc;
+}
+
+.ma-order-metrics span {
+  display:
+    block;
+
+  color:
+    #64748b;
+
+  font-size:
+    8px;
+
+  font-weight:
+    850;
+}
+
+.ma-order-metrics strong {
+  display:
+    block;
+
+  margin-top:
+    4px;
+
+  overflow:
+    hidden;
+
+  color:
+    #111827;
+
+  font-size:
+    11px;
+
+  font-weight:
+    950;
+
+  white-space:
+    nowrap;
+
+  text-overflow:
+    ellipsis;
+}
+
+/* =========================================================
+   DESKTOP RESPONSIVE
+========================================================= */
+
+@media (
+  max-width: 1250px
+) {
+  .management-analysis
+  .ma-summary-grid-new {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(
+          0,
+          1fr
+        )
+      );
+  }
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (
+  max-width: 900px
+) {
+  .management-analysis
+  .ma-scroll-area {
+    padding:
+      12px
+      12px
+      22px !important;
+  }
+
+  .ma-filter-bar {
+    align-items:
+      stretch;
+
+    flex-direction:
+      column;
+  }
+
+  .ma-date-fields {
+    justify-content:
+      stretch;
+  }
+
+  .ma-date-fields label {
+    flex:
+      1;
+
+    min-width:
+      0;
+  }
+
+  .management-analysis
+  .ma-summary-grid-new {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(
+          0,
+          1fr
+        )
+      );
+  }
+
+  .ma-metric-head,
+  .ma-metric-row {
+    grid-template-columns:
+      minmax(
+        160px,
+        1.25fr
+      )
+      repeat(
+        3,
+        minmax(
+          105px,
+          1fr
+        )
+      );
+  }
+
+  .ma-metric-table {
+    overflow-x:
+      auto;
+  }
+
+  .ma-metric-head,
+  .ma-metric-row {
+    min-width:
+      610px;
+  }
+
+  .ma-order-metrics {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(
+          0,
+          1fr
+        )
+      );
+  }
+}
+
+/* =========================================================
+   MOBILE / PWA
+========================================================= */
+
+@media (
+  max-width: 640px
+) {
+  .management-analysis
+  .ma-scroll-area {
+    padding:
+      10px
+      10px
+      18px !important;
+  }
+
+  .management-analysis
+  .ma-app-header {
+    min-height:
+      68px;
+
+    padding:
+      10px
+      11px;
+  }
+
+  .ma-filter-bar {
+    margin-bottom:
+      10px;
+
+    padding:
+      12px;
+
+    border-radius:
+      16px;
+  }
+
+  .ma-date-fields {
+    display:
+      grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(
+          0,
+          1fr
+        )
+      );
+  }
+
+  .ma-filter-apply {
+    width:
+      100%;
+
+    grid-column:
+      1 / -1;
+  }
+
+  .ma-filter-reset {
+    position:
+      absolute;
+
+    right:
+      20px;
+
+    margin-top:
+      -49px;
+  }
+
+  .management-analysis
+  .ma-hero {
+    min-height:
+      145px;
+
+    margin-bottom:
+      10px;
+
+    padding:
+      21px;
+
+    border-radius:
+      20px;
+  }
+
+  .management-analysis
+  .ma-hero strong {
+    font-size:
+      31px;
+  }
+
+  .management-analysis
+  .ma-summary-grid-new {
+    margin-bottom:
+      10px;
+
+    grid-template-columns:
+      1fr;
+
+    gap:
+      8px;
+  }
+
+  .management-analysis
+  .ma-summary-grid-new
+  .ma-summary-card {
+    min-height:
+      76px;
+
+    padding:
+      13px;
+
+    border-radius:
+      16px;
+  }
+
+  .management-analysis
+  .ma-section {
+    margin-bottom:
+      10px;
+
+    padding:
+      14px;
+
+    border-radius:
+      18px;
+  }
+
+  .ma-metric-table {
+    border-radius:
+      14px;
+  }
+
+  .ma-metric-head,
+  .ma-metric-row {
+    min-width:
+      565px;
+  }
+
+  .ma-metric-name {
+    padding:
+      10px;
+  }
+
+  .ma-metric-value {
+    font-size:
+      11px;
+  }
+
+  .ma-analysis-navigation {
+    grid-template-columns:
+      1fr !important;
+  }
+
+  .ma-nav-card {
+    min-height:
+      116px !important;
+  }
+
+  .ma-order-metrics {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(
+          0,
+          1fr
+        )
+      );
+  }
+
+  .ma-drill-hero {
+    padding:
+      17px;
+
+    border-radius:
+      17px;
+  }
+}
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (
+  max-width: 390px
+) {
+  .management-analysis
+  .ma-scroll-area {
+    padding:
+      8px
+      8px
+      16px !important;
+  }
+
+  .ma-date-fields {
+    grid-template-columns:
+      1fr;
+  }
+
+  .ma-filter-apply {
+    grid-column:
+      auto;
+  }
+
+  .ma-filter-reset {
+    position:
+      static;
+
+    width:
+      100%;
+
+    margin:
+      0;
+  }
+
+  .ma-order-metrics {
+    grid-template-columns:
+      1fr
+      1fr;
+  }
+}
+/* =========================================================
+   MANAGEMENT ANALYSIS
+   FINAL FILTER + KPI OVERRIDES
+   ADD AT ABSOLUTE END OF FILE
+========================================================= */
+
+/* =========================
+   DATE / MONTH FILTER
+========================= */
+
+.ma-date-filter {
+  width: 100%;
+  max-width: 1220px;
+
+  margin: 0 auto 18px;
+  padding: 14px 16px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 8px 24px
+      rgba(15, 23, 42, 0.05);
+}
+
+.ma-date-filter-copy {
+  min-width: 190px;
+
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.ma-date-icon {
+  width: 42px;
+  height: 42px;
+
+  flex: 0 0 auto;
+
+  border-radius: 13px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.ma-date-filter-copy > div:last-child {
+  min-width: 0;
+}
+
+.ma-date-filter-copy span {
+  display: block;
+
+  color: #6366f1;
+
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.8px;
+}
+
+.ma-date-filter-copy strong {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #111827;
+
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.ma-date-filter-copy small {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #94a3b8;
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+
+/* =========================
+   FILTER FIELDS
+========================= */
+
+.ma-date-fields {
+  min-width: 0;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 9px;
+
+  flex-wrap: wrap;
+}
+
+.ma-date-fields label {
+  min-width: 145px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ma-date-fields label > span {
+  padding-left: 2px;
+
+  color: #64748b;
+
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: 0.65px;
+}
+
+.ma-date-fields input {
+  width: 100%;
+  height: 39px;
+
+  padding: 0 11px;
+
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+
+  outline: none;
+
+  color: #111827;
+  background: #ffffff;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.ma-date-fields input:hover {
+  border-color: #c7d2fe;
+}
+
+.ma-date-fields input:focus {
+  border-color: #6366f1;
+
+  box-shadow:
+    0 0 0 3px
+      rgba(99, 102, 241, 0.1);
+}
+
+.ma-month-field {
+  min-width: 155px !important;
+}
+
+
+/* =========================
+   APPLY
+========================= */
+
+.ma-filter-apply {
+  height: 39px;
+  min-width: 82px;
+
+  padding: 0 18px;
+
+  border: 0;
+  border-radius: 12px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #4f46e5,
+      #6366f1
+    );
+
+  font-size: 10px;
+  font-weight: 950;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 7px 18px
+      rgba(79, 70, 229, 0.18);
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.ma-filter-apply:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 10px 22px
+      rgba(79, 70, 229, 0.25);
+}
+
+
+/* =========================
+   RESET
+========================= */
+
+.ma-filter-reset {
+  width: 39px;
+  height: 39px;
+
+  flex: 0 0 39px;
+
+  padding: 0;
+
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #64748b;
+  background: #ffffff;
+
+  cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.ma-filter-reset:hover {
+  color: #4338ca;
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+
+/* =========================
+   5 KPI CARDS
+========================= */
+
+.ma-kpi-grid {
+  width: 100%;
+  max-width: 1220px;
+
+  margin: 0 auto 18px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+}
+
+.ma-kpi-grid .ma-summary-card {
+  width: 100%;
+  min-height: 86px;
+
+  padding: 13px;
+
+  text-align: left;
+}
+
+.ma-summary-clickable {
+  font: inherit;
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.ma-summary-clickable:hover {
+  transform:
+    translateY(-2px);
+
+  border-color:
+    #c7d2fe;
+
+  box-shadow:
+    0 12px 28px
+      rgba(79, 70, 229, 0.09);
+}
+
+
+/* =========================
+   METRIC TABLE
+========================= */
+
+.ma-metric-table-wrap {
+  width: 100%;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 17px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  background: #ffffff;
+}
+
+.ma-metric-table {
+  width: 100%;
+  min-width: 680px;
+
+  border-collapse: collapse;
+}
+
+.ma-metric-table th {
+  padding: 12px 14px;
+
+  border-bottom:
+    1px solid #e2e8f0;
+
+  color: #64748b;
+  background: #f8fafc;
+
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: 0.7px;
+
+  text-align: center;
+}
+
+.ma-metric-table th:first-child {
+  text-align: left;
+}
+
+.ma-metric-table td {
+  padding: 12px 14px;
+
+  border-bottom:
+    1px solid #eef2f7;
+
+  text-align: center;
+}
+
+.ma-metric-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.ma-metric-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  text-align: left;
+}
+
+.ma-metric-name > span {
+  width: 34px;
+  height: 34px;
+
+  flex: 0 0 auto;
+
+  border-radius: 11px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.ma-metric-name strong {
+  color: #1e293b;
+
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.ma-metric-value {
+  min-width: 90px;
+
+  border: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  color: #4338ca;
+  background: transparent;
+
+  font-size: 11px;
+  font-weight: 950;
+
+  cursor: pointer;
+}
+
+.ma-metric-value:disabled {
+  color: #cbd5e1;
+  cursor: default;
+}
+
+
+/* =========================
+   ERROR
+========================= */
+
+.ma-error-banner {
+  width: 100%;
+  max-width: 1220px;
+
+  margin: 0 auto 14px;
+  padding: 11px 13px;
+
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  color: #b91c1c;
+  background: #fef2f2;
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ma-error-banner span {
+  flex: 1;
+}
+
+.ma-error-banner button {
+  width: 28px;
+  height: 28px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #b91c1c;
+  background: transparent;
+
+  cursor: pointer;
+}
+
+
+/* =========================
+   LOADING
+========================= */
+
+.ma-loading-state {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  color: #64748b;
+}
+
+.ma-loading-state strong {
+  color: #111827;
+
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.ma-loading-state span {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ma-loading-spinner {
+  width: 34px;
+  height: 34px;
+
+  margin-bottom: 7px;
+
+  border: 3px solid #e0e7ff;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+
+  animation:
+    maRotate 0.8s linear
+    infinite;
+}
+
+.ma-spin {
+  animation:
+    maRotate 0.8s linear
+    infinite;
+}
+
+@keyframes maRotate {
+  to {
+    transform:
+      rotate(360deg);
+  }
+}
+
+
+/* =========================
+   MILL BUTTON
+========================= */
+
+.ma-mill-card-button {
+  width: 100%;
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.ma-mill-card-button:hover {
+  transform:
+    translateY(-2px);
+
+  border-color:
+    #fde68a;
+
+  box-shadow:
+    0 10px 24px
+      rgba(217, 119, 6, 0.08);
+}
+
+
+/* =========================
+   GRADE LIST
+========================= */
+
+.ma-grade-list {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+}
+
+.ma-grade-card {
+  min-width: 0;
+  min-height: 68px;
+
+  padding: 12px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  display: grid;
+
+  grid-template-columns:
+    38px
+    minmax(0, 1fr)
+    18px;
+
+  gap: 10px;
+  align-items: center;
+
+  color: #111827;
+  background: #ffffff;
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.ma-grade-card:hover {
+  transform:
+    translateY(-2px);
+
+  border-color:
+    #ddd6fe;
+
+  box-shadow:
+    0 10px 24px
+      rgba(124, 58, 237, 0.08);
+}
+
+.ma-grade-card > div {
+  width: 38px;
+  height: 38px;
+
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #7c3aed;
+  background: #faf5ff;
+}
+
+.ma-grade-card > span {
+  min-width: 0;
+}
+
+.ma-grade-card strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: #111827;
+
+  font-size: 12px;
+  font-weight: 950;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ma-grade-card small {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #64748b;
+
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.ma-grade-card > svg {
+  color: #94a3b8;
+}
+
+
+/* =========================
+   SECTION DESCRIPTION
+========================= */
+
+.ma-section-description {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+/* =========================
+   BOTTOM SPACE
+========================= */
+
+.ma-bottom-space {
+  width: 100%;
+  height: 16px;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (
+  max-width: 1100px
+) {
+  .ma-date-filter {
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+  }
+
+  .ma-date-fields {
+    width: 100%;
+
+    justify-content:
+      flex-start;
+  }
+
+  .ma-date-fields label {
+    flex: 1 1 150px;
+  }
+
+  .ma-kpi-grid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+
+  .ma-grade-list {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (
+  max-width: 700px
+) {
+  .ma-date-filter {
+    margin-bottom: 12px;
+
+    padding: 12px;
+
+    border-radius: 17px;
+
+    gap: 12px;
+  }
+
+  .ma-date-filter-copy {
+    width: 100%;
+  }
+
+  .ma-date-fields {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 8px;
+  }
+
+  .ma-date-fields label,
+  .ma-month-field {
+    min-width:
+      0 !important;
+
+    width: 100%;
+  }
+
+  /*
+    Month takes full first row.
+  */
+
+  .ma-month-field {
+    grid-column:
+      1 / -1;
+  }
+
+  .ma-date-fields input {
+    height: 42px;
+
+    padding:
+      0 9px;
+
+    font-size: 10px;
+  }
+
+  .ma-filter-apply {
+    width: 100%;
+    height: 42px;
+
+    grid-column:
+      1 / 2;
+  }
+
+  .ma-filter-reset {
+    width: 100%;
+    height: 42px;
+
+    grid-column:
+      2 / 3;
+  }
+
+  /*
+    KPI cards:
+    2 per row,
+    final one full width.
+  */
+
+  .ma-kpi-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 8px;
+
+    margin-bottom: 12px;
+  }
+
+  .ma-kpi-grid
+    .ma-summary-card {
+    min-height: 78px;
+
+    padding: 11px;
+  }
+
+  .ma-kpi-grid
+    .ma-summary-card:last-child {
+    grid-column:
+      1 / -1;
+  }
+
+  .ma-grade-list {
+    grid-template-columns:
+      1fr;
+  }
+
+  .ma-metric-table-wrap {
+    border-radius: 14px;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONE
+========================================================= */
+
+@media (
+  max-width: 420px
+) {
+  .ma-date-fields {
+    grid-template-columns:
+      1fr;
+  }
+
+  .ma-month-field,
+  .ma-date-fields label,
+  .ma-filter-apply,
+  .ma-filter-reset {
+    grid-column:
+      1 / -1;
+  }
+
+  .ma-filter-reset {
+    width: 100%;
+  }
+
+  .ma-kpi-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .ma-kpi-grid
+    .ma-summary-card:last-child {
+    grid-column: auto;
+  }
+}
+
+/* =========================================================
+   MANAGEMENT ANALYSIS - FINAL UI FONT / BUTTON POLISH
+   ADD AT ABSOLUTE END OF ManagementAnalysis.css
+
+   PURPOSE:
+   - Keep current layout/design exactly the same
+   - Increase Quantity Performance readability
+   - Make clickable MT values look like proper buttons
+   - Improve drill-down order readability
+   - Keep desktop + mobile responsive
+========================================================= */
+
+
+/* =========================================================
+   1. QUANTITY PERFORMANCE - SECTION HEADING
+========================================================= */
+
+.management-analysis .ma-metric-section .ma-section-heading span {
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 1px;
+}
+
+.management-analysis .ma-metric-section .ma-section-heading h2 {
+  font-size: 22px;
+  font-weight: 950;
+  line-height: 1.2;
+}
+
+
+/* =========================================================
+   2. QUANTITY PERFORMANCE - TABLE HEADER
+========================================================= */
+
+.management-analysis .ma-metric-table th {
+  padding: 15px 18px;
+
+  color: #64748b;
+  background: #f8fafc;
+
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 950;
+  letter-spacing: 0.75px;
+
+  text-transform: uppercase;
+}
+
+
+/* =========================================================
+   3. QUANTITY PERFORMANCE - ROW HEIGHT
+========================================================= */
+
+.management-analysis .ma-metric-table td {
+  padding: 18px 18px;
+
+  vertical-align: middle;
+}
+
+
+/* =========================================================
+   4. QUANTITY PERFORMANCE - METRIC NAME
+========================================================= */
+
+.management-analysis .ma-metric-name {
+  gap: 13px;
+}
+
+.management-analysis .ma-metric-name > span {
+  width: 40px;
+  height: 40px;
+
+  flex: 0 0 40px;
+
+  border-radius: 13px;
+
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.management-analysis .ma-metric-name > span svg {
+  width: 19px;
+  height: 19px;
+}
+
+.management-analysis .ma-metric-name strong {
+  color: #1e293b;
+
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 950;
+}
+
+
+/* =========================================================
+   5. QUANTITY PERFORMANCE - CLICKABLE MT BUTTON
+========================================================= */
+
+.management-analysis .ma-metric-value {
+  min-width: 118px;
+  min-height: 42px;
+
+  padding: 0 13px;
+
+  border: 1px solid transparent;
+  border-radius: 12px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  color: #4338ca;
+  background: #eef2ff;
+
+  font-size: 13.5px;
+  line-height: 1;
+  font-weight: 950;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.management-analysis .ma-metric-value svg {
+  width: 16px;
+  height: 16px;
+
+  flex: 0 0 auto;
+}
+
+.management-analysis .ma-metric-value:not(:disabled):hover {
+  color: #312e81;
+
+  border-color: #c7d2fe;
+
+  background: #e0e7ff;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 7px 16px
+    rgba(79, 70, 229, 0.12);
+}
+
+.management-analysis .ma-metric-value:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.management-analysis .ma-metric-value:disabled {
+  color: #94a3b8;
+
+  border-color: #e2e8f0;
+
+  background: #f8fafc;
+
+  cursor: default;
+
+  box-shadow: none;
+}
+
+
+/* =========================================================
+   6. DRILL-DOWN HERO
+========================================================= */
+
+.management-analysis .ma-drill-hero {
+  padding: 24px 26px;
+
+  border-radius: 22px;
+}
+
+.management-analysis .ma-drill-hero > span {
+  font-size: 10px;
+  line-height: 1.2;
+
+  font-weight: 950;
+  letter-spacing: 1px;
+}
+
+.management-analysis .ma-drill-hero > strong {
+  margin-top: 7px;
+
+  font-size: 30px;
+  line-height: 1.1;
+
+  font-weight: 950;
+  letter-spacing: -0.5px;
+}
+
+.management-analysis .ma-drill-hero > p {
+  margin-top: 7px;
+
+  font-size: 13px;
+  line-height: 1.4;
+
+  font-weight: 750;
+}
+
+
+/* =========================================================
+   7. DRILL-DOWN SEARCH
+========================================================= */
+
+.management-analysis .ma-search-wrap {
+  min-height: 52px;
+
+  border-radius: 17px;
+}
+
+.management-analysis .ma-search-wrap input {
+  height: 50px;
+
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.management-analysis .ma-search-wrap input::placeholder {
+  color: #64748b;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   8. DRILL-DOWN ORDER CARD
+========================================================= */
+
+.management-analysis .ma-order-card {
+  padding: 20px;
+
+  border-radius: 22px;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.management-analysis .ma-order-card:hover {
+  border-color: #c7d2fe;
+
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 14px 32px
+    rgba(15, 23, 42, 0.08);
+}
+
+
+/* =========================================================
+   9. ORDER PO / REFERENCE BADGE
+========================================================= */
+
+.management-analysis .ma-order-top span {
+  padding: 6px 10px;
+
+  border-radius: 999px;
+
+  font-size: 9.5px;
+  line-height: 1;
+
+  font-weight: 950;
+  letter-spacing: 0.45px;
+}
+
+
+/* =========================================================
+   10. ORDER COMPANY NAME
+========================================================= */
+
+.management-analysis .ma-order-top h3 {
+  margin-top: 8px;
+
+  color: #111827;
+
+  font-size: 17px;
+  line-height: 1.25;
+
+  font-weight: 950;
+  letter-spacing: -0.15px;
+}
+
+
+/* =========================================================
+   11. ORDER DATE
+========================================================= */
+
+.management-analysis .ma-order-top small,
+.management-analysis .ma-order-date {
+  margin-top: 4px;
+
+  color: #64748b;
+
+  font-size: 11.5px;
+  line-height: 1.3;
+
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   12. ORDER QUANTITY MAIN
+========================================================= */
+
+.management-analysis .ma-order-quantity-main {
+  margin-top: 14px;
+
+  padding: 14px 15px;
+
+  border-radius: 15px;
+}
+
+.management-analysis .ma-order-quantity-main span {
+  font-size: 9.5px;
+  line-height: 1.2;
+
+  font-weight: 950;
+  letter-spacing: 0.65px;
+}
+
+.management-analysis .ma-order-quantity-main strong {
+  margin-top: 5px;
+
+  font-size: 22px;
+  line-height: 1;
+
+  font-weight: 950;
+}
+
+
+/* =========================================================
+   13. ORDER METRICS
+   Dispatch Target / Actual / Pending / Balance
+========================================================= */
+
+.management-analysis .ma-order-metrics {
+  margin-top: 12px;
+
+  gap: 9px;
+}
+
+.management-analysis .ma-order-metrics > div {
+  padding: 12px 11px;
+
+  border-radius: 13px;
+
+  background: #f8fafc;
+}
+
+.management-analysis .ma-order-metrics span {
+  color: #64748b;
+
+  font-size: 9.5px;
+  line-height: 1.25;
+
+  font-weight: 850;
+}
+
+.management-analysis .ma-order-metrics strong {
+  margin-top: 5px;
+
+  color: #111827;
+
+  font-size: 13px;
+  line-height: 1.2;
+
+  font-weight: 950;
+}
+
+
+/* =========================================================
+   14. SALES PERSON / ORDER TYPE META
+========================================================= */
+
+.management-analysis .ma-order-meta-grid {
+  margin-top: 12px;
+
+  gap: 9px;
+}
+
+.management-analysis .ma-order-meta-grid > div {
+  padding: 12px;
+
+  border-radius: 14px;
+}
+
+.management-analysis .ma-order-meta-grid span {
+  color: #64748b;
+
+  font-size: 9px;
+  line-height: 1.2;
+
+  font-weight: 950;
+}
+
+.management-analysis .ma-order-meta-grid strong {
+  margin-top: 5px;
+
+  color: #111827;
+
+  font-size: 12.5px;
+  line-height: 1.3;
+
+  font-weight: 950;
+}
+
+
+/* =========================================================
+   15. GRADE CHIPS
+========================================================= */
+
+.management-analysis .ma-grade-chips {
+  margin-top: 12px;
+
+  gap: 7px;
+}
+
+.management-analysis .ma-grade-chips span {
+  padding: 7px 10px;
+
+  font-size: 10px;
+  line-height: 1;
+
+  font-weight: 950;
+}
+
+
+/* =========================================================
+   16. MATERIAL DETAILS
+========================================================= */
+
+.management-analysis .ma-material-box {
+  margin-top: 12px;
+
+  padding: 14px;
+
+  border-left-width: 4px;
+
+  border-radius: 0 13px 13px 0;
+}
+
+.management-analysis .ma-material-box span {
+  font-size: 9px;
+  line-height: 1.2;
+
+  font-weight: 950;
+  letter-spacing: 0.55px;
+}
+
+.management-analysis .ma-material-box p {
+  margin-top: 7px;
+
+  color: #334155;
+
+  font-size: 12px;
+  line-height: 1.55;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   17. DESKTOP - GIVE ORDER CARDS MORE BREATHING SPACE
+========================================================= */
+
+@media (min-width: 901px) {
+
+  .management-analysis .ma-order-list {
+    gap: 16px;
+  }
+
+  .management-analysis .ma-metric-table td {
+    height: 72px;
+  }
+}
+
+
+/* =========================================================
+   18. TABLET / MOBILE
+   Keep buttons readable without making UI oversized
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .management-analysis .ma-metric-section .ma-section-heading h2 {
+    font-size: 19px;
+  }
+
+  .management-analysis .ma-metric-table th {
+    padding: 12px 10px;
+
+    font-size: 9px;
+  }
+
+  .management-analysis .ma-metric-table td {
+    padding: 13px 10px;
+  }
+
+  .management-analysis .ma-metric-name {
+    gap: 9px;
+  }
+
+  .management-analysis .ma-metric-name > span {
+    width: 36px;
+    height: 36px;
+
+    flex-basis: 36px;
+
+    border-radius: 11px;
+  }
+
+  .management-analysis .ma-metric-name strong {
+    font-size: 12.5px;
+  }
+
+  .management-analysis .ma-metric-value {
+    min-width: 100px;
+    min-height: 38px;
+
+    padding: 0 10px;
+
+    border-radius: 10px;
+
+    font-size: 12px;
+  }
+
+  .management-analysis .ma-drill-hero {
+    padding: 20px;
+  }
+
+  .management-analysis .ma-drill-hero > strong {
+    font-size: 25px;
+  }
+
+  .management-analysis .ma-drill-hero > p {
+    font-size: 11.5px;
+  }
+
+  .management-analysis .ma-order-card {
+    padding: 16px;
+  }
+
+  .management-analysis .ma-order-top h3 {
+    font-size: 15px;
+  }
+
+  .management-analysis .ma-order-top small,
+  .management-analysis .ma-order-date {
+    font-size: 10.5px;
+  }
+
+  .management-analysis .ma-order-quantity-main strong {
+    font-size: 19px;
+  }
+
+  .management-analysis .ma-order-metrics {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .management-analysis .ma-order-metrics span {
+    font-size: 9px;
+  }
+
+  .management-analysis .ma-order-metrics strong {
+    font-size: 12px;
+  }
+
+  .management-analysis .ma-order-meta-grid strong {
+    font-size: 11.5px;
+  }
+
+  .management-analysis .ma-material-box p {
+    font-size: 11px;
+  }
+}
+
+
+/* =========================================================
+   19. SMALL PHONE
+========================================================= */
+
+@media (max-width: 390px) {
+
+  .management-analysis .ma-metric-name strong {
+    font-size: 12px;
+  }
+
+  .management-analysis .ma-metric-value {
+    min-width: 94px;
+
+    font-size: 11.5px;
+  }
+
+  .management-analysis .ma-order-top h3 {
+    font-size: 14.5px;
+  }
+
+  .management-analysis .ma-order-metrics {
+    gap: 7px;
+  }
+
+  .management-analysis .ma-order-metrics > div {
+    padding: 10px;
+  }
+}
+/* =========================================================
+   MANAGEMENT ANALYSIS - ORDER DRILLDOWN FINAL UI OVERRIDE
+   Add this at the VERY END of ManagementAnalysis.css
+========================================================= */
+
+/* ---------------------------------------------------------
+   ORDER CARD
+--------------------------------------------------------- */
+
+.ma-order-card {
+  background: #ffffff;
+  border: 1px solid #e4e9f4;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.06),
+    0 2px 6px rgba(15, 23, 42, 0.03);
+  overflow: hidden;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.ma-order-card:hover {
+  transform: translateY(-2px);
+  border-color: #c7d2fe;
+  box-shadow:
+    0 14px 32px rgba(15, 23, 42, 0.09),
+    0 4px 10px rgba(79, 70, 229, 0.05);
+}
+
+
+/* ---------------------------------------------------------
+   TOP HEADER
+--------------------------------------------------------- */
+
+.ma-order-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.ma-order-heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ma-order-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ma-order-po {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  max-width: 100%;
+  padding: 6px 10px;
+
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #4f46e5;
+
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+
+  overflow-wrap: anywhere;
+}
+
+.ma-order-company {
+  color: #111827;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.ma-order-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  margin-top: 8px;
+
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ma-order-date svg {
+  color: #6366f1;
+}
+
+
+/* ---------------------------------------------------------
+   ORDER QUANTITY
+   IMPORTANT: prevents "20" and "MT" from splitting
+--------------------------------------------------------- */
+
+.ma-order-qty {
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  min-width: max-content;
+  padding: 8px 12px;
+
+  border: 1px solid #dfe4ff;
+  border-radius: 12px;
+
+  background: linear-gradient(
+    135deg,
+    #f5f7ff 0%,
+    #eef2ff 100%
+  );
+}
+
+.ma-order-qty span {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 4px 7px;
+
+  border-radius: 6px;
+  background: #e0e7ff;
+
+  color: #4f46e5;
+
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
+.ma-order-qty strong {
+  display: inline-block;
+
+  color: #111827;
+
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+}
+
+
+/* ---------------------------------------------------------
+   FOUR QUANTITY METRICS
+--------------------------------------------------------- */
+
+.ma-order-metric-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  margin: 0 0 16px;
+}
+
+.ma-order-metric-grid .ma-order-metric-item {
+  position: relative;
+
+  display: flex !important;
+  align-items: center;
+  gap: 11px;
+
+  min-width: 0;
+  min-height: 72px;
+
+  padding: 12px 14px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  overflow: hidden;
+}
+
+.ma-order-metric-icon {
+  flex: 0 0 38px;
+
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+}
+
+.ma-order-metric-copy {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  gap: 4px;
+}
+
+.ma-order-metric-copy span {
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+
+  text-transform: uppercase;
+  letter-spacing: 0.055em;
+}
+
+.ma-order-metric-copy strong {
+  color: #0f172a;
+
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.2;
+
+  white-space: nowrap;
+}
+
+
+/* ---------------------------------------------------------
+   DISPATCH TARGET - INDIGO
+--------------------------------------------------------- */
+
+.ma-order-metric-target {
+  background: linear-gradient(
+    135deg,
+    #eef2ff 0%,
+    #f8faff 100%
+  );
+  border-color: #dbe3ff !important;
+}
+
+.ma-order-metric-target .ma-order-metric-icon {
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+
+.ma-order-metric-target .ma-order-metric-copy strong {
+  color: #4338ca;
+}
+
+
+/* ---------------------------------------------------------
+   ACTUAL DISPATCH - GREEN
+--------------------------------------------------------- */
+
+.ma-order-metric-dispatch {
+  background: linear-gradient(
+    135deg,
+    #ecfdf5 0%,
+    #f7fffb 100%
+  );
+  border-color: #d1fae5 !important;
+}
+
+.ma-order-metric-dispatch .ma-order-metric-icon {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.ma-order-metric-dispatch .ma-order-metric-copy strong {
+  color: #047857;
+}
+
+
+/* ---------------------------------------------------------
+   TARGET PENDING - AMBER
+--------------------------------------------------------- */
+
+.ma-order-metric-pending {
+  background: linear-gradient(
+    135deg,
+    #fffbeb 0%,
+    #fffdf5 100%
+  );
+  border-color: #fde68a !important;
+}
+
+.ma-order-metric-pending .ma-order-metric-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.ma-order-metric-pending .ma-order-metric-copy strong {
+  color: #b45309;
+}
+
+
+/* ---------------------------------------------------------
+   ORDER BALANCE - VIOLET
+--------------------------------------------------------- */
+
+.ma-order-metric-balance {
+  background: linear-gradient(
+    135deg,
+    #faf5ff 0%,
+    #fdfaff 100%
+  );
+  border-color: #eadcff !important;
+}
+
+.ma-order-metric-balance .ma-order-metric-icon {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.ma-order-metric-balance .ma-order-metric-copy strong {
+  color: #6d28d9;
+}
+
+
+/* ---------------------------------------------------------
+   SALES PERSON / ORDER TYPE / STEEL MILL
+--------------------------------------------------------- */
+
+.ma-order-meta-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  margin-top: 0;
+}
+
+.ma-order-meta-grid .ma-order-meta-item,
+.ma-order-meta-grid > div {
+  min-width: 0;
+
+  padding: 11px 13px;
+
+  border: 1px solid #e5e9f2;
+  border-radius: 12px;
+
+  background: #f8fafc;
+}
+
+.ma-order-meta-grid span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #64748b;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.ma-order-meta-grid strong {
+  display: block;
+
+  color: #111827;
+
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+
+  overflow-wrap: anywhere;
+}
+
+.ma-order-meta-grid .ma-meta-wide {
+  grid-column: 1 / -1;
+}
+
+
+/* ---------------------------------------------------------
+   GRADES
+--------------------------------------------------------- */
+
+.ma-grade-section {
+  margin-top: 14px;
+}
+
+.ma-grade-label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #64748b;
+
+  font-size: 9px;
+  font-weight: 900;
+
+  letter-spacing: 0.07em;
+}
+
+.ma-grade-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+
+  margin: 0;
+}
+
+.ma-grade-chips > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 27px;
+  padding: 5px 10px;
+
+  border: 1px solid #ede9fe;
+  border-radius: 999px;
+
+  background: #faf5ff;
+
+  color: #7e22ce;
+
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+
+/* ---------------------------------------------------------
+   MATERIAL DETAILS
+--------------------------------------------------------- */
+
+.ma-material-box {
+  margin-top: 14px;
+  padding: 13px 14px;
+
+  border: 1px solid #edf0f6;
+  border-left: 4px solid #6366f1;
+  border-radius: 0 12px 12px 0;
+
+  background: #f8fafc;
+}
+
+.ma-material-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  margin-bottom: 7px;
+
+  color: #64748b;
+}
+
+.ma-material-title svg {
+  color: #6366f1;
+}
+
+.ma-material-title span {
+  color: #64748b;
+
+  font-size: 9px;
+  font-weight: 900;
+
+  letter-spacing: 0.06em;
+}
+
+.ma-material-box p {
+  margin: 0;
+
+  color: #334155;
+
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.55;
+
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+  .ma-order-card {
+    padding: 16px;
+  }
+
+  .ma-order-company {
+    font-size: 16px;
+  }
+
+  .ma-order-metric-copy strong {
+    font-size: 15px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+  .ma-order-card {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .ma-order-top {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ma-order-title-row {
+    align-items: flex-start;
+  }
+
+  .ma-order-company {
+    width: 100%;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .ma-order-qty {
+    width: 100%;
+    justify-content: space-between;
+
+    padding: 10px 12px;
+  }
+
+  .ma-order-qty strong {
+    font-size: 18px;
+  }
+
+  .ma-order-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .ma-order-metric-grid .ma-order-metric-item {
+    min-height: 78px;
+
+    align-items: flex-start;
+
+    padding: 10px;
+  }
+
+  .ma-order-metric-icon {
+    flex: 0 0 32px;
+
+    width: 32px;
+    height: 32px;
+
+    border-radius: 9px;
+  }
+
+  .ma-order-metric-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .ma-order-metric-copy span {
+    font-size: 8px;
+  }
+
+  .ma-order-metric-copy strong {
+    font-size: 14px;
+  }
+
+  .ma-order-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .ma-order-meta-grid .ma-meta-wide {
+    grid-column: auto;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONE
+========================================================= */
+
+@media (max-width: 430px) {
+  .ma-order-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ma-order-metric-grid .ma-order-metric-item {
+    min-height: 62px;
+    align-items: center;
+  }
+
+  .ma-order-metric-copy strong {
+    font-size: 16px;
+  }
+}
+/* =========================================================
+   GRADE ANALYSIS - FINAL MANAGEMENT VISIBILITY OVERRIDE
+   ADD AT ABSOLUTE END OF ManagementAnalysis.css
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   GRADE ANALYSIS SECTION
+--------------------------------------------------------- */
+
+.management-analysis .ma-grade-section {
+  margin-top: 0;
+}
+
+.management-analysis .ma-grade-section .ma-section-heading h2 {
+  color: #111827;
+
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1.2;
+
+  letter-spacing: -0.35px;
+}
+
+
+/* ---------------------------------------------------------
+   GRADE GRID
+--------------------------------------------------------- */
+
+.management-analysis .ma-grade-grid {
+  gap: 12px;
+}
+
+
+/* ---------------------------------------------------------
+   INDIVIDUAL GRADE CARD
+--------------------------------------------------------- */
+
+.management-analysis .ma-grade-card {
+  position: relative;
+
+  min-height: 78px;
+  padding: 13px 16px;
+
+  border: 1px solid #e0e5ef;
+  border-radius: 16px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 3px 10px rgba(15, 23, 42, 0.025);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+
+/* ---------------------------------------------------------
+   GRADE CARD HOVER
+--------------------------------------------------------- */
+
+.management-analysis .ma-grade-card:hover {
+  transform: translateY(-2px);
+
+  border-color: #c4b5fd;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #faf8ff 100%
+    );
+
+  box-shadow:
+    0 9px 22px rgba(99, 102, 241, 0.10);
+}
+
+
+/* ---------------------------------------------------------
+   LEFT GRADE ICON
+--------------------------------------------------------- */
+
+.management-analysis .ma-grade-card-icon {
+  width: 44px;
+  height: 44px;
+
+  flex: 0 0 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f5f3ff 0%,
+      #faf5ff 100%
+    );
+
+  color: #7c3aed;
+}
+
+.management-analysis .ma-grade-card-icon svg {
+  width: 21px;
+  height: 21px;
+
+  stroke-width: 2.4;
+}
+
+
+/* ---------------------------------------------------------
+   GRADE NAME
+--------------------------------------------------------- */
+
+.management-analysis .ma-grade-card strong,
+.management-analysis .ma-grade-card-name {
+  color: #172033;
+
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.2;
+
+  letter-spacing: -0.1px;
+}
+
+
+/* ---------------------------------------------------------
+   QUANTITY - MAIN IMPORTANT CHANGE
+
+   Makes:
+   70 MT
+   50 MT
+   21.496 MT
+   7.627 MT
+
+   clearly visible for management analysis.
+--------------------------------------------------------- */
+
+.management-analysis .ma-grade-card small,
+.management-analysis .ma-grade-card-qty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: fit-content;
+
+  margin-top: 6px;
+  padding: 5px 9px;
+
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+
+  background: #f5f3ff;
+
+  color: #5b21b6;
+
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+
+  letter-spacing: 0.01em;
+
+  white-space: nowrap;
+}
+
+
+/* ---------------------------------------------------------
+   OPTIONAL: emphasize MT unit slightly differently
+   Works even if whole value is one text node.
+--------------------------------------------------------- */
+
+.management-analysis .ma-grade-card small {
+  text-transform: uppercase;
+}
+
+
+/* ---------------------------------------------------------
+   RIGHT ARROW
+--------------------------------------------------------- */
+
+.management-analysis .ma-grade-card > svg:last-child {
+  width: 18px;
+  height: 18px;
+
+  color: #818cf8;
+
+  stroke-width: 2.4;
+
+  transition:
+    transform 0.18s ease,
+    color 0.18s ease;
+}
+
+.management-analysis .ma-grade-card:hover > svg:last-child {
+  color: #4f46e5;
+
+  transform: translateX(3px);
+}
+
+
+/* ---------------------------------------------------------
+   SELECTED / ACTIVE GRADE
+   If existing UI adds active/selected class
+--------------------------------------------------------- */
+
+.management-analysis .ma-grade-card.active,
+.management-analysis .ma-grade-card.selected,
+.management-analysis .ma-grade-card.is-active {
+  border-color: #a78bfa;
+
+  background:
+    linear-gradient(
+      135deg,
+      #faf5ff 0%,
+      #f5f3ff 100%
+    );
+
+  box-shadow:
+    0 8px 22px rgba(124, 58, 237, 0.12);
+}
+
+
+/* =========================================================
+   DESKTOP - EXTRA VISIBILITY
+========================================================= */
+
+@media (min-width: 901px) {
+
+  .management-analysis .ma-grade-card {
+    min-height: 82px;
+  }
+
+  .management-analysis .ma-grade-card strong,
+  .management-analysis .ma-grade-card-name {
+    font-size: 14.5px;
+  }
+
+  .management-analysis .ma-grade-card small,
+  .management-analysis .ma-grade-card-qty {
+    font-size: 12.5px !important;
+
+    padding: 5px 10px;
+  }
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .management-analysis .ma-grade-section .ma-section-heading h2 {
+    font-size: 20px;
+  }
+
+  .management-analysis .ma-grade-card {
+    min-height: 74px;
+    padding: 12px 14px;
+  }
+
+  .management-analysis .ma-grade-card-icon {
+    width: 40px;
+    height: 40px;
+
+    flex-basis: 40px;
+  }
+
+  .management-analysis .ma-grade-card strong,
+  .management-analysis .ma-grade-card-name {
+    font-size: 13.5px;
+  }
+
+  .management-analysis .ma-grade-card small,
+  .management-analysis .ma-grade-card-qty {
+    font-size: 11.5px !important;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .management-analysis .ma-grade-grid {
+    gap: 9px;
+  }
+
+  .management-analysis .ma-grade-card {
+    min-height: 72px;
+
+    padding: 11px 12px;
+
+    border-radius: 14px;
+  }
+
+  .management-analysis .ma-grade-card strong,
+  .management-analysis .ma-grade-card-name {
+    font-size: 13px;
+  }
+
+  .management-analysis .ma-grade-card small,
+  .management-analysis .ma-grade-card-qty {
+    margin-top: 5px;
+
+    padding: 5px 8px;
+
+    font-size: 11.5px !important;
+  }
+}
+
+/* =========================================================
+   FINAL MOBILE FIX
+   Hide ONLY period/filter reset button below Apply
+   Keep header refresh button visible
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .management-analysis .ma-filter-reset,
+  .management-analysis .ma-filter-actions .ma-reset-btn,
+  .management-analysis .ma-filter-actions button:last-child {
+    display: none !important;
+  }
+
+  /* Apply button should use full width */
+  .management-analysis .ma-filter-actions {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .management-analysis .ma-filter-actions .ma-apply-btn,
+  .management-analysis .ma-filter-actions button:first-child {
+    display: flex !important;
+    width: 100% !important;
+    min-height: 46px;
+
+    align-items: center;
+    justify-content: center;
+
+    margin: 0 !important;
+  }
+}

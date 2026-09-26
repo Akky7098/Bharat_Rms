@@ -1,16 +1,29 @@
+/* =========================================================
+   APP.CSS
+   Login styles only
+   Prevents login CSS from affecting Dashboard / Enquiry /
+   Sales Order / Dispatch / other RMS modules
+========================================================= */
+
 .login-container {
   width: 300px;
+  max-width: calc(100% - 32px);
   margin: 100px auto;
+  box-sizing: border-box;
 }
 
-input {
+/* Only inputs inside login */
+.login-container input {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
+  box-sizing: border-box;
 }
 
-button {
+/* Only buttons inside login */
+.login-container button {
   width: 100%;
   padding: 10px;
   cursor: pointer;
+  box-sizing: border-box;
 }

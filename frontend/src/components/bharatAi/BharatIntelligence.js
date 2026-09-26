@@ -1227,8 +1227,9 @@ const AttachmentChip = ({
    MAIN COMPONENT
 ========================================================= */
 
-const BharatIntelligence =
-  () => {
+const BharatIntelligence = ({
+  headerMode = false,
+}) => {
     const [
       isOpen,
       setIsOpen,
@@ -2898,44 +2899,54 @@ const fileInputRef =
 
         {/* GLOBAL LAUNCHER */}
 
-        {!isOpen && (
-          <button
-            type="button"
-            className="bharat-ai-launcher bharat-ai-launcher-next"
-            onClick={() =>
-              setIsOpen(
-                true
-              )
-            }
-            aria-label="Open Bharat Intelligence"
-          >
-            <div className="bharat-ai-launcher-glow" />
+        {/* BHARAT AI LAUNCHER */}
 
-            <div className="bharat-ai-launcher-icon bharat-ai-launcher-icon-next">
-              <Icon
-                name="sparkles"
-                size={20}
-              />
-            </div>
+{!isOpen && (
+  <button
+    type="button"
+    className={
+      headerMode
+        ? "bharat-ai-header-launcher"
+        : "bharat-ai-launcher bharat-ai-launcher-next"
+    }
+    onClick={() => setIsOpen(true)}
+    aria-label="Open Bharat Intelligence"
+    title="Ask Bharat Intelligence"
+  >
+    <div
+      className={
+        headerMode
+          ? "bharat-ai-header-launcher-icon"
+          : "bharat-ai-launcher-icon bharat-ai-launcher-icon-next"
+      }
+    >
+      <Icon
+        name="sparkles"
+        size={20}
+      />
+    </div>
 
-            <div className="bharat-ai-launcher-copy">
-              <strong>
-                Ask Bharat
-              </strong>
+    <div
+      className={
+        headerMode
+          ? "bharat-ai-header-launcher-copy"
+          : "bharat-ai-launcher-copy"
+      }
+    >
+      <strong>Ask Bharat</strong>
+      <span>Intelligence</span>
+    </div>
 
-              <span>
-                Intelligence
-              </span>
-            </div>
-
-            <span className="bharat-ai-launcher-chevron">
-              <Icon
-                name="chevron"
-                size={15}
-              />
-            </span>
-          </button>
-        )}
+    {!headerMode && (
+      <span className="bharat-ai-launcher-chevron">
+        <Icon
+          name="chevron"
+          size={15}
+        />
+      </span>
+    )}
+  </button>
+)}
       </>
     );
   };

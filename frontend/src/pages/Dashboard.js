@@ -1,6 +1,7 @@
-import {
+import React, {
   useEffect,
   useState,
+  useCallback,
 } from "react";
 
 import "./Dashboard.css";
@@ -19,10 +20,13 @@ import EnquiryList from "./EnquiryList";
 import SalesOrderList from "./SalesOrderList";
 import DispatchPage from "./DispatchPage";
 import TimesheetPage from "./TimesheetPage";
+import ManagementAnalysis from "./ManagementAnalysis";
 import ReceivablePage from "./ReceivablePage";
 import ColdCallList from "./ColdCallList";
 import DocumentPage from "./DocumentPage";
+import PdfGeneratorPage from "../pages/pdfgeneration/PdfGeneration";
 
+import BharatIntelligence from "../components/bharatAi/BharatIntelligence";
 import NotificationBell from "../components/NotificationBell";
 
 /*
@@ -61,22 +65,41 @@ function Dashboard() {
           "user"
         ) || "{}"
       );
-  } catch {
-    user = {};
-  }
+ } catch {
+  user = {};
+}
 
-  /* =========================================================
-     INITIAL ACTIVE MODULE
-  ========================================================= */
+/* =========================================================
+   SUPER ADMIN
+
+   Handles:
+   super_admin
+   super-admin
+   super admin
+========================================================= */
+
+const normalizedUserRole =
+  String(user?.role || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+const isSuperAdmin =
+  normalizedUserRole ===
+  "super_admin";
+
+/* =========================================================
+   INITIAL ACTIVE MODULE
+========================================================= */
 
   const getInitialActive =
-    () => {
-      const rawHash =
-        window.location.hash.replace(
-          "#",
-          ""
-        ) ||
-        "dashboard";
+  useCallback(() => {
+    const rawHash =
+      window.location.hash.replace(
+        "#",
+        ""
+      ) ||
+      "dashboard";
 
       const hash =
         rawHash.split(
@@ -111,12 +134,33 @@ function Dashboard() {
         return "sheet";
       }
 
-      if (
-        hash ===
-        "sales-order"
-      ) {
-        return "salesOrder";
-      }
+     if (
+  hash ===
+  "sales-order"
+) {
+  return "salesOrder";
+}
+
+/* =====================================================
+   MANAGEMENT ANALYSIS
+   SUPER ADMIN ONLY
+===================================================== */
+
+if (
+  hash ===
+  "management-analysis"
+) {
+  return isSuperAdmin
+    ? "managementAnalysis"
+    : "dashboard";
+}
+
+if (
+  hash ===
+  "pdf-generator"
+) {
+  return "pdfGenerator";
+}
 
       if (
         hash ===
@@ -181,8 +225,8 @@ function Dashboard() {
         return "support";
       }
 
-      return "dashboard";
-    };
+         return "dashboard";
+  }, [isSuperAdmin]);
 
   /* =========================================================
      STATE
@@ -285,32 +329,54 @@ function Dashboard() {
     },
 
     {
-      key:
-        "dispatch",
+  key:
+    "dispatch",
 
-      label:
-        "Dispatch",
+  label:
+    "Dispatch",
 
-      icon:
-        "🚚",
+  icon:
+    "🚚",
 
-      desc:
-        "Invoices & LR copies",
-    },
+  desc:
+    "Invoices & LR copies",
+},
 
-    {
-      key:
-        "orderTracking",
+/* =====================================================
+   SUPER ADMIN ONLY
+===================================================== */
 
-      label:
-        "Order Tracking",
+...(isSuperAdmin
+  ? [
+      {
+        key:
+          "managementAnalysis",
 
-      icon:
-        "📦",
+        label:
+          "Management Analysis",
 
-      desc:
-        "Factory status, chat & updates",
-    },
+        icon:
+          "📈",
+
+        desc:
+          "H.O., Steel Mill & grade insights",
+      },
+    ]
+  : []),
+
+{
+  key:
+    "orderTracking",
+
+  label:
+    "Order Tracking",
+
+  icon:
+    "📦",
+
+  desc:
+    "Factory status, chat & updates",
+},
 
     {
       key:
@@ -409,6 +475,20 @@ function Dashboard() {
       desc:
         "FAQ & issue tickets",
     },
+
+    {
+  key:
+    "pdfGenerator",
+
+  label:
+    "PDF Generator",
+
+  icon:
+    "📑",
+
+  desc:
+    "Generate business PDFs",
+},
   ];
 
   /* =========================================================
@@ -454,6 +534,9 @@ function Dashboard() {
 
         salesOrder:
           "sales-order",
+
+          managementAnalysis:
+  "management-analysis",
 
         orderTracking:
           "order-tracking",
@@ -561,11 +644,20 @@ function Dashboard() {
   useEffect(
     () => {
       window.__openDashboardModule =
-        (
-          moduleKey,
-          filters = {}
-        ) => {
-          setModulePayload(
+  (
+    moduleKey,
+    filters = {}
+  ) => {
+
+    if (
+      moduleKey ===
+        "managementAnalysis" &&
+      !isSuperAdmin
+    ) {
+      return;
+    }
+
+    setModulePayload(
             {
               moduleKey,
 
@@ -589,40 +681,41 @@ function Dashboard() {
         delete window.__openDashboardModule;
       };
     },
-    []
+    [isSuperAdmin]
+
   );
 
   /* =========================================================
      HASH CHANGE
   ========================================================= */
 
-  useEffect(
-    () => {
-      const handleHashChange =
-        () => {
-          setActive(
-            getInitialActive()
-          );
+ useEffect(
+  () => {
+    const handleHashChange =
+      () => {
+        setActive(
+          getInitialActive()
+        );
 
-          setMobileMenuOpen(
-            false
-          );
-        };
+        setMobileMenuOpen(
+          false
+        );
+      };
 
-      window.addEventListener(
+    window.addEventListener(
+      "hashchange",
+      handleHashChange
+    );
+
+    return () => {
+      window.removeEventListener(
         "hashchange",
         handleHashChange
       );
-
-      return () => {
-        window.removeEventListener(
-          "hashchange",
-          handleHashChange
-        );
-      };
-    },
-    []
-  );
+    };
+  },
+  [getInitialActive]
+);
 
   /* =========================================================
      DASHBOARD MODULES
@@ -741,12 +834,33 @@ function Dashboard() {
   ========================================================= */
 
   const handleMenuClick =
-    (
-      key
-    ) => {
-      setModulePayload(
-        null
+  (
+    key
+  ) => {
+
+    /* =====================================================
+       MANAGEMENT ANALYSIS SECURITY GUARD
+    ===================================================== */
+
+    if (
+      key ===
+        "managementAnalysis" &&
+      !isSuperAdmin
+    ) {
+      setActive(
+        "dashboard"
       );
+
+      setMobileMenuOpen(
+        false
+      );
+
+      return;
+    }
+
+    setModulePayload(
+      null
+    );
 
       const hashMap = {
         dashboard:
@@ -763,6 +877,9 @@ function Dashboard() {
 
         salesOrder:
           "sales-order",
+
+          managementAnalysis:
+  "management-analysis",
 
         dispatch:
           "dispatch",
@@ -790,6 +907,8 @@ function Dashboard() {
 
         itSupport:
           "it-support",
+          pdfGenerator:
+  "pdf-generator",
       };
 
       window.history.replaceState(
@@ -876,17 +995,11 @@ function Dashboard() {
 
       <GlobalAttendanceLocationTracker />
 
-      {/* =====================================================
-          NOTIFICATIONS
-      ====================================================== */}
+{/* =====================================================
+    MOBILE TOPBAR
+====================================================== */}
 
-      <NotificationBell />
-
-      {/* =====================================================
-          MOBILE TOPBAR
-      ====================================================== */}
-
-      <div className="mobile-topbar">
+<div className="mobile-topbar">
         <div className="mobile-brand">
           <div className="mobile-logo">
             <img
@@ -1234,37 +1347,71 @@ function Dashboard() {
         </aside>
 
         {/* ===================================================
-            MAIN
-        =================================================== */}
+    MAIN AREA
+=================================================== */}
 
-        <main className="main">
-          {/* =================================================
-              DASHBOARD MODULES
-          ================================================= */}
+<div className="dashboard-main-area">
 
-          {active ===
-            "dashboard" && (
+  {/* =================================================
+      DESKTOP GLOBAL HEADER
+      Bharat AI + Notifications
+  ================================================= */}
+
+  <header className="desktop-global-header">
+    <div className="desktop-global-header-spacer" />
+
+    <div className="desktop-global-actions">
+<BharatIntelligence headerMode />     
+ <NotificationBell />
+    </div>
+  </header>
+
+  {/* =================================================
+      SCROLLABLE PAGE CONTENT
+  ================================================= */}
+
+  <main className="main">
+
+    {/* =================================================
+        DASHBOARD MODULES
+    ================================================= */}
+
+    {active ===
+      "dashboard" && (
             <>
               <div className="ios-dashboard-home">
                 <div className="ios-dashboard-header">
                   <div className="ios-dashboard-top-row">
-                    <div className="ios-dashboard-logo-box">
-                      <img
-                        src="/logo.png"
-                        alt="BSSPL Logo"
-                      />
-                    </div>
+  <div className="ios-dashboard-logo-box">
+    <img
+      src="/logo.png"
+      alt="BSSPL Logo"
+    />
+  </div>
 
-                    <button
-                      className="ios-dashboard-logout"
-                      onClick={
-                        handleLogout
-                      }
-                      type="button"
-                    >
-                      Logout
-                    </button>
-                  </div>
+  <div className="ios-dashboard-header-actions">
+
+  {/* Bharat AI */}
+  <div className="ios-dashboard-bharat-ai">
+    <BharatIntelligence headerMode />
+  </div>
+
+  {/* Notification */}
+  <div className="ios-dashboard-notification">
+    <NotificationBell />
+  </div>
+
+  {/* Logout */}
+  <button
+    className="ios-dashboard-logout"
+    onClick={handleLogout}
+    type="button"
+  >
+    Logout
+  </button>
+
+</div>
+</div>
 
                   <p className="ios-welcome">
                     Welcome back,
@@ -1452,6 +1599,17 @@ function Dashboard() {
             <DispatchPage />
           )}
 
+
+          {active ===
+  "managementAnalysis" &&
+  isSuperAdmin && (
+    <ManagementAnalysis
+      goDashboardHome={
+        goDashboardModules
+      }
+    />
+)}
+
           {/* =================================================
               TIMESHEET
           ================================================= */}
@@ -1511,6 +1669,15 @@ function Dashboard() {
           )}
 
           {/* =================================================
+    PDF GENERATOR
+================================================= */}
+
+{active ===
+  "pdfGenerator" && (
+  <PdfGeneratorPage />
+)}
+
+          {/* =================================================
               SUPPORT
           ================================================= */}
 
@@ -1527,10 +1694,14 @@ function Dashboard() {
             "itSupport" && (
             <ITSupportPage />
           )}
-        </main>
-      </div>
+
+
+              </main>
+
     </div>
-  );
+  </div>
+</div>
+);
 }
 
 export default Dashboard;

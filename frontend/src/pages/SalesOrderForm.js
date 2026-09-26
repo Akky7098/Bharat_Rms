@@ -67,13 +67,79 @@ const orderTypeOptions = [
 const trackingOrderTypeOptions = [
   {
     value: "N.H.O.",
-    label: "N.H.O.",
+    label: "Steel Mill",
     description: "Mill / manufacturing process tracking",
   },
   {
     value: "H.O.",
     label: "H.O.",
     description: "Cutting + machining process tracking",
+  },
+];
+
+/* =========================================================
+   STEEL MILL OPTIONS
+
+   value = exact value saved in database
+   label = clean mill name shown to user
+
+   IMPORTANT:
+   Frontend shows MILL NAME ONLY.
+   Location is intentionally hidden from the dropdown.
+========================================================= */
+
+const steelMillOptions = [
+  {
+    value: "Punjab General",
+    label: "Punjab General",
+  },
+  {
+    value: "Polystud Lifting",
+    label: "Polystud Lifting",
+  },
+  {
+    value: "Jassar Forging",
+    label: "Jassar Forging",
+  },
+  {
+    value: "S.S. Steel - Sirhind",
+    label: "S.S. Steel",
+  },
+  {
+    value: "Skyway , Ludhiana",
+    label: "Skyway",
+  },
+  {
+    value: "kuber concast - Mandi Gobindgarh",
+    label: "Kuber Concast",
+  },
+  {
+    value: "Pushpanjali strip",
+    label: "Pushpanjali Strip",
+  },
+  {
+    value: "Shakti Rolling - Mandi Gobindgarh",
+    label: "Shakti Rolling",
+  },
+  {
+    value: "AV Alloys - Mandi Gobindgarh",
+    label: "AV Alloys",
+  },
+  {
+    value: "Kesari Alloys - Bhiwadi",
+    label: "Kesari Alloys",
+  },
+  {
+    value: "East India - Durgapur",
+    label: "East India",
+  },
+  {
+    value: "Behari Lal - Mandi Gobindgarh",
+    label: "Behari Lal",
+  },
+  {
+    value: "Others",
+    label: "Others",
   },
 ];
 
@@ -297,6 +363,10 @@ const getFileName = (fileObj) => {
 const initialForm = {
   orderType: "domestic",
   trackingOrderType: "N.H.O.",
+
+  steelMill: "",
+  otherSteelMill: "",
+
   companyName: "",
   companyAddress: "",
   gstinNumber: "",
@@ -527,6 +597,18 @@ trackingOrderType: resolveOptionValue(
   "N.H.O."
 ),
 
+steelMill: getFirstFromOrder(
+  editOrder,
+  ["steelMill"],
+  ""
+),
+
+otherSteelMill: getFirstFromOrder(
+  editOrder,
+  ["otherSteelMill"],
+  ""
+),
+
 companyName: getFirstFromOrder(editOrder, ["companyName"]),
       companyAddress: getFirstFromOrder(editOrder, ["companyAddress"]),
       gstinNumber: getFirstFromOrder(editOrder, ["gstinNumber", "gstNumber"]),
@@ -712,7 +794,12 @@ supplyFinish: getFirstFromOrder(
 const isNHOOrder =
   form.trackingOrderType ===
   "N.H.O.";
-  const isPaymentApproved = form.isPaymentTermsApprovedByManagement === "true";
+
+const isOtherSteelMill =
+  isNHOOrder &&
+  form.steelMill === "Others";
+
+const isPaymentApproved = form.isPaymentTermsApprovedByManagement === "true";
   const isOtherPaymentTerms = form.paymentTerms === "other";
   const isOtherSupplyCondition = form.supplyCondition === "other";
   const billingDifferent = form.billingSameAsCompany === "false";
@@ -853,13 +940,34 @@ const checkEnquiryNumber = async (numberValue = form.enquiryNumber) => {
       }
     });
 
-    if (
+if (
   !["H.O.", "N.H.O."].includes(
     form.trackingOrderType
   )
 ) {
   newErrors.trackingOrderType =
     "Please select H.O. or N.H.O.";
+}
+
+/* =========================================================
+   STEEL MILL VALIDATION
+
+   Required only when N.H.O. / Steel Mill is selected.
+========================================================= */
+
+if (isNHOOrder) {
+  if (!String(form.steelMill || "").trim()) {
+    newErrors.steelMill =
+      "Please select a steel mill.";
+  }
+
+  if (
+    form.steelMill === "Others" &&
+    !String(form.otherSteelMill || "").trim()
+  ) {
+    newErrors.otherSteelMill =
+      "Please enter the mill name.";
+  }
 }
 
     if (isDomesticOrder) {
@@ -1002,13 +1110,42 @@ if (
       return;
     }
 
-    setForm((prev) => {
-      const updated = {
-        ...prev,
-        [name]: value,
-      };
+setForm((prev) => {
+  const updated = {
+    ...prev,
+    [name]: value,
+  };
 
-      if (name === "orderType" && value !== "domestic") {
+  /* =======================================================
+     TRACKING TYPE CHANGE
+
+     H.O. does not have a Steel Mill.
+     Clear both mill fields immediately.
+  ======================================================= */
+
+  if (
+    name === "trackingOrderType" &&
+    value !== "N.H.O."
+  ) {
+    updated.steelMill = "";
+    updated.otherSteelMill = "";
+  }
+
+  /* =======================================================
+     STEEL MILL CHANGE
+
+     Clear custom mill name whenever user moves away
+     from Others.
+  ======================================================= */
+
+  if (
+    name === "steelMill" &&
+    value !== "Others"
+  ) {
+    updated.otherSteelMill = "";
+  }
+
+  if (name === "orderType" && value !== "domestic") {
         updated.gstinNumber = "";
         updated.billingGstinNumber = "";
         updated.shippingGstinNumber = "";
@@ -1068,13 +1205,26 @@ if (name === "enquiryNumber") {
     });
   };
 
-  const buildPayload = () => {
-    return {
-      orderType: form.orderType || "domestic",
-       trackingOrderType:
+ const buildPayload = () => {
+  return {
+    orderType: form.orderType || "domestic",
+
+    trackingOrderType:
       form.trackingOrderType ||
       "N.H.O.",
-      companyName: form.companyName.trim(),
+
+    steelMill:
+      form.trackingOrderType === "N.H.O."
+        ? String(form.steelMill || "").trim()
+        : "",
+
+    otherSteelMill:
+      form.trackingOrderType === "N.H.O." &&
+      form.steelMill === "Others"
+        ? String(form.otherSteelMill || "").trim()
+        : "",
+
+    companyName: form.companyName.trim(),
       companyAddress: form.companyAddress.trim(),
       gstinNumber: isDomesticOrder ? form.gstinNumber.trim() : "",
 
@@ -1405,15 +1555,108 @@ setIsSubmitting(true);
     and machining.
   </small>
 
-  {errorText(
+   {errorText(
     "trackingOrderType"
   )}
 </div>
 
-          <div
-            className={fieldClass("companyName")}
-            {...refProp("companyName")}
-          >
+{/* =====================================================
+    STEEL MILL
+
+    Visible ONLY for N.H.O.
+===================================================== */}
+
+{isNHOOrder && (
+  <div
+    className={fieldClass(
+      "steelMill",
+      "steel-mill-field"
+    )}
+    {...refProp("steelMill")}
+  >
+    <label>
+      {mandatoryLabel("Steel Mill")}
+    </label>
+
+    <div className="steel-mill-select-wrap">
+      <select
+        name="steelMill"
+        value={form.steelMill}
+        onChange={handleChange}
+        className="steel-mill-select"
+      >
+        <option value="">
+          Select Steel Mill
+        </option>
+
+        {steelMillOptions.map(
+          (mill) => (
+            <option
+              key={mill.value}
+              value={mill.value}
+            >
+              {mill.label}
+            </option>
+          )
+        )}
+      </select>
+
+      <span
+        className="steel-mill-select-icon"
+        aria-hidden="true"
+      >
+        ▾
+      </span>
+    </div>
+
+    <small className="steel-mill-hint">
+      Select the mill assigned to this order.
+    </small>
+
+    {errorText("steelMill")}
+  </div>
+)}
+
+{/* =====================================================
+    OTHER STEEL MILL
+
+    Visible ONLY when Others is selected
+===================================================== */}
+
+{isOtherSteelMill && (
+  <div
+    className={fieldClass(
+      "otherSteelMill",
+      "steel-mill-field other-steel-mill-field"
+    )}
+    {...refProp("otherSteelMill")}
+  >
+    <label>
+      {mandatoryLabel("Mill Name")}
+    </label>
+
+    <input
+      type="text"
+      name="otherSteelMill"
+      value={form.otherSteelMill}
+      onChange={handleChange}
+      placeholder="Enter steel mill name"
+      autoComplete="off"
+      maxLength={120}
+    />
+
+    <small className="steel-mill-hint">
+      Enter the mill name exactly as it should appear.
+    </small>
+
+    {errorText("otherSteelMill")}
+  </div>
+)}
+
+<div
+  className={fieldClass("companyName")}
+  {...refProp("companyName")}
+>
             <label>{mandatoryLabel("Company Name")}</label>
             <input
               name="companyName"

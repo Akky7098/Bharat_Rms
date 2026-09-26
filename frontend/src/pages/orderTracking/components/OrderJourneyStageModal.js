@@ -89,9 +89,14 @@ const OrderJourneyStageModal = ({
     <div
       className="ot-journey-modal-backdrop"
       role="presentation"
-      onMouseDown={
-        onClose
-      }
+      onMouseDown={(event) => {
+  if (
+    event.target ===
+    event.currentTarget
+  ) {
+    onClose();
+  }
+}}
     >
       <section
         className="ot-journey-modal"

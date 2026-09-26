@@ -1,0 +1,1611 @@
+/* =========================================================
+   PDF GENERATOR
+========================================================= */
+
+.pdfgen-page {
+  width: 100%;
+  height: calc(100vh - 40px);
+  min-height: 0;
+  padding: 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(13, 148, 136, 0.08),
+      transparent 28%
+    ),
+    #f4f7f8;
+  border-radius: 18px;
+  color: #0f172a;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.pdfgen-header {
+  flex-shrink: 0;
+  min-height: 84px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  border-radius: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #071b2b 0%,
+      #0b3440 52%,
+      #087f78 100%
+    );
+
+  box-shadow:
+    0 14px 32px rgba(15, 23, 42, 0.16);
+}
+
+.pdfgen-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pdfgen-header h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+}
+
+.pdfgen-header p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pdfgen-back-btn {
+  display: none;
+
+  width: 40px;
+  height: 40px;
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+
+  font-size: 29px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pdfgen-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pdfgen-refresh-btn {
+  width: 42px;
+  height: 42px;
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+
+  font-size: 20px;
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.pdfgen-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.pdfgen-refresh-btn.is-refreshing {
+  animation: pdfgenSpin 0.8s linear infinite;
+}
+
+@keyframes pdfgenSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pdfgen-create-btn {
+  height: 42px;
+  padding: 0 18px;
+
+  border: none;
+  border-radius: 12px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  background: #ffffff;
+  color: #075e59;
+
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.16);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.pdfgen-create-btn span {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.pdfgen-create-btn:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.pdfgen-stats {
+  flex-shrink: 0;
+
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+
+  margin-bottom: 10px;
+}
+
+.pdfgen-stat-card {
+  min-height: 67px;
+
+  padding: 11px 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  background: #ffffff;
+
+  border:
+    1px solid #e2e8f0;
+
+  border-radius: 15px;
+
+  box-shadow:
+    0 7px 18px rgba(15, 23, 42, 0.055);
+}
+
+.pdfgen-stat-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #e8f7f4;
+  color: #08766f;
+
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.pdfgen-stat-card span {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+}
+
+.pdfgen-stat-card strong {
+  display: block;
+
+  color: #0f172a;
+
+  font-size: 17px;
+  font-weight: 900;
+}
+
+
+/* =========================================================
+   FILTER
+========================================================= */
+
+.pdfgen-filter-card {
+  flex-shrink: 0;
+
+  padding: 12px 14px;
+  margin-bottom: 10px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow:
+    0 8px 20px rgba(15, 23, 42, 0.055);
+}
+
+.pdfgen-filter-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 10px;
+}
+
+.pdfgen-filter-title-row h3 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.pdfgen-filter-title-row p {
+  margin: 2px 0 0;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.pdfgen-mobile-filter-toggle {
+  display: none;
+}
+
+.pdfgen-filter-grid {
+  display: grid;
+
+  grid-template-columns:
+    1.1fr
+    1fr
+    1.3fr
+    0.9fr
+    0.9fr
+    0.9fr
+    auto;
+
+  align-items: end;
+  gap: 9px;
+}
+
+.pdfgen-filter-field {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.pdfgen-filter-field label {
+  margin-bottom: 5px;
+
+  color: #475569;
+
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.pdfgen-filter-field input,
+.pdfgen-filter-field select {
+  width: 100%;
+  height: 35px;
+
+  padding: 0 9px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+
+  outline: none;
+
+  background: #f8fafc;
+  color: #0f172a;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  transition: 0.2s ease;
+}
+
+.pdfgen-filter-field input:focus,
+.pdfgen-filter-field select:focus {
+  border-color: #0d9488;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.pdfgen-filter-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.pdfgen-apply-btn,
+.pdfgen-clear-btn {
+  height: 35px;
+
+  padding: 0 12px;
+
+  border: none;
+  border-radius: 9px;
+
+  font-size: 10px;
+  font-weight: 900;
+
+  cursor: pointer;
+}
+
+.pdfgen-apply-btn {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.pdfgen-clear-btn {
+  background: #eef2f4;
+  color: #334155;
+}
+
+
+/* =========================================================
+   TABLE CARD
+========================================================= */
+
+.pdfgen-table-card {
+  flex: 1;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 17px;
+
+  box-shadow:
+    0 10px 26px rgba(15, 23, 42, 0.07);
+}
+
+.pdfgen-table-head {
+  flex-shrink: 0;
+
+  min-height: 48px;
+
+  padding: 9px 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pdfgen-table-head h3 {
+  margin: 0;
+
+  font-size: 13px;
+  font-weight: 900;
+
+  color: #0f172a;
+}
+
+.pdfgen-table-head p {
+  margin: 2px 0 0;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.pdfgen-table-wrapper {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+
+  overflow: auto;
+}
+
+.pdfgen-table {
+  width: 100%;
+  min-width: 1220px;
+
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.pdfgen-table th,
+.pdfgen-table td {
+  padding: 10px 11px;
+
+  border-bottom: 1px solid #edf1f5;
+
+  text-align: left;
+  vertical-align: middle;
+
+  color: #334155;
+
+  font-size: 11px;
+}
+
+.pdfgen-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+
+  padding-top: 10px;
+  padding-bottom: 10px;
+
+  background: #0b2634;
+  color: #ffffff;
+
+  font-size: 9.5px;
+  font-weight: 900;
+
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.pdfgen-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.pdfgen-table tbody tr:nth-child(even) {
+  background: #fafcfd;
+}
+
+.pdfgen-table tbody tr:hover {
+  background: #f0f9f7;
+}
+
+.pdfgen-index {
+  color: #94a3b8 !important;
+  font-weight: 800;
+}
+
+.pdfgen-doc-cell {
+  min-width: 175px;
+
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pdfgen-doc-icon {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #0f766e,
+      #0b4f5a
+    );
+
+  color: #ffffff;
+
+  font-size: 9px;
+  font-weight: 950;
+
+  box-shadow:
+    0 5px 12px rgba(15, 118, 110, 0.2);
+}
+
+.pdfgen-doc-cell strong {
+  display: block;
+
+  margin-bottom: 2px;
+
+  color: #0f172a;
+
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.pdfgen-doc-cell span {
+  display: block;
+
+  color: #94a3b8;
+
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.pdfgen-number {
+  color: #0f766e;
+
+  font-size: 10.5px;
+  font-weight: 900;
+}
+
+.pdfgen-revision {
+  display: inline-flex;
+
+  padding: 4px 7px;
+
+  border-radius: 7px;
+
+  background: #f1f5f9;
+  color: #475569;
+
+  font-size: 9.5px;
+  font-weight: 850;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.pdfgen-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 68px;
+
+  padding: 5px 8px;
+
+  border-radius: 999px;
+
+  font-size: 9px;
+  font-weight: 900;
+
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pdfgen-status.status-draft {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.pdfgen-status.status-generated {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.pdfgen-status.status-revised {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.pdfgen-status.status-cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+
+/* =========================================================
+   TABLE ACTIONS
+========================================================= */
+
+.pdfgen-view-btn {
+  display: inline-flex;
+
+  padding: 6px 9px;
+
+  border-radius: 8px;
+
+  background: #e6f6f3;
+  color: #0f766e;
+
+  text-decoration: none;
+
+  font-size: 9.5px;
+  font-weight: 900;
+}
+
+.pdfgen-view-btn:hover {
+  background: #ccfbf1;
+}
+
+.pdfgen-no-pdf {
+  color: #94a3b8;
+
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.pdfgen-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pdfgen-edit-btn,
+.pdfgen-delete-btn {
+  height: 29px;
+
+  padding: 0 9px;
+
+  border: none;
+  border-radius: 7px;
+
+  cursor: pointer;
+
+  font-size: 9.5px;
+  font-weight: 850;
+}
+
+.pdfgen-edit-btn {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.pdfgen-delete-btn {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.pdfgen-empty {
+  padding: 35px !important;
+  text-align: center !important;
+}
+
+.pdfgen-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pdfgen-empty-state > div {
+  width: 54px;
+  height: 54px;
+
+  margin-bottom: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+
+  background: #e8f7f4;
+  color: #0f766e;
+
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.pdfgen-empty-state strong {
+  color: #0f172a;
+
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.pdfgen-empty-state span {
+  margin: 5px 0 13px;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+}
+
+.pdfgen-empty-state button {
+  height: 34px;
+
+  padding: 0 13px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: #0f766e;
+  color: #ffffff;
+
+  font-size: 10px;
+  font-weight: 900;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   PAGINATION
+========================================================= */
+
+.pdfgen-pagination {
+  flex-shrink: 0;
+
+  min-height: 45px;
+
+  margin-top: 9px;
+  padding: 6px 11px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.pdfgen-pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pdfgen-pagination-buttons button {
+  height: 30px;
+
+  padding: 0 10px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #0b3440;
+  color: #ffffff;
+
+  cursor: pointer;
+
+  font-size: 9.5px;
+  font-weight: 850;
+}
+
+.pdfgen-pagination-buttons button:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.pdfgen-pagination-buttons span {
+  min-width: 30px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 8px;
+
+  background: #e8f7f4;
+  color: #0f766e;
+
+  font-weight: 900;
+}
+
+
+/* =========================================================
+   MODAL OVERLAY
+========================================================= */
+
+.pdfgen-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+
+  padding: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+
+  background: rgba(4, 17, 29, 0.72);
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+
+/* =========================================================
+   TYPE SELECTOR MODAL
+========================================================= */
+
+.pdfgen-type-modal {
+  width: min(900px, 96vw);
+  max-height: 92vh;
+
+  overflow: hidden;
+
+  background: #f7faf9;
+
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 24px;
+
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.34);
+}
+
+.pdfgen-modal-header {
+  padding: 23px 26px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #071b2b,
+      #0a3c46 60%,
+      #0f766e
+    );
+}
+
+.pdfgen-modal-eyebrow {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #5eead4;
+
+  font-size: 9px;
+  font-weight: 950;
+
+  letter-spacing: 1.4px;
+}
+
+.pdfgen-modal-header h2 {
+  margin: 0;
+
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.pdfgen-modal-header p {
+  margin: 5px 0 0;
+
+  color: rgba(255, 255, 255, 0.7);
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.pdfgen-modal-close {
+  width: 37px;
+  height: 37px;
+
+  flex-shrink: 0;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 11px;
+
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+
+  font-size: 24px;
+
+  cursor: pointer;
+}
+
+.pdfgen-type-content {
+  max-height: calc(92vh - 105px);
+
+  padding: 24px;
+
+  overflow-y: auto;
+}
+
+.pdfgen-type-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 14px;
+}
+
+.pdfgen-type-card {
+  min-height: 210px;
+
+  padding: 18px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  text-align: left;
+
+  border: 1px solid #dce7e5;
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 22px rgba(15, 23, 42, 0.06);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.pdfgen-type-card:hover {
+  transform: translateY(-4px);
+
+  border-color: #5eead4;
+
+  box-shadow:
+    0 16px 34px rgba(15, 118, 110, 0.14);
+}
+
+.pdfgen-type-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pdfgen-type-icon {
+  width: 47px;
+  height: 47px;
+
+  margin-bottom: 17px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #0f766e,
+      #064e5a
+    );
+
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 950;
+
+  box-shadow:
+    0 8px 18px rgba(15, 118, 110, 0.2);
+}
+
+.pdfgen-type-info > span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #0d9488;
+
+  font-size: 8px;
+  font-weight: 950;
+
+  letter-spacing: 0.8px;
+}
+
+.pdfgen-type-info h3 {
+  margin: 0 0 7px;
+
+  color: #0f172a;
+
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.pdfgen-type-info p {
+  min-height: 44px;
+
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 10.5px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.pdfgen-type-card-footer {
+  margin-top: 17px;
+  padding-top: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-top: 1px solid #edf2f1;
+
+  color: #0f766e;
+}
+
+.pdfgen-type-card-footer strong {
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.pdfgen-type-card-footer span {
+  font-size: 18px;
+}
+
+.pdfgen-coming-soon {
+  margin-top: 16px;
+  padding: 13px 15px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  border: 1px dashed #b7cfcb;
+  border-radius: 14px;
+
+  background: #eef7f5;
+}
+
+.pdfgen-coming-soon > span {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+  color: #0f766e;
+
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.pdfgen-coming-soon strong {
+  display: block;
+
+  color: #0f172a;
+
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.pdfgen-coming-soon p {
+  margin: 2px 0 0;
+
+  color: #64748b;
+
+  font-size: 9.5px;
+}
+
+
+/* =========================================================
+   MOBILE LIST - DESKTOP HIDDEN
+========================================================= */
+
+.pdfgen-mobile-list {
+  display: none;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+.pdfgen-table-wrapper::-webkit-scrollbar,
+.pdfgen-type-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.pdfgen-table-wrapper::-webkit-scrollbar-track,
+.pdfgen-type-content::-webkit-scrollbar-track {
+  background: #eef2f4;
+}
+
+.pdfgen-table-wrapper::-webkit-scrollbar-thumb,
+.pdfgen-type-content::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 20px;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media screen and (max-width: 1180px) {
+  .pdfgen-filter-grid {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+  }
+
+  .pdfgen-filter-actions {
+    grid-column: span 2;
+  }
+
+  .pdfgen-type-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* =========================================================
+   MOBILE / PWA
+========================================================= */
+
+@media screen and (max-width: 900px) {
+  .pdfgen-page {
+    height: auto;
+    min-height: 100dvh;
+
+    padding: 0 0 18px;
+
+    overflow: visible;
+
+    border-radius: 0;
+
+    background: #f3f7f6;
+  }
+
+  .pdfgen-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+
+    min-height: 74px;
+
+    margin: 0;
+    padding:
+      max(12px, env(safe-area-inset-top))
+      14px
+      12px;
+
+    border-radius: 0 0 20px 20px;
+
+    box-shadow:
+      0 10px 25px rgba(15, 23, 42, 0.16);
+  }
+
+  .pdfgen-back-btn {
+    display: block;
+  }
+
+  .pdfgen-header h2 {
+    font-size: 19px;
+  }
+
+  .pdfgen-header p {
+    display: none;
+  }
+
+  .pdfgen-refresh-btn {
+    display: none;
+  }
+
+  .pdfgen-create-btn {
+    width: 42px;
+    height: 42px;
+
+    padding: 0;
+
+    justify-content: center;
+
+    font-size: 0;
+  }
+
+  .pdfgen-create-btn span {
+    font-size: 23px;
+  }
+
+  .pdfgen-stats {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 7px;
+
+    margin: 12px 10px 9px;
+  }
+
+  .pdfgen-stat-card {
+    min-height: 68px;
+
+    padding: 9px;
+
+    flex-direction: column;
+    justify-content: center;
+
+    text-align: center;
+    gap: 5px;
+  }
+
+  .pdfgen-stat-icon {
+    width: 30px;
+    height: 30px;
+
+    border-radius: 9px;
+
+    font-size: 8px;
+  }
+
+  .pdfgen-stat-card span {
+    display: none;
+  }
+
+  .pdfgen-stat-card strong {
+    font-size: 11px;
+  }
+
+  .pdfgen-filter-card {
+    margin: 0 10px 10px;
+    padding: 11px;
+
+    border-radius: 15px;
+  }
+
+  .pdfgen-filter-title-row {
+    margin: 0;
+  }
+
+  .pdfgen-filter-title-row p {
+    display: none;
+  }
+
+  .pdfgen-mobile-filter-toggle {
+    display: block;
+
+    height: 32px;
+
+    padding: 0 12px;
+
+    border: none;
+    border-radius: 9px;
+
+    background: #e6f6f3;
+    color: #0f766e;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    cursor: pointer;
+  }
+
+  .pdfgen-filter-grid {
+    display: none;
+
+    grid-template-columns: 1fr;
+
+    margin-top: 12px;
+  }
+
+  .pdfgen-filter-grid.mobile-open {
+    display: grid;
+  }
+
+  .pdfgen-filter-actions {
+    grid-column: auto;
+  }
+
+  .pdfgen-filter-field input,
+  .pdfgen-filter-field select {
+    height: 42px;
+
+    font-size: 12px;
+  }
+
+  .pdfgen-apply-btn,
+  .pdfgen-clear-btn {
+    flex: 1;
+    height: 41px;
+  }
+
+  .pdfgen-table-card {
+    display: none;
+  }
+
+  .pdfgen-mobile-list {
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+
+    padding: 0 10px;
+  }
+
+  .pdfgen-mobile-card {
+    padding: 13px;
+
+    background: #ffffff;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+
+    box-shadow:
+      0 7px 20px rgba(15, 23, 42, 0.065);
+  }
+
+  .pdfgen-mobile-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+  }
+
+  .pdfgen-mobile-card-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pdfgen-mobile-card-title strong {
+    display: block;
+
+    color: #0f172a;
+
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .pdfgen-mobile-card-title span {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #64748b;
+
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .pdfgen-mobile-details {
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 9px;
+
+    margin-top: 12px;
+    padding: 10px;
+
+    border-radius: 12px;
+
+    background: #f7faf9;
+  }
+
+  .pdfgen-mobile-details span {
+    display: block;
+
+    margin-bottom: 2px;
+
+    color: #94a3b8;
+
+    font-size: 8px;
+    font-weight: 850;
+
+    text-transform: uppercase;
+  }
+
+  .pdfgen-mobile-details strong {
+    display: block;
+
+    color: #334155;
+
+    font-size: 10.5px;
+    font-weight: 850;
+
+    overflow-wrap: anywhere;
+  }
+
+  .pdfgen-mobile-actions {
+    margin-top: 11px;
+
+    display: flex;
+    gap: 7px;
+  }
+
+  .pdfgen-mobile-actions a,
+  .pdfgen-mobile-actions button {
+    flex: 1;
+    height: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    box-sizing: border-box;
+
+    border: none;
+    border-radius: 10px;
+
+    text-decoration: none;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    cursor: pointer;
+  }
+
+  .pdfgen-mobile-view {
+    background: #e6f6f3;
+    color: #0f766e;
+  }
+
+  .pdfgen-mobile-actions button {
+    background: #0f766e;
+    color: #ffffff;
+  }
+
+  .pdfgen-pagination {
+    margin: 11px 10px 0;
+
+    min-height: 48px;
+  }
+
+  .pdfgen-pagination > div:first-child {
+    display: none;
+  }
+
+  .pdfgen-pagination-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .pdfgen-pagination-buttons button {
+    height: 34px;
+  }
+
+  /* MODAL */
+
+  .pdfgen-modal-overlay {
+    padding: 0;
+
+    align-items: flex-end;
+  }
+
+  .pdfgen-type-modal {
+    width: 100%;
+    max-height: 94dvh;
+
+    border-radius: 24px 24px 0 0;
+  }
+
+  .pdfgen-modal-header {
+    padding:
+      18px
+      18px
+      16px;
+  }
+
+  .pdfgen-modal-header h2 {
+    font-size: 20px;
+  }
+
+  .pdfgen-type-content {
+    max-height: calc(94dvh - 95px);
+
+    padding: 15px;
+  }
+
+  .pdfgen-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pdfgen-type-card {
+    min-height: 0;
+
+    padding: 14px;
+
+    flex-direction: row;
+    gap: 13px;
+  }
+
+  .pdfgen-type-icon {
+    margin: 0;
+
+    width: 46px;
+    height: 46px;
+  }
+
+  .pdfgen-type-info {
+    flex: 1;
+  }
+
+  .pdfgen-type-info h3 {
+    font-size: 15px;
+  }
+
+  .pdfgen-type-info p {
+    min-height: 0;
+  }
+
+  .pdfgen-type-card-footer {
+    margin-top: 10px;
+    padding-top: 9px;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media screen and (max-width: 390px) {
+  .pdfgen-header {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .pdfgen-header-left {
+    gap: 8px;
+  }
+
+  .pdfgen-header h2 {
+    font-size: 17px;
+  }
+
+  .pdfgen-stats {
+    margin-left: 7px;
+    margin-right: 7px;
+  }
+
+  .pdfgen-filter-card,
+  .pdfgen-pagination {
+    margin-left: 7px;
+    margin-right: 7px;
+  }
+
+  .pdfgen-mobile-list {
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+}

@@ -12,7 +12,9 @@ import {
   rejectSalesOrderByAdmin,
   approveSalesOrderByManager,
   rejectSalesOrderByManager,
-   deleteSalesOrder,
+  getSalesOrderComments,
+  addSalesOrderComment,
+  deleteSalesOrder,
 } from "../services/salesOrderService";
 import "./SalesOrderList.css";
 import SalesOrderForm from "./SalesOrderForm";
@@ -75,12 +77,23 @@ const [selectedOrderDetail, setSelectedOrderDetail] =
   };
 }, []);
   const [approvalModal, setApprovalModal] = useState({
-    open: false,
-    type: "",
-    orderId: null,
-  });
+  open: false,
+  type: "",
+  orderId: null,
+});
 
-  const [rejectionComment, setRejectionComment] = useState("");
+const [rejectionComment, setRejectionComment] = useState("");
+
+const [discussionModal, setDiscussionModal] = useState({
+  open: false,
+  order: null,
+});
+
+const [discussionComments, setDiscussionComments] = useState([]);
+const [discussionComment, setDiscussionComment] = useState("");
+const [discussionLoading, setDiscussionLoading] = useState(false);
+const [discussionSending, setDiscussionSending] = useState(false);
+const [discussionError, setDiscussionError] = useState("");
 
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -431,6 +444,63 @@ const getActionButtonText = () => {
   );
 };
 
+const canViewDiscussion = (order) => {
+  if (!order) return false;
+
+  // Once finally approved, discussion is closed and hidden.
+  if (order.approvalStatus === "approved") {
+    return false;
+  }
+
+  return isAdmin || isManager || isSalesPerson;
+};
+
+const canWriteDiscussion = (order) => {
+  if (!order) return false;
+
+  // Final approval closes new comments, but history remains visible.
+  if (order.approvalStatus === "approved") {
+    return false;
+  }
+
+  return isAdmin || isManager || isSalesPerson;
+};
+
+const getDiscussionCount = (order) => {
+  if (!order) return 0;
+
+  if (Array.isArray(order.comments)) return order.comments.length;
+  if (Array.isArray(order.discussion)) return order.discussion.length;
+  if (Array.isArray(order.managementComments)) {
+    return order.managementComments.length;
+  }
+
+  return Number(
+    order.commentCount ||
+      order.commentsCount ||
+      order.discussionCount ||
+      0
+  );
+};
+
+
+const getLatestDiscussionComment = (order) => {
+  if (!order) return null;
+
+  const comments =
+    order.managementDiscussion ||
+    order.comments ||
+    order.discussion ||
+    order.managementComments ||
+    [];
+
+  if (!Array.isArray(comments) || comments.length === 0) {
+    return null;
+  }
+
+  return comments[comments.length - 1];
+};
+
 const canDeleteOrder = (order) => {
   const status = String(order?.approvalStatus || "").trim();
 
@@ -481,6 +551,243 @@ const canDeleteOrder = (order) => {
     });
     setRejectionComment("");
   };
+
+  const normalizeDiscussionResponse = (response) => {
+  const payload = response?.data || response || {};
+
+  if (Array.isArray(payload)) return payload;
+
+  return (
+    payload.comments ||
+    payload.discussion ||
+    payload.salesOrder?.comments ||
+    payload.salesOrder?.discussion ||
+    []
+  );
+};
+
+const openDiscussion = async (order) => {
+  if (!order || !canViewDiscussion(order)) return;
+
+  setDiscussionModal({
+    open: true,
+    order,
+  });
+
+  setDiscussionComments([]);
+  setDiscussionComment("");
+  setDiscussionError("");
+  setDiscussionLoading(true);
+
+  try {
+    const response = await getSalesOrderComments(order._id);
+    setDiscussionComments(normalizeDiscussionResponse(response));
+  } catch (error) {
+    console.error(error);
+    setDiscussionError(
+      error.response?.data?.message || "Unable to load comments."
+    );
+  } finally {
+    setDiscussionLoading(false);
+  }
+};
+
+const closeDiscussion = () => {
+  if (discussionSending) return;
+
+  setDiscussionModal({
+    open: false,
+    order: null,
+  });
+
+  setDiscussionComments([]);
+  setDiscussionComment("");
+  setDiscussionError("");
+  setDiscussionLoading(false);
+};
+
+const submitDiscussionComment = async () => {
+  if (discussionSending) return;
+
+  const order = discussionModal.order;
+  const comment = String(discussionComment || "").trim();
+
+  if (!order) return;
+
+  if (!canWriteDiscussion(order)) {
+    alert("Comments are read-only after final approval.");
+    return;
+  }
+
+  if (!comment) {
+    alert("Please enter a comment.");
+    return;
+  }
+
+  try {
+    setDiscussionSending(true);
+    setDiscussionError("");
+
+    const response = await addSalesOrderComment(order._id, comment);
+    const payload = response?.data || response || {};
+
+    const returnedComments =
+      payload.comments ||
+      payload.discussion ||
+      payload.salesOrder?.comments ||
+      payload.salesOrder?.discussion;
+
+    if (Array.isArray(returnedComments)) {
+      setDiscussionComments(returnedComments);
+    } else if (payload.comment) {
+      setDiscussionComments((previous) => [
+        ...previous,
+        payload.comment,
+      ]);
+    } else {
+      const refreshed = await getSalesOrderComments(order._id);
+      setDiscussionComments(normalizeDiscussionResponse(refreshed));
+    }
+
+    setDiscussionComment("");
+    await fetchSalesOrders();
+  } catch (error) {
+    console.error(error);
+    setDiscussionError(
+      error.response?.data?.message || "Failed to send comment."
+    );
+  } finally {
+    setDiscussionSending(false);
+  }
+};
+
+const getCommentUserName = (comment) => {
+  if (!comment) return "User";
+
+  const role = String(
+    comment?.senderRole ||
+      comment?.role ||
+      comment?.userRole ||
+      comment?.createdByRole ||
+      comment?.user?.role ||
+      comment?.createdBy?.role ||
+      ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+
+  // Manager = MD Sir
+  if (role === "manager" || role === "super_admin") {
+    return "MD Sir";
+  }
+
+  // Admin = Sonia
+  if (role === "admin") {
+    return "Sonia";
+  }
+
+  // Sales person = actual user's name from API
+  if (role === "user") {
+    return (
+      comment?.senderName ||
+      comment?.userName ||
+      comment?.createdByName ||
+      comment?.salesPersonName ||
+      comment?.user?.name ||
+      comment?.createdBy?.name ||
+      comment?.createdByUser?.name ||
+      comment?.name ||
+      "Sales Person"
+    );
+  }
+
+  // Fallback for old comments
+  return (
+    comment?.senderName ||
+    comment?.userName ||
+    comment?.createdByName ||
+    comment?.salesPersonName ||
+    comment?.user?.name ||
+    comment?.createdBy?.name ||
+    comment?.createdByUser?.name ||
+    comment?.name ||
+    "User"
+  );
+};
+
+const getCommentRole = (comment) => {
+  const role = String(
+    comment?.senderRole ||
+      comment?.role ||
+      comment?.userRole ||
+      comment?.createdByRole ||
+      comment?.user?.role ||
+      comment?.createdBy?.role ||
+      ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+
+  if (role === "manager" || role === "super_admin") {
+    return "MD SIR";
+  }
+
+  if (role === "admin") {
+    return "ADMIN";
+  }
+
+  if (role === "user") {
+    return "SALES PERSON";
+  }
+
+  return role ? role.replaceAll("_", " ").toUpperCase() : "";
+};
+
+const getCommentText = (comment) => {
+  return comment?.comment || comment?.message || comment?.text || "";
+};
+
+const getCommentDate = (comment) => {
+  return comment?.createdAt || comment?.date || comment?.commentedAt || "";
+};
+
+const isOwnComment = (comment) => {
+  const loggedUserId = String(user?._id || user?.id || "");
+
+  const commentUserId = String(
+    comment?.senderId ||
+      comment?.userId ||
+      comment?.createdBy?._id ||
+      comment?.createdBy ||
+      comment?.user?._id ||
+      ""
+  );
+
+  return Boolean(
+    loggedUserId &&
+      commentUserId &&
+      loggedUserId === commentUserId
+  );
+};
+
+const formatCommentDate = (date) => {
+  if (!date) return "";
+
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return "";
+
+  return d.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  });
+};
 
   const closeApprovalModal = () => {
     if (actionSubmitting) return;
@@ -563,23 +870,41 @@ const canDeleteOrder = (order) => {
     }
   };
 
-  const renderStatusBlock = (order) => {
-    const holdComment = getHoldComment(order);
+const renderStatusBlock = (order) => {
+  const holdComment = getHoldComment(order);
+  const latestComment = getLatestDiscussionComment(order);
 
-    return (
-      <>
-        <span className={`status-pill ${order.approvalStatus}`}>
-          {formatStatus(order.approvalStatus)}
-        </span>
+  return (
+    <>
+      <span className={`status-pill ${order.approvalStatus}`}>
+        {formatStatus(order.approvalStatus)}
+      </span>
 
-        {holdComment && (
-          <div className="hold-comment-text">
-            <strong>Comment:</strong> {holdComment}
-          </div>
-        )}
-      </>
-    );
-  };
+      {holdComment && (
+        <div className="hold-comment-text">
+          <strong>Hold:</strong> {holdComment}
+        </div>
+      )}
+
+      {latestComment && order.approvalStatus !== "approved" && (
+        <div
+          className="sales-latest-comment"
+          title={getCommentText(latestComment)}
+        >
+          <span className="sales-latest-comment-label">
+            💬 {getCommentUserName(latestComment)}:
+          </span>
+
+          <span className="sales-latest-comment-text">
+            {getCommentText(latestComment)}
+          </span>
+        </div>
+      )}
+    </>
+  );
+};
+
+
  const handleDeleteSalesOrder = (order) => {
   if (!canDeleteOrder(order)) {
     alert("Only super admin can delete hold sales orders.");
@@ -687,6 +1012,30 @@ const renderOrderActions = (order, mode = "desktop") => {
           </button>
         </>
       )}
+       
+
+       {canViewDiscussion(order) && (
+  <button
+    className={
+      mode === "ios"
+        ? "ios-sales-discussion-btn"
+        : "sales-discussion-btn"
+    }
+    onClick={() => openDiscussion(order)}
+    disabled={actionSubmitting}
+    type="button"
+    title="Open sales order discussion"
+  >
+    <span className="sales-discussion-btn-icon">💬</span>
+    <span>Comments</span>
+
+    {getDiscussionCount(order) > 0 && (
+      <span className="sales-discussion-count">
+        {getDiscussionCount(order)}
+      </span>
+    )}
+  </button>
+)}
 
       {canManagerApproveReject(order) && (
         <>
@@ -1128,17 +1477,30 @@ const renderOrderActions = (order, mode = "desktop") => {
                     </div>
 
                     <div
-                      className="ios-sales-status-pill"
-                      style={{ background: meta.bg, color: meta.color }}
-                    >
-                      {formatStatus(order.approvalStatus)}
-                    </div>
+  className="ios-sales-status-pill"
+  style={{ background: meta.bg, color: meta.color }}
+>
+  {formatStatus(order.approvalStatus)}
+</div>
 
-                    {holdComment && (
-                      <div className="ios-sales-hold-box">
-                        Hold Reason: {holdComment}
-                      </div>
-                    )}
+{holdComment && (
+  <div className="ios-sales-hold-box">
+    Hold Reason: {holdComment}
+  </div>
+)}
+
+{getLatestDiscussionComment(order) &&
+  order.approvalStatus !== "approved" && (
+    <div className="ios-sales-latest-comment">
+      <span>
+        💬 {getCommentUserName(getLatestDiscussionComment(order))}
+      </span>
+
+      <strong>
+        {getCommentText(getLatestDiscussionComment(order))}
+      </strong>
+    </div>
+  )}
 
                     <div className="ios-sales-money-card">
                       <span>Order Value</span>
@@ -1472,14 +1834,19 @@ const renderOrderActions = (order, mode = "desktop") => {
                         )}
                       </td>
 
-                                            <td onClick={stopRowClick}>
-                        {renderOrderActions(order)}
-                        {!canEditOrder(order) &&
-                          !canAdminApproveReject(order) &&
-                          !canManagerApproveReject(order) &&
-                          !canDeleteOrder(order) &&
-                          "-"}
-                      </td>
+                                            <td
+  className="sales-order-action-cell"
+  onClick={stopRowClick}
+>
+  {renderOrderActions(order)}
+
+  {!canEditOrder(order) &&
+  !canAdminApproveReject(order) &&
+  !canManagerApproveReject(order) &&
+  !canViewDiscussion(order) &&
+  !canDeleteOrder(order) &&
+  "-"}
+</td>
                     </tr>
                   );
                 })
@@ -1615,6 +1982,190 @@ const renderOrderActions = (order, mode = "desktop") => {
           </div>
         </div>
       )}
+
+      {discussionModal.open && discussionModal.order && (
+  <div
+    className="sales-discussion-overlay"
+    onMouseDown={(e) => {
+      if (e.target === e.currentTarget && !discussionSending) {
+        closeDiscussion();
+      }
+    }}
+  >
+    <div
+      className="sales-discussion-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Sales order discussion"
+    >
+      <div className="sales-discussion-header">
+        <div className="sales-discussion-header-icon">💬</div>
+
+        <div className="sales-discussion-header-copy">
+          <span>SALES ORDER DISCUSSION</span>
+          <h3>{discussionModal.order.companyName || "-"}</h3>
+          <p>
+            PO: {discussionModal.order.poNumber || "-"}
+            {" · "}
+            {formatStatus(discussionModal.order.approvalStatus)}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="sales-discussion-close"
+          onClick={closeDiscussion}
+          disabled={discussionSending}
+          aria-label="Close discussion"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="sales-discussion-context">
+        <div>
+          <span>Conversation</span>
+          <strong>Admin / MD Sir ↔ Sales Person</strong>
+        </div>
+
+        <div
+          className={`sales-discussion-status ${
+            discussionModal.order.approvalStatus === "approved"
+              ? "approved"
+              : "active"
+          }`}
+        >
+          {discussionModal.order.approvalStatus === "approved"
+            ? "Read Only"
+            : "Active"}
+        </div>
+      </div>
+
+      {getHoldComment(discussionModal.order) && (
+        <div className="sales-discussion-hold-reason">
+          <span>Current Hold Reason</span>
+          <strong>{getHoldComment(discussionModal.order)}</strong>
+        </div>
+      )}
+
+      <div className="sales-discussion-messages">
+        {discussionLoading ? (
+          <div className="sales-discussion-state">
+            <div className="sales-discussion-loader" />
+            <strong>Loading discussion...</strong>
+            <span>Getting the latest comments</span>
+          </div>
+        ) : discussionError && discussionComments.length === 0 ? (
+          <div className="sales-discussion-state error">
+            <strong>Unable to load discussion</strong>
+            <span>{discussionError}</span>
+
+            <button
+              type="button"
+              onClick={() => openDiscussion(discussionModal.order)}
+            >
+              Try Again
+            </button>
+          </div>
+        ) : discussionComments.length === 0 ? (
+          <div className="sales-discussion-empty">
+            <div>💬</div>
+            <strong>No comments yet</strong>
+            <span>Start the discussion for this sales order.</span>
+          </div>
+        ) : (
+          discussionComments.map((comment, index) => {
+            const own = isOwnComment(comment);
+
+            return (
+              <div
+                key={
+                  comment?._id ||
+                  `${getCommentDate(comment)}-${index}`
+                }
+                className={`sales-discussion-message-row ${
+                  own ? "own" : "other"
+                }`}
+              >
+                <div className="sales-discussion-message-meta">
+  <strong>{getCommentUserName(comment)}</strong>
+
+  {getCommentRole(comment) && (
+    <span className="sales-discussion-role">
+      {getCommentRole(comment)}
+    </span>
+  )}
+</div>
+
+                <div className="sales-discussion-bubble">
+                  {getCommentText(comment)}
+                </div>
+
+                <div className="sales-discussion-time">
+                  {formatCommentDate(getCommentDate(comment))}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {discussionError && discussionComments.length > 0 && (
+        <div className="sales-discussion-inline-error">
+          {discussionError}
+        </div>
+      )}
+
+      {canWriteDiscussion(discussionModal.order) ? (
+        <div className="sales-discussion-composer">
+          <div className="sales-discussion-compose-label">
+            <strong>Add Comment</strong>
+            <span>{discussionComment.length}/1000</span>
+          </div>
+
+          <textarea
+            value={discussionComment}
+            onChange={(e) =>
+              setDiscussionComment(e.target.value.slice(0, 1000))
+            }
+            placeholder="Write a comment or reply..."
+            disabled={discussionSending}
+            rows={3}
+          />
+
+          <div className="sales-discussion-compose-bottom">
+            <span>
+              Your comment will be visible to the sales order team.
+            </span>
+
+            <button
+              type="button"
+              className="sales-discussion-send"
+              onClick={submitDiscussionComment}
+              disabled={
+                discussionSending || !discussionComment.trim()
+              }
+            >
+              {discussionSending ? "Sending..." : "Send Comment"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="sales-discussion-readonly">
+          <span>✓</span>
+
+          <div>
+            <strong>Discussion closed</strong>
+            <p>
+              This sales order is finally approved. Previous comments
+              remain available for reference.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
     </div>
   );
