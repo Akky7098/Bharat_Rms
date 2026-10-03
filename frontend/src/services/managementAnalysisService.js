@@ -6,49 +6,62 @@ import axios from "axios";
    MANAGEMENT ANALYSIS SERVICE
 
    BACKEND SOURCE:
+
    GET /api/steel-analytics
    GET /api/steel-analytics/summary
+   GET /api/steel-analytics/drill-down
+   GET /api/steel-analytics/pdf
 
    IMPORTANT:
+
    - Frontend does NOT calculate management quantities.
    - Backend is the single source of truth.
    - All filters are sent to backend.
    - Supports H.O. / N.H.O. / Steel Mill / Grade filters.
    - Supports From / To date filters.
+   - PDF supports 1 / 3 / 6 month comparison.
 ========================================================= */
+
 
 /* =========================================================
    BASE URL
 ========================================================= */
 
 /*
- * LOCAL DEVELOPMENT
+ * LOCAL DEVELOPMENT:
  *
- * Keep BASE_URL as:
- * http://localhost:5000
+ * const BASE_URL =
+ *   process.env.REACT_APP_BACKEND_URL ||
+ *   "http://localhost:5000";
  *
- * because API_URL below already adds /api.
+ * PRODUCTION:
+ *
+ * REACT_APP_API_URL should NOT end with /api
+ *
+ * because API_URL below already adds:
+ *
+ * /api/steel-analytics
  */
 
-const BASE_URL =
-  process.env.REACT_APP_BACKEND_URL ||
-  "http://localhost:5000";
 
-/*
- * IMPORTANT:
- *
- * If REACT_APP_BACKEND_URL is:
- * http://localhost:5000
- *
- * Final URL becomes:
- * http://localhost:5000/api/steel-analytics
- *
- * NOT:
- * http://localhost:5000/api/api/steel-analytics
- */
+  const BASE_URL =
+    "http://localhost:5000";
+// const BASE_URL =
+//   process.env.REACT_APP_API_URL ||
+//   "https://bharatspecialsteels.bharatspecialsteels.com";
+
 
 const API_URL =
   `${BASE_URL}/api/steel-analytics`;
+
+
+/* =========================================================
+   ANALYTICS START DATE
+========================================================= */
+
+export const ANALYTICS_START_DATE =
+  "2026-08-13";
+
 
 /* =========================================================
    TOKEN
@@ -56,6 +69,7 @@ const API_URL =
 
 const getToken = () =>
   localStorage.getItem("token");
+
 
 /* =========================================================
    AUTH HEADERS
@@ -73,6 +87,7 @@ const authHeaders = () => {
   };
 };
 
+
 /* =========================================================
    CLEAN TEXT
 ========================================================= */
@@ -80,10 +95,12 @@ const authHeaders = () => {
 const cleanText = (value) =>
   String(value || "").trim();
 
+
 /* =========================================================
    NORMALIZE TRACKING TYPE
 
    UI may send:
+
    HO
    H.O.
    NHO
@@ -91,6 +108,7 @@ const cleanText = (value) =>
    Steel Mill
 
    Backend expects:
+
    H.O.
    N.H.O.
 ========================================================= */
@@ -119,6 +137,7 @@ const normalizeTrackingOrderType =
 
     return "";
   };
+
 
 /* =========================================================
    DATE VALIDATION
@@ -170,6 +189,71 @@ const normalizeDate = (value) => {
   return `${year}-${month}-${day}`;
 };
 
+
+/* =========================================================
+   MONTH VALIDATION
+========================================================= */
+
+const normalizeMonth = (value) => {
+  const text =
+    cleanText(value);
+
+  if (!text) {
+    return "";
+  }
+
+  if (
+    !/^\d{4}-\d{2}$/.test(
+      text
+    )
+  ) {
+    return "";
+  }
+
+  const [
+    year,
+    month,
+  ] = text
+    .split("-")
+    .map(Number);
+
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    month < 1 ||
+    month > 12
+  ) {
+    return "";
+  }
+
+  return `${year}-${String(month).padStart(
+    2,
+    "0"
+  )}`;
+};
+
+
+/* =========================================================
+   CURRENT MONTH
+========================================================= */
+
+export const getCurrentAnalysisMonth =
+  () => {
+    const now =
+      new Date();
+
+    const year =
+      now.getFullYear();
+
+    const month =
+      String(
+        now.getMonth() + 1
+      ).padStart(2, "0");
+
+    return `${year}-${month}`;
+  };
+
+
 /* =========================================================
    BUILD FILTER PARAMS
 
@@ -215,15 +299,9 @@ const buildParams = (
       filters.grade
     );
 
+
   /* =======================================================
      DATE VALIDATION
-
-     Example:
-
-     From: 2026-09-15
-     To:   2026-09-10
-
-     This must never be sent.
   ======================================================= */
 
   if (
@@ -235,6 +313,7 @@ const buildParams = (
       "To date cannot be earlier than From date."
     );
   }
+
 
   if (from) {
     params.from =
@@ -265,6 +344,128 @@ const buildParams = (
 
   return params;
 };
+
+
+/* =========================================================
+   BUILD PDF PARAMS
+
+   Backend PDF endpoint:
+
+   GET /api/steel-analytics/pdf
+
+   Required:
+   month=YYYY-MM
+
+   period:
+   1
+   3
+   6
+
+   Optional:
+   trackingOrderType
+   steelMill
+   grade
+========================================================= */
+
+const buildPdfParams = (
+  options = {}
+) => {
+  const params = {};
+
+  const month =
+    normalizeMonth(
+      options.month
+    );
+
+  if (!month) {
+    throw new Error(
+      "Please select a valid month for the Management Analysis PDF."
+    );
+  }
+
+
+  /* =======================================================
+     DO NOT ALLOW PERIOD BEFORE ANALYTICS START
+  ======================================================= */
+
+  if (
+    month < "2026-08"
+  ) {
+    throw new Error(
+      "Management Analysis is available from August 2026."
+    );
+  }
+
+
+  const period =
+    Number(
+      options.period || 1
+    );
+
+  if (
+    ![
+      1,
+      3,
+      6,
+    ].includes(period)
+  ) {
+    throw new Error(
+      "PDF period must be 1, 3 or 6 months."
+    );
+  }
+
+
+  const trackingOrderType =
+    normalizeTrackingOrderType(
+      options.trackingOrderType ||
+        options.orderType ||
+        options.type
+    );
+
+
+  const steelMill =
+    cleanText(
+      options.steelMill ||
+        options.mill
+    );
+
+
+  const grade =
+    cleanText(
+      options.grade
+    );
+
+
+  params.month =
+    month;
+
+  params.period =
+    period;
+
+
+  if (
+    trackingOrderType
+  ) {
+    params.trackingOrderType =
+      trackingOrderType;
+  }
+
+
+  if (steelMill) {
+    params.steelMill =
+      steelMill;
+  }
+
+
+  if (grade) {
+    params.grade =
+      grade;
+  }
+
+
+  return params;
+};
+
 
 /* =========================================================
    EXTRACT API DATA
@@ -314,6 +515,7 @@ const extractData = (
   return body.data;
 };
 
+
 /* =========================================================
    NORMALIZE AXIOS ERROR
 ========================================================= */
@@ -332,18 +534,22 @@ const getErrorMessage = (
     return error.message;
   }
 
+
   const status =
     error?.response?.status;
+
 
   const backendMessage =
     error?.response?.data
       ?.message;
+
 
   if (
     backendMessage
   ) {
     return backendMessage;
   }
+
 
   if (status === 401) {
     return (
@@ -352,11 +558,13 @@ const getErrorMessage = (
     );
   }
 
+
   if (status === 403) {
     return (
       "You are not authorized to access Management Analysis."
     );
   }
+
 
   if (status === 404) {
     return (
@@ -364,11 +572,13 @@ const getErrorMessage = (
     );
   }
 
+
   if (status >= 500) {
     return (
       "Management Analysis server error. Please try again."
     );
   }
+
 
   if (
     error?.code ===
@@ -381,11 +591,38 @@ const getErrorMessage = (
     );
   }
 
+
   return (
     error?.message ||
     "Failed to load Management Analysis."
   );
 };
+
+
+/* =========================================================
+   NORMALIZED ERROR
+========================================================= */
+
+const createNormalizedError = (
+  error
+) => {
+  const message =
+    getErrorMessage(
+      error
+    );
+
+  const normalizedError =
+    new Error(message);
+
+  normalizedError.status =
+    error?.response?.status;
+
+  normalizedError.response =
+    error?.response;
+
+  return normalizedError;
+};
+
 
 /* =========================================================
    API REQUEST HELPER
@@ -411,54 +648,15 @@ const apiGet = async (
       response
     );
   } catch (error) {
-    const message =
-      getErrorMessage(
-        error
-      );
-
-    const normalizedError =
-      new Error(message);
-
-    normalizedError.status =
-      error?.response?.status;
-
-    normalizedError.response =
-      error?.response;
-
-    throw normalizedError;
+    throw createNormalizedError(
+      error
+    );
   }
 };
 
+
 /* =========================================================
    GET FULL MANAGEMENT ANALYSIS
-
-   Example:
-
-   getManagementAnalysis({
-     from: "2026-09-01",
-     to: "2026-09-30"
-   });
-
-   Returns:
-
-   {
-     generatedAt,
-     filters,
-     definitions,
-
-     summary: {
-       total: {...},
-       house: {...},
-       steelMill: {...}
-     },
-
-     grades: [],
-     mills: [],
-     salesOrders: [],
-
-     dataQuality: {...},
-     warnings: {...}
-   }
 ========================================================= */
 
 export const getManagementAnalysis =
@@ -476,13 +674,9 @@ export const getManagementAnalysis =
     );
   };
 
+
 /* =========================================================
    ALIAS
-
-   Existing page currently imports:
-   getManagementAnalysis
-
-   This alias makes the naming clearer for future code.
 ========================================================= */
 
 export const getSteelAnalytics =
@@ -494,11 +688,9 @@ export const getSteelAnalytics =
     );
   };
 
+
 /* =========================================================
    GET SUMMARY ONLY
-
-   Useful when dashboard only needs cards/table and does not
-   need every Sales Order detail.
 ========================================================= */
 
 export const getManagementAnalysisSummary =
@@ -516,6 +708,62 @@ export const getManagementAnalysisSummary =
     );
   };
 
+
+/* =========================================================
+   BACKEND DRILL-DOWN
+
+   metric:
+
+   new_order
+   dispatch_target
+   actual_dispatch
+   target_pending
+   order_balance
+========================================================= */
+
+export const getManagementAnalysisDrillDown =
+  async (
+    metric,
+    filters = {}
+  ) => {
+    const cleanMetric =
+      cleanText(metric)
+        .toLowerCase();
+
+    const validMetrics = [
+      "new_order",
+      "dispatch_target",
+      "actual_dispatch",
+      "target_pending",
+      "order_balance",
+    ];
+
+    if (
+      !validMetrics.includes(
+        cleanMetric
+      )
+    ) {
+      throw new Error(
+        "Invalid Management Analysis metric."
+      );
+    }
+
+    const params = {
+      ...buildParams(
+        filters
+      ),
+
+      metric:
+        cleanMetric,
+    };
+
+    return apiGet(
+      `${API_URL}/drill-down`,
+      params
+    );
+  };
+
+
 /* =========================================================
    H.O. ANALYSIS
 ========================================================= */
@@ -531,6 +779,7 @@ export const getHouseAnalysis =
         "H.O.",
     });
   };
+
 
 /* =========================================================
    STEEL MILL / N.H.O. ANALYSIS
@@ -548,18 +797,9 @@ export const getSteelMillAnalysis =
     });
   };
 
+
 /* =========================================================
    ONE STEEL MILL ANALYSIS
-
-   Example:
-
-   getMillAnalysis(
-     "SAIL",
-     {
-       from: "2026-09-01",
-       to: "2026-09-30"
-     }
-   );
 ========================================================= */
 
 export const getMillAnalysis =
@@ -589,18 +829,9 @@ export const getMillAnalysis =
     });
   };
 
+
 /* =========================================================
    ONE GRADE ANALYSIS
-
-   Example:
-
-   getGradeAnalysis(
-     "H13",
-     {
-       from: "2026-09-01",
-       to: "2026-09-30"
-     }
-   );
 ========================================================= */
 
 export const getGradeAnalysis =
@@ -627,13 +858,9 @@ export const getGradeAnalysis =
     });
   };
 
+
 /* =========================================================
    GET ORDERS FROM FULL ANALYSIS
-
-   This does NOT call old Sales Order API.
-
-   It gets the backend analytics and returns its Sales Order
-   drill-down data.
 ========================================================= */
 
 export const getManagementAnalysisOrders =
@@ -652,13 +879,9 @@ export const getManagementAnalysisOrders =
       : [];
   };
 
+
 /* =========================================================
    LOCAL DRILL-DOWN HELPERS
-
-   These work from the already-returned backend Sales Order
-   analytics data.
-
-   No extra request is needed for the current UI.
 ========================================================= */
 
 const getOrders = (
@@ -669,6 +892,7 @@ const getOrders = (
   )
     ? analysis.salesOrders
     : [];
+
 
 /* =========================================================
    NEW ORDER DRILL-DOWN
@@ -681,12 +905,28 @@ export const getNewOrderDrillDown =
     return getOrders(
       analysis
     ).filter(
-      (order) =>
-        Boolean(
+      (order) => {
+        /*
+         * Preferred backend flag.
+         */
+        if (
+          order
+            ?.isNewOrderInPeriod ===
+          true
+        ) {
+          return true;
+        }
+
+        /*
+         * Compatibility with older backend response.
+         */
+        return Boolean(
           order?.orderDate
-        )
+        );
+      }
     );
   };
+
 
 /* =========================================================
    DISPATCH TARGET DRILL-DOWN
@@ -708,6 +948,7 @@ export const getDispatchTargetDrillDown =
     );
   };
 
+
 /* =========================================================
    ACTUAL DISPATCH DRILL-DOWN
 ========================================================= */
@@ -728,15 +969,9 @@ export const getActualDispatchDrillDown =
     );
   };
 
+
 /* =========================================================
    TARGET PENDING DRILL-DOWN
-
-   Example:
-   target = 20 MT
-   actual against target = 15 MT
-   pending = 5 MT
-
-   Clicking 5 MT will show this order.
 ========================================================= */
 
 export const getTargetPendingDrillDown =
@@ -767,16 +1002,9 @@ export const getTargetPendingDrillDown =
       );
   };
 
+
 /* =========================================================
    ORDER BALANCE DRILL-DOWN
-
-   Example:
-
-   Order Qty       20 MT
-   Dispatched      10 MT
-   Balance         10 MT
-
-   Clicking 10 MT can show the exact order.
 ========================================================= */
 
 export const getOrderBalanceDrillDown =
@@ -807,6 +1035,7 @@ export const getOrderBalanceDrillDown =
       );
   };
 
+
 /* =========================================================
    H.O. ORDER DRILL-DOWN
 ========================================================= */
@@ -830,6 +1059,7 @@ export const getHouseOrders =
     );
   };
 
+
 /* =========================================================
    STEEL MILL ORDER DRILL-DOWN
 ========================================================= */
@@ -852,6 +1082,7 @@ export const getSteelMillOrders =
         "N.H.O."
     );
   };
+
 
 /* =========================================================
    ONE MILL ORDERS
@@ -881,6 +1112,7 @@ export const getOrdersByMill =
         wanted
     );
   };
+
 
 /* =========================================================
    ONE GRADE ORDERS
@@ -924,18 +1156,23 @@ export const getOrdersByGrade =
     );
   };
 
+
 /* =========================================================
    FORMAT METRIC TABLE
 
-   Produces exactly:
+   IMPORTANT:
 
-                      H.O.     STEEL MILL     TOTAL
+   Visible Management Analysis table is:
+
+                     H.O.     STEEL MILL
 
    New Order Qty
    Dispatch Target
    Actual Dispatch
    Target Pending
    Order Balance
+
+   No visible TOTAL column.
 ========================================================= */
 
 export const buildManagementMetricTable =
@@ -948,14 +1185,12 @@ export const buildManagementMetricTable =
 
     const house =
       summary.house ||
+      summary.ho ||
       {};
 
     const steelMill =
       summary.steelMill ||
-      {};
-
-    const total =
-      summary.total ||
+      summary.nho ||
       {};
 
     return [
@@ -970,6 +1205,8 @@ export const buildManagementMetricTable =
           Number(
             house
               .newOrderMT ||
+              house
+                .orderedMT ||
               0
           ),
 
@@ -977,13 +1214,8 @@ export const buildManagementMetricTable =
           Number(
             steelMill
               .newOrderMT ||
-              0
-          ),
-
-        totalMT:
-          Number(
-            total
-              .newOrderMT ||
+              steelMill
+                .orderedMT ||
               0
           ),
       },
@@ -999,6 +1231,8 @@ export const buildManagementMetricTable =
           Number(
             house
               .dispatchTargetMT ||
+              house
+                .targetMT ||
               0
           ),
 
@@ -1006,13 +1240,8 @@ export const buildManagementMetricTable =
           Number(
             steelMill
               .dispatchTargetMT ||
-              0
-          ),
-
-        totalMT:
-          Number(
-            total
-              .dispatchTargetMT ||
+              steelMill
+                .targetMT ||
               0
           ),
       },
@@ -1028,6 +1257,8 @@ export const buildManagementMetricTable =
           Number(
             house
               .actualDispatchMT ||
+              house
+                .dispatchedMT ||
               0
           ),
 
@@ -1035,13 +1266,8 @@ export const buildManagementMetricTable =
           Number(
             steelMill
               .actualDispatchMT ||
-              0
-          ),
-
-        totalMT:
-          Number(
-            total
-              .actualDispatchMT ||
+              steelMill
+                .dispatchedMT ||
               0
           ),
       },
@@ -1066,13 +1292,6 @@ export const buildManagementMetricTable =
               .targetPendingMT ||
               0
           ),
-
-        totalMT:
-          Number(
-            total
-              .targetPendingMT ||
-              0
-          ),
       },
 
       {
@@ -1086,6 +1305,8 @@ export const buildManagementMetricTable =
           Number(
             house
               .orderBalanceMT ||
+              house
+                .balanceMT ||
               0
           ),
 
@@ -1093,18 +1314,14 @@ export const buildManagementMetricTable =
           Number(
             steelMill
               .orderBalanceMT ||
-              0
-          ),
-
-        totalMT:
-          Number(
-            total
-              .orderBalanceMT ||
+              steelMill
+                .balanceMT ||
               0
           ),
       },
     ];
   };
+
 
 /* =========================================================
    FORMAT MT
@@ -1137,6 +1354,7 @@ export const formatMetricTon =
       }
     )} MT`;
   };
+
 
 /* =========================================================
    FORMAT DATE
@@ -1174,6 +1392,343 @@ export const formatAnalysisDate =
     );
   };
 
+
+/* =========================================================
+   GET PDF FILE NAME FROM RESPONSE
+========================================================= */
+
+const getPdfFileName = (
+  response,
+  fallbackName
+) => {
+  const disposition =
+    response?.headers?.[
+      "content-disposition"
+    ] || "";
+
+  /*
+   * Handles:
+   *
+   * filename="Management_Analysis_3M_2026-09.pdf"
+   *
+   * and:
+   *
+   * filename=Management_Analysis_3M_2026-09.pdf
+   */
+
+  const utfMatch =
+    disposition.match(
+      /filename\*=UTF-8''([^;]+)/i
+    );
+
+  if (
+    utfMatch &&
+    utfMatch[1]
+  ) {
+    try {
+      return decodeURIComponent(
+        utfMatch[1]
+      );
+    } catch {
+      return utfMatch[1];
+    }
+  }
+
+
+  const normalMatch =
+    disposition.match(
+      /filename="?([^"]+)"?/i
+    );
+
+  if (
+    normalMatch &&
+    normalMatch[1]
+  ) {
+    return normalMatch[1]
+      .replace(
+        /;$/,
+        ""
+      )
+      .trim();
+  }
+
+
+  return fallbackName;
+};
+
+
+/* =========================================================
+   DOWNLOAD MANAGEMENT ANALYSIS PDF
+
+   Backend:
+
+   GET /api/steel-analytics/pdf
+
+   Example:
+
+   downloadManagementAnalysisPdf({
+     month: "2026-09",
+     period: 3
+   });
+
+   Optional:
+
+   trackingOrderType
+   steelMill
+   grade
+
+   IMPORTANT:
+
+   responseType MUST be blob.
+========================================================= */
+
+export const downloadManagementAnalysisPdf =
+  async (
+    options = {}
+  ) => {
+    try {
+      const params =
+        buildPdfParams(
+          options
+        );
+
+
+      const response =
+        await axios.get(
+          `${API_URL}/pdf`,
+          {
+            headers:
+              authHeaders(),
+
+            params,
+
+            responseType:
+              "blob",
+
+            timeout:
+              180000,
+          }
+        );
+
+
+      if (
+        !response?.data
+      ) {
+        throw new Error(
+          "Management Analysis PDF was not returned by backend."
+        );
+      }
+
+
+      const contentType =
+        String(
+          response?.headers?.[
+            "content-type"
+          ] || ""
+        ).toLowerCase();
+
+
+      /*
+       * If backend returns JSON error but axios
+       * receives it as blob, decode the blob so
+       * user gets the real backend message.
+       */
+      if (
+        contentType.includes(
+          "application/json"
+        )
+      ) {
+        const text =
+          await response.data.text();
+
+        let parsed = null;
+
+        try {
+          parsed =
+            JSON.parse(text);
+        } catch {
+          parsed = null;
+        }
+
+        throw new Error(
+          parsed?.message ||
+            "Management Analysis PDF generation failed."
+        );
+      }
+
+
+      if (
+        !contentType.includes(
+          "application/pdf"
+        )
+      ) {
+        throw new Error(
+          "Backend did not return a valid PDF."
+        );
+      }
+
+
+      const fallbackName =
+        `Management_Analysis_${params.period}M_${params.month}.pdf`;
+
+
+      const filename =
+        getPdfFileName(
+          response,
+          fallbackName
+        );
+
+
+      const blob =
+        response.data instanceof
+        Blob
+          ? response.data
+          : new Blob(
+              [
+                response.data,
+              ],
+              {
+                type:
+                  "application/pdf",
+              }
+            );
+
+
+      const downloadUrl =
+        window.URL.createObjectURL(
+          blob
+        );
+
+
+      const anchor =
+        document.createElement(
+          "a"
+        );
+
+
+      anchor.href =
+        downloadUrl;
+
+      anchor.download =
+        filename;
+
+      anchor.style.display =
+        "none";
+
+
+      document.body.appendChild(
+        anchor
+      );
+
+
+      anchor.click();
+
+
+      document.body.removeChild(
+        anchor
+      );
+
+
+      /*
+       * Do not revoke immediately before
+       * browser starts the download.
+       */
+      window.setTimeout(
+        () => {
+          window.URL.revokeObjectURL(
+            downloadUrl
+          );
+        },
+        1000
+      );
+
+
+      return {
+        success:
+          true,
+
+        filename,
+
+        month:
+          params.month,
+
+        period:
+          params.period,
+      };
+    } catch (error) {
+      /*
+       * Axios error response can itself be a Blob
+       * because responseType is "blob".
+       */
+      const errorBlob =
+        error?.response?.data;
+
+      if (
+        typeof Blob !==
+          "undefined" &&
+        errorBlob instanceof
+          Blob
+      ) {
+        try {
+          const text =
+            await errorBlob.text();
+
+          const parsed =
+            JSON.parse(text);
+
+          if (
+            parsed?.message
+          ) {
+            const normalizedError =
+              new Error(
+                parsed.message
+              );
+
+            normalizedError.status =
+              error?.response?.status;
+
+            throw normalizedError;
+          }
+        } catch (
+          blobError
+        ) {
+          /*
+           * If we intentionally created the
+           * normalized backend error above,
+           * preserve it.
+           */
+          if (
+            blobError?.status
+          ) {
+            throw blobError;
+          }
+        }
+      }
+
+
+      throw createNormalizedError(
+        error
+      );
+    }
+  };
+
+
+/* =========================================================
+   PDF ALIAS
+
+   Shorter name if ManagementAnalysis.js prefers it.
+========================================================= */
+
+export const downloadSteelAnalyticsPdf =
+  async (
+    options = {}
+  ) => {
+    return downloadManagementAnalysisPdf(
+      options
+    );
+  };
+
+
 /* =========================================================
    DEFAULT EXPORT
 ========================================================= */
@@ -1184,6 +1739,8 @@ const managementAnalysisService = {
   getSteelAnalytics,
 
   getManagementAnalysisSummary,
+
+  getManagementAnalysisDrillDown,
 
   getManagementAnalysisOrders,
 
@@ -1218,6 +1775,13 @@ const managementAnalysisService = {
   formatMetricTon,
 
   formatAnalysisDate,
+
+  getCurrentAnalysisMonth,
+
+  downloadManagementAnalysisPdf,
+
+  downloadSteelAnalyticsPdf,
 };
+
 
 export default managementAnalysisService;

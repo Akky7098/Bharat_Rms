@@ -20,7 +20,7 @@ import EnquiryList from "./EnquiryList";
 import SalesOrderList from "./SalesOrderList";
 import DispatchPage from "./DispatchPage";
 import TimesheetPage from "./TimesheetPage";
-import ManagementAnalysis from "./ManagementAnalysis";
+import ManagementOrderAnalysis from "./ManagementOrderAnalysis";
 import ReceivablePage from "./ReceivablePage";
 import ColdCallList from "./ColdCallList";
 import DocumentPage from "./DocumentPage";
@@ -1603,12 +1603,12 @@ if (
           {active ===
   "managementAnalysis" &&
   isSuperAdmin && (
-    <ManagementAnalysis
+    <ManagementOrderAnalysis
       goDashboardHome={
         goDashboardModules
       }
     />
-)}
+  )}
 
           {/* =================================================
               TIMESHEET
