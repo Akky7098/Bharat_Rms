@@ -10,6 +10,7 @@ const {
   getSteelAnalytics,
   getSteelAnalyticsSummary,
   getSteelAnalyticsDrillDown,
+  downloadSteelAnalyticsPdf,
 } = require(
   "../controller/steelAnalyticsController"
 );
@@ -17,30 +18,25 @@ const {
 /*
  * IMPORTANT:
  *
- * Add the SAME authentication / role middleware
- * that dashboardRoutes.js currently uses.
+ * Add the SAME authentication and
+ * Super Admin authorization middleware
+ * used by your protected dashboard routes.
  *
- * Management Analytics must NOT be public.
+ * Do not expose Management Analysis publicly.
  */
+
 
 /* =========================================================
    FULL ANALYTICS
 
    GET /api/steel-analytics
-
-   Optional filters:
-
-   ?from=2026-09-01
-   &to=2026-09-30
-   &trackingOrderType=H.O.
-   &steelMill=ABC
-   &grade=D2
 ========================================================= */
 
 router.get(
   "/",
   getSteelAnalytics
 );
+
 
 /* =========================================================
    SUMMARY
@@ -53,52 +49,69 @@ router.get(
   getSteelAnalyticsSummary
 );
 
+
 /* =========================================================
    DRILL-DOWN
 
    GET /api/steel-analytics/drill-down
 
-   Required:
-   metric
-
-   Supported:
+   metric:
 
    new_order
    dispatch_target
    actual_dispatch
    target_pending
    order_balance
-
-   EXAMPLES:
-
-   H.O. ORDER BALANCE
-   /api/steel-analytics/drill-down
-     ?metric=order_balance
-     &trackingOrderType=H.O.
-
-   SEPTEMBER STEEL MILL DISPATCH TARGET
-   /api/steel-analytics/drill-down
-     ?metric=dispatch_target
-     &trackingOrderType=N.H.O.
-     &from=2026-09-01
-     &to=2026-09-30
-
-   ONE STEEL MILL
-   /api/steel-analytics/drill-down
-     ?metric=order_balance
-     &trackingOrderType=N.H.O.
-     &steelMill=ABC
-
-   ONE GRADE
-   /api/steel-analytics/drill-down
-     ?metric=order_balance
-     &grade=D2
 ========================================================= */
 
 router.get(
   "/drill-down",
   getSteelAnalyticsDrillDown
 );
+
+
+/* =========================================================
+   PDF DOWNLOAD
+
+   GET /api/steel-analytics/pdf
+
+   ONE MONTH:
+
+   /api/steel-analytics/pdf
+     ?month=2026-09
+     &period=1
+
+
+   THREE MONTH:
+
+   /api/steel-analytics/pdf
+     ?month=2026-09
+     &period=3
+
+
+   SIX MONTH:
+
+   /api/steel-analytics/pdf
+     ?month=2026-09
+     &period=6
+
+
+   OPTIONAL FILTERS:
+
+   trackingOrderType=H.O.
+
+   trackingOrderType=N.H.O.
+
+   steelMill=ABC
+
+   grade=D2
+========================================================= */
+
+router.get(
+  "/pdf",
+  downloadSteelAnalyticsPdf
+);
+
 
 module.exports =
   router;

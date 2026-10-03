@@ -5,6 +5,11 @@ const steelAnalyticsService =
     "../services/steelAnalyticsService"
   );
 
+  
+const steelAnalyticsPdfService =
+  require(
+    "../services/steelAnalyticsPdfService"
+  );
 /* =========================================================
    NORMALIZE TEXT
 ========================================================= */
@@ -40,14 +45,98 @@ const buildFilters = (
 ) => {
   const filters = {};
 
-  if (query.from) {
-    filters.from =
-      cleanText(query.from);
+  if (query.month) {
+    filters.month =
+      cleanText(query.month);
   }
 
-  if (query.to) {
-    filters.to =
+  if (query.months) {
+    const months =
+      Number(query.months);
+
+    if (
+      ![1, 3, 6].includes(months)
+    ) {
+      throw new Error(
+        "months must be 1, 3 or 6."
+      );
+    }
+
+    filters.months = months;
+  }
+
+  /*
+   * BACKWARD COMPATIBILITY
+   *
+   * Current ManagementAnalysis frontend
+   * sends:
+   *
+   * from=2026-07-01
+   * to=2026-09-30
+   *
+   * Convert that into:
+   *
+   * month=2026-09
+   * months=3
+   */
+
+  if (
+    !filters.month &&
+    query.from &&
+    query.to
+  ) {
+    const from =
+      cleanText(query.from);
+
+    const to =
       cleanText(query.to);
+
+    const fromDate =
+      new Date(
+        `${from}T00:00:00`
+      );
+
+    const toDate =
+      new Date(
+        `${to}T23:59:59.999`
+      );
+
+    if (
+      !Number.isNaN(
+        fromDate.getTime()
+      ) &&
+      !Number.isNaN(
+        toDate.getTime()
+      )
+    ) {
+      filters.month =
+        `${toDate.getFullYear()}-${String(
+          toDate.getMonth() + 1
+        ).padStart(2, "0")}`;
+
+      const monthDifference =
+        (
+          toDate.getFullYear() -
+          fromDate.getFullYear()
+        ) *
+          12 +
+        (
+          toDate.getMonth() -
+          fromDate.getMonth()
+        ) +
+        1;
+
+      filters.months =
+        [1, 3, 6].includes(
+          monthDifference
+        )
+          ? monthDifference
+          : 1;
+    }
+  }
+
+  if (!filters.months) {
+    filters.months = 1;
   }
 
   if (
@@ -329,6 +418,267 @@ const getSteelAnalyticsDrillDown =
     }
   };
 
+
+  /* =========================================================
+   DOWNLOAD MANAGEMENT ANALYSIS PDF
+
+   GET /api/steel-analytics/pdf
+
+   REQUIRED:
+   month=YYYY-MM
+
+   PERIOD:
+   1
+   3
+   6
+
+   EXAMPLES:
+
+   ?month=2026-09&period=1
+
+   ?month=2026-09&period=3
+
+   ?month=2026-09&period=6
+========================================================= */
+
+const downloadSteelAnalyticsPdf =
+  async (req, res) => {
+    try {
+      const month =
+        cleanText(
+          req.query.month
+        );
+
+      const period =
+  Number(
+    req.query.period ||
+    req.query.months ||
+    1
+  );
+
+      if (!month) {
+        return res
+          .status(400)
+          .json({
+            success:
+              false,
+
+            message:
+              "month is required. Use YYYY-MM format.",
+          });
+      }
+
+      if (
+        !/^\d{4}-\d{2}$/.test(
+          month
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            success:
+              false,
+
+            message:
+              "Invalid month. Use YYYY-MM format.",
+          });
+      }
+
+      const [
+        year,
+        monthNumber,
+      ] = month
+        .split("-")
+        .map(Number);
+
+      if (
+        !Number.isInteger(
+          year
+        ) ||
+        !Number.isInteger(
+          monthNumber
+        ) ||
+        monthNumber < 1 ||
+        monthNumber > 12
+      ) {
+        return res
+          .status(400)
+          .json({
+            success:
+              false,
+
+            message:
+              "Invalid month.",
+          });
+      }
+
+      if (
+        ![
+          1,
+          3,
+          6,
+        ].includes(
+          period
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            success:
+              false,
+
+            message:
+              "period must be 1, 3 or 6.",
+          });
+      }
+
+      let trackingOrderType;
+
+      if (
+        req.query
+          .trackingOrderType
+      ) {
+        trackingOrderType =
+          cleanText(
+            req.query
+              .trackingOrderType
+          ).toUpperCase();
+
+        if (
+          ![
+            "H.O.",
+            "N.H.O.",
+          ].includes(
+            trackingOrderType
+          )
+        ) {
+          return res
+            .status(400)
+            .json({
+              success:
+                false,
+
+              message:
+                "trackingOrderType must be H.O. or N.H.O.",
+            });
+        }
+      }
+
+      console.log(
+        "STEEL ANALYTICS PDF REQUEST =>",
+        {
+          month,
+          period,
+
+          trackingOrderType:
+            trackingOrderType ||
+            "ALL",
+
+          steelMill:
+            req.query
+              .steelMill ||
+            "ALL",
+
+          grade:
+            req.query.grade ||
+            "ALL",
+
+          requestedBy:
+            req.user?.id ||
+            req.user?._id ||
+            "UNKNOWN",
+        }
+      );
+
+      const result =
+        await steelAnalyticsPdfService
+          .generateSteelAnalyticsPdf({
+            month,
+
+            period,
+
+            trackingOrderType,
+
+            steelMill:
+              req.query
+                .steelMill
+                ? cleanText(
+                    req.query
+                      .steelMill
+                  )
+                : undefined,
+
+            grade:
+              req.query.grade
+                ? cleanText(
+                    req.query
+                      .grade
+                  )
+                : undefined,
+          });
+
+      console.log(
+        "STEEL ANALYTICS PDF DOWNLOAD READY =>",
+        {
+          filename:
+            result.filename,
+
+          bytes:
+            result.buffer
+              .length,
+        }
+      );
+
+      res.setHeader(
+        "Content-Type",
+        "application/pdf"
+      );
+
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${result.filename}"`
+      );
+
+      res.setHeader(
+        "Content-Length",
+        result.buffer.length
+      );
+
+      res.setHeader(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, private"
+      );
+
+      return res
+        .status(200)
+        .end(
+          result.buffer
+        );
+    } catch (error) {
+      console.error(
+        "DOWNLOAD STEEL ANALYTICS PDF ERROR =>",
+        error
+      );
+
+      if (
+        res.headersSent
+      ) {
+        return res.end();
+      }
+
+      return res
+        .status(500)
+        .json({
+          success:
+            false,
+
+          message:
+            error.message ||
+            "Failed to generate Management Analysis PDF.",
+        });
+    }
+  };
+
 /* =========================================================
    EXPORT
 ========================================================= */
@@ -337,4 +687,5 @@ module.exports = {
   getSteelAnalytics,
   getSteelAnalyticsSummary,
   getSteelAnalyticsDrillDown,
+  downloadSteelAnalyticsPdf,
 };

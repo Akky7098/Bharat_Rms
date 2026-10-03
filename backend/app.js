@@ -91,6 +91,16 @@ const customerOrderTrackingPageRoutes =
     "./routes/customerOrderTrackingPageRoutes"
   );
 
+  const managementOrderAnalyticsRoutes =
+  require(
+    "./routes/managementOrderAnalyticsRoutes"
+  );
+
+const logisticsAnalyticsRoutes =
+  require(
+    "./routes/logisticsAnalyticsRoutes"
+  );
+
 
 /* =========================================================
    APP
@@ -803,6 +813,16 @@ app.use(
 app.use(
   "/api/customer-order-tracking",
   customerOrderTrackingRoutes
+);
+
+app.use(
+  "/api/management-order-analysis",
+  managementOrderAnalyticsRoutes
+);
+
+app.use(
+  "/api/logistics-analysis",
+  logisticsAnalyticsRoutes
 );
 
 

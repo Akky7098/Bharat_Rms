@@ -2,39 +2,20 @@
 
 const SalesOrder = require("../model/salesOrderModel");
 const Dispatch = require("../model/dispatchModel");
-const OrderTracking = require("../model/OrderTracking");
 
-const {
-  TRACKING_TYPES,
-  convertToMetricTon,
-  roundMetricTon,
-} = require("../model/steelAnalyticsModel");
+const OrderTracking = require("../model/OrderTracking");
 
 /* =========================================================
    CONSTANTS
 ========================================================= */
 
-const HOUSE_TYPE =
-  TRACKING_TYPES?.HOUSE || "H.O.";
+const HOUSE_TYPE = "H.O.";
+const STEEL_MILL_TYPE = "N.H.O.";
 
-const STEEL_MILL_TYPE =
-  TRACKING_TYPES?.STEEL_MILL || "N.H.O.";
-
-/*
- * Management Analysis became meaningful only after
- * H.O. / N.H.O. tracking was introduced.
- *
- * Everything before 13-Aug-2026 is ignored completely.
- */
-const ANALYTICS_START_DATE =
-  new Date(2026, 7, 13, 0, 0, 0, 0);
-
-const METRICS = {
-  NEW_ORDER: "new_order",
-  DISPATCH_TARGET: "dispatch_target",
-  ACTUAL_DISPATCH: "actual_dispatch",
-  TARGET_PENDING: "target_pending",
-  ORDER_BALANCE: "order_balance",
+const PERIODS = {
+  ONE_MONTH: 1,
+  THREE_MONTHS: 3,
+  SIX_MONTHS: 6,
 };
 
 /* =========================================================
@@ -42,7 +23,7 @@ const METRICS = {
 ========================================================= */
 
 const cleanText = (value) =>
-  String(value || "")
+  String(value ?? "")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -50,23 +31,28 @@ const normalizeGrade = (value) =>
   cleanText(value).toUpperCase();
 
 const toNumber = (value) => {
-  const number = Number(value);
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return 0;
+  }
+
+  const number = Number(
+    String(value).replace(/,/g, "")
+  );
 
   return Number.isFinite(number)
     ? number
     : 0;
 };
 
-const roundMT = (value) =>
-  roundMetricTon(toNumber(value));
-
-const kgToMT = (kg) =>
-  roundMT(toNumber(kg) / 1000);
+const roundKG = (value) =>
+  Number(toNumber(value).toFixed(3));
 
 const safeDate = (value) => {
-  if (!value) {
-    return null;
-  }
+  if (!value) return null;
 
   const date = new Date(value);
 
@@ -77,12 +63,30 @@ const safeDate = (value) => {
   return date;
 };
 
+const startOfDay = (value) => {
+  const date = safeDate(value);
+
+  if (!date) return null;
+
+  date.setHours(0, 0, 0, 0);
+
+  return date;
+};
+
+const endOfDay = (value) => {
+  const date = safeDate(value);
+
+  if (!date) return null;
+
+  date.setHours(23, 59, 59, 999);
+
+  return date;
+};
+
 const formatDateOnly = (value) => {
   const date = safeDate(value);
 
-  if (!date) {
-    return null;
-  }
+  if (!date) return null;
 
   const year = date.getFullYear();
 
@@ -98,192 +102,10 @@ const formatDateOnly = (value) => {
 };
 
 /* =========================================================
-   DATE HELPERS
-========================================================= */
-
-const startOfDay = (value) => {
-  const date = safeDate(value);
-
-  if (!date) {
-    return null;
-  }
-
-  date.setHours(0, 0, 0, 0);
-
-  return date;
-};
-
-const endOfDay = (value) => {
-  const date = safeDate(value);
-
-  if (!date) {
-    return null;
-  }
-
-  date.setHours(
-    23,
-    59,
-    59,
-    999
-  );
-
-  return date;
-};
-
-const startOfCurrentMonth = () => {
-  const now = new Date();
-
-  return new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    1,
-    0,
-    0,
-    0,
-    0
-  );
-};
-
-const endOfCurrentMonth = () => {
-  const now = new Date();
-
-  return new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-    23,
-    59,
-    59,
-    999
-  );
-};
-
-/*
- * IMPORTANT
- *
- * If frontend sends no dates:
- * current month is automatically selected.
- *
- * Example:
- * Sep 2026 -> 01-Sep to 30-Sep
- * Oct 2026 -> 01-Oct to 31-Oct
- */
-const buildPeriod = ({
-  from,
-  to,
-} = {}) => {
-  let fromDate = from
-    ? startOfDay(from)
-    : startOfCurrentMonth();
-
-  let toDate = to
-    ? endOfDay(to)
-    : endOfCurrentMonth();
-
-  if (from && !fromDate) {
-    throw new Error(
-      "Invalid from date."
-    );
-  }
-
-  if (to && !toDate) {
-    throw new Error(
-      "Invalid to date."
-    );
-  }
-
-  /*
-   * Never allow analytics before
-   * 13-Aug-2026.
-   */
-  if (
-    fromDate <
-    ANALYTICS_START_DATE
-  ) {
-    fromDate =
-      new Date(
-        ANALYTICS_START_DATE
-      );
-  }
-
-  if (
-    toDate <
-    ANALYTICS_START_DATE
-  ) {
-    throw new Error(
-      "Management Analysis is available only from 13 August 2026."
-    );
-  }
-
-  if (toDate < fromDate) {
-    throw new Error(
-      "To date cannot be earlier than From date."
-    );
-  }
-
-  return {
-    fromDate,
-    toDate,
-
-    from:
-      formatDateOnly(fromDate),
-
-    to:
-      formatDateOnly(toDate),
-  };
-};
-
-const isDateInPeriod = (
-  value,
-  period
-) => {
-  const date = safeDate(value);
-
-  if (!date) {
-    return false;
-  }
-
-  return (
-    date >= period.fromDate &&
-    date <= period.toDate
-  );
-};
-
-const isDateOnOrBefore = (
-  value,
-  endDate
-) => {
-  const date = safeDate(value);
-
-  if (!date) {
-    return false;
-  }
-
-  return date <= endDate;
-};
-
-const isOnOrAfterAnalyticsStart = (
-  value
-) => {
-  const date = safeDate(value);
-
-  if (!date) {
-    return false;
-  }
-
-  return (
-    date >=
-    ANALYTICS_START_DATE
-  );
-};
-
-/* =========================================================
    TRACKING TYPE
 ========================================================= */
 
-const normalizeTrackingType = (
-  value
-) => {
+const normalizeTrackingType = (value) => {
   const text = cleanText(value)
     .toUpperCase()
     .replace(/\s+/g, "");
@@ -307,9 +129,7 @@ const normalizeTrackingType = (
   return "";
 };
 
-const isValidTrackingType = (
-  value
-) => {
+const isValidTrackingType = (value) => {
   const type =
     normalizeTrackingType(value);
 
@@ -320,7 +140,182 @@ const isValidTrackingType = (
 };
 
 /* =========================================================
-   STEEL MILL
+   PERIOD
+========================================================= */
+
+/*
+ * Management Analysis now works like a bank statement:
+ *
+ * 1 Month
+ * 3 Months
+ * 6 Months
+ *
+ * Example:
+ *
+ * Selected month = September 2026
+ *
+ * 1 month:
+ * 01-Sep-2026 -> 30-Sep-2026
+ *
+ * 3 months:
+ * 01-Jul-2026 -> 30-Sep-2026
+ *
+ * 6 months:
+ * 01-Apr-2026 -> 30-Sep-2026
+ */
+
+const normalizeMonths = (value) => {
+  const months = Number(value);
+
+  if ([1, 3, 6].includes(months)) {
+    return months;
+  }
+
+  return 1;
+};
+
+const parseSelectedMonth = (month) => {
+  if (
+    typeof month === "string" &&
+    /^\d{4}-\d{2}$/.test(month)
+  ) {
+    const [year, monthNumber] =
+      month.split("-").map(Number);
+
+    if (
+      year >= 2000 &&
+      monthNumber >= 1 &&
+      monthNumber <= 12
+    ) {
+      return {
+        year,
+        monthIndex:
+          monthNumber - 1,
+      };
+    }
+  }
+
+  const now = new Date();
+
+  return {
+    year: now.getFullYear(),
+    monthIndex: now.getMonth(),
+  };
+};
+
+const buildPeriod = ({
+  month,
+  months = 1,
+} = {}) => {
+  const selectedMonths =
+    normalizeMonths(months);
+
+  const {
+    year,
+    monthIndex,
+  } = parseSelectedMonth(month);
+
+  const toDate = new Date(
+    year,
+    monthIndex + 1,
+    0,
+    23,
+    59,
+    59,
+    999
+  );
+
+  const fromDate = new Date(
+    year,
+    monthIndex -
+      selectedMonths +
+      1,
+    1,
+    0,
+    0,
+    0,
+    0
+  );
+
+  return {
+    months: selectedMonths,
+
+    month:
+      `${year}-${String(
+        monthIndex + 1
+      ).padStart(2, "0")}`,
+
+    fromDate,
+    toDate,
+
+    from:
+      formatDateOnly(fromDate),
+
+    to:
+      formatDateOnly(toDate),
+
+    label:
+      selectedMonths === 1
+        ? "1 Month"
+        : `${selectedMonths} Months`,
+  };
+};
+
+const isDateInPeriod = (
+  value,
+  period
+) => {
+  const date = safeDate(value);
+
+  if (!date) return false;
+
+  return (
+    date >= period.fromDate &&
+    date <= period.toDate
+  );
+};
+
+const isDateOnOrBefore = (
+  value,
+  endDate
+) => {
+  const date = safeDate(value);
+
+  if (!date) return false;
+
+  return date <= endDate;
+};
+
+/* =========================================================
+   ORDER BOOKING DATE
+========================================================= */
+
+/*
+ * IMPORTANT
+ *
+ * We want "how many orders did we TAKE?"
+ *
+ * Therefore createdAt is primary.
+ *
+ * poDate is NOT used as the primary
+ * analytics booking date because an
+ * old customer PO may be entered into
+ * RMS in a later month.
+ *
+ * This is important for matching the
+ * Sales Order count shown in RMS.
+ */
+
+const getOrderBookingDate = (
+  salesOrder
+) =>
+  safeDate(
+    salesOrder?.createdAt ||
+      salesOrder?.poDate
+  );
+
+/* =========================================================
+   STEEL MILL NAME
 ========================================================= */
 
 const getSteelMillName = (
@@ -348,7 +343,8 @@ const getSteelMillName = (
   ) {
     return (
       cleanText(
-        salesOrder?.otherSteelMill
+        salesOrder
+          ?.otherSteelMill
       ) ||
       "Others"
     );
@@ -361,143 +357,104 @@ const getSteelMillName = (
 };
 
 /* =========================================================
-   QUANTITY PARSER
+   REMOVE RATE FROM MATERIAL STRING
 ========================================================= */
 
-/*
- * Standard theoretical steel density:
- *
- * Rectangular / Flat:
- * KG = Width(mm) × Thickness(mm) × Length(mm)
- *      × 0.00000785 × Pieces
- *
- * Round:
- * KG = Dia(mm) × Dia(mm) × Length(mm)
- *      × 0.000006165 × Pieces
- *
- * IMPORTANT:
- * Explicit KG / MT always has priority.
- *
- * Example:
- * 500 KGS @ 440/KG
- *
- * Quantity = 500 KG
- * Rate     = 440/KG
- *
- * We must NEVER read @280/kg or @173/kg as quantity.
- */
-
-const STEEL_RECTANGULAR_FACTOR = 0.00000785;
-const STEEL_ROUND_FACTOR = 0.000006165;
-
-
-/*
- * ---------------------------------------------------------
- * REMOVE PRICE/RATE PART BEFORE QUANTITY DETECTION
- * ---------------------------------------------------------
- *
- * Example:
- *
- * 50X30X1209MM QTY:2 NOS @ 280/kg + GST
- *
- * becomes:
- *
- * 50X30X1209MM QTY:2 NOS
- *
- * This prevents 280/kg from being treated as 280 KG.
- */
 const removeRatePart = (value) => {
-  const text = String(value || "");
+  let text =
+    String(value || "");
 
-  return text
-    .replace(
-      /@\s*(?:RS\.?\s*)?\d+(?:\.\d+)?\s*\/?\s*(?:KG|KGS|MT|MTS|PC|PCS|NOS?)\b.*$/i,
-      ""
-    )
-    .replace(
-      /\bRATE\s*[:=-]?\s*(?:RS\.?\s*)?\d+(?:\.\d+)?\s*\/?\s*(?:KG|KGS|MT|MTS|PC|PCS|NOS?)\b.*$/i,
-      ""
-    )
-    .trim();
+  /*
+   * Remove:
+   *
+   * @ 280/kg
+   * @280/KG
+   * @ Rs. 280/KG
+   */
+
+  text = text.replace(
+    /@\s*(?:RS\.?\s*)?\d+(?:\.\d+)?\s*\/?\s*(?:KG|KGS|MT|MTS|PC|PCS|NOS?)\b.*$/i,
+    ""
+  );
+
+  /*
+   * Remove:
+   *
+   * RATE: 280/KG
+   */
+
+  text = text.replace(
+    /\bRATE\s*[:=-]?\s*(?:RS\.?\s*)?\d+(?:\.\d+)?\s*\/?\s*(?:KG|KGS|MT|MTS|PC|PCS|NOS?)\b.*$/i,
+    ""
+  );
+
+  return text.trim();
 };
 
+/* =========================================================
+   PIECE COUNT
+========================================================= */
 
-/*
- * ---------------------------------------------------------
- * EXTRACT NUMBER OF PIECES
- * ---------------------------------------------------------
- *
- * Supports:
- *
- * QTY:2 NOS
- * QTY 2 NOS
- * QTY-2 NOS
- * QTY: 09 NOS
- * 10 NOS
- * 2 PCS
- * 2 PIECES
- */
 const extractPieceCount = (value) => {
   const text =
     String(value || "")
       .replace(/,/g, "")
       .trim();
 
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
 
   const qtyMatch =
     text.match(
-      /\b(?:QTY|QUANTITY)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(?:NOS?|PCS?|PIECES?)\b/i
+      /\b(?:QTY|QUANTITY)\s*[:=-]?\s*(\d+(?:\.\d+)?)\s*(?:NOS?|PCS?|PIECES?)\b/i
     );
 
   if (qtyMatch) {
     const pieces =
       Number(qtyMatch[1]);
 
-    return Number.isFinite(pieces) &&
+    if (
+      Number.isFinite(pieces) &&
       pieces > 0
-      ? pieces
-      : null;
+    ) {
+      return pieces;
+    }
   }
 
-  const nosMatch =
+  const directMatch =
     text.match(
       /\b(\d+(?:\.\d+)?)\s*(?:NOS?|PCS?|PIECES?)\b/i
     );
 
-  if (nosMatch) {
+  if (directMatch) {
     const pieces =
-      Number(nosMatch[1]);
+      Number(directMatch[1]);
 
-    return Number.isFinite(pieces) &&
+    if (
+      Number.isFinite(pieces) &&
       pieces > 0
-      ? pieces
-      : null;
+    ) {
+      return pieces;
+    }
   }
 
   return null;
 };
 
+/* =========================================================
+   DIMENSIONAL WEIGHT
+========================================================= */
 
-/*
- * ---------------------------------------------------------
- * PARSE DIMENSIONAL WEIGHT
- * ---------------------------------------------------------
- */
-const parseDimensionalWeight = (
+const RECTANGULAR_FACTOR =
+  0.00000785;
+
+const ROUND_FACTOR =
+  0.000006165;
+
+const parseDimensionalWeightKG = (
   value
 ) => {
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return null;
-  }
-
   const original =
-    String(value);
+    String(value || "");
 
   const text =
     removeRatePart(original)
@@ -506,19 +463,15 @@ const parseDimensionalWeight = (
       .replace(/\s+/g, " ")
       .trim();
 
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
 
   const pieces =
     extractPieceCount(text);
 
   /*
-   * We calculate dimensional weight only when
-   * piece quantity is explicitly available.
-   *
-   * This avoids silently assuming 1 piece.
+   * Never assume 1 piece.
    */
+
   if (
     pieces === null ||
     pieces <= 0
@@ -526,130 +479,76 @@ const parseDimensionalWeight = (
     return null;
   }
 
+  /* -------------------------
+     ROUND
+  ------------------------- */
 
-  /*
-   * =======================================================
-   * ROUND MATERIAL
-   * =======================================================
-   *
-   * Examples:
-   *
-   * DIA 115X230MM QTY:10 NOS
-   * DIA115 X 610 MM QTY:09 NOS
-   * Ø115X230MM QTY 10 NOS
-   *
-   * Formula:
-   *
-   * Dia × Dia × Length × 0.000006165 × Qty
-   */
+  const roundMatch =
+    text.match(
+      /\b(?:DIA|DIAMETER|Ø)\s*[:=-]?\s*(\d+(?:\.\d+)?)\s*(?:MM)?\s*X\s*(\d+(?:\.\d+)?)\s*(?:MM)?\b/i
+    );
 
-  const roundPatterns = [
-    /\b(?:DIA|DIAMETER|Ø)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(?:MM)?\s*X\s*(\d+(?:\.\d+)?)\s*MM\b/i,
-
-    /\b(?:DIA|DIAMETER|Ø)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(?:MM)?\s*[Xx]\s*(\d+(?:\.\d+)?)\s*(?:MM)?\b/i,
-  ];
-
-  for (
-    const regex of roundPatterns
-  ) {
-    const match =
-      text.match(regex);
-
-    if (!match) {
-      continue;
-    }
-
+  if (roundMatch) {
     const diameterMM =
-      Number(match[1]);
+      Number(roundMatch[1]);
 
     const lengthMM =
-      Number(match[2]);
+      Number(roundMatch[2]);
 
     if (
-      !Number.isFinite(
+      Number.isFinite(
         diameterMM
-      ) ||
-      !Number.isFinite(
+      ) &&
+      Number.isFinite(
         lengthMM
-      ) ||
-      diameterMM <= 0 ||
-      lengthMM <= 0
+      ) &&
+      diameterMM > 0 &&
+      lengthMM > 0
     ) {
-      continue;
+      const weightPerPieceKG =
+        diameterMM *
+        diameterMM *
+        lengthMM *
+        ROUND_FACTOR;
+
+      const totalKG =
+        weightPerPieceKG *
+        pieces;
+
+      return {
+        original,
+
+        quantityKG:
+          roundKG(totalKG),
+
+        source:
+          "CALCULATED_DIMENSIONS",
+
+        shape:
+          "ROUND",
+
+        pieces,
+
+        weightPerPieceKG:
+          roundKG(
+            weightPerPieceKG
+          ),
+
+        dimensions: {
+          diameterMM,
+          lengthMM,
+        },
+      };
     }
-
-    const weightPerPieceKg =
-      diameterMM *
-      diameterMM *
-      lengthMM *
-      STEEL_ROUND_FACTOR;
-
-    const totalWeightKg =
-      weightPerPieceKg *
-      pieces;
-
-    return {
-      original,
-
-      quantity:
-        totalWeightKg,
-
-      unit:
-        "KG",
-
-      metricTon:
-        roundMT(
-          totalWeightKg /
-            1000
-        ),
-
-      source:
-        "CALCULATED_DIMENSIONS",
-
-      shape:
-        "ROUND",
-
-      pieces,
-
-      weightPerPieceKg:
-        Number(
-          weightPerPieceKg
-            .toFixed(3)
-        ),
-
-      totalWeightKg:
-        Number(
-          totalWeightKg
-            .toFixed(3)
-        ),
-
-      dimensions: {
-        diameterMM,
-        lengthMM,
-      },
-    };
   }
 
-
-  /*
-   * =======================================================
-   * RECTANGULAR / FLAT / BLOCK
-   * =======================================================
-   *
-   * Examples:
-   *
-   * 50X30X1209MM QTY:2 NOS
-   * 100 X 50 X 500 MM QTY 3 NOS
-   * 100*50*500 MM QTY 3 PCS
-   *
-   * Formula:
-   *
-   * A × B × Length × 0.00000785 × Qty
-   */
+  /* -------------------------
+     RECTANGULAR / FLAT
+  ------------------------- */
 
   const rectangularMatch =
     text.match(
-      /(?:^|[\s:,\-])(\d+(?:\.\d+)?)\s*(?:MM)?\s*X\s*(\d+(?:\.\d+)?)\s*(?:MM)?\s*X\s*(\d+(?:\.\d+)?)\s*MM\b/i
+      /(?:^|[\s,:-])(\d+(?:\.\d+)?)\s*(?:MM)?\s*X\s*(\d+(?:\.\d+)?)\s*(?:MM)?\s*X\s*(\d+(?:\.\d+)?)\s*(?:MM)?\b/i
     );
 
   if (rectangularMatch) {
@@ -682,30 +581,21 @@ const parseDimensionalWeight = (
       dimension2MM > 0 &&
       lengthMM > 0
     ) {
-      const weightPerPieceKg =
+      const weightPerPieceKG =
         dimension1MM *
         dimension2MM *
         lengthMM *
-        STEEL_RECTANGULAR_FACTOR;
+        RECTANGULAR_FACTOR;
 
-      const totalWeightKg =
-        weightPerPieceKg *
+      const totalKG =
+        weightPerPieceKG *
         pieces;
 
       return {
         original,
 
-        quantity:
-          totalWeightKg,
-
-        unit:
-          "KG",
-
-        metricTon:
-          roundMT(
-            totalWeightKg /
-              1000
-          ),
+        quantityKG:
+          roundKG(totalKG),
 
         source:
           "CALCULATED_DIMENSIONS",
@@ -715,17 +605,10 @@ const parseDimensionalWeight = (
 
         pieces,
 
-        weightPerPieceKg:
-          Number(
-            weightPerPieceKg
-              .toFixed(3)
+        weightPerPieceKG:
+          roundKG(
+            weightPerPieceKG
           ),
-
-        totalWeightKg:
-          Number(
-            totalWeightKg
-              .toFixed(3)
-        ),
 
         dimensions: {
           dimension1MM,
@@ -736,68 +619,45 @@ const parseDimensionalWeight = (
     }
   }
 
-
-  /*
-   * =======================================================
-   * SQUARE / RCS
-   * =======================================================
-   *
-   * Examples:
-   *
-   * RCS 100X500MM QTY:2 NOS
-   * SQ 100X500MM QTY:2 NOS
-   * SQUARE 100X500MM QTY:2 NOS
-   *
-   * Means:
-   * 100 × 100 × 500
-   */
+  /* -------------------------
+     SQUARE / RCS
+  ------------------------- */
 
   const squareMatch =
     text.match(
-      /\b(?:RCS|SQ|SQUARE)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(?:MM)?\s*X\s*(\d+(?:\.\d+)?)\s*MM\b/i
+      /\b(?:RCS|SQ|SQUARE)\s*[:=-]?\s*(\d+(?:\.\d+)?)\s*(?:MM)?\s*X\s*(\d+(?:\.\d+)?)\s*(?:MM)?\b/i
     );
 
   if (squareMatch) {
     const sideMM =
-      Number(
-        squareMatch[1]
-      );
+      Number(squareMatch[1]);
 
     const lengthMM =
-      Number(
-        squareMatch[2]
-      );
+      Number(squareMatch[2]);
 
     if (
       Number.isFinite(sideMM) &&
-      Number.isFinite(lengthMM) &&
+      Number.isFinite(
+        lengthMM
+      ) &&
       sideMM > 0 &&
       lengthMM > 0
     ) {
-      const weightPerPieceKg =
+      const weightPerPieceKG =
         sideMM *
         sideMM *
         lengthMM *
-        STEEL_RECTANGULAR_FACTOR;
+        RECTANGULAR_FACTOR;
 
-      const totalWeightKg =
-        weightPerPieceKg *
+      const totalKG =
+        weightPerPieceKG *
         pieces;
 
       return {
         original,
 
-        quantity:
-          totalWeightKg,
-
-        unit:
-          "KG",
-
-        metricTon:
-          roundMT(
-            totalWeightKg /
-              1000
-          ),
+        quantityKG:
+          roundKG(totalKG),
 
         source:
           "CALCULATED_DIMENSIONS",
@@ -807,17 +667,10 @@ const parseDimensionalWeight = (
 
         pieces,
 
-        weightPerPieceKg:
-          Number(
-            weightPerPieceKg
-              .toFixed(3)
+        weightPerPieceKG:
+          roundKG(
+            weightPerPieceKG
           ),
-
-        totalWeightKg:
-          Number(
-            totalWeightKg
-              .toFixed(3)
-        ),
 
         dimensions: {
           sideMM,
@@ -827,24 +680,27 @@ const parseDimensionalWeight = (
     }
   }
 
-
   return null;
 };
 
+/* =========================================================
+   QUANTITY PARSER - OUTPUT ALWAYS KG
+========================================================= */
 
 /*
- * ---------------------------------------------------------
- * MAIN QUANTITY PARSER
- * ---------------------------------------------------------
- *
  * Priority:
  *
- * 1. Explicit MT
+ * 1. Explicit MT -> convert to KG
  * 2. Explicit KG
- * 3. Dimensional calculated weight
- * 4. Otherwise unresolved
+ * 3. Dimensions -> calculate KG
+ * 4. Unresolved -> null
+ *
+ * IMPORTANT:
+ * Quantity parser DOES NOT control
+ * whether an order is counted.
  */
-const parseQuantityToMetricTon = (
+
+const parseQuantityToKG = (
   value
 ) => {
   if (
@@ -857,15 +713,6 @@ const parseQuantityToMetricTon = (
   const original =
     String(value);
 
-  /*
-   * Remove rate before looking for KG.
-   *
-   * Otherwise:
-   *
-   * QTY:2 NOS @280/kg
-   *
-   * could incorrectly become 280 KG.
-   */
   const quantityText =
     removeRatePart(original)
       .replace(/,/g, "")
@@ -875,12 +722,9 @@ const parseQuantityToMetricTon = (
     return null;
   }
 
-
-  /*
-   * =======================================================
-   * 1. EXPLICIT MT
-   * =======================================================
-   */
+  /* -------------------------
+     EXPLICIT MT
+  ------------------------- */
 
   const mtPatterns = [
     /(\d+(?:\.\d+)?)\s*(?:M\.?\s*T\.?|MTS?)\b/i,
@@ -896,75 +740,51 @@ const parseQuantityToMetricTon = (
         regex
       );
 
-    if (!match) {
-      continue;
-    }
+    if (!match) continue;
 
-    const quantity =
+    const quantityMT =
       Number(match[1]);
 
     if (
       !Number.isFinite(
-        quantity
+        quantityMT
       ) ||
-      quantity <= 0
+      quantityMT <= 0
     ) {
       continue;
     }
 
-    const metricTon =
-      convertToMetricTon(
-        quantity,
-        "MT"
-      );
+    return {
+      original,
 
-    if (
-      metricTon !== null &&
-      metricTon !== undefined
-    ) {
-      return {
-        original,
+      detectedQuantity:
+        quantityMT,
 
-        quantity,
+      detectedUnit:
+        "MT",
 
-        unit:
-          "MT",
+      quantityKG:
+        roundKG(
+          quantityMT * 1000
+        ),
 
-        metricTon:
-          roundMT(metricTon),
+      source:
+        "EXPLICIT_MT",
 
-        source:
-          "EXPLICIT_MT",
+      shape: null,
 
-        shape:
-          null,
+      pieces: null,
 
-        pieces:
-          null,
+      weightPerPieceKG:
+        null,
 
-        weightPerPieceKg:
-          null,
-
-        totalWeightKg:
-          Number(
-            (
-              metricTon *
-              1000
-            ).toFixed(3)
-          ),
-
-        dimensions:
-          null,
-      };
-    }
+      dimensions: null,
+    };
   }
 
-
-  /*
-   * =======================================================
-   * 2. EXPLICIT KG
-   * =======================================================
-   */
+  /* -------------------------
+     EXPLICIT KG
+  ------------------------- */
 
   const kgMatch =
     quantityText.match(
@@ -972,89 +792,93 @@ const parseQuantityToMetricTon = (
     );
 
   if (kgMatch) {
-    const quantity =
-      Number(
-        kgMatch[1]
-      );
+    const quantityKG =
+      Number(kgMatch[1]);
 
     if (
       Number.isFinite(
-        quantity
+        quantityKG
       ) &&
-      quantity > 0
+      quantityKG > 0
     ) {
-      const metricTon =
-        convertToMetricTon(
-          quantity,
-          "KG"
-        );
+      return {
+        original,
 
-      if (
-        metricTon !== null &&
-        metricTon !==
-          undefined
-      ) {
-        return {
-          original,
+        detectedQuantity:
+          quantityKG,
 
-          quantity,
+        detectedUnit:
+          "KG",
 
-          unit:
-            "KG",
+        quantityKG:
+          roundKG(
+            quantityKG
+          ),
 
-          metricTon:
-            roundMT(
-              metricTon
-            ),
+        source:
+          "EXPLICIT_KG",
 
-          source:
-            "EXPLICIT_KG",
+        shape: null,
 
-          shape:
-            null,
+        pieces: null,
 
-          pieces:
-            null,
+        weightPerPieceKG:
+          null,
 
-          weightPerPieceKg:
-            null,
-
-          totalWeightKg:
-            Number(
-              quantity.toFixed(
-                3
-              )
-            ),
-
-          dimensions:
-            null,
-        };
-      }
+        dimensions: null,
+      };
     }
   }
 
-
-  /*
-   * =======================================================
-   * 3. DIMENSIONAL CALCULATION
-   * =======================================================
-   */
+  /* -------------------------
+     DIMENSIONAL
+  ------------------------- */
 
   const dimensional =
-    parseDimensionalWeight(
+    parseDimensionalWeightKG(
       quantityText
     );
 
   if (dimensional) {
-    return dimensional;
+    return {
+      original,
+
+      detectedQuantity:
+        dimensional
+          .quantityKG,
+
+      detectedUnit:
+        "KG",
+
+      quantityKG:
+        dimensional
+          .quantityKG,
+
+      source:
+        dimensional.source,
+
+      shape:
+        dimensional.shape,
+
+      pieces:
+        dimensional.pieces,
+
+      weightPerPieceKG:
+        dimensional
+          .weightPerPieceKG,
+
+      dimensions:
+        dimensional
+          .dimensions,
+    };
   }
 
-
-  /*
-   * Nothing could be safely determined.
-   */
   return null;
 };
+
+/* =========================================================
+   GRADE PARSER
+========================================================= */
 
 const extractGradeFromText = (
   value
@@ -1062,99 +886,54 @@ const extractGradeFromText = (
   const text =
     cleanText(value);
 
-  if (!text) {
-    return "";
-  }
+  if (!text) return "";
 
-  /*
-   * Remove leading item numbering.
-   *
-   * 1.H13 ...
-   * 2.D3 ...
-   * 3) H11 ...
-   */
   let workingText =
     text.replace(
       /^\s*\d+\s*[.)\-:]\s*/,
       ""
     );
 
-
-  /*
-   * First try explicit:
-   *
-   * GRADE: H13
-   * GRADE H13
-   * GR: D3
-   */
   const explicitGrade =
     workingText.match(
-      /\b(?:GRADE|GR)\s*[:=\-]?\s*([A-Z0-9][A-Z0-9.+\-]*)\b/i
+      /\b(?:GRADE|GR)\s*[:=-]?\s*([A-Z0-9][A-Z0-9.+\-]*)\b/i
     );
 
   if (
-    explicitGrade &&
-    explicitGrade[1]
+    explicitGrade?.[1]
   ) {
     return normalizeGrade(
       explicitGrade[1]
     );
   }
 
-
-  /*
-   * In the legacy Sales Order format,
-   * grade is normally the first token:
-   *
-   * H13 ROUGH SIZE...
-   * D3 ROUGH SIZE...
-   * DIN 1.2714...
-   *
-   * Handle DIN specially.
-   */
   const dinGrade =
     workingText.match(
       /^(DIN\s*\d+(?:\.\d+)?)/i
     );
 
-  if (dinGrade) {
+  if (dinGrade?.[1]) {
     return normalizeGrade(
       dinGrade[1]
     );
   }
 
-
-  /*
-   * Standard first-token grade.
-   *
-   * Examples:
-   * H13
-   * H11
-   * D2
-   * D3
-   * EN19
-   * EN24
-   * P20
-   * 1.2714
-   */
   const firstToken =
     workingText.match(
       /^([A-Z0-9][A-Z0-9.+\-]*)\b/i
     );
 
-  if (
-    firstToken &&
-    firstToken[1]
-  ) {
-    const candidate =
-      normalizeGrade(
-        firstToken[1]
-      );
+  if (!firstToken?.[1]) {
+    return "";
+  }
 
-    /*
-     * Don't treat generic words as grades.
-     */
-    const rejected = new Set([
+  const candidate =
+    normalizeGrade(
+      firstToken[1]
+    );
+
+  const rejected =
+    new Set([
       "DIA",
       "DIAMETER",
       "ROUND",
@@ -1168,18 +947,9 @@ const extractGradeFromText = (
       "QUANTITY",
     ]);
 
-    if (
-      candidate &&
-      !rejected.has(
-        candidate
-      )
-    ) {
-      return candidate;
-    }
-  }
-
-
-  return "";
+  return rejected.has(candidate)
+    ? ""
+    : candidate;
 };
 
 /* =========================================================
@@ -1200,9 +970,10 @@ const extractSalesOrderItems = (
     return [];
   }
 
-  /*
-   * Structured array
-   */
+  /* -------------------------
+     STRUCTURED ARRAY
+  ------------------------- */
+
   if (Array.isArray(raw)) {
     return raw.map(
       (item, index) => {
@@ -1211,47 +982,70 @@ const extractSalesOrderItems = (
             item?.grade
           );
 
-        const directMT =
-          convertToMetricTon(
-            item?.quantity,
+        let quantityKG = null;
+
+        const unit =
+          cleanText(
             item?.unit
+          ).toUpperCase();
+
+        const quantity =
+          toNumber(
+            item?.quantity
           );
+
+        if (
+          quantity > 0 &&
+          (
+            unit === "KG" ||
+            unit === "KGS"
+          )
+        ) {
+          quantityKG =
+            roundKG(quantity);
+        }
+
+        if (
+          quantity > 0 &&
+          (
+            unit === "MT" ||
+            unit === "MTS"
+          )
+        ) {
+          quantityKG =
+            roundKG(
+              quantity * 1000
+            );
+        }
 
         return {
           index,
 
-          grade,
+          grade:
+            grade ||
+            "UNIDENTIFIED",
 
-          original: item,
+          original:
+            item,
 
           parsed:
-            directMT !== null &&
-            directMT !==
-              undefined,
+            quantityKG !== null,
 
-          metricTon:
-            directMT !== null &&
-            directMT !==
-              undefined
-              ? roundMT(
-                  directMT
-                )
-              : null,
+          quantityKG,
 
-          detectedQuantity:
-            item?.quantity ??
-            null,
-
-          detectedUnit:
-            item?.unit || "",
+          quantitySource:
+            quantityKG !== null
+              ? "STRUCTURED"
+              : "UNRESOLVED",
         };
       }
     );
   }
 
-  /*
-   * Legacy/free-text format
-   */
+  /* -------------------------
+     LEGACY TEXT
+  ------------------------- */
+
   const rows =
     String(raw)
       .split(/\r?\n|;/)
@@ -1263,10 +1057,8 @@ const extractSalesOrderItems = (
 
   return rows.map(
     (row, index) => {
-      const parsedQuantity =
-        parseQuantityToMetricTon(
-          row
-        );
+      const parsed =
+        parseQuantityToKG(row);
 
       const grade =
         extractGradeFromText(
@@ -1274,77 +1066,61 @@ const extractSalesOrderItems = (
         );
 
       return {
-  index,
+        index,
 
-  original: row,
+        original:
+          row,
 
-  grade,
+        grade:
+          grade ||
+          "UNIDENTIFIED",
 
-  parsed:
-    Boolean(
-      parsedQuantity
-    ),
+        parsed:
+          Boolean(parsed),
 
-  metricTon:
-    parsedQuantity
-      ? parsedQuantity
-          .metricTon
-      : null,
+        quantityKG:
+          parsed
+            ? parsed.quantityKG
+            : null,
 
-  detectedQuantity:
-    parsedQuantity
-      ? parsedQuantity
-          .quantity
-      : null,
+        quantitySource:
+          parsed
+            ? parsed.source
+            : "UNRESOLVED",
 
-  detectedUnit:
-    parsedQuantity
-      ? parsedQuantity
-          .unit
-      : "",
+        detectedQuantity:
+          parsed
+            ? parsed
+                .detectedQuantity
+            : null,
 
-  quantitySource:
-    parsedQuantity
-      ? parsedQuantity
-          .source ||
-        "EXPLICIT_WEIGHT"
-      : "UNRESOLVED",
+        detectedUnit:
+          parsed
+            ? parsed
+                .detectedUnit
+            : "",
 
-  shape:
-    parsedQuantity
-      ? parsedQuantity
-          .shape ||
-        null
-      : null,
+        shape:
+          parsed
+            ? parsed.shape
+            : null,
 
-  pieces:
-    parsedQuantity
-      ? parsedQuantity
-          .pieces ??
-        null
-      : null,
+        pieces:
+          parsed
+            ? parsed.pieces
+            : null,
 
-  weightPerPieceKg:
-    parsedQuantity
-      ? parsedQuantity
-          .weightPerPieceKg ??
-        null
-      : null,
+        weightPerPieceKG:
+          parsed
+            ? parsed
+                .weightPerPieceKG
+            : null,
 
-  totalWeightKg:
-    parsedQuantity
-      ? parsedQuantity
-          .totalWeightKg ??
-        null
-      : null,
-
-  dimensions:
-    parsedQuantity
-      ? parsedQuantity
-          .dimensions ||
-        null
-      : null,
-};
+        dimensions:
+          parsed
+            ? parsed.dimensions
+            : null,
+      };
     }
   );
 };
@@ -1361,7 +1137,8 @@ const getOrderQuantityInfo = (
       salesOrder
     );
 
-  let totalMT = 0;
+  let totalKG = 0;
+
   let parsedItemCount = 0;
 
   const grades =
@@ -1373,22 +1150,30 @@ const getOrderQuantityInfo = (
     (item) => {
       if (
         !item.parsed ||
-        item.metricTon === null
+        item.quantityKG === null
       ) {
         unparsedItems.push(
           item
         );
 
+        /*
+         * IMPORTANT:
+         *
+         * Do NOT remove the Sales Order.
+         *
+         * Order count and quantity parsing
+         * are completely separate.
+         */
+
         return;
       }
 
-      const quantityMT =
+      const quantityKG =
         toNumber(
-          item.metricTon
+          item.quantityKG
         );
 
-      totalMT +=
-        quantityMT;
+      totalKG += quantityKG;
 
       parsedItemCount += 1;
 
@@ -1398,12 +1183,13 @@ const getOrderQuantityInfo = (
 
       grades.set(
         gradeName,
+
         toNumber(
           grades.get(
             gradeName
           )
         ) +
-          quantityMT
+          quantityKG
       );
     }
   );
@@ -1411,8 +1197,8 @@ const getOrderQuantityInfo = (
   return {
     items,
 
-    totalMT:
-      roundMT(totalMT),
+    totalKG:
+      roundKG(totalKG),
 
     parsedItemCount,
 
@@ -1431,437 +1217,640 @@ const getOrderQuantityInfo = (
 };
 
 /* =========================================================
-   ORDER DATE
+   DISPATCH HELPERS
 ========================================================= */
 
-const getSalesOrderDate = (
-  salesOrder
-) =>
-  safeDate(
-    salesOrder?.poDate ||
-      salesOrder?.createdAt
-  );
-
-/* =========================================================
-   READY / TARGET DATE
-========================================================= */
-
-const getReadyMilestone = (
+const getTrackingDispatchTargetDate = (
   tracking
 ) => {
-  if (
-    !Array.isArray(
-      tracking?.milestones
-    )
-  ) {
+  if (!tracking) {
     return null;
   }
 
-  return (
-    tracking.milestones.find(
-      (milestone) =>
-        milestone?.code ===
-          "ready_for_dispatch" ||
-        milestone?.status ===
-          "ready_for_dispatch"
-    ) ||
-    null
-  );
-};
+  /*
+   * PRIMARY SOURCE
+   *
+   * Order Tracking service calculates this
+   * from:
+   *
+   * Sales Order approval date
+   *          +
+   * process-specific ready_for_dispatch day
+   *
+   * Examples:
+   *
+   * AS_ROLLED       -> approval + 30 days
+   * AS_FORGED       -> approval + 30 days
+   * ROLLED ANN/NORM -> approval + 39 days
+   * FORGED ANN/NORM -> approval + 45 days
+   * ROLLED Q&T      -> approval + 52 days
+   * FORGED Q&T      -> approval + 58 days
+   *
+   * Therefore analytics MUST NOT calculate
+   * target month from PO date / createdAt.
+   */
 
-const getCurrentTargetDate = (
-  tracking
-) => {
-  return (
+  const estimatedReadyDate =
     safeDate(
       tracking
         ?.estimatedReadyDate
-    ) ||
-    safeDate(
-      getReadyMilestone(
-        tracking
-      )?.estimatedDate
-    )
-  );
-};
-
-const getOriginalTargetDate = (
-  tracking
-) => {
-  const milestone =
-    getReadyMilestone(
-      tracking
     );
 
-  return (
-    safeDate(
-      milestone
-        ?.originalEstimatedDate
-    ) ||
-    safeDate(
-      tracking
-        ?.estimatedReadyDate
+  if (estimatedReadyDate) {
+    return estimatedReadyDate;
+  }
+
+  /*
+   * FALLBACK
+   *
+   * If summary estimatedReadyDate is missing,
+   * use the actual ready_for_dispatch milestone.
+   */
+
+  const milestones =
+    Array.isArray(
+      tracking?.milestones
     )
+      ? tracking.milestones
+      : [];
+
+  const readyMilestone =
+    milestones.find(
+      (milestone) =>
+        cleanText(
+          milestone?.code
+        ).toLowerCase() ===
+        "ready_for_dispatch"
+    );
+
+  if (!readyMilestone) {
+    return null;
+  }
+
+  /*
+   * Prefer revised/current estimated date.
+   *
+   * originalEstimatedDate is only fallback.
+   */
+
+  return safeDate(
+    readyMilestone
+      ?.estimatedDate ||
+      readyMilestone
+        ?.originalEstimatedDate
   );
 };
 
+
+const getDispatchDate = (
+  dispatch
+) =>
+  safeDate(
+    dispatch?.dispatchDate ||
+      dispatch?.createdAt
+  );
+
+const getDispatchQuantityKG = (
+  dispatch
+) =>
+  roundKG(
+    dispatch?.dispatchQty
+  );
+
 /* =========================================================
-   SUMMARY BUCKET
+   EMPTY SUMMARY
 ========================================================= */
 
-const createSummaryBucket = () => ({
-  newOrderMT: 0,
+const createSummary = () => ({
+  orderCount: 0,
 
-  dispatchTargetMT: 0,
+  parsedOrderCount: 0,
 
-  actualDispatchMT: 0,
+  unresolvedOrderCount: 0,
 
-  targetPendingMT: 0,
+  orderTakenKG: 0,
 
-  orderBalanceMT: 0,
+  /*
+   * DISPATCH PLAN
+   *
+   * Quantity whose Order Tracking
+   * estimatedReadyDate /
+   * ready_for_dispatch date falls
+   * inside the selected period.
+   */
 
-  newOrderIds:
-    new Set(),
+  dispatchTargetKG: 0,
 
-  dispatchTargetOrderIds:
-    new Set(),
+  totalDispatchKG: 0,
 
-  actualDispatchOrderIds:
-    new Set(),
+  /*
+   * Target quantity still pending
+   * against the selected period's
+   * dispatch plan.
+   */
 
-  targetPendingOrderIds:
-    new Set(),
+  targetPendingKG: 0,
 
-  orderBalanceOrderIds:
-    new Set(),
+  dispatchLeftKG: 0,
+
+  /*
+   * Separate informational metric.
+   *
+   * This includes every dispatch whose
+   * dispatch date falls in the selected
+   * period, including older orders.
+   */
+
+  allDispatchInPeriodKG: 0,
 });
 
-const addMetric = (
-  bucket,
-  metric,
-  quantity,
-  salesOrderId
-) => {
-  const qty =
-    toNumber(quantity);
 
-  if (qty <= 0) {
-    return;
-  }
-
-  const id =
-    salesOrderId
-      ? String(
-          salesOrderId
-        )
-      : "";
-
-  switch (metric) {
-    case METRICS.NEW_ORDER:
-      bucket.newOrderMT +=
-        qty;
-
-      if (id) {
-        bucket
-          .newOrderIds
-          .add(id);
-      }
-
-      break;
-
-    case METRICS.DISPATCH_TARGET:
-      bucket.dispatchTargetMT +=
-        qty;
-
-      if (id) {
-        bucket
-          .dispatchTargetOrderIds
-          .add(id);
-      }
-
-      break;
-
-    case METRICS.ACTUAL_DISPATCH:
-      bucket.actualDispatchMT +=
-        qty;
-
-      if (id) {
-        bucket
-          .actualDispatchOrderIds
-          .add(id);
-      }
-
-      break;
-
-    case METRICS.TARGET_PENDING:
-      bucket.targetPendingMT +=
-        qty;
-
-      if (id) {
-        bucket
-          .targetPendingOrderIds
-          .add(id);
-      }
-
-      break;
-
-    case METRICS.ORDER_BALANCE:
-      bucket.orderBalanceMT +=
-        qty;
-
-      if (id) {
-        bucket
-          .orderBalanceOrderIds
-          .add(id);
-      }
-
-      break;
-
-    default:
-      break;
-  }
-};
-
-const finalizeBucket = (
-  bucket
-) => {
-  const target =
-    roundMT(
-      bucket
-        .dispatchTargetMT
-    );
-
-  const actual =
-    roundMT(
-      bucket
-        .actualDispatchMT
-    );
-
-  return {
-    newOrderMT:
-      roundMT(
-        bucket.newOrderMT
-      ),
-
-    dispatchTargetMT:
-      target,
-
-    actualDispatchMT:
-      actual,
-
-    targetPendingMT:
-      roundMT(
-        bucket
-          .targetPendingMT
-      ),
-
-    orderBalanceMT:
-      roundMT(
-        bucket
-          .orderBalanceMT
-      ),
-
-    targetAchievementPercentage:
-      target > 0
-        ? Math.round(
-            (
-              actual /
-              target
-            ) *
-              10000
-          ) / 100
-        : 0,
-
-    drillDown: {
-      newOrder: {
-        metric:
-          METRICS.NEW_ORDER,
-
-        orderCount:
-          bucket
-            .newOrderIds
-            .size,
-      },
-
-      dispatchTarget: {
-        metric:
-          METRICS.DISPATCH_TARGET,
-
-        orderCount:
-          bucket
-            .dispatchTargetOrderIds
-            .size,
-      },
-
-      actualDispatch: {
-        metric:
-          METRICS.ACTUAL_DISPATCH,
-
-        orderCount:
-          bucket
-            .actualDispatchOrderIds
-            .size,
-      },
-
-      targetPending: {
-        metric:
-          METRICS.TARGET_PENDING,
-
-        orderCount:
-          bucket
-            .targetPendingOrderIds
-            .size,
-      },
-
-      orderBalance: {
-        metric:
-          METRICS.ORDER_BALANCE,
-
-        orderCount:
-          bucket
-            .orderBalanceOrderIds
-            .size,
-      },
-    },
-  };
-};
 
 /* =========================================================
-   GRADE / MILL BUCKETS
+   GRADE BUCKET
 ========================================================= */
 
 const getGradeBucket = (
   map,
-  gradeName
+  grade
 ) => {
   const key =
     normalizeGrade(
-      gradeName
+      grade ||
+      "UNIDENTIFIED"
     ) ||
     "UNIDENTIFIED";
 
   if (!map.has(key)) {
-    map.set(
-      key,
-      {
-        grade: key,
+    map.set(key, {
+      grade: key,
 
-        bucket:
-          createSummaryBucket(),
+      orderIds:
+        new Set(),
 
-        salesOrderIds:
-          new Set(),
-      }
-    );
-  }
+      houseOrderIds:
+        new Set(),
 
-  return map.get(key);
-};
+      steelMillOrderIds:
+        new Set(),
 
-const getMillBucket = (
-  map,
-  millName
-) => {
-  const key =
-    cleanText(
-      millName
-    ) ||
-    "Not Specified";
+      orderTakenKG: 0,
 
-  if (!map.has(key)) {
-    map.set(
-      key,
-      {
-        steelMill: key,
+      dispatchedKG: 0,
 
-        bucket:
-          createSummaryBucket(),
+      dispatchLeftKG: 0,
 
-        salesOrderIds:
-          new Set(),
-      }
-    );
+      houseOrderKG: 0,
+
+      steelMillOrderKG: 0,
+
+      houseDispatchKG: 0,
+
+      steelMillDispatchKG: 0,
+
+      houseDispatchLeftKG: 0,
+
+      steelMillDispatchLeftKG: 0,
+    });
   }
 
   return map.get(key);
 };
 
 /* =========================================================
-   FILTERED GRADE QUANTITY
+   ALLOCATE DISPATCH TO GRADES
 ========================================================= */
 
-const orderMatchesGrade = (
+/*
+ * Dispatch records are Sales-Order level.
+ *
+ * If an order contains multiple grades,
+ * dispatch cannot be assigned exactly to
+ * a grade unless Dispatch itself stores
+ * grade/item details.
+ *
+ * Therefore grade dispatch is allocated
+ * proportionally to ordered grade KG.
+ */
+
+const allocateDispatchToGrades = ({
   quantityInfo,
-  grade
-) => {
-  if (!grade) {
-    return true;
-  }
-
-  return quantityInfo
-    .grades
-    .has(
-      normalizeGrade(
-        grade
-      )
-    );
-};
-
-const getFilteredOrderQuantityMT = (
-  quantityInfo,
-  grade
-) => {
-  if (!grade) {
-    return quantityInfo
-      .totalMT;
-  }
-
-  return roundMT(
-    quantityInfo
-      .grades
-      .get(
-        normalizeGrade(
-          grade
-        )
-      ) || 0
-  );
-};
-
-/* =========================================================
-   BUILD ORDER CONTEXTS
-========================================================= */
-
-const buildOrderContexts = ({
-  salesOrders,
-  trackings,
-  dispatches,
-  grade,
-  period,
+  dispatchKG,
 }) => {
-  const trackingMap =
-    new Map();
+  const result = [];
 
-  trackings.forEach(
-    (tracking) => {
-      if (
-        tracking
-          ?.salesOrderId
-      ) {
-        trackingMap.set(
-          String(
-            tracking
-              .salesOrderId
-          ),
-          tracking
-        );
+  const totalKG =
+    toNumber(
+      quantityInfo.totalKG
+    );
+
+  if (
+    totalKG <= 0 ||
+    dispatchKG <= 0
+  ) {
+    return result;
+  }
+
+  quantityInfo
+    .grades
+    .forEach(
+      (
+        gradeKG,
+        grade
+      ) => {
+        const ratio =
+          toNumber(gradeKG) /
+          totalKG;
+
+        result.push({
+          grade,
+
+          dispatchKG:
+            roundKG(
+              dispatchKG *
+                ratio
+            ),
+        });
       }
+    );
+
+  return result;
+};
+
+/* =========================================================
+   MAIN ANALYTICS
+========================================================= */
+
+const getSteelAnalytics = async ({
+  month,
+  months = 1,
+  trackingOrderType,
+  steelMill,
+  grade,
+} = {}) => {
+  const period =
+    buildPeriod({
+      month,
+      months,
+    });
+
+  const requestedType =
+    trackingOrderType
+      ? normalizeTrackingType(
+          trackingOrderType
+        )
+      : "";
+
+  /*
+   * IMPORTANT:
+   *
+   * Do NOT date-filter Sales Orders
+   * in MongoDB.
+   *
+   * We need:
+   *
+   * 1. Orders TAKEN in selected period
+   * 2. Orders whose TRACKING READY DATE
+   *    falls in selected period
+   * 3. Historical dispatches against
+   *    those orders
+   */
+
+  const salesOrderQuery = {
+    isActive: {
+      $ne: false,
+    },
+  };
+
+  if (requestedType) {
+    salesOrderQuery.trackingOrderType =
+      requestedType;
+  }
+
+  if (steelMill) {
+    salesOrderQuery.$or = [
+      {
+        steelMill,
+      },
+      {
+        otherSteelMill:
+          steelMill,
+      },
+    ];
+  }
+
+  /* =====================================================
+     LOAD SALES ORDERS
+  ===================================================== */
+
+  const allSalesOrders =
+    await SalesOrder
+      .find(
+        salesOrderQuery
+      )
+      .lean();
+
+  /* =====================================================
+     LOAD ORDER TRACKING
+  ===================================================== */
+
+  const allSalesOrderIds =
+    allSalesOrders.map(
+      (order) => order._id
+    );
+
+ const orderTrackings =
+  allSalesOrderIds.length
+    ? await OrderTracking
+        .find({
+          salesOrderId: {
+            $in:
+              allSalesOrderIds,
+          },
+
+          /*
+           * IMPORTANT:
+           *
+           * Never use an old/deactivated
+           * tracking record for Management
+           * Analysis dispatch planning.
+           */
+          isActive: {
+            $ne: false,
+          },
+        })
+        .sort({
+          updatedAt: -1,
+          createdAt: -1,
+        })
+        .lean()
+    : [];
+
+const trackingMap =
+  new Map();
+
+orderTrackings.forEach(
+  (tracking) => {
+    const salesOrderId =
+      tracking?.salesOrderId;
+
+    if (!salesOrderId) {
+      return;
+    }
+
+    const key =
+      String(
+        salesOrderId
+      );
+
+    /*
+     * Query is sorted newest first.
+     *
+     * Keep the first/current tracking
+     * record for this Sales Order.
+     */
+    if (
+      !trackingMap.has(key)
+    ) {
+      trackingMap.set(
+        key,
+        tracking
+      );
+    }
+  }
+);
+
+  /* =====================================================
+     CLASSIFY H.O. / N.H.O.
+  ===================================================== */
+
+  const classifiedOrders = [];
+
+  const unclassifiedOrders = [];
+
+  allSalesOrders.forEach(
+    (order) => {
+      const type =
+        normalizeTrackingType(
+          order
+            ?.trackingOrderType
+        );
+
+      if (
+        !isValidTrackingType(
+          type
+        )
+      ) {
+        unclassifiedOrders.push(
+          order
+        );
+
+        return;
+      }
+
+      if (
+        requestedType &&
+        type !== requestedType
+      ) {
+        return;
+      }
+
+      classifiedOrders.push({
+        ...order,
+
+        trackingOrderType:
+          type,
+      });
     }
   );
+
+  /* =====================================================
+     ORDER TAKEN COHORT
+
+     Order Taken / Order Count use
+     Sales Order booking date.
+
+     createdAt is primary through
+     getOrderBookingDate().
+  ===================================================== */
+
+  const periodOrders =
+    classifiedOrders.filter(
+      (order) =>
+        isDateInPeriod(
+          getOrderBookingDate(
+            order
+          ),
+          period
+        )
+    );
+
+  /* =====================================================
+     DISPATCH PLAN COHORT
+
+     CRITICAL:
+
+     This does NOT use:
+     - createdAt
+     - PO date
+     - Sales Order date
+
+     It uses Order Tracking:
+     estimatedReadyDate
+
+     fallback:
+     ready_for_dispatch milestone
+  ===================================================== */
+
+  const dispatchTargetOrders =
+  classifiedOrders.filter(
+    (order) => {
+      const tracking =
+        trackingMap.get(
+          String(
+            order._id
+          )
+        );
+
+      const targetDate =
+        getTrackingDispatchTargetDate(
+          tracking
+        );
+
+      /*
+       * No tracking ETA =
+       * no artificial Plan.
+       *
+       * DO NOT fallback to:
+       *
+       * order.createdAt
+       * order.poDate
+       * approval date
+       *
+       * Analytics only consumes the
+       * calculated Order Tracking ETA.
+       */
+      if (!targetDate) {
+        return false;
+      }
+
+      return isDateInPeriod(
+        targetDate,
+        period
+      );
+    }
+  );
+
+  /* =====================================================
+     TARGET QUANTITY MAP
+  ===================================================== */
+
+  const dispatchTargetMap =
+    new Map();
+
+  dispatchTargetOrders.forEach(
+    (salesOrder) => {
+      const quantityInfo =
+        getOrderQuantityInfo(
+          salesOrder
+        );
+
+      dispatchTargetMap.set(
+        String(
+          salesOrder._id
+        ),
+        roundKG(
+          quantityInfo.totalKG
+        )
+      );
+    }
+  );
+
+  /* =====================================================
+     ORDER IDS REQUIRED FOR DISPATCH HISTORY
+
+     IMPORTANT:
+
+     We need dispatch history for BOTH:
+
+     1. Orders taken in period
+     2. Orders planned in period
+
+     A target order may have been booked
+     in an older month.
+  ===================================================== */
+
+  const relevantOrderIdMap =
+    new Map();
+
+  periodOrders.forEach(
+    (order) => {
+      relevantOrderIdMap.set(
+        String(order._id),
+        order._id
+      );
+    }
+  );
+
+  dispatchTargetOrders.forEach(
+    (order) => {
+      relevantOrderIdMap.set(
+        String(order._id),
+        order._id
+      );
+    }
+  );
+
+  const relevantOrderIds =
+    Array.from(
+      relevantOrderIdMap.values()
+    );
+
+  /* =====================================================
+     LOAD DISPATCH HISTORY FOR RELEVANT ORDERS
+  ===================================================== */
+
+  const cohortDispatches =
+    relevantOrderIds.length
+      ? await Dispatch
+          .find({
+            salesOrderId: {
+              $in:
+                relevantOrderIds,
+            },
+          })
+          .lean()
+      : [];
+
+  /*
+   * Physical dispatch occurring inside
+   * selected period.
+   *
+   * This can contain dispatch against
+   * older Sales Orders.
+   */
+
+  const allPeriodDispatches =
+    await Dispatch
+      .find({
+        dispatchDate: {
+          $gte:
+            period.fromDate,
+
+          $lte:
+            period.toDate,
+        },
+      })
+      .lean();
+
+  /* =====================================================
+     DISPATCH MAP
+  ===================================================== */
 
   const dispatchMap =
     new Map();
 
-  dispatches.forEach(
+  cohortDispatches.forEach(
     (dispatch) => {
       if (
         !dispatch
@@ -1877,9 +1866,7 @@ const buildOrderContexts = ({
         );
 
       if (
-        !dispatchMap.has(
-          key
-        )
+        !dispatchMap.has(key)
       ) {
         dispatchMap.set(
           key,
@@ -1893,69 +1880,179 @@ const buildOrderContexts = ({
     }
   );
 
-  const contexts = [];
+  /* =====================================================
+     SUMMARY BUCKETS
+  ===================================================== */
+
+  const house =
+    createSummary();
+
+  const steelMillSummary =
+    createSummary();
+
+  const combined =
+    createSummary();
+
+  const gradeMap =
+    new Map();
+
+  const millMap =
+    new Map();
+
+  const orders = [];
+
   const unparsedOrders = [];
 
-  salesOrders.forEach(
+  /* =====================================================
+     PHYSICAL DISPATCH DURING PERIOD
+  ===================================================== */
+
+  const allDispatchInPeriodKG =
+    roundKG(
+      allPeriodDispatches.reduce(
+        (
+          sum,
+          dispatch
+        ) =>
+          sum +
+          getDispatchQuantityKG(
+            dispatch
+          ),
+        0
+      )
+    );
+
+  combined
+    .allDispatchInPeriodKG =
+    allDispatchInPeriodKG;
+
+  /* =====================================================
+     HELPER:
+     DISPATCH AGAINST ORDER THROUGH PERIOD END
+  ===================================================== */
+
+  const getOrderDispatchThroughPeriodKG =
+    (salesOrderId) => {
+      const orderDispatches =
+        dispatchMap.get(
+          String(
+            salesOrderId
+          )
+        ) || [];
+
+      return roundKG(
+        orderDispatches
+          .filter(
+            (dispatch) =>
+              isDateOnOrBefore(
+                getDispatchDate(
+                  dispatch
+                ),
+                period.toDate
+              )
+          )
+          .reduce(
+            (
+              sum,
+              dispatch
+            ) =>
+              sum +
+              getDispatchQuantityKG(
+                dispatch
+              ),
+            0
+          )
+      );
+    };
+
+  /* =====================================================
+     ORDER TAKEN ANALYSIS
+
+     ONLY orders booked inside selected
+     period contribute to:
+
+     - order count
+     - order taken
+     - grade order demand
+     - mill order demand
+     - dispatch left against taken orders
+  ===================================================== */
+
+  periodOrders.forEach(
     (salesOrder) => {
-      const trackingType =
+      const id =
+        String(
+          salesOrder._id
+        );
+
+      const type =
         normalizeTrackingType(
           salesOrder
-            ?.trackingOrderType
+            .trackingOrderType
         );
-
-      /*
-       * CRITICAL:
-       * Ignore every order that is not
-       * explicitly H.O. or N.H.O.
-       */
-      if (
-        !isValidTrackingType(
-          trackingType
-        )
-      ) {
-        return;
-      }
-
-      const orderDate =
-        getSalesOrderDate(
-          salesOrder
-        );
-
-      /*
-       * CRITICAL:
-       * Ignore all business before
-       * 13-Aug-2026.
-       */
-      if (
-        !isOnOrAfterAnalyticsStart(
-          orderDate
-        )
-      ) {
-        return;
-      }
 
       const quantityInfo =
         getOrderQuantityInfo(
           salesOrder
         );
 
-      if (
-        !orderMatchesGrade(
-          quantityInfo,
-          grade
-        )
-      ) {
-        return;
-      }
-
-      const orderedMT =
-        getFilteredOrderQuantityMT(
-          quantityInfo,
-          grade
+      const orderedKG =
+        roundKG(
+          quantityInfo.totalKG
         );
 
-      if (orderedMT <= 0) {
+      const orderDispatches =
+        dispatchMap.get(id) ||
+        [];
+
+      const dispatchedKG =
+        getOrderDispatchThroughPeriodKG(
+          salesOrder._id
+        );
+
+      const dispatchLeftKG =
+        roundKG(
+          Math.max(
+            0,
+            orderedKG -
+              dispatchedKG
+          )
+        );
+
+      const dispatchTargetKG =
+        roundKG(
+          dispatchTargetMap.get(
+            id
+          ) || 0
+        );
+
+      const targetPendingKG =
+        roundKG(
+          Math.max(
+            0,
+            dispatchTargetKG -
+              Math.min(
+                dispatchTargetKG,
+                dispatchedKG
+              )
+          )
+        );
+
+      const tracking =
+        trackingMap.get(
+          id
+        );
+
+      const dispatchTargetDate =
+        getTrackingDispatchTargetDate(
+          tracking
+        );
+
+      const fullyParsed =
+        quantityInfo
+          .fullyParsed;
+
+      if (!fullyParsed) {
         unparsedOrders.push({
           salesOrderId:
             salesOrder._id,
@@ -1976,868 +2073,84 @@ const buildOrderContexts = ({
             "",
 
           trackingOrderType:
-            trackingType,
+            type,
 
-          steelMill:
-            getSteelMillName(
-              salesOrder
-            ),
-
-          original:
+          material:
             salesOrder
               .sizeGradeQuantityRate,
 
-          reason:
-            grade
-              ? `No safely parsed quantity found for grade ${grade}.`
-              : "Sales Order quantity could not be safely parsed.",
+          parsedKG:
+            orderedKG,
+
+          unresolvedItems:
+            quantityInfo
+              .unparsedItems,
         });
-
-        return;
       }
 
-      const id =
-        String(
-          salesOrder._id
-        );
-
-      const tracking =
-        trackingMap.get(id) ||
-        null;
-
-      const orderDispatches =
-        dispatchMap.get(id) ||
-        [];
-
-      /*
-       * Actual dispatch during
-       * selected month/range.
-       *
-       * dispatchQty is stored in KG.
-       */
-      const periodDispatchedMT =
-        roundMT(
-          orderDispatches
-            .filter(
-              (dispatch) =>
-                isDateInPeriod(
-                  dispatch
-                    .dispatchDate ||
-                    dispatch
-                      .createdAt,
-                  period
-                )
-            )
-            .reduce(
-              (
-                sum,
-                dispatch
-              ) =>
-                sum +
-                kgToMT(
-                  dispatch
-                    .dispatchQty
-                ),
-              0
-            )
-        );
-
-      /*
-       * Dispatch history up to
-       * selected period end.
-       *
-       * Needed for Order Balance.
-       */
-      const dispatchedUntilPeriodEndMT =
-        roundMT(
-          orderDispatches
-            .filter(
-              (dispatch) =>
-                isDateOnOrBefore(
-                  dispatch
-                    .dispatchDate ||
-                    dispatch
-                      .createdAt,
-                  period.toDate
-                )
-            )
-            .reduce(
-              (
-                sum,
-                dispatch
-              ) =>
-                sum +
-                kgToMT(
-                  dispatch
-                    .dispatchQty
-                ),
-              0
-            )
-        );
-
-      const allTimeDispatchedMT =
-        roundMT(
-          orderDispatches
-            .reduce(
-              (
-                sum,
-                dispatch
-              ) =>
-                sum +
-                kgToMT(
-                  dispatch
-                    .dispatchQty
-                ),
-              0
-            )
-        );
-
-      const orderBalanceMT =
-        roundMT(
-          Math.max(
-            0,
-            orderedMT -
-              dispatchedUntilPeriodEndMT
-          )
-        );
-
-      const currentTargetDate =
-        getCurrentTargetDate(
-          tracking
-        );
-
-      const originalTargetDate =
-        getOriginalTargetDate(
-          tracking
-        );
-
-      const isTargetInPeriod =
-        currentTargetDate
-          ? isDateInPeriod(
-              currentTargetDate,
-              period
-            )
-          : false;
-
-      /*
-       * For target pending we need
-       * everything dispatched by the
-       * selected month end.
-       *
-       * Example:
-       * Target September = 20 MT
-       * dispatched through Sep 30 = 12 MT
-       * pending = 8 MT
-       */
-      const targetActualMT =
-        isTargetInPeriod
-          ? Math.min(
-              orderedMT,
-              dispatchedUntilPeriodEndMT
-            )
-          : 0;
-
-      const targetPendingMT =
-        isTargetInPeriod
-          ? roundMT(
-              Math.max(
-                0,
-                orderedMT -
-                  targetActualMT
-              )
-            )
-          : 0;
-
-      const isNewOrderInPeriod =
-        isDateInPeriod(
-          orderDate,
-          period
-        );
-
-      contexts.push({
-        salesOrder: {
-          ...salesOrder,
-
-          /*
-           * Normalize it once so every
-           * calculation uses exactly the
-           * same H.O./N.H.O. value.
-           */
-          trackingOrderType:
-            trackingType,
-        },
-
-        tracking,
-
-        dispatches:
-          orderDispatches,
-
-        quantityInfo,
-
-        orderedMT,
-
-        orderDate,
-
-        isNewOrderInPeriod,
-
-        currentTargetDate,
-
-        originalTargetDate,
-
-        isTargetInPeriod,
-
-        periodDispatchedMT,
-
-        dispatchedUntilPeriodEndMT,
-
-        allTimeDispatchedMT,
-
-        targetActualMT:
-          roundMT(
-            targetActualMT
-          ),
-
-        targetPendingMT,
-
-        orderBalanceMT,
-      });
-    }
-  );
-
-  return {
-    contexts,
-    unparsedOrders,
-  };
-};
-
-/* =========================================================
-   ADD CONTEXT TO SUMMARY
-========================================================= */
-
-const addContextToBucket = (
-  bucket,
-  context,
-  quantityOverride = null
-) => {
-  const id =
-    context
-      .salesOrder
-      ._id;
-
-  const quantity =
-    quantityOverride !== null
-      ? quantityOverride
-      : context
-          .orderedMT;
-
-  if (
-    context
-      .isNewOrderInPeriod
-  ) {
-    addMetric(
-      bucket,
-      METRICS.NEW_ORDER,
-      quantity,
-      id
-    );
-  }
-
-  if (
-    context
-      .isTargetInPeriod
-  ) {
-    addMetric(
-      bucket,
-      METRICS.DISPATCH_TARGET,
-      quantity,
-      id
-    );
-
-    if (
-      context
-        .targetPendingMT >
-      0
-    ) {
-      const ratio =
-        context.orderedMT > 0
-          ? quantity /
-            context.orderedMT
-          : 0;
-
-      addMetric(
-        bucket,
-        METRICS.TARGET_PENDING,
-        context
-          .targetPendingMT *
-          ratio,
-        id
-      );
-    }
-  }
-
-  if (
-    context
-      .periodDispatchedMT >
-    0
-  ) {
-    const ratio =
-      context.orderedMT > 0
-        ? quantity /
-          context.orderedMT
-        : 0;
-
-    addMetric(
-      bucket,
-      METRICS.ACTUAL_DISPATCH,
-      context
-        .periodDispatchedMT *
-        ratio,
-      id
-    );
-  }
-
-  /*
-   * Order Balance:
-   *
-   * Includes valid H.O./N.H.O.
-   * business from 13-Aug onward
-   * which is still pending at the
-   * selected month end.
-   */
-  if (
-    context
-      .orderBalanceMT >
-    0
-  ) {
-    const ratio =
-      context.orderedMT > 0
-        ? quantity /
-          context.orderedMT
-        : 0;
-
-    addMetric(
-      bucket,
-      METRICS.ORDER_BALANCE,
-      context
-        .orderBalanceMT *
-        ratio,
-      id
-    );
-  }
-};
-
-/* =========================================================
-   ORDER DETAIL FOR DRILL-DOWN
-========================================================= */
-
-const buildOrderDetail = (
-  context
-) => {
-  const {
-    salesOrder,
-    tracking,
-  } = context;
-
-  const delayed =
-    Boolean(
-      context
-        .originalTargetDate &&
-      context
-        .currentTargetDate &&
-      context
-        .currentTargetDate >
-        context
-          .originalTargetDate
-    );
-
-  const delayDays =
-    delayed
-      ? Math.max(
-          0,
-          Math.ceil(
-            (
-              context
-                .currentTargetDate -
-              context
-                .originalTargetDate
-            ) /
-              86400000
-          )
-        )
-      : 0;
-
-  return {
-    salesOrderId:
-      salesOrder._id,
-
-    trackingId:
-      tracking?._id ||
-      null,
-
-    trackingNumber:
-      tracking
-        ?.trackingNumber ||
-      "",
-
-    salesOrderNo:
-      salesOrder
-        .salesOrderNo ||
-      tracking
-        ?.salesOrderNo ||
-      "",
-
-    enquiryNumber:
-      salesOrder
-        .enquiryNumber ||
-      "",
-
-    poNumber:
-      salesOrder
-        .poNumber ||
-      "",
-
-    companyName:
-      salesOrder
-        .companyName ||
-      "",
-
-    salesPersonName:
-      salesOrder
-        .salesPersonName ||
-      "",
-
-    trackingOrderType:
-      salesOrder
-        .trackingOrderType,
-
-    steelMill:
-      getSteelMillName(
-        salesOrder
-      ),
-
-    supplyCondition:
-      salesOrder
-        .supplyCondition ||
-      tracking
-        ?.supplyCondition ||
-      "",
-
-    processType:
-      tracking
-        ?.processType ||
-      "",
-
-    orderDate:
-      context.orderDate,
-
-    isNewOrderInPeriod:
-      context
-        .isNewOrderInPeriod,
-
-    orderedMT:
-      roundMT(
-        context.orderedMT
-      ),
-
-    dispatchTargetMT:
-      context
-        .isTargetInPeriod
-        ? roundMT(
-            context
-              .orderedMT
-          )
-        : 0,
-
-    targetActualMT:
-      roundMT(
-        context
-          .targetActualMT
-      ),
-
-    actualDispatchMT:
-      roundMT(
-        context
-          .periodDispatchedMT
-      ),
-
-    dispatchedUntilPeriodEndMT:
-      roundMT(
-        context
-          .dispatchedUntilPeriodEndMT
-      ),
-
-    allTimeDispatchedMT:
-      roundMT(
-        context
-          .allTimeDispatchedMT
-      ),
-
-    targetPendingMT:
-      roundMT(
-        context
-          .targetPendingMT
-      ),
-
-    orderBalanceMT:
-      roundMT(
-        context
-          .orderBalanceMT
-      ),
-
-    currentStatus:
-      tracking
-        ?.currentStatus ||
-      "",
-
-    currentStatusLabel:
-      tracking
-        ?.currentStatusLabel ||
-      "",
-
-    progressPercentage:
-      toNumber(
-        tracking
-          ?.progressPercentage
-      ),
-
-    estimatedDispatchDate:
-      context
-        .currentTargetDate,
-
-    originalEstimatedDispatchDate:
-      context
-        .originalTargetDate,
-
-    delayed,
-
-    delayDays,
-
-    fullyDispatched:
-      context
-        .orderBalanceMT <=
-      0,
-
-    grades:
-      Array.from(
-        context
-          .quantityInfo
-          .grades
-          .entries()
-      ).map(
-        ([
-          gradeName,
-          quantityMT,
-        ]) => ({
-          grade:
-            gradeName,
-
-          quantityMT:
-            roundMT(
-              quantityMT
-            ),
-        })
-      ),
-
-    dispatches:
-      context
-        .dispatches
-        .map(
-          (dispatch) => ({
-            dispatchId:
-              dispatch._id,
-
-            invoiceNumber:
-              dispatch
-                .invoiceNumber ||
-              "",
-
-            dispatchDate:
-              dispatch
-                .dispatchDate ||
-              dispatch
-                .createdAt,
-
-            dispatchQtyKG:
-              toNumber(
-                dispatch
-                  .dispatchQty
-              ),
-
-            dispatchedMT:
-              kgToMT(
-                dispatch
-                  .dispatchQty
-              ),
-
-            dispatchCompletionStatus:
-              dispatch
-                .dispatchCompletionStatus ||
-              "",
-
-            remainingQtyAfterDispatchKG:
-              toNumber(
-                dispatch
-                  .remainingQtyAfterDispatch
-              ),
-          })
-        ),
-  };
-};
-
-/* =========================================================
-   MAIN ANALYTICS
-========================================================= */
-
-const getSteelAnalytics = async ({
-  from,
-  to,
-  trackingOrderType,
-  steelMill,
-  grade,
-} = {}) => {
-  /*
-   * If frontend gives no dates,
-   * this becomes current month.
-   */
-  const period =
-    buildPeriod({
-      from,
-      to,
-    });
-
-  const requestedType =
-    trackingOrderType
-      ? normalizeTrackingType(
-          trackingOrderType
-        )
-      : "";
-
-  /*
-   * CRITICAL:
-   *
-   * Database query itself only loads
-   * H.O. / N.H.O.
-   *
-   * Old orders without classification
-   * cannot enter analytics.
-   */
-  const salesOrderQuery = {
-    isActive: {
-      $ne: false,
-    },
-
-    trackingOrderType:
-      requestedType
-        ? requestedType
-        : {
-            $in: [
-              HOUSE_TYPE,
-              STEEL_MILL_TYPE,
-            ],
-          },
-  };
-
-  if (steelMill) {
-    salesOrderQuery.$or = [
-      {
-        steelMill,
-      },
-
-      {
-        otherSteelMill:
-          steelMill,
-      },
-    ];
-  }
-
-  const salesOrders =
-    await SalesOrder
-      .find(
-        salesOrderQuery
-      )
-      .lean();
-
-  /*
-   * Filter by business start date
-   * using PO Date first.
-   *
-   * We do this in JS because
-   * legacy orders may depend on
-   * createdAt fallback.
-   */
-  const eligibleSalesOrders =
-    salesOrders.filter(
-      (order) => {
-        const orderDate =
-          getSalesOrderDate(
-            order
-          );
-
-        return (
-          orderDate &&
-          orderDate >=
-            ANALYTICS_START_DATE &&
-          isValidTrackingType(
-            order
-              .trackingOrderType
-          )
-        );
-      }
-    );
-
-  const salesOrderIds =
-    eligibleSalesOrders.map(
-      (order) =>
-        order._id
-    );
-
-  const trackings =
-    salesOrderIds.length
-      ? await OrderTracking
-          .find({
-            salesOrderId: {
-              $in:
-                salesOrderIds,
-            },
-
-            isActive: {
-              $ne: false,
-            },
-          })
-          .lean()
-      : [];
-
-  const dispatches =
-    salesOrderIds.length
-      ? await Dispatch
-          .find({
-            salesOrderId: {
-              $in:
-                salesOrderIds,
-            },
-          })
-          .lean()
-      : [];
-
-  const {
-    contexts,
-    unparsedOrders,
-  } =
-    buildOrderContexts({
-      salesOrders:
-        eligibleSalesOrders,
-
-      trackings,
-
-      dispatches,
-
-      grade,
-
-      period,
-    });
-
-  /*
-   * NO ALL-TIME TOTAL BUCKET.
-   *
-   * Management screen is now
-   * H.O. vs Steel Mill for the
-   * selected month.
-   */
-  const summary = {
-    house:
-      createSummaryBucket(),
-
-    steelMill:
-      createSummaryBucket(),
-  };
-
-  const gradeMap =
-    new Map();
-
-  const millMap =
-    new Map();
-
-  contexts.forEach(
-    (context) => {
-      const {
-        salesOrder,
-        quantityInfo,
-      } = context;
-
-      const type =
-        normalizeTrackingType(
-          salesOrder
-            .trackingOrderType
-        );
-
-      /*
-       * H.O.
-       */
-      if (
+      const bucket =
         type === HOUSE_TYPE
-      ) {
-        addContextToBucket(
-          summary.house,
-          context
-        );
-      }
+          ? house
+          : steelMillSummary;
 
       /*
-       * N.H.O. / Steel Mill
+       * COUNT ALWAYS.
+       *
+       * Quantity parser failure must
+       * never remove an order count.
        */
-      if (
-        type ===
-        STEEL_MILL_TYPE
-      ) {
-        addContextToBucket(
-          summary.steelMill,
-          context
-        );
 
-        const mill =
-          getMillBucket(
-            millMap,
-            getSteelMillName(
-              salesOrder
-            )
-          );
+      bucket.orderCount += 1;
 
-        mill
-          .salesOrderIds
-          .add(
-            String(
-              salesOrder._id
-            )
-          );
+      combined.orderCount += 1;
 
-        addContextToBucket(
-          mill.bucket,
-          context
-        );
+      if (fullyParsed) {
+        bucket
+          .parsedOrderCount +=
+          1;
+
+        combined
+          .parsedOrderCount +=
+          1;
+      } else {
+        bucket
+          .unresolvedOrderCount +=
+          1;
+
+        combined
+          .unresolvedOrderCount +=
+          1;
       }
 
-      /*
-       * Grade analytics
-       */
+      bucket.orderTakenKG +=
+        orderedKG;
+
+      bucket.totalDispatchKG +=
+        dispatchedKG;
+
+      bucket.dispatchLeftKG +=
+        dispatchLeftKG;
+
+      combined.orderTakenKG +=
+        orderedKG;
+
+      combined.totalDispatchKG +=
+        dispatchedKG;
+
+      combined.dispatchLeftKG +=
+        dispatchLeftKG;
+
+      /* -------------------------
+         GRADE ANALYSIS
+      ------------------------- */
+
       quantityInfo
         .grades
         .forEach(
           (
-            gradeQuantityMT,
+            gradeKG,
             gradeName
           ) => {
-            if (
-              grade &&
-              normalizeGrade(
-                gradeName
-              ) !==
-                normalizeGrade(
-                  grade
-                )
-            ) {
-              return;
-            }
-
             const gradeBucket =
               getGradeBucket(
                 gradeMap,
@@ -2845,125 +2158,870 @@ const getSteelAnalytics = async ({
               );
 
             gradeBucket
-              .salesOrderIds
-              .add(
-                String(
-                  salesOrder._id
-                )
-              );
+              .orderIds
+              .add(id);
 
-            /*
-             * When no specific grade
-             * filter is selected,
-             * allocate metrics according
-             * to that grade quantity.
-             */
-            const quantityOverride =
-              grade
-                ? context
-                    .orderedMT
-                : roundMT(
-                    gradeQuantityMT
-                  );
+            gradeBucket
+              .orderTakenKG +=
+              gradeKG;
 
-            addContextToBucket(
-              gradeBucket.bucket,
-              context,
-              quantityOverride
-            );
+            if (
+              type ===
+              HOUSE_TYPE
+            ) {
+              gradeBucket
+                .houseOrderIds
+                .add(id);
+
+              gradeBucket
+                .houseOrderKG +=
+                gradeKG;
+            } else {
+              gradeBucket
+                .steelMillOrderIds
+                .add(id);
+
+              gradeBucket
+                .steelMillOrderKG +=
+                gradeKG;
+            }
           }
         );
+
+      const gradeDispatchAllocation =
+        allocateDispatchToGrades({
+          quantityInfo,
+
+          dispatchKG:
+            dispatchedKG,
+        });
+
+      gradeDispatchAllocation
+        .forEach(
+          ({
+            grade,
+            dispatchKG,
+          }) => {
+            const gradeBucket =
+              getGradeBucket(
+                gradeMap,
+                grade
+              );
+
+            gradeBucket
+              .dispatchedKG +=
+              dispatchKG;
+
+            if (
+              type ===
+              HOUSE_TYPE
+            ) {
+              gradeBucket
+                .houseDispatchKG +=
+                dispatchKG;
+            } else {
+              gradeBucket
+                .steelMillDispatchKG +=
+                dispatchKG;
+            }
+          }
+        );
+
+      /* -------------------------
+         STEEL MILL ANALYSIS
+      ------------------------- */
+
+      if (
+        type ===
+        STEEL_MILL_TYPE
+      ) {
+        const millName =
+          getSteelMillName(
+            salesOrder
+          );
+
+        if (
+          !millMap.has(
+            millName
+          )
+        ) {
+          millMap.set(
+            millName,
+            {
+              steelMill:
+                millName,
+
+              orderIds:
+                new Set(),
+
+              orderTakenKG: 0,
+
+              totalDispatchKG:
+                0,
+
+              dispatchLeftKG:
+                0,
+            }
+          );
+        }
+
+        const mill =
+          millMap.get(
+            millName
+          );
+
+        mill.orderIds.add(
+          id
+        );
+
+        mill.orderTakenKG +=
+          orderedKG;
+
+        mill.totalDispatchKG +=
+          dispatchedKG;
+
+        mill.dispatchLeftKG +=
+          dispatchLeftKG;
+      }
+
+      /* -------------------------
+         ORDER DETAIL
+      ------------------------- */
+
+      orders.push({
+        salesOrderId:
+          salesOrder._id,
+
+        salesOrderNo:
+          salesOrder
+            .salesOrderNo ||
+          "",
+
+        poNumber:
+          salesOrder
+            .poNumber ||
+          "",
+
+        companyName:
+          salesOrder
+            .companyName ||
+          "",
+
+        salesPersonName:
+          salesOrder
+            .salesPersonName ||
+          "",
+
+        bookingDate:
+          getOrderBookingDate(
+            salesOrder
+          ),
+
+        poDate:
+          salesOrder
+            .poDate ||
+          null,
+
+        trackingOrderType:
+          type,
+
+        steelMill:
+          getSteelMillName(
+            salesOrder
+          ),
+
+        /*
+         * Explicit flags for frontend.
+         */
+
+        isNewOrderInPeriod:
+          true,
+
+        isDispatchTargetInPeriod:
+          dispatchTargetKG >
+          0,
+
+        orderTakenKG:
+          orderedKG,
+
+        dispatchTargetKG,
+
+        dispatchTargetDate:
+          dispatchTargetDate ||
+          null,
+
+        totalDispatchKG:
+          dispatchedKG,
+
+        targetPendingKG,
+
+        dispatchLeftKG,
+
+        quantityFullyParsed:
+          fullyParsed,
+
+        grades:
+          Array.from(
+            quantityInfo
+              .grades
+              .entries()
+          ).map(
+            ([
+              gradeName,
+              quantityKG,
+            ]) => ({
+              grade:
+                gradeName,
+
+              quantityKG:
+                roundKG(
+                  quantityKG
+                ),
+            })
+          ),
+
+        material:
+          salesOrder
+            .sizeGradeQuantityRate,
+
+        dispatches:
+          orderDispatches.map(
+            (dispatch) => ({
+              dispatchId:
+                dispatch._id,
+
+              dispatchDate:
+                getDispatchDate(
+                  dispatch
+                ),
+
+              dispatchQtyKG:
+                getDispatchQuantityKG(
+                  dispatch
+                ),
+
+              invoiceNumber:
+                dispatch
+                  .invoiceNumber ||
+                "",
+
+              status:
+                dispatch
+                  .dispatchCompletionStatus ||
+                "",
+            })
+          ),
+      });
     }
   );
 
-  const house =
-    finalizeBucket(
-      summary.house
+  /* =====================================================
+     DISPATCH PLAN SUMMARY
+
+     THIS IS THE IMPORTANT NEW LOGIC.
+
+     Plan is based ONLY on Order Tracking
+     ready/estimated date.
+
+     It is completely independent of
+     Sales Order booking month.
+  ===================================================== */
+
+  dispatchTargetOrders.forEach(
+    (salesOrder) => {
+      const id =
+        String(
+          salesOrder._id
+        );
+
+      const type =
+        normalizeTrackingType(
+          salesOrder
+            .trackingOrderType
+        );
+
+      const targetKG =
+        roundKG(
+          dispatchTargetMap.get(
+            id
+          ) || 0
+        );
+
+      if (targetKG <= 0) {
+        return;
+      }
+
+      const dispatchedKG =
+        getOrderDispatchThroughPeriodKG(
+          salesOrder._id
+        );
+
+      const targetPendingKG =
+        roundKG(
+          Math.max(
+            0,
+            targetKG -
+              Math.min(
+                targetKG,
+                dispatchedKG
+              )
+          )
+        );
+
+      combined.dispatchTargetKG +=
+        targetKG;
+
+      combined.targetPendingKG +=
+        targetPendingKG;
+
+      if (
+        type ===
+        HOUSE_TYPE
+      ) {
+        house.dispatchTargetKG +=
+          targetKG;
+
+        house.targetPendingKG +=
+          targetPendingKG;
+      }
+
+      if (
+        type ===
+        STEEL_MILL_TYPE
+      ) {
+        steelMillSummary
+          .dispatchTargetKG +=
+          targetKG;
+
+        steelMillSummary
+          .targetPendingKG +=
+          targetPendingKG;
+      }
+    }
+  );
+
+  /* =====================================================
+     ADD TARGET-ONLY ORDERS TO DRILL-DOWN
+
+     Example:
+
+     Order booked in August
+     Ready in October
+
+     It must NOT increase October
+     Order Taken.
+
+     But it MUST appear when user
+     clicks October Dispatch Plan.
+  ===================================================== */
+
+  const periodOrderIdSet =
+    new Set(
+      periodOrders.map(
+        (order) =>
+          String(
+            order._id
+          )
+      )
     );
 
-  const steelMillSummary =
-    finalizeBucket(
-      summary.steelMill
+  dispatchTargetOrders.forEach(
+    (salesOrder) => {
+      const id =
+        String(
+          salesOrder._id
+        );
+
+      /*
+       * Already added above because
+       * this order was also booked
+       * during selected period.
+       */
+
+      if (
+        periodOrderIdSet.has(
+          id
+        )
+      ) {
+        return;
+      }
+
+      const type =
+        normalizeTrackingType(
+          salesOrder
+            .trackingOrderType
+        );
+
+      const quantityInfo =
+        getOrderQuantityInfo(
+          salesOrder
+        );
+
+      const targetKG =
+        roundKG(
+          dispatchTargetMap.get(
+            id
+          ) || 0
+        );
+
+      const dispatchedKG =
+        getOrderDispatchThroughPeriodKG(
+          salesOrder._id
+        );
+
+      const targetPendingKG =
+        roundKG(
+          Math.max(
+            0,
+            targetKG -
+              Math.min(
+                targetKG,
+                dispatchedKG
+              )
+          )
+        );
+
+      const tracking =
+        trackingMap.get(
+          id
+        );
+
+      const targetDate =
+        getTrackingDispatchTargetDate(
+          tracking
+        );
+
+      const orderDispatches =
+        dispatchMap.get(id) ||
+        [];
+
+      orders.push({
+        salesOrderId:
+          salesOrder._id,
+
+        salesOrderNo:
+          salesOrder
+            .salesOrderNo ||
+          "",
+
+        poNumber:
+          salesOrder
+            .poNumber ||
+          "",
+
+        companyName:
+          salesOrder
+            .companyName ||
+          "",
+
+        salesPersonName:
+          salesOrder
+            .salesPersonName ||
+          "",
+
+        bookingDate:
+          getOrderBookingDate(
+            salesOrder
+          ),
+
+        poDate:
+          salesOrder
+            .poDate ||
+          null,
+
+        trackingOrderType:
+          type,
+
+        steelMill:
+          getSteelMillName(
+            salesOrder
+          ),
+
+        /*
+         * IMPORTANT:
+         *
+         * This order belongs to Plan,
+         * not Order Taken for this
+         * selected period.
+         */
+
+        isNewOrderInPeriod:
+          false,
+
+        isDispatchTargetInPeriod:
+          true,
+
+        orderTakenKG: 0,
+
+        dispatchTargetKG:
+          targetKG,
+
+        dispatchTargetDate:
+          targetDate ||
+          null,
+
+        totalDispatchKG:
+          dispatchedKG,
+
+        targetPendingKG,
+
+        /*
+         * Do not show this older order
+         * as selected-period Order Taken
+         * balance.
+         */
+
+        dispatchLeftKG: 0,
+
+        quantityFullyParsed:
+          quantityInfo
+            .fullyParsed,
+
+        grades:
+          Array.from(
+            quantityInfo
+              .grades
+              .entries()
+          ).map(
+            ([
+              gradeName,
+              quantityKG,
+            ]) => ({
+              grade:
+                gradeName,
+
+              quantityKG:
+                roundKG(
+                  quantityKG
+                ),
+            })
+          ),
+
+        material:
+          salesOrder
+            .sizeGradeQuantityRate,
+
+        dispatches:
+          orderDispatches.map(
+            (dispatch) => ({
+              dispatchId:
+                dispatch._id,
+
+              dispatchDate:
+                getDispatchDate(
+                  dispatch
+                ),
+
+              dispatchQtyKG:
+                getDispatchQuantityKG(
+                  dispatch
+                ),
+
+              invoiceNumber:
+                dispatch
+                  .invoiceNumber ||
+                "",
+
+              status:
+                dispatch
+                  .dispatchCompletionStatus ||
+                "",
+            })
+          ),
+      });
+    }
+  );
+
+  /* =====================================================
+     FINALIZE SUMMARY
+  ===================================================== */
+
+  const finalizeSummary = (
+    summary
+  ) => ({
+    orderCount:
+      summary.orderCount,
+
+    parsedOrderCount:
+      summary
+        .parsedOrderCount,
+
+    unresolvedOrderCount:
+      summary
+        .unresolvedOrderCount,
+
+    orderTakenKG:
+      roundKG(
+        summary.orderTakenKG
+      ),
+
+    dispatchTargetKG:
+      roundKG(
+        summary
+          .dispatchTargetKG
+      ),
+
+    totalDispatchKG:
+      roundKG(
+        summary
+          .totalDispatchKG
+      ),
+
+    targetPendingKG:
+      roundKG(
+        summary
+          .targetPendingKG
+      ),
+
+    dispatchLeftKG:
+      roundKG(
+        summary
+          .dispatchLeftKG
+      ),
+
+    allDispatchInPeriodKG:
+      roundKG(
+        summary
+          .allDispatchInPeriodKG
+      ),
+  });
+
+  const finalizedHouse =
+    finalizeSummary(
+      house
     );
 
-  /*
-   * Combined monthly values are supplied
-   * only as a convenience for frontend
-   * cards.
-   *
-   * They are ALWAYS mathematically:
-   *
-   * H.O. + N.H.O.
-   *
-   * No unclassified order can enter.
-   *
-   * This is NOT an all-time total.
-   */
-  const monthlyCombined = {
-    newOrderMT:
-      roundMT(
-        house.newOrderMT +
-          steelMillSummary
-            .newOrderMT
-      ),
+  const finalizedSteelMill =
+    finalizeSummary(
+      steelMillSummary
+    );
 
-    dispatchTargetMT:
-      roundMT(
-        house
-          .dispatchTargetMT +
-          steelMillSummary
-            .dispatchTargetMT
-      ),
+  const finalizedCombined =
+    finalizeSummary(
+      combined
+    );
 
-    actualDispatchMT:
-      roundMT(
-        house
-          .actualDispatchMT +
-          steelMillSummary
-            .actualDispatchMT
-      ),
+  /* =====================================================
+     PHYSICAL PERIOD DISPATCH BY H.O/N.H.O.
+  ===================================================== */
 
-    targetPendingMT:
-      roundMT(
-        house
-          .targetPendingMT +
-          steelMillSummary
-            .targetPendingMT
-      ),
+  const salesOrderTypeMap =
+    new Map();
 
-    orderBalanceMT:
-      roundMT(
-        house
-          .orderBalanceMT +
-          steelMillSummary
-            .orderBalanceMT
-      ),
-  };
+  classifiedOrders.forEach(
+    (order) => {
+      salesOrderTypeMap.set(
+        String(
+          order._id
+        ),
+
+        normalizeTrackingType(
+          order
+            .trackingOrderType
+        )
+      );
+    }
+  );
+
+  let housePeriodDispatchKG =
+    0;
+
+  let steelMillPeriodDispatchKG =
+    0;
+
+  allPeriodDispatches.forEach(
+    (dispatch) => {
+      const type =
+        salesOrderTypeMap.get(
+          String(
+            dispatch
+              .salesOrderId
+          )
+        );
+
+      const qty =
+        getDispatchQuantityKG(
+          dispatch
+        );
+
+      if (
+        type === HOUSE_TYPE
+      ) {
+        housePeriodDispatchKG +=
+          qty;
+      }
+
+      if (
+        type ===
+        STEEL_MILL_TYPE
+      ) {
+        steelMillPeriodDispatchKG +=
+          qty;
+      }
+    }
+  );
+
+  finalizedHouse
+    .allDispatchInPeriodKG =
+    roundKG(
+      housePeriodDispatchKG
+    );
+
+  finalizedSteelMill
+    .allDispatchInPeriodKG =
+    roundKG(
+      steelMillPeriodDispatchKG
+    );
+
+  finalizedCombined
+    .allDispatchInPeriodKG =
+    roundKG(
+      housePeriodDispatchKG +
+        steelMillPeriodDispatchKG
+    );
+
+  /* =====================================================
+     FINALIZE GRADES
+  ===================================================== */
 
   const grades =
     Array.from(
       gradeMap.values()
     )
       .map(
-        (item) => ({
-          grade:
-            item.grade,
+        (item) => {
+          const orderTakenKG =
+            roundKG(
+              item.orderTakenKG
+            );
 
-          salesOrderCount:
-            item
-              .salesOrderIds
-              .size,
+          const dispatchedKG =
+            roundKG(
+              item.dispatchedKG
+            );
 
-          ...finalizeBucket(
-            item.bucket
-          ),
-        })
+          const dispatchLeftKG =
+            roundKG(
+              Math.max(
+                0,
+                orderTakenKG -
+                  dispatchedKG
+              )
+            );
+
+          const houseDispatchLeftKG =
+            roundKG(
+              Math.max(
+                0,
+                item
+                  .houseOrderKG -
+                  item
+                    .houseDispatchKG
+              )
+            );
+
+          const steelMillDispatchLeftKG =
+            roundKG(
+              Math.max(
+                0,
+                item
+                  .steelMillOrderKG -
+                  item
+                    .steelMillDispatchKG
+              )
+            );
+
+          return {
+            grade:
+              item.grade,
+
+            orderCount:
+              item
+                .orderIds
+                .size,
+
+            houseOrderCount:
+              item
+                .houseOrderIds
+                .size,
+
+            steelMillOrderCount:
+              item
+                .steelMillOrderIds
+                .size,
+
+            orderTakenKG,
+
+            totalDispatchKG:
+              dispatchedKG,
+
+            dispatchLeftKG,
+
+            house: {
+              orderCount:
+                item
+                  .houseOrderIds
+                  .size,
+
+              orderTakenKG:
+                roundKG(
+                  item
+                    .houseOrderKG
+                ),
+
+              totalDispatchKG:
+                roundKG(
+                  item
+                    .houseDispatchKG
+                ),
+
+              dispatchLeftKG:
+                houseDispatchLeftKG,
+            },
+
+            steelMill: {
+              orderCount:
+                item
+                  .steelMillOrderIds
+                  .size,
+
+              orderTakenKG:
+                roundKG(
+                  item
+                    .steelMillOrderKG
+                ),
+
+              totalDispatchKG:
+                roundKG(
+                  item
+                    .steelMillDispatchKG
+                ),
+
+              dispatchLeftKG:
+                steelMillDispatchLeftKG,
+            },
+          };
+        }
+      )
+      .filter(
+        (item) =>
+          !grade ||
+          normalizeGrade(
+            item.grade
+          ) ===
+            normalizeGrade(
+              grade
+            )
       )
       .sort(
         (a, b) =>
-          b.newOrderMT -
-          a.newOrderMT
+          b.orderTakenKG -
+          a.orderTakenKG
       );
+
+  /* =====================================================
+     FINALIZE MILLS
+  ===================================================== */
 
   const mills =
     Array.from(
@@ -2974,79 +3032,126 @@ const getSteelAnalytics = async ({
           steelMill:
             item.steelMill,
 
-          salesOrderCount:
+          orderCount:
             item
-              .salesOrderIds
+              .orderIds
               .size,
 
-          ...finalizeBucket(
-            item.bucket
-          ),
+          orderTakenKG:
+            roundKG(
+              item
+                .orderTakenKG
+            ),
+
+          totalDispatchKG:
+            roundKG(
+              item
+                .totalDispatchKG
+            ),
+
+          dispatchLeftKG:
+            roundKG(
+              item
+                .dispatchLeftKG
+            ),
         })
       )
       .sort(
         (a, b) =>
-          b.newOrderMT -
-          a.newOrderMT
+          b.orderTakenKG -
+          a.orderTakenKG
       );
 
-  const orderDetails =
-    contexts
-      .map(
-        buildOrderDetail
-      )
-      .sort(
-        (a, b) => {
-          const dateA =
-            safeDate(
-              a.orderDate
-            );
+  /* =====================================================
+     OPTIONAL GRADE FILTER
+  ===================================================== */
 
-          const dateB =
-            safeDate(
-              b.orderDate
-            );
+  let filteredOrders =
+    orders;
 
-          return (
-            (dateB
-              ?.getTime() ||
-              0) -
-            (dateA
-              ?.getTime() ||
-              0)
-          );
-        }
+  if (grade) {
+    const wanted =
+      normalizeGrade(
+        grade
       );
 
-  const missingTracking =
-    orderDetails.filter(
-      (order) =>
-        !order.trackingId
-    );
+    filteredOrders =
+      orders.filter(
+        (order) =>
+          order.grades.some(
+            (item) =>
+              normalizeGrade(
+                item.grade
+              ) === wanted
+          )
+      );
+  }
 
-  const missingTargetDate =
-    orderDetails.filter(
-      (order) =>
-        order.trackingId &&
-        !order
-          .estimatedDispatchDate
-    );
+  /* =====================================================
+     SORT ORDERS
+  ===================================================== */
+
+  filteredOrders.sort(
+    (a, b) => {
+      /*
+       * For target-only orders,
+       * target date is more useful.
+       *
+       * Otherwise booking date.
+       */
+
+      const dateA =
+        safeDate(
+          a.dispatchTargetDate ||
+            a.bookingDate
+        );
+
+      const dateB =
+        safeDate(
+          b.dispatchTargetDate ||
+            b.bookingDate
+        );
+
+      return (
+        (dateB?.getTime() ||
+          0) -
+        (dateA?.getTime() ||
+          0)
+      );
+    }
+  );
+
+  /* =====================================================
+     RETURN
+  ===================================================== */
 
   return {
     generatedAt:
       new Date(),
 
-    /*
-     * Frontend will now ALWAYS receive
-     * actual period even if it did not
-     * send from/to.
-     */
-    filters: {
+    period: {
+      type:
+        period.label,
+
+      months:
+        period.months,
+
+      selectedMonth:
+        period.month,
+
       from:
         period.from,
 
       to:
         period.to,
+    },
+
+    filters: {
+      month:
+        period.month,
+
+      months:
+        period.months,
 
       trackingOrderType:
         requestedType ||
@@ -3061,151 +3166,96 @@ const getSteelAnalytics = async ({
         null,
     },
 
-    period: {
-      from:
-        period.from,
-
-      to:
-        period.to,
-
-      mode:
-        from || to
-          ? "custom"
-          : "current_month",
-
-      analyticsStartDate:
-        "2026-08-13",
-    },
-
-    definitions: {
-      newOrder:
-        "Sales Order quantity whose PO/order date falls inside the selected month.",
-
-      dispatchTarget:
-        "Order quantity whose current Order Tracking estimated ready-for-dispatch date falls inside the selected month.",
-
-      actualDispatch:
-        "Actual quantity dispatched during the selected month.",
-
-      targetPending:
-        "Quantity still pending against orders targeted for dispatch in the selected month.",
-
-      orderBalance:
-        "Outstanding quantity at the selected month end for valid H.O./N.H.O. orders created on or after 13-Aug-2026.",
-
-      analyticsStart:
-        "Management Analysis includes only H.O. and N.H.O. orders from 13-Aug-2026 onward.",
-    },
-
-    /*
-     * Main comparison.
-     *
-     * No summary.total anymore.
-     */
     summary: {
-      house,
+      combined:
+        finalizedCombined,
+
+      house:
+        finalizedHouse,
 
       steelMill:
-        steelMillSummary,
+        finalizedSteelMill,
     },
-
-    /*
-     * Optional convenience object.
-     * This is MONTHLY combined,
-     * never all-time.
-     */
-    monthlyCombined,
 
     grades,
 
     mills,
 
     salesOrders:
-      orderDetails,
+      filteredOrders,
 
     dataQuality: {
-      sourceSalesOrderCount:
-        salesOrders.length,
+      databaseOrdersLoaded:
+        allSalesOrders.length,
 
-      eligibleSalesOrderCount:
-        eligibleSalesOrders
+      classifiedOrderCount:
+        classifiedOrders.length,
+
+      selectedPeriodOrderCount:
+        periodOrders.length,
+
+      /*
+       * Number of orders whose tracking
+       * ready date falls inside selected
+       * period.
+       */
+
+      dispatchTargetOrderCount:
+        dispatchTargetOrders.length,
+
+      countedOrders:
+        finalizedCombined
+          .orderCount,
+
+      houseOrderCount:
+        finalizedHouse
+          .orderCount,
+
+      steelMillOrderCount:
+        finalizedSteelMill
+          .orderCount,
+
+      parsedOrderCount:
+        finalizedCombined
+          .parsedOrderCount,
+
+      unresolvedQuantityOrderCount:
+        finalizedCombined
+          .unresolvedOrderCount,
+
+      unclassifiedOrderCount:
+        unclassifiedOrders
           .length,
-
-      calculatedOrderCount:
-        contexts.length,
-
-      excludedBeforeAnalyticsStart:
-        salesOrders.filter(
-          (order) => {
-            const date =
-              getSalesOrderDate(
-                order
-              );
-
-            return (
-              date &&
-              date <
-                ANALYTICS_START_DATE
-            );
-          }
-        ).length,
-
-      unparsedOrderCount:
-        unparsedOrders.length,
-
-      missingTrackingCount:
-        missingTracking.length,
-
-      missingTargetDateCount:
-        missingTargetDate.length,
     },
 
     warnings: {
       unparsedOrders,
 
-      missingTracking:
-        missingTracking.map(
+      unclassifiedOrders:
+        unclassifiedOrders.map(
           (order) => ({
             salesOrderId:
-              order.salesOrderId,
+              order._id,
 
             salesOrderNo:
-              order.salesOrderNo,
+              order
+                .salesOrderNo ||
+              "",
 
             poNumber:
-              order.poNumber,
+              order
+                .poNumber ||
+              "",
 
             companyName:
-              order.companyName,
+              order
+                .companyName ||
+              "",
 
             trackingOrderType:
               order
-                .trackingOrderType,
-          })
-        ),
-
-      missingTargetDate:
-        missingTargetDate.map(
-          (order) => ({
-            salesOrderId:
-              order.salesOrderId,
-
-            salesOrderNo:
-              order.salesOrderNo,
-
-            poNumber:
-              order.poNumber,
-
-            companyName:
-              order.companyName,
-
-            trackingOrderType:
-              order
-                .trackingOrderType,
-
-            trackingNumber:
-              order
-                .trackingNumber,
+                .trackingOrderType ||
+              "",
           })
         ),
     },
@@ -3213,7 +3263,7 @@ const getSteelAnalytics = async ({
 };
 
 /* =========================================================
-   SUMMARY ONLY
+   SUMMARY
 ========================================================= */
 
 const getSteelAnalyticsSummary =
@@ -3230,22 +3280,14 @@ const getSteelAnalyticsSummary =
         analytics
           .generatedAt,
 
-      filters:
-        analytics.filters,
-
       period:
         analytics.period,
 
-      definitions:
-        analytics
-          .definitions,
+      filters:
+        analytics.filters,
 
       summary:
         analytics.summary,
-
-      monthlyCombined:
-        analytics
-          .monthlyCombined,
 
       grades:
         analytics.grades,
@@ -3264,38 +3306,44 @@ const getSteelAnalyticsSummary =
             .unparsedOrders
             .length,
 
-        missingTrackingCount:
+        unclassifiedOrderCount:
           analytics
             .warnings
-            .missingTracking
-            .length,
-
-        missingTargetDateCount:
-          analytics
-            .warnings
-            .missingTargetDate
+            .unclassifiedOrders
             .length,
       },
     };
   };
 
 /* =========================================================
-   DRILL DOWN
+   ORDER DRILL DOWN
 ========================================================= */
 
 const getSteelAnalyticsDrillDown =
   async ({
     metric,
-    from,
-    to,
+    month,
+    months = 1,
     trackingOrderType,
     steelMill,
     grade,
   } = {}) => {
-    const allowedMetrics =
-      Object.values(
-        METRICS
-      );
+    const analytics =
+      await getSteelAnalytics({
+        month,
+        months,
+        trackingOrderType,
+        steelMill,
+        grade,
+      });
+
+    const allowedMetrics = [
+      "order_taken",
+      "dispatch_target",
+      "total_dispatch",
+      "target_pending",
+      "dispatch_left",
+    ];
 
     if (
       !allowedMetrics.includes(
@@ -3303,159 +3351,171 @@ const getSteelAnalyticsDrillDown =
       )
     ) {
       throw new Error(
-        "Invalid drill-down metric."
+        "Invalid drill-down metric. Use order_taken, dispatch_target, total_dispatch, target_pending or dispatch_left."
       );
     }
 
-    const analytics =
-      await getSteelAnalytics({
-        from,
-        to,
-        trackingOrderType,
-        steelMill,
-        grade,
-      });
+    let orders = [
+      ...analytics.salesOrders,
+    ];
 
-    const period =
-      buildPeriod({
-        from:
-          analytics
-            .filters
-            .from,
+    /* =====================================================
+       ORDER TAKEN
+    ===================================================== */
 
-        to:
-          analytics
-            .filters
-            .to,
-      });
-
-    let orders =
-      analytics
-        .salesOrders
-        .filter(
-          (order) => {
-            switch (metric) {
-              case METRICS.NEW_ORDER:
-                return (
-                  isDateInPeriod(
-                    order.orderDate,
-                    period
-                  ) &&
-                  order
-                    .orderedMT >
-                    0
-                );
-
-              case METRICS.DISPATCH_TARGET:
-                return (
-                  order
-                    .dispatchTargetMT >
-                  0
-                );
-
-              case METRICS.ACTUAL_DISPATCH:
-                return (
-                  order
-                    .actualDispatchMT >
-                  0
-                );
-
-              case METRICS.TARGET_PENDING:
-                return (
-                  order
-                    .targetPendingMT >
-                  0
-                );
-
-              case METRICS.ORDER_BALANCE:
-                return (
-                  order
-                    .orderBalanceMT >
-                  0
-                );
-
-              default:
-                return false;
-            }
-          }
-        );
-
-    if (grade) {
-      const wantedGrade =
-        normalizeGrade(
-          grade
-        );
-
+    if (
+      metric ===
+      "order_taken"
+    ) {
       orders =
         orders.filter(
           (order) =>
-            order.grades.some(
-              (item) =>
-                normalizeGrade(
-                  item.grade
-                ) ===
-                wantedGrade
-            )
+            order
+              .isNewOrderInPeriod ===
+              true &&
+            order
+              .orderTakenKG >
+              0
         );
     }
 
-    const getMetricQuantity =
-      (order) => {
-        switch (metric) {
-          case METRICS.NEW_ORDER:
-            return order
-              .orderedMT;
+    /* =====================================================
+       DISPATCH PLAN / TARGET
+    ===================================================== */
 
-          case METRICS.DISPATCH_TARGET:
-            return order
-              .dispatchTargetMT;
-
-          case METRICS.ACTUAL_DISPATCH:
-            return order
-              .actualDispatchMT;
-
-          case METRICS.TARGET_PENDING:
-            return order
-              .targetPendingMT;
-
-          case METRICS.ORDER_BALANCE:
-            return order
-              .orderBalanceMT;
-
-          default:
-            return 0;
-        }
-      };
-
-    const totalMT =
-      roundMT(
-        orders.reduce(
-          (
-            sum,
+    if (
+      metric ===
+      "dispatch_target"
+    ) {
+      orders =
+        orders.filter(
+          (order) =>
             order
-          ) =>
-            sum +
-            toNumber(
-              getMetricQuantity(
-                order
-              )
-            ),
+              .isDispatchTargetInPeriod ===
+              true &&
+            order
+              .dispatchTargetKG >
+              0
+        );
+    }
+
+    /* =====================================================
+       DISPATCH AGAINST PERIOD ORDER COHORT
+    ===================================================== */
+
+    if (
+      metric ===
+      "total_dispatch"
+    ) {
+      orders =
+        orders.filter(
+          (order) =>
+            order
+              .isNewOrderInPeriod ===
+              true &&
+            order
+              .totalDispatchKG >
+              0
+        );
+    }
+
+    /* =====================================================
+       TARGET PENDING
+    ===================================================== */
+
+    if (
+      metric ===
+      "target_pending"
+    ) {
+      orders =
+        orders.filter(
+          (order) =>
+            order
+              .isDispatchTargetInPeriod ===
+              true &&
+            order
+              .targetPendingKG >
+              0
+        );
+    }
+
+    /* =====================================================
+       DISPATCH LEFT AGAINST ORDER TAKEN
+    ===================================================== */
+
+    if (
+      metric ===
+      "dispatch_left"
+    ) {
+      orders =
+        orders.filter(
+          (order) =>
+            order
+              .isNewOrderInPeriod ===
+              true &&
+            order
+              .dispatchLeftKG >
+              0
+        );
+    }
+
+    /* =====================================================
+       METRIC QUANTITY
+    ===================================================== */
+
+    const getMetricKG = (
+      order
+    ) => {
+      if (
+        metric ===
+        "order_taken"
+      ) {
+        return (
+          order.orderTakenKG ||
           0
-        )
+        );
+      }
+
+      if (
+        metric ===
+        "dispatch_target"
+      ) {
+        return (
+          order.dispatchTargetKG ||
+          0
+        );
+      }
+
+      if (
+        metric ===
+        "total_dispatch"
+      ) {
+        return (
+          order.totalDispatchKG ||
+          0
+        );
+      }
+
+      if (
+        metric ===
+        "target_pending"
+      ) {
+        return (
+          order.targetPendingKG ||
+          0
+        );
+      }
+
+      return (
+        order.dispatchLeftKG ||
+        0
       );
+    };
 
     orders.sort(
       (a, b) =>
-        toNumber(
-          getMetricQuantity(
-            b
-          )
-        ) -
-        toNumber(
-          getMetricQuantity(
-            a
-          )
-        )
+        getMetricKG(b) -
+        getMetricKG(a)
     );
 
     return {
@@ -3464,16 +3524,29 @@ const getSteelAnalyticsDrillDown =
 
       metric,
 
-      filters:
-        analytics.filters,
-
       period:
         analytics.period,
 
-      totalMT,
+      filters:
+        analytics.filters,
 
       orderCount:
         orders.length,
+
+      totalKG:
+        roundKG(
+          orders.reduce(
+            (
+              sum,
+              order
+            ) =>
+              sum +
+              getMetricKG(
+                order
+              ),
+            0
+          )
+        ),
 
       orders:
         orders.map(
@@ -3482,9 +3555,9 @@ const getSteelAnalyticsDrillDown =
 
             metric,
 
-            metricQuantityMT:
-              roundMT(
-                getMetricQuantity(
+            metricQuantityKG:
+              roundKG(
+                getMetricKG(
                   order
                 )
               ),
@@ -3494,7 +3567,187 @@ const getSteelAnalyticsDrillDown =
   };
 
 /* =========================================================
-   EXPORT
+   PDF DATA
+========================================================= */
+
+/*
+ * Use this endpoint/service result to
+ * generate the two-page PDF.
+ *
+ * It returns:
+ *
+ * - 1 month
+ * - 3 months
+ * - 6 months
+ *
+ * from one selected ending month.
+ */
+
+const getSteelAnalyticsPdfData =
+  async ({
+    month,
+  } = {}) => {
+    const [
+      oneMonth,
+      threeMonths,
+      sixMonths,
+    ] = await Promise.all([
+      getSteelAnalytics({
+        month,
+        months: 1,
+      }),
+
+      getSteelAnalytics({
+        month,
+        months: 3,
+      }),
+
+      getSteelAnalytics({
+        month,
+        months: 6,
+      }),
+    ]);
+
+    return {
+      generatedAt:
+        new Date(),
+
+      selectedMonth:
+        oneMonth
+          .period
+          .selectedMonth,
+
+      comparison: [
+        {
+          label:
+            "1 Month",
+
+          period:
+            oneMonth.period,
+
+          summary:
+            oneMonth.summary,
+        },
+
+        {
+          label:
+            "3 Months",
+
+          period:
+            threeMonths
+              .period,
+
+          summary:
+            threeMonths
+              .summary,
+        },
+
+        {
+          label:
+            "6 Months",
+
+          period:
+            sixMonths
+              .period,
+
+          summary:
+            sixMonths
+              .summary,
+        },
+      ],
+
+      /*
+       * Page 2 tables can use the
+       * selected range.
+       *
+       * Here 6-month grade data is
+       * returned so management sees
+       * longer demand/stock behaviour.
+       */
+
+      houseGrades:
+        sixMonths.grades
+          .filter(
+            (item) =>
+              item.house
+                .orderCount >
+              0
+          )
+          .map(
+            (item) => ({
+              grade:
+                item.grade,
+
+              orderCount:
+                item.house
+                  .orderCount,
+
+              orderTakenKG:
+                item.house
+                  .orderTakenKG,
+
+              totalDispatchKG:
+                item.house
+                  .totalDispatchKG,
+
+              dispatchLeftKG:
+                item.house
+                  .dispatchLeftKG,
+            })
+          ),
+
+      steelMillGrades:
+        sixMonths.grades
+          .filter(
+            (item) =>
+              item.steelMill
+                .orderCount >
+              0
+          )
+          .map(
+            (item) => ({
+              grade:
+                item.grade,
+
+              orderCount:
+                item.steelMill
+                  .orderCount,
+
+              orderTakenKG:
+                item.steelMill
+                  .orderTakenKG,
+
+              totalDispatchKG:
+                item.steelMill
+                  .totalDispatchKG,
+
+              dispatchLeftKG:
+                item.steelMill
+                  .dispatchLeftKG,
+            })
+          ),
+
+      mills:
+        sixMonths.mills,
+
+      dataQuality: {
+        oneMonth:
+          oneMonth
+            .dataQuality,
+
+        threeMonths:
+          threeMonths
+            .dataQuality,
+
+        sixMonths:
+          sixMonths
+            .dataQuality,
+      },
+    };
+  };
+
+/* =========================================================
+   EXPORTS
 ========================================================= */
 
 module.exports = {
@@ -3504,9 +3757,13 @@ module.exports = {
 
   getSteelAnalyticsDrillDown,
 
-  parseQuantityToMetricTon,
+  getSteelAnalyticsPdfData,
+
+  parseQuantityToKG,
 
   extractGradeFromText,
 
   extractSalesOrderItems,
+
+  getOrderQuantityInfo,
 };
