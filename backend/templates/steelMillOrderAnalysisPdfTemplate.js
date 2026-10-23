@@ -1,3 +1,4 @@
+const { robotoPdfCss } = require("../util/managementPdfAssets");
 /* =========================================================
    STEEL MILL ORDER ANALYSIS PDF TEMPLATE
    BHARAT SPECIAL STEELS
@@ -1023,6 +1024,7 @@ const buildSteelMillOrderAnalysisPdfHtml =
 
 
 <style>
+${robotoPdfCss()}
 
   /* =======================================================
      PRINT / PAGE
@@ -1098,7 +1100,8 @@ const buildSteelMillOrderAnalysisPdfHtml =
     width: 100%;
 
     font-family:
-      Arial,
+        "RobotoEmbedded",
+        Arial,
       Helvetica,
       sans-serif;
 

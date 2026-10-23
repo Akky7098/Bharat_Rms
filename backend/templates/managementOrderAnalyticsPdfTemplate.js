@@ -1,3 +1,4 @@
+const { robotoPdfCss, managementLogoData } = require("../util/managementPdfAssets");
 /* =========================================================
    MANAGEMENT ORDER ANALYSIS
    H.O. PDF TEMPLATE
@@ -753,7 +754,7 @@ const managementOrderAnalyticsPdfTemplate =
     const companyLogoUrl =
       process.env
         .COMPANY_LOGO_URL ||
-      "https://dashboard.bharatspecialsteels.com/logo.png";
+      managementLogoData();
 
 
     /* =====================================================
@@ -795,6 +796,7 @@ const managementOrderAnalyticsPdfTemplate =
 
 
   <style>
+${robotoPdfCss()}
 
     /* =====================================================
        DOCUMENT COLOURS
@@ -925,6 +927,7 @@ const managementOrderAnalyticsPdfTemplate =
         #f4f1e9 !important;
 
       font-family:
+        "RobotoEmbedded",
         Arial,
         Helvetica,
         sans-serif;
