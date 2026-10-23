@@ -1,3 +1,5 @@
+const { APPROVED_REVENUE_DATE_FIELD, getISTDateRange, getISTRevenuePeriods } = require("../util/revenueDates");
+const { normalizeSteelMill } = require("../util/steelMills");
 const SalesOrder = require("../model/salesOrderModel");
 const pdfService = require("./pdfService");
 const whatsappApprovalService = require("./whatsappApprovalService");
@@ -370,21 +372,7 @@ ${message}
 // ========================================
 // CREATE SALES ORDER
 // ========================================
-const STEEL_MILLS = [
-  "Punjab General",
-  "Polystud Lifting",
-  "Jassar Forging",
-  "S.S. Steel - Sirhind",
-  "Skyway - Ludhiana",
-  "Kuber Concast - Mandi Gobindgarh",
-  "Pushpanjali Strip",
-  "Shakti Rolling - Mandi Gobindgarh",
-  "AV Alloys - Mandi Gobindgarh",
-  "Kesari Alloys - Bhiwadi",
-  "East India - Durgapur",
-  "Behari Lal - Mandi Gobindgarh",
-  "Others",
-];
+
 
 const createSalesOrder = async (
   payload,
@@ -564,18 +552,13 @@ const createSalesOrder = async (
         );
       }
 
-      if (
-        !STEEL_MILLS.includes(
-          requestedSteelMill
-        )
-      ) {
+      normalizedSteelMill = normalizeSteelMill(requestedSteelMill);
+
+      if (!normalizedSteelMill) {
         throw new Error(
           "Invalid steel mill selected."
         );
       }
-
-      normalizedSteelMill =
-        requestedSteelMill;
 
       /*
        * CUSTOM / OTHER MILL
@@ -1167,15 +1150,8 @@ const getAllSalesOrders = async (query, user) => {
     }
 
     if (fromDate || toDate) {
-      filter.orderDate = {};
-
-      if (fromDate) filter.orderDate.$gte = new Date(fromDate);
-
-      if (toDate) {
-        const endDate = new Date(toDate);
-        endDate.setHours(23, 59, 59, 999);
-        filter.orderDate.$lte = endDate;
-      }
+      const dateField = filter.approvalStatus === "approved" ? APPROVED_REVENUE_DATE_FIELD : "orderDate";
+      filter[dateField] = getISTDateRange(fromDate, toDate);
     }
 
     const skip = (Number(page) - 1) * Number(limit);
@@ -1190,19 +1166,9 @@ const getAllSalesOrders = async (query, user) => {
       delete summaryFilter.orderDate;
 
       if (dateFilter) {
-        summaryFilter["managerApproval.approvedAt"] = dateFilter;
+        summaryFilter[APPROVED_REVENUE_DATE_FIELD] = dateFilter;
       } else if (fromDate || toDate) {
-        summaryFilter["managerApproval.approvedAt"] = {};
-
-        if (fromDate) {
-          summaryFilter["managerApproval.approvedAt"].$gte = new Date(fromDate);
-        }
-
-        if (toDate) {
-          const endDate = new Date(toDate);
-          endDate.setHours(23, 59, 59, 999);
-          summaryFilter["managerApproval.approvedAt"].$lte = endDate;
-        }
+        summaryFilter[APPROVED_REVENUE_DATE_FIELD] = getISTDateRange(fromDate, toDate);
       }
 
       const result = await SalesOrder.aggregate([
@@ -1231,50 +1197,12 @@ const getAllSalesOrders = async (query, user) => {
       };
     };
 
-    const now = new Date();
-
-    const istNow = new Date(
-      now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-    );
-
-    const todayStart = new Date(istNow);
-    todayStart.setHours(0, 0, 0, 0);
-
-    const todayEnd = new Date(istNow);
-    todayEnd.setHours(23, 59, 59, 999);
-
-    const todayApprovedSummary = await buildApprovedSummary({
-      $gte: todayStart,
-      $lte: todayEnd,
-    });
-
-    const monthStart = new Date(
-  istNow.getFullYear(),
-  istNow.getMonth(),
-  1,
-  0,
-  0,
-  0,
-  0
-);
-
-const monthEnd = new Date(
-  istNow.getFullYear(),
-  istNow.getMonth() + 1,
-  0,
-  23,
-  59,
-  59,
-  999
-);
-
-const filteredApprovedSummary =
-  fromDate || toDate
-    ? await buildApprovedSummary()
-    : await buildApprovedSummary({
-        $gte: monthStart,
-        $lte: monthEnd,
-      });
+    const periods = getISTRevenuePeriods();
+    const todayApprovedSummary = await buildApprovedSummary(periods.today);
+    const monthApprovedSummary = await buildApprovedSummary(periods.month);
+    const filteredApprovedSummary = fromDate || toDate
+      ? await buildApprovedSummary()
+      : monthApprovedSummary;
 
     const salesOrders = await SalesOrder.aggregate([
       { $match: filter },
@@ -1414,6 +1342,7 @@ const filteredApprovedSummary =
       salesOrders,
       summary: {
         todayApproved: todayApprovedSummary,
+        monthApproved: monthApprovedSummary,
         filteredApproved: filteredApprovedSummary,
       },
       pagination: {

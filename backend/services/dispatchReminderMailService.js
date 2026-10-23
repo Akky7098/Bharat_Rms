@@ -46,54 +46,23 @@ const cleanEmails = (emails = []) => [
   ),
 ];
 
-const getReminderMeta = (type, overdueDays) => {
-  if (type === "before_due_date") {
-    return {
-      title: "Upcoming Payment Reminder",
-      badge: "Upcoming",
-      badgeBg: "#ecfdf5",
-      badgeBorder: "#bbf7d0",
-      badgeColor: "#047857",
-      message:
-        "This is a gentle reminder that the payment for the below invoice is approaching its due date.",
-      note:
-        "We request you to kindly keep this invoice scheduled for payment as per agreed terms.",
-      boxBg: "#ecfdf5",
-      boxBorder: "#bbf7d0",
-      boxColor: "#166534",
-    };
-  }
-
-  if (type === "due_date") {
-    return {
-      title: "Payment Due Today",
-      badge: "Due Today",
-      badgeBg: "#fff7ed",
-      badgeBorder: "#fed7aa",
-      badgeColor: "#c2410c",
-      message:
-        "This is a courteous reminder that the payment for the below invoice is due today.",
-      note:
-        "Kindly arrange the payment as per the agreed terms. If already processed, please ignore this message.",
-      boxBg: "#fff7ed",
-      boxBorder: "#fed7aa",
-      boxColor: "#9a3412",
-    };
-  }
-
+const escapeHtml = value => String(value ?? "-").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const { dayKey, daysLate, accountPaymentState } = require("../util/paymentReminderPolicy");
+const getReminderMeta = (type, overdueDays = 0) => {
+  const upcoming = type === "before_due_date";
+  const today = type === "due_date";
+  const escalated = !upcoming && !today && overdueDays >= 6;
+  const critical = escalated && overdueDays >= 9;
   return {
-    title: "Payment Follow-up",
-    badge: `${overdueDays || 0} Days Overdue`,
-    badgeBg: "#fef2f2",
-    badgeBorder: "#fecaca",
-    badgeColor: "#b91c1c",
-    message:
-      "This is a polite follow-up regarding the pending payment for the below invoice.",
-    note:
-      "We request you to kindly process the pending payment at the earliest. If payment has already been made, please share the details with our team.",
-    boxBg: "#fef2f2",
-    boxBorder: "#fecaca",
-    boxColor: "#991b1b",
+    critical,
+    headerBg: critical ? "#991b1b" : "#0f172a",
+    title: upcoming ? "Payment Due Soon" : today ? "Payment Due Today" : critical ? "Critical Payment Overdue" : escalated ? "Urgent: Payment Overdue" : "Payment Overdue",
+    badge: upcoming ? "PAYMENT APPROACHING" : today ? "ACTION REQUIRED TODAY" : `${overdueDays} ${overdueDays === 1 ? "DAY" : "DAYS"} OVERDUE`,
+    badgeBg: upcoming ? "#fffbeb" : "#fef2f2", badgeBorder: upcoming ? "#fcd34d" : "#fca5a5", badgeColor: upcoming ? "#92400e" : "#b91c1c",
+    boxBg: upcoming ? "#fffbeb" : critical ? "#b91c1c" : escalated ? "#991b1b" : "#fef2f2",
+    boxBorder: upcoming ? "#fcd34d" : "#991b1b", boxColor: upcoming ? "#78350f" : escalated ? "#ffffff" : "#991b1b",
+    message: upcoming ? "Please arrange payment on or before the due date to keep your account within the agreed credit terms." : today ? "Payment is due today. Please arrange settlement and share the payment reference with your sales contact." : critical ? "Your payment remains overdue despite earlier reminders. Settle the overdue balance immediately and share your payment reference today. Further delay may result in your team-approved credit facility being blocked, subject to review by our credit team." : escalated ? "Your account requires immediate attention. Outstanding payments remain overdue. Please settle the overdue balance immediately and confirm your payment plan with your sales contact." : "The agreed payment due date has passed. Please settle the overdue balance and share your remittance details promptly.",
+    note: "Interest or late-payment charges may apply to overdue invoices in accordance with the agreed payment terms and company policy." + (critical ? " Further delay may affect credit approval and lead to a block on further credit by our team. New orders and dispatches on credit may be delayed pending settlement and credit review." : escalated ? " Continued non-payment may affect credit approval, processing of future orders and dispatch schedules. Please contact us immediately to avoid disruption." : " Please arrange timely settlement to avoid charges and potential delays in future order processing."),
   };
 };
 
@@ -106,6 +75,7 @@ const baseEmailTemplate = ({
   badgeBorder,
   badgeColor,
   bodyContent,
+  headerBg = "#0f172a",
 }) => {
   return `
 <!DOCTYPE html>
@@ -237,7 +207,7 @@ const baseEmailTemplate = ({
         <table width="700" cellpadding="0" cellspacing="0" border="0" class="email-shell" style="width:700px;max-width:700px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dbe3ee;box-shadow:0 12px 34px rgba(15,23,42,0.10);">
 
           <tr>
-            <td class="brand-header" style="padding:14px 18px;background:#0f172a;border-bottom:1px solid #1e293b;">
+            <td class="brand-header" style="padding:14px 18px;background:${headerBg};border-bottom:1px solid #1e293b;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td class="brand-logo-cell" width="48" style="width:48px;vertical-align:middle;">
@@ -303,7 +273,7 @@ const baseEmailTemplate = ({
                 ${COMPANY.address}
               </div>
               <div style="margin-top:9px;font-size:11px;line-height:15px;color:#94a3b8;">
-                This is an automated accounts reminder from Bharat RMS. Please do not reply directly to this email.
+                Automated account statement from Bharat RMS. For payment confirmation or queries, contact your sales representative.
               </div>
             </td>
           </tr>
@@ -369,104 +339,80 @@ const messageBox = (
 `;
 };
 
-const buildReminderTemplate = (dispatch, type, overdueDays = 0) => {
+const buildReminderTemplate = (dispatch, type, overdueDays = 0, invoices = [dispatch], now = new Date()) => {
+  const { outstanding, oldestDays } = accountPaymentState(invoices, now);
+  if (oldestDays > 0) { type = "overdue"; overdueDays = oldestDays; }
+  else if (oldestDays === 0) type = "due_date";
   const meta = getReminderMeta(type, overdueDays);
-
+  if (oldestDays > 0) meta.badge = `OLDEST INVOICE: ${oldestDays} DAYS OVERDUE`;
+  const total = outstanding.reduce((sum, item) => sum + Number(item.pendingAmount), 0);
+  const overdue = outstanding.filter(item => daysLate(item, now) > 0).reduce((sum, item) => sum + Number(item.pendingAmount), 0);
+  const invoiceCards = outstanding.map(item => {
+    const late = daysLate(item, now);
+    const status = late === null ? "Due date not available" : late > 0 ? `${late} ${late === 1 ? "day" : "days"} overdue` : late === 0 ? "Due today" : `Due in ${-late} days`;
+    const color = late >= 0 ? "#b91c1c" : "#92400e";
+    return `<div style="margin-top:12px;border:1px solid #e2e8f0;border-left:4px solid ${color};border-radius:12px;padding:14px;break-inside:avoid;">
+      <div style="font-size:14px;font-weight:800;overflow-wrap:anywhere;">${escapeHtml(item.invoiceNumber)}</div>
+      <div style="color:${color};font-size:12px;font-weight:700;margin:5px 0 10px;">${status.toUpperCase()}</div>
+      <table width="100%" style="font-size:12px;line-height:21px;table-layout:fixed;overflow-wrap:anywhere;">
+        <tr><td>Invoice date</td><td align="right">${formatDate(item.invoiceDate)}</td></tr>
+        <tr><td>Payment due</td><td align="right">${formatDate(getEffectivePaymentDueDate(item))}</td></tr>
+        <tr><td>Invoice amount</td><td align="right">${formatCurrency(item.invoiceValue)}</td></tr>
+        <tr><td>Outstanding</td><td align="right" style="font-weight:800;color:${color};">${formatCurrency(item.pendingAmount)}</td></tr>
+      </table>
+      <div style="font-size:11px;line-height:17px;color:#64748b;margin-top:8px;overflow-wrap:anywhere;">Payment terms: ${escapeHtml(item.paymentTerms || `${item.paymentDueDays || 0} days`)}</div>
+      ${item.revisedPaymentDueDate ? `<div style="font-size:11px;line-height:17px;color:#64748b;">Original due: ${formatDate(item.paymentDueDate)} · Revised: ${formatDate(item.revisedPaymentDueDate)}<br/>${escapeHtml(item.revisedPaymentRemark || "Due date revised")}</div>` : ""}
+    </div>`;
+  }).join("");
   return baseEmailTemplate({
-    preHeader: `${meta.title} for invoice ${dispatch.invoiceNumber}.`,
-    title: meta.title,
-    subtitle: `Invoice ${dispatch.invoiceNumber || "-"} · ${
-      dispatch.companyName || "-"
-    }`,
-    badge: meta.badge,
-    badgeBg: meta.badgeBg,
-    badgeBorder: meta.badgeBorder,
-    badgeColor: meta.badgeColor,
+    preHeader: `${meta.title}: ${formatCurrency(overdue || total)} outstanding.`,
+    title: meta.title, subtitle: `${escapeHtml(dispatch.companyName)} · Statement as of ${formatDate(now)}`,
+    ...meta,
     bodyContent: `
-      ${messageBox(
-        `Dear <strong>${dispatch.contactPersonName || "Customer"}</strong>,<br/><br/>
-        ${meta.message}`,
-        meta.boxBg,
-        meta.boxBorder,
-        meta.boxColor
-      )}
-
-      ${sectionTitle("Payment Overview")}
-
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          ${amountCard(
-            "Invoice Amount",
-            formatCurrency(dispatch.invoiceValue),
-            "#f8fafc",
-            "#e2e8f0",
-            "#334155"
-          )}
-          ${amountCard(
-            "Pending Amount",
-            formatCurrency(dispatch.pendingAmount),
-            "#fff7ed",
-            "#fed7aa",
-            "#c2410c"
-          )}
-        </tr>
-      </table>
-
-      ${sectionTitle("Invoice Details")}
-
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          ${infoCard("Company", dispatch.companyName)}
-          ${infoCard("Invoice Number", dispatch.invoiceNumber || "-")}
-        </tr>
-        <tr>
-          ${infoCard("Invoice Date", formatDate(dispatch.invoiceDate))}
-          ${
-  dispatch.revisedPaymentDueDate
-    ? `
-      <div style="margin-top:13px;">
-        ${messageBox(
-          `<strong>Original Due Date:</strong> ${formatDate(
-            dispatch.paymentDueDate
-          )}<br/>
-          <strong>Revised Due Date:</strong> ${formatDate(
-            dispatch.revisedPaymentDueDate
-          )}<br/>
-          <strong>Revision Remark:</strong> ${
-            dispatch.revisedPaymentRemark ||
-            "-"
-          }`,
-          "#fff7ed",
-          "#fed7aa",
-          "#9a3412"
-        )}
-      </div>
-    `
-    : ""
-}
-        </tr>
-      </table>
-
-      <div style="margin-top:13px;">
-        ${messageBox(
-          meta.note,
-          "#ffffff",
-          "#e5e7eb",
-          "#475569"
-        )}
-      </div>
+      ${meta.critical ? `
+      <div style="background:#b91c1c;border:1px solid #991b1b;border-radius:16px;overflow:hidden;">
+        <div style="background:#7f1d1d;padding:12px 16px;font-size:12px;line-height:18px;letter-spacing:1px;font-weight:800;color:#ffffff;">CREDIT FACILITY AT RISK</div>
+        <div style="padding:20px 16px;color:#ffffff;">
+          <div style="font-size:12px;line-height:18px;font-weight:700;letter-spacing:.5px;">OVERDUE BALANCE - IMMEDIATE SETTLEMENT REQUIRED</div>
+          <div style="font-size:34px;line-height:42px;font-weight:900;margin:8px 0;overflow-wrap:anywhere;">${formatCurrency(overdue)}</div>
+          <div style="font-size:14px;line-height:22px;">${meta.message}</div>
+        </div>
+        <div style="background:#fff1f2;padding:14px 16px;color:#9f1239;font-size:13px;line-height:21px;border-top:1px solid #fda4af;"><strong>Protect your credit eligibility.</strong> Clear the overdue balance or contact your sales representative today with a confirmed payment plan.</div>
+      </div>` : messageBox(`Dear <strong>${escapeHtml(dispatch.contactPersonName || "Customer")}</strong>,<br/><br/>${meta.message}`, meta.boxBg, meta.boxBorder, meta.boxColor)}
+      ${sectionTitle("Account payment overview")}
+      <table width="100%" cellpadding="0" cellspacing="0"><tr>
+        ${amountCard("Overdue balance", formatCurrency(overdue), "#fef2f2", "#fca5a5", "#b91c1c")}
+        ${amountCard("Total outstanding", formatCurrency(total), "#f8fafc", "#e2e8f0", "#0f172a")}
+      </tr></table>
+      <div style="margin-top:14px;">${messageBox(`<strong>PAYMENT TERMS &amp; ORDER CONTINUITY</strong><br/>${meta.note}`, "#fff1f2", "#fda4af", "#9f1239")}</div>
+      ${sectionTitle(`Outstanding invoices (${outstanding.length})`)}
+      ${invoiceCards}
+      <div style="margin-top:16px;font-size:13px;line-height:21px;color:#475569;"><strong>Already paid?</strong> Please share the UTR / bank reference, payment date and invoice allocation with your sales contact so we can reconcile your account. This statement reflects payments recorded as of ${formatDate(now)}.</div>
     `,
   });
 };
 
-const getReminderTitle = (type, overdueDays) => {
-  return getReminderMeta(type, overdueDays).title;
+const buildReminderSubject = (dispatch, type, overdueDays = 0, invoices = [dispatch], now = new Date()) => {
+  const { outstanding, oldestDays } = accountPaymentState(invoices, now);
+  if (oldestDays > 0) { type = "overdue"; overdueDays = oldestDays; }
+  else if (oldestDays === 0) type = "due_date";
+  const overdue = outstanding.filter(item => daysLate(item, now) > 0).reduce((sum, item) => sum + Number(item.pendingAmount), 0);
+  const total = outstanding.reduce((sum, item) => sum + Number(item.pendingAmount), 0);
+  const amount = formatCurrency(type === "overdue" ? overdue : total);
+  const headline = type === "before_due_date" ? `Payment due soon: ${amount} outstanding - arrange payment before due date`
+    : type === "due_date" ? `PAYMENT DUE TODAY: ${amount} outstanding - action required`
+    : overdueDays >= 9 ? `CRITICAL PAYMENT OVERDUE: ${amount} overdue - further credit at risk`
+    : overdueDays >= 6 ? `URGENT PAYMENT: ${amount} overdue - protect your credit approval`
+    : `ACTION REQUIRED: ${amount} overdue - please settle now`;
+  const company = String(dispatch.companyName || "Customer").replace(/[\r\n]+/g, " ");
+  return `${headline} | ${type === "overdue" ? `${overdueDays} days overdue | ` : ""}${company} | ${dayKey(now)}`;
 };
 
 const sendPaymentReminderEmail = async (
   dispatch,
   type,
-  overdueDays = 0
+  overdueDays = 0,
+  invoices = [dispatch]
 ) => {
   const to = cleanEmails([
     dispatch.contactPersonEmail,
@@ -501,29 +447,16 @@ const sendPaymentReminderEmail = async (
     to,
     cc,
 
-    subject: `${getReminderTitle(
-      type,
-      overdueDays
-    )} | Invoice ${
-      dispatch.invoiceNumber
-    } | Pending ${formatCurrency(
-      dispatch.pendingAmount
-    )}`,
+    // Fresh subject and no reply headers: do not append to old dispatch threads.
+    subject: buildReminderSubject(dispatch, type, overdueDays, invoices),
+    html: buildReminderTemplate(dispatch, type, overdueDays, invoices),
 
-    html: buildReminderTemplate(
-      dispatch,
-      type,
-      overdueDays
-    ),
-
-    inReplyTo:
-      dispatch.notificationEmail?.messageId || undefined,
-
-    references:
-      dispatch.notificationEmail?.messageId || undefined,
   });
 };
 
 module.exports = {
   sendPaymentReminderEmail,
+  buildReminderTemplate,
+  getReminderMeta,
+  buildReminderSubject,
 };

@@ -384,57 +384,16 @@ const leaveRequestSchema =
    VALIDATION
 ===================================================== */
 
-leaveRequestSchema.pre(
-  "validate",
-  function validateLeaveDates(next) {
-    if (
-      this.fromDate &&
-      this.toDate &&
-      this.toDate <
-        this.fromDate
-    ) {
-      return next(
-        new Error(
-          "Leave end date cannot be before start date."
-        )
-      );
-    }
-
-    if (
-      this.duration !==
-        "full_day" &&
-      this.fromDate &&
-      this.toDate
-    ) {
-      const fromDateKey =
-        new Date(
-          this.fromDate
-        )
-          .toISOString()
-          .slice(0, 10);
-
-      const toDateKey =
-        new Date(
-          this.toDate
-        )
-          .toISOString()
-          .slice(0, 10);
-
-      if (
-        fromDateKey !==
-        toDateKey
-      ) {
-        return next(
-          new Error(
-            "Half-day leave can be applied only for one date."
-          )
-        );
-      }
-    }
-
-    return next();
+// Mongoose 9 validation middleware is synchronous: throw instead of calling next().
+leaveRequestSchema.pre("validate", function validateLeaveDates() {
+  if (this.fromDate && this.toDate && this.toDate < this.fromDate) {
+    throw new Error("Leave end date cannot be before start date.");
   }
-);
+  if (this.duration !== "full_day" && this.fromDate && this.toDate &&
+      new Date(this.fromDate).toISOString().slice(0, 10) !== new Date(this.toDate).toISOString().slice(0, 10)) {
+    throw new Error("Half-day leave can be applied only for one date.");
+  }
+});
 
 /* =====================================================
    INDEXES

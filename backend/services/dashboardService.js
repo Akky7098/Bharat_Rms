@@ -1,23 +1,10 @@
+const { APPROVED_REVENUE_DATE_FIELD, getISTDateRange } = require("../util/revenueDates");
 const SalesOrder = require("../model/salesOrderModel");
 const Enquiry = require("../model/enquiryModel");
 const mongoose = require("mongoose");
 const Receivable = require("../model/receivableModel");
 const ColdCall = require("../model/coldCallModel");
 
-
-const getISTDateRange = (fromDate, toDate) => {
-  const range = {};
-
-  if (fromDate) {
-    range.$gte = new Date(`${fromDate}T00:00:00.000+05:30`);
-  }
-
-  if (toDate) {
-    range.$lte = new Date(`${toDate}T23:59:59.999+05:30`);
-  }
-
-  return range;
-};
 
 const getDateFilter = (fromDate, toDate, fieldName) => {
   const filter = {};
@@ -128,6 +115,7 @@ const getDashboardSummary = async (query, user) => {
   const { fromDate, toDate } = query;
 
   const salesOrderFilter = {
+    isActive: { $ne: false },
     ...getDateFilter(fromDate, toDate, "orderDate"),
   };
 
@@ -136,14 +124,17 @@ const getDashboardSummary = async (query, user) => {
   };
 
   if (user.role !== "admin" && user.role !== "super_admin") {
-    salesOrderFilter.salesPersonId = user.id;
-    enquiryFilter.salesPersonId = user.id;
+    salesOrderFilter.salesPersonId = new mongoose.Types.ObjectId(user.id);
+    enquiryFilter.salesPersonId = new mongoose.Types.ObjectId(user.id);
   }
 
   const approvedSalesOrderFilter = {
     ...salesOrderFilter,
     approvalStatus: "approved",
   };
+
+  delete approvedSalesOrderFilter.orderDate;
+  Object.assign(approvedSalesOrderFilter, getDateFilter(fromDate, toDate, APPROVED_REVENUE_DATE_FIELD));
 
   let pendingSalesOrderFilter = { ...salesOrderFilter };
 
@@ -182,7 +173,7 @@ const getDashboardSummary = async (query, user) => {
         $group: {
           _id: null,
           totalRevenue: {
-            $sum: "$orderValue",
+            $sum: { $convert: { input: "$orderValue", to: "double", onError: 0, onNull: 0 } },
           },
         },
       },
@@ -323,7 +314,7 @@ const getDashboardSummary = async (query, user) => {
           _id: "$salesPersonId",
 
           revenue: {
-            $sum: "$orderValue",
+            $sum: { $convert: { input: "$orderValue", to: "double", onError: 0, onNull: 0 } },
           },
 
           orders: {
@@ -481,7 +472,7 @@ const getDashboardSummary = async (query, user) => {
           _id: "$grade",
 
           revenue: {
-            $sum: "$orderValue",
+            $sum: { $convert: { input: "$orderValue", to: "double", onError: 0, onNull: 0 } },
           },
 
           orders: {

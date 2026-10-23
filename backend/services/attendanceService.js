@@ -525,6 +525,9 @@ const getWorkMode = async (user) => {
     )
     .lean();
 
+  const today = getStartOfDay();
+  if (await require("../model/attendanceRequestModel").exists({ employeeId: getUserId(user), kind: "work_from_home", status: "approved", fromDate: { $lte: today }, toDate: { $gte: today } })) return "work_from_home";
+
   const workMode =
     fullUser?.attendanceWorkMode ||
     fullUser?.attendanceMode ||
@@ -1231,6 +1234,9 @@ const checkOut = async (
       0
     );
 
+  // Save the effective date-scoped mode even if WFH was approved after check-in.
+  attendance.workMode = workMode;
+
   attendance.checkOut = {
     time: checkOutTime,
     ...checkOutData,
@@ -1327,6 +1333,13 @@ const getAttendanceList = async (
       );
   }
 
+  // Exclude inactive accounts before counting and paginating; retain saved history.
+  const inactiveEmployees = await User.find({ status: "inactive" }).select("_id").lean();
+  const inactiveIds = inactiveEmployees.map((employee) => employee._id);
+  filter.employeeId = filter.employeeId
+    ? { $eq: filter.employeeId, $nin: inactiveIds }
+    : { $nin: inactiveIds };
+
   if (attendanceStatus) {
     filter.attendanceStatus =
       attendanceStatus;
@@ -1361,7 +1374,7 @@ const getAttendanceList = async (
     Attendance.find(filter)
       .populate(
         "employeeId",
-        "name email role"
+        "name email role status"
       )
       .sort({
         attendanceDate: -1,
@@ -2585,94 +2598,11 @@ const getPendingPaidLeaveUsage =
     );
   };
 
-const getLeaveBalance = async ({
-  employeeId,
-  monthDate = new Date(),
-}) => {
-  const approvedPaid =
-    await getApprovedPaidLeaveUsage({
-      employeeId,
-      monthDate,
-    });
+const getLeaveBalance = require("./paidLeaveBalanceService");
 
-  const pendingPaid =
-    await getPendingPaidLeaveUsage({
-      employeeId,
-      monthDate,
-    });
-
-  return {
-    monthlyPaidLeaveEntitlement:
-      PAID_LEAVE_PER_MONTH,
-
-    approvedPaidLeave:
-      approvedPaid,
-
-    pendingPaidLeave:
-      pendingPaid,
-
-    availablePaidLeave:
-      Math.max(
-        PAID_LEAVE_PER_MONTH -
-          approvedPaid -
-          pendingPaid,
-        0
-      ),
-
-    lossOfPayAvailable:
-      true,
-  };
+const validateLeaveApprovalHierarchy = async (leaveRequest, approver) => {
+  if (!isSuperAdmin(approver)) throw createServiceError("Only super admin can approve or reject leave.", 403);
 };
-
-const validateLeaveApprovalHierarchy =
-  async (
-    leaveRequest,
-    approver
-  ) => {
-    const employeeRole =
-      normalizeRole(
-        leaveRequest.employeeRole
-      );
-
-    if (
-      employeeRole === "admin"
-    ) {
-      if (
-        !isSuperAdmin(
-          approver
-        )
-      ) {
-        throw createServiceError(
-          "Only super admin can approve or reject an admin leave request.",
-          403
-        );
-      }
-
-      return;
-    }
-
-    if (
-      employeeRole === "user"
-    ) {
-      if (
-        !isAdminOrSuperAdmin(
-          approver
-        )
-      ) {
-        throw createServiceError(
-          "Only admin or super admin can approve this leave request.",
-          403
-        );
-      }
-
-      return;
-    }
-
-    throw createServiceError(
-      "This leave request cannot be processed.",
-      403
-    );
-  };
 
 /* =====================================================
    APPLY LEAVE
@@ -2807,45 +2737,17 @@ const applyLeave = async (
     );
   }
 
-  if (
-    leaveType ===
-    "paid_leave"
-  ) {
-    if (
-      getISTDateKey(
-        fromDate
-      ) !==
-      getISTDateKey(
-        toDate
-      )
-    ) {
-      throw createServiceError(
-        "Only one paid leave per month is available. Select one date or apply Loss of Pay.",
-        400
-      );
-    }
-
-    const balance =
-      await getLeaveBalance({
-        employeeId,
-        monthDate:
-          fromDate,
-      });
-
-    const requestedUnits =
-      getLeaveUnits(
-        duration
-      );
-
-    if (
-      balance.availablePaidLeave <
-      requestedUnits
-    ) {
-      throw createServiceError(
-        "No paid leave is available for this month. Please apply Loss of Pay.",
-        400
-      );
-    }
+  const requestedUnits = require("../util/paidLeavePolicy").units({ fromDate, toDate, duration });
+  if (!requestedUnits) throw createServiceError("Select at least one working day.", 400);
+  if (getISTDateKey(fromDate).slice(0, 4) !== getISTDateKey(toDate).slice(0, 4)) {
+    throw createServiceError("Submit separate leave requests for each calendar year.", 400);
+  }
+  if (await require("../model/attendanceRequestModel").exists({ employeeId, kind: "work_from_home", status: { $in: ["pending", "approved"] }, fromDate: { $lte: toDate }, toDate: { $gte: fromDate } })) {
+    throw createServiceError("A WFH request already exists for these dates.", 409);
+  }
+  if (leaveType === "paid_leave") {
+    const balance = await getLeaveBalance({ employeeId, monthDate: fromDate });
+    if (balance.availablePaidLeave < requestedUnits) throw createServiceError("Insufficient earned paid leave. Apply Loss of Pay instead.", 400);
   }
 
   const leaveRequest =
@@ -2879,9 +2781,7 @@ const applyLeave = async (
         new Date(),
 
       approvalLevel:
-        isAdmin(user)
-          ? "super_admin"
-          : "admin_or_super_admin",
+        "super_admin",
 
       createdBy:
         employeeId,
@@ -2917,13 +2817,7 @@ const applyLeave = async (
       ],
     });
 
-  const targetRoles =
-    isAdmin(user)
-      ? ["super_admin"]
-      : [
-          "admin",
-          "super_admin",
-        ];
+  const targetRoles = ["super_admin"];
 
   await notifyAttendance({
     event:
@@ -3156,9 +3050,7 @@ const getLeaveRequests = async (
   };
 
   if (
-    !isAdminOrSuperAdmin(
-      user
-    )
+    !isSuperAdmin(user)
   ) {
     filter.employeeId =
       getUserId(user);
@@ -3176,15 +3068,6 @@ const getLeaveRequests = async (
 
     filter.employeeId =
       employeeId;
-  }
-
-  /*
-   * Admin sees only normal-user requests.
-   * Super admin sees user and admin requests.
-   */
-  if (isAdmin(user)) {
-    filter.employeeRole =
-      "user";
   }
 
   if (status) {
@@ -3259,7 +3142,7 @@ const getLeaveRequests = async (
     LeaveRequest.find(filter)
       .populate(
         "employeeId",
-        "name email role"
+        "name email role status"
       )
       .sort({
         status: 1,
@@ -3364,34 +3247,11 @@ const approveLeave = async (
     user
   );
 
-  if (
-    leaveRequest.leaveType ===
-    "paid_leave"
-  ) {
-    const approvedUsage =
-      await getApprovedPaidLeaveUsage({
-        employeeId:
-          leaveRequest.employeeId,
-
-        monthDate:
-          leaveRequest.fromDate,
-      });
-
-    const requestedUnits =
-      getLeaveUnits(
-        leaveRequest.duration
-      );
-
-    if (
-      approvedUsage +
-        requestedUnits >
-      PAID_LEAVE_PER_MONTH
-    ) {
-      throw createServiceError(
-        "The employee's monthly paid leave balance is exhausted. Reject this request or ask the employee to apply Loss of Pay.",
-        400
-      );
-    }
+  if (!(await User.exists({ _id: leaveRequest.employeeId, status: { $ne: "inactive" } }))) throw createServiceError("Employee is inactive.", 409);
+  if (await require("../model/attendanceRequestModel").exists({ employeeId: leaveRequest.employeeId, kind: "work_from_home", status: "approved", fromDate: { $lte: leaveRequest.toDate }, toDate: { $gte: leaveRequest.fromDate } })) throw createServiceError("Approved WFH conflicts with these dates.", 409);
+  if (leaveRequest.leaveType === "paid_leave") {
+    const balance = await getLeaveBalance({ employeeId: leaveRequest.employeeId, monthDate: leaveRequest.fromDate, excludeLeaveId: leaveRequest._id });
+    if (balance.availablePaidLeave < require("../util/paidLeavePolicy").units(leaveRequest)) throw createServiceError("Insufficient earned paid leave. Apply Loss of Pay instead.", 400);
   }
 
   const leaveAttendanceDates =
@@ -3693,7 +3553,8 @@ const approveLeave = async (
     "LEAVE APPROVAL MAIL"
   );
 
-  return leaveRequest;
+  const whatsapp = await require("./attendanceRequestService").announceApproval(leaveRequest, leaveRequest.leaveType === "paid_leave" ? "paid leave" : "LOP leave");
+  return { ...leaveRequest.toObject(), whatsapp };
 };
 
 /* =====================================================
@@ -4105,6 +3966,7 @@ const createMissedCheckInNotifications =
 
     const users =
       await User.find({
+        status: { $ne: "inactive" },
         role: {
           $in: [
             "admin",
@@ -4138,10 +4000,7 @@ const createMissedCheckInNotifications =
         continue;
       }
 
-      const employeeWorkMode =
-        employee.attendanceWorkMode ||
-        employee.attendanceMode ||
-        "office";
+      const employeeWorkMode = await getWorkMode(employee);
 
       const finalAttendance =
         attendance ||
@@ -4261,6 +4120,7 @@ const createMissedCheckoutNotifications =
 
     const attendances =
       await Attendance.find({
+        employeeId: { $nin: await User.find({ status: "inactive" }).distinct("_id") },
         attendanceDate:
           today,
 
@@ -4347,6 +4207,7 @@ const createMissedCheckoutRegularizationReminders =
 
     const attendances =
       await Attendance.find({
+        employeeId: { $nin: await User.find({ status: "inactive" }).distinct("_id") },
         attendanceDate:
           yesterday,
 
@@ -4507,4 +4368,14 @@ module.exports = {
   createMissedCheckInNotifications,
   createMissedCheckoutNotifications,
   createMissedCheckoutRegularizationReminders,
-};  
+};
+// Serialize balance checks and overlapping requests per employee across server instances.
+const withAttendanceEmployeeLock = require("../util/attendanceEmployeeLock");
+module.exports.applyLeave = (body, user) => withAttendanceEmployeeLock(getUserId(user), () => applyLeave(body, user));
+module.exports.approveLeave = async (requestId, body, user) => {
+  if (!isSuperAdmin(user)) throw createServiceError("Only super admin may approve leave.", 403);
+  if (!mongoose.Types.ObjectId.isValid(requestId)) throw createServiceError("Invalid leave request ID.", 400);
+  const request = await LeaveRequest.findById(requestId).select("employeeId").lean();
+  if (!request) throw createServiceError("Leave request not found.", 404);
+  return withAttendanceEmployeeLock(request.employeeId, () => approveLeave(requestId, body, user));
+};

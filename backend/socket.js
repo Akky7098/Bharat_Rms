@@ -1,5 +1,6 @@
 const { Server } = require("socket.io");
-const jwt = require("jsonwebtoken");
+const { verifyBharatToken } = require("./util/auth");
+const { isUserActive } = require("./util/userAccountStatus");
 const User = require("./model/userModel");
 
 let io;
@@ -20,10 +21,12 @@ const initSocket = (server) => {
 
       if (!token) return next(new Error("Socket auth token missing"));
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "abc123");
-      const user = await User.findById(decoded.id).select("_id name email role");
+      const { decoded } = verifyBharatToken(token);
+      const user = await User.findById(decoded.id).select("_id name email role status");
 
       if (!user) return next(new Error("Socket user not found"));
+
+      if (!isUserActive(user)) return next(new Error("Account is inactive"));
 
       socket.user = user;
       next();
@@ -41,7 +44,19 @@ const initSocket = (server) => {
 
     console.log(`Socket connected: ${socket.user.name} (${role})`);
 
+    // Recheck accounts changed directly in the database as well as via the API.
+    const accountCheck = setInterval(async () => {
+      try {
+        const current = await User.findById(userId).select("status");
+        if (!isUserActive(current)) socket.disconnect(true);
+      } catch {
+        socket.disconnect(true);
+      }
+    }, 30000);
+    accountCheck.unref?.();
+
     socket.on("disconnect", () => {
+      clearInterval(accountCheck);
       console.log(`Socket disconnected: ${socket.user.name}`);
     });
   });

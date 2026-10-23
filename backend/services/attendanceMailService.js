@@ -819,7 +819,7 @@ const sendLeaveRequestMailToApprovers =
     const recipients =
       getApprovalRecipients({
         employeeRole:
-          leaveRequest.employeeRole,
+          "admin",
       });
 
     return transporter.sendMail({
@@ -848,7 +848,7 @@ const sendLeaveRequestMailToApprovers =
               leaveRequest.leaveType ===
               "loss_of_pay"
                 ? "This request is marked as Loss of Pay."
-                : "This request will use the employee's monthly paid leave balance."
+                : "This request will use the employee's earned paid leave balance (annual limit: 12 days)."
             }
           </div>
 

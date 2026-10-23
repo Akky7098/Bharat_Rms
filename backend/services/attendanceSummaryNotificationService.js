@@ -206,6 +206,7 @@ const getTodayData =
     ] =
       await Promise.all([
         User.find({
+          status: { $ne: "inactive" },
           role: {
             $in: [
               "user",

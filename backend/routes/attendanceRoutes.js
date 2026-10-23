@@ -155,4 +155,25 @@ router.patch(
   attendanceController.cancelLeave
 );
 
+// Attendance roster is separate from historical salesperson choices.
+router.get("/employees", async (req, res) => {
+  try {
+    if (!["admin", "super_admin"].includes(req.user.role)) return res.status(403).json({ success: false, message: "Management access required." });
+    const data = await require("../model/userModel").find({ role: { $in: ["user", "admin"] }, status: { $ne: "inactive" } }).select("_id name email role status attendanceWorkMode").sort({ name: 1 }).lean();
+    res.set("Cache-Control", "private, no-store").json({ success: true, data });
+  } catch (error) { res.status(500).json({ success: false, message: "Unable to load attendance employees." }); }
+});
+
+// Dedicated temporary WFH and short-leave approvals; existing attendance routes stay intact.
+const attendanceRequests = require("../services/attendanceRequestService");
+for (const [path, kind] of [["work-from-home", "work_from_home"], ["short-leave", "short_leave"]]) {
+  const respond = handler => async (req, res) => {
+    try { res.set("Cache-Control", "private, no-store"); res.json({ success: true, ...await handler(req) }); }
+    catch (error) { res.status(error.statusCode || (error.name === "ValidationError" ? 400 : 500)).json({ success: false, message: error.statusCode || error.name === "ValidationError" ? error.message : "Unable to process attendance request." }); }
+  };
+  router.post(`/${path}`, respond(async req => ({ data: await attendanceRequests.apply(kind, req.body, req.user) })));
+  router.get(`/${path}`, respond(req => attendanceRequests.list(kind, req.query, req.user)));
+  for (const action of ["approve", "reject"]) router.patch(`/${path}/:requestId/${action}`, respond(async req => ({ data: await attendanceRequests.decide(kind, req.params.requestId, action === "approve", req.body, req.user) })));
+}
+
 module.exports = router;

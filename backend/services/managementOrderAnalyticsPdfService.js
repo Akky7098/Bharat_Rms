@@ -1,3 +1,4 @@
+const pdfChromiumOptions = require("../util/pdfChromiumOptions");
 const puppeteer =
   require("puppeteer");
 
@@ -430,33 +431,9 @@ const generateHouseOrderAnalysisPdf =
               null;
           }
 
-          /*
-           * Older ensureChromium versions
-           * may only prepare Puppeteer's
-           * browser and return nothing.
-           *
-           * In that case let Puppeteer use
-           * its configured executable.
-           */
-          const launchOptions = {
-            headless:
-              true,
-
-            args: [
-              "--no-sandbox",
-              "--disable-setuid-sandbox",
-              "--disable-dev-shm-usage",
-              "--disable-gpu",
-            ],
-          };
-
-          if (
-            executablePath
-          ) {
-            launchOptions
-              .executablePath =
-              executablePath;
-          }
+          // Use the resolved persistent Chromium binary and pipe transport,
+          // matching sales order PDFs on shared hosting.
+          const launchOptions = pdfChromiumOptions(executablePath);
 
           console.log(
             "[HO ORDER PDF] Launching Chromium...",
@@ -868,26 +845,7 @@ const generateSteelMillOrderAnalysisPdf =
              Same safe production pattern as H.O.
           ============================================= */
 
-          const launchOptions = {
-            headless:
-              true,
-
-            args: [
-              "--no-sandbox",
-              "--disable-setuid-sandbox",
-              "--disable-dev-shm-usage",
-              "--disable-gpu",
-            ],
-          };
-
-
-          if (
-            executablePath
-          ) {
-            launchOptions
-              .executablePath =
-              executablePath;
-          }
+          const launchOptions = pdfChromiumOptions(executablePath);
 
 
           console.log(

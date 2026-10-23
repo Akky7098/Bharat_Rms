@@ -12,4 +12,7 @@ router.get(
   userController.getSalesPersons
 );
 
+router.get("/", authMiddleware, roleAuth("super_admin"), userController.getUserAccounts);
+router.patch("/:id/status", authMiddleware, roleAuth("super_admin"), userController.setUserStatus);
+
 module.exports = router;

@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -22,10 +21,28 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
     },
 
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
+    googleId: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    googleLinkedAt: Date,
+
     role: {
       type: String,
       enum: ["super_admin", "admin", "user"],
       default: "user",
+    },
+    // Optional existing employee default; date-scoped WFH approvals live in AttendanceRequest.
+    attendanceWorkMode: {
+      type: String,
+      enum: ["office", "work_from_home"],
     },
     attendanceMode: {
   type: String,

@@ -1,3 +1,6 @@
+const crypto = require("crypto");
+const PaymentReminderDelivery = require("../model/paymentReminderDeliveryModel");
+const { dayKey, daysLate, reminderType, accountPaymentState } = require("../util/paymentReminderPolicy");
 const Dispatch =
   require("../model/dispatchModel");
 
@@ -39,44 +42,7 @@ const safeCreateNotification =
     }
   };
 
-const startOfDay = (
-  date = new Date()
-) => {
-  const d = new Date(date);
-
-  d.setHours(
-    0,
-    0,
-    0,
-    0
-  );
-
-  return d;
-};
-
-const diffDays = (
-  fromDate,
-  toDate
-) => {
-  const from =
-    startOfDay(fromDate);
-
-  const to =
-    startOfDay(toDate);
-
-  return Math.floor(
-    (
-      to.getTime() -
-      from.getTime()
-    ) /
-      (
-        1000 *
-        60 *
-        60 *
-        24
-      )
-  );
-};
+const startOfDay = (date = new Date()) => new Date(`${dayKey(date)}T00:00:00+05:30`);
 
 const getEffectivePaymentDueDate =
   (dispatch) => {
@@ -87,26 +53,6 @@ const getEffectivePaymentDueDate =
       null
     );
   };
-
-const wasReminderSentToday = (
-  dispatch,
-  today
-) => {
-  const lastReminderSentAt =
-    dispatch?.paymentReminder
-      ?.lastReminderSentAt;
-
-  if (!lastReminderSentAt) {
-    return false;
-  }
-
-  return (
-    startOfDay(
-      lastReminderSentAt
-    ).getTime() ===
-    today.getTime()
-  );
-};
 
 const ensurePaymentReminderObject =
   (dispatch) => {
@@ -300,86 +246,13 @@ const syncOverduePaymentStatuses =
     };
   };
 
-const updatePaymentStatusIfNeeded =
-  async (dispatch) => {
-    if (
-      dispatch.paymentStatus ===
-      "paid"
-    ) {
-      return false;
-    }
-
-    const pendingAmount =
-      Number(
-        dispatch.pendingAmount ||
-          0
-      );
-
-    const paidAmount =
-      Number(
-        dispatch.paidAmount ||
-          0
-      );
-
-    if (pendingAmount <= 0) {
-      dispatch.paymentStatus =
-        "paid";
-
-      await dispatch.save();
-
-      return true;
-    }
-
-    const effectiveDueDate =
-      getEffectivePaymentDueDate(
-        dispatch
-      );
-
-    if (!effectiveDueDate) {
-      return false;
-    }
-
-    const today =
-      startOfDay();
-
-    const due =
-      startOfDay(
-        effectiveDueDate
-      );
-
-    let nextStatus;
-
-    if (today > due) {
-      nextStatus =
-        "overdue";
-    } else if (paidAmount > 0) {
-      nextStatus =
-        "partial";
-    } else {
-      nextStatus =
-        "pending";
-    }
-
-    if (
-      dispatch.paymentStatus !==
-      nextStatus
-    ) {
-      dispatch.paymentStatus =
-        nextStatus;
-
-      await dispatch.save();
-
-      return true;
-    }
-
-    return false;
-  };
-
 const sendReminderAndUpdate =
   async (
     dispatch,
     type,
-    overdueDays = 0
+    overdueDays = 0,
+    invoices = [dispatch],
+    existingMailInfo = null
   ) => {
     ensurePaymentReminderObject(
       dispatch
@@ -391,10 +264,11 @@ const sendReminderAndUpdate =
       );
 
     const mailInfo =
-      await sendPaymentReminderEmail(
+      existingMailInfo || await sendPaymentReminderEmail(
         dispatch,
         type,
-        overdueDays
+        overdueDays,
+        invoices
       );
 
     if (
@@ -533,9 +407,6 @@ const processPaymentReminders =
   async ({
     forceAllOverdue = false,
   } = {}) => {
-    const today =
-      startOfDay();
-
     const statusSync =
       await syncOverduePaymentStatuses();
 
@@ -559,20 +430,6 @@ const processPaymentReminders =
           $gt: 0,
         },
 
-        $or: [
-          {
-            revisedPaymentDueDate: {
-              $exists: true,
-              $ne: null,
-            },
-          },
-          {
-            paymentDueDate: {
-              $exists: true,
-              $ne: null,
-            },
-          },
-        ],
       }).sort({
         revisedPaymentDueDate:
           1,
@@ -588,127 +445,61 @@ const processPaymentReminders =
     let failedCount = 0;
     let skippedCount = 0;
 
-    for (
-      const dispatch of
-      dispatches
-    ) {
+    // Keep each recipient isolated while consolidating their company's invoices.
+    const groups = new Map();
+    for (const dispatch of dispatches) {
+      const company = String(dispatch.companyName || "").trim().toLowerCase().replace(/\s+/g, " ");
+      const email = String(dispatch.contactPersonEmail || "").trim().toLowerCase();
+      const key = `${company}|${email}`;
+      if (!groups.has(key)) groups.set(key, { company, invoices: [] });
+      groups.get(key).invoices.push(dispatch);
+    }
+    const now = new Date();
+    for (const [key, group] of groups) {
+      let claimId;
       try {
-        ensurePaymentReminderObject(
-          dispatch
-        );
-
-        await updatePaymentStatusIfNeeded(
-          dispatch
-        );
-
-        if (
-          dispatch.paymentStatus ===
-          "paid"
-        ) {
-          skippedCount++;
+        const companyInvoices = accountPaymentState(dispatches.filter(invoice => String(invoice.companyName || "").trim().toLowerCase().replace(/\s+/g, " ") === group.company), now).outstanding;
+        const oldest = daysLate(companyInvoices[0], now);
+        // The oldest company debt anchors the cadence; new invoices cannot reset it.
+        const candidates = oldest > 0
+          ? ((forceAllOverdue || oldest % 3 === 0) ? group.invoices : [])
+          : group.invoices.filter(invoice => reminderType(invoice, now, forceAllOverdue));
+        if (!candidates.length) { skippedCount += group.invoices.length; continue; }
+        // Any reminder already delivered to this contact today suppresses another.
+        if (group.invoices.some(invoice => invoice.paymentReminder?.lastReminderSentAt && dayKey(invoice.paymentReminder.lastReminderSentAt) === dayKey(now))) {
+          skippedCount += group.invoices.length;
           continue;
         }
-
-        const effectiveDueDate =
-          getEffectivePaymentDueDate(
-            dispatch
-          );
-
-        if (!effectiveDueDate) {
-          skippedCount++;
-          continue;
+        const representative = candidates[0];
+        const late = Math.max(0, oldest);
+        const type = oldest > 0 ? "overdue" : oldest === 0 ? "due_date" : "before_due_date";
+        // Unique database claim also covers multiple server workers/manual runners.
+        claimId = crypto.createHash("sha256").update(`${dayKey(now)}|${key}`).digest("hex");
+        try {
+          await PaymentReminderDelivery.create({ _id: claimId, status: "sending" });
+        } catch (error) {
+          if (error.code === 11000) { skippedCount += group.invoices.length; continue; }
+          throw error;
         }
-
-        const daysToDue =
-          diffDays(
-            today,
-            effectiveDueDate
-          );
-
-        const daysOverdue =
-          diffDays(
-            effectiveDueDate,
-            today
-          );
-
-        if (
-          daysToDue === 2 &&
-          !dispatch
-            .paymentReminder
-            .beforeDueDateSent
-        ) {
-          await sendReminderAndUpdate(
-            dispatch,
-            "before_due_date"
-          );
-
-          sentCount++;
-          continue;
-        }
-
-        if (
-          daysToDue === 0 &&
-          !dispatch
-            .paymentReminder
-            .dueDateSent
-        ) {
-          await sendReminderAndUpdate(
-            dispatch,
-            "due_date"
-          );
-
-          sentCount++;
-          continue;
-        }
-
-        if (daysOverdue > 0) {
-          const alreadySentToday =
-            wasReminderSentToday(
-              dispatch,
-              today
-            );
-
-          if (
-            alreadySentToday
-          ) {
-            skippedCount++;
-            continue;
-          }
-
-          if (forceAllOverdue) {
-            await sendReminderAndUpdate(
-              dispatch,
-              "overdue",
-              daysOverdue
-            );
-
-            sentCount++;
-            continue;
-          }
-
-          if (
-            daysOverdue % 5 ===
-            0
-          ) {
-            await sendReminderAndUpdate(
-              dispatch,
-              "overdue",
-              daysOverdue
-            );
-
-            sentCount++;
-            continue;
+        const mailInfo = await sendPaymentReminderEmail(representative, type, late, companyInvoices);
+        await PaymentReminderDelivery.updateOne({ _id: claimId }, { $set: { status: "sent", messageId: mailInfo.messageId } });
+        for (const invoice of candidates) {
+          const invoiceType = daysLate(invoice, now) > 0 ? "overdue" : reminderType(invoice, now, forceAllOverdue);
+          if (invoiceType) {
+            await sendReminderAndUpdate(invoice, invoiceType, Math.max(0, daysLate(invoice, now)), companyInvoices, mailInfo);
+          } else {
+            ensurePaymentReminderObject(invoice);
+            invoice.paymentReminder.lastReminderSentAt = now;
+            await invoice.save();
           }
         }
-
-        skippedCount++;
+        sentCount++;
       } catch (error) {
         failedCount++;
-
-        console.error(
-          `Payment reminder failed for dispatch ${dispatch._id}:`,
-          error.message
-        );
+        if (claimId) {
+          await PaymentReminderDelivery.updateOne({ _id: claimId, status: "sending" }, { $set: { status: "failed", error: error.message } }).catch(() => {});
+        }
+        console.error("Company payment reminder failed:", error.message);
       }
     }
 

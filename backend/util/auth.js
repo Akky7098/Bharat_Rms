@@ -1,3 +1,4 @@
+const { isUserActive } = require("./userAccountStatus");
 const jwt = require("jsonwebtoken");
 const User = require("../model/userModel");
 
@@ -240,7 +241,7 @@ const protect = async (
         decoded.id
       )
         .select(
-          "_id name email role attendanceMode"
+          "_id name email role attendanceMode status"
         )
         .lean();
 
@@ -263,6 +264,10 @@ const protect = async (
 
        Keeps existing req.user structure unchanged.
     ===================================================== */
+
+    if (!isUserActive(user)) {
+      return res.status(403).json({ success: false, code: "ACCOUNT_INACTIVE", message: "Your account is inactive. Please contact your administrator." });
+    }
 
     req.user = {
       _id:
@@ -396,3 +401,4 @@ module.exports.protect =
 
 module.exports.auth =
   protect;
+module.exports.verifyBharatToken = verifyBharatToken;

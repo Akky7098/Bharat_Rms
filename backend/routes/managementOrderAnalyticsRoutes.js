@@ -54,6 +54,8 @@ router.get(
 
 router.get(
   "/house",
+  require("../util/auth"),
+  require("../util/role")("super_admin"),
   getHouseOrderAnalysis
 );
 

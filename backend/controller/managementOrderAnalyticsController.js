@@ -427,9 +427,15 @@ const getHouseOrderAnalysis =
           .getHouseOrderDetails({
             ...filters,
 
+            search: req.query.search,
+
+            includeOrderDetails: true,
+
             trackingOrderType:
               "H.O.",
           });
+
+      res.set("Cache-Control", "private, no-store");
 
       return res
         .status(200)

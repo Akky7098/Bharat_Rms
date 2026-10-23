@@ -1665,22 +1665,27 @@ const getManagementOrderAnalytics =
     }
 
 
-    if (steelMill) {
-      query.$and = [
-        {
-          $or: [
-            {
-              steelMill,
-            },
+   
+const selectedSteelMill = cleanText(steelMill);
 
-            {
-              otherSteelMill:
-                steelMill,
-            },
-          ],
+const isNotSpecifiedMill =
+  selectedSteelMill.toLowerCase() === "not specified";
+
+if (selectedSteelMill && !isNotSpecifiedMill) {
+  query.$and = [
+    {
+      $or: [
+        {
+          steelMill: selectedSteelMill,
         },
-      ];
-    }
+        {
+          otherSteelMill: selectedSteelMill,
+        },
+      ],
+    },
+  ];
+}
+
 
 
     /*
@@ -1801,30 +1806,37 @@ const getManagementOrderAnalytics =
       }
 
 
-      const type =
-        normalizeTrackingType(
-          order
-            .trackingOrderType
-        );
+     
+const type =
+  normalizeTrackingType(
+    order.trackingOrderType
+  );
 
-      /*
-       * Management route analysis only
-       * contains H.O. and N.H.O.
-       */
+/*
+ * Management route analysis only
+ * contains H.O. and N.H.O.
+ */
+if (
+  type !== HOUSE_TYPE &&
+  type !== STEEL_MILL_TYPE
+) {
+  continue;
+}
 
-      if (
-        type !== HOUSE_TYPE &&
-        type !==
-          STEEL_MILL_TYPE
-      ) {
-        continue;
-      }
+/*
+ * Not Specified must use the same
+ * mill-name resolution as the summary.
+ */
+if (
+  isNotSpecifiedMill &&
+  getSteelMillName(order) !== "Not Specified"
+) {
+  continue;
+}
 
+const quantityInfo =
+  getOrderQuantityInfo(order);
 
-      const quantityInfo =
-        getOrderQuantityInfo(
-          order
-        );
 
       const orderKG =
         roundKG(
@@ -2457,6 +2469,8 @@ const getHouseOrderDetails =
   async ({
     month,
     months = 1,
+    search = "",
+    includeOrderDetails = false,
   } = {}) => {
     const analytics =
       await getManagementOrderAnalytics({
@@ -2469,6 +2483,28 @@ const getHouseOrderDetails =
         includeDetails:
           true,
       });
+
+    // Enrich only the H.O. drill-down; keep the shared overview/mill payloads light.
+    const details = analytics.orders || [];
+    const snapshots = includeOrderDetails && details.length ? await SalesOrder.find({
+      _id: { $in: details.map(order => order.salesOrderId || order._id) },
+    }).select("companyAddress gstinNumber enquiryNumber checklistNumber orderDate createdAt updatedAt orderType customerType contactPersonName contactPersonNumber paymentTerms approvalStatus orderValue salesPersonName salesPersonEmail salesPersonId supplyFinish managerApproval.approvedAt adminApproval.approvedAt checkedAt pdf.fileUrl finalSalesOrderPackage.fileUrl preShipmentInspectionPdf.fileUrl")
+      .populate("salesPersonId", "name email")
+      .lean() : [];
+    const byId = new Map(snapshots.map(order => [String(order._id), order]));
+    const term = String(search || "").trim().toLowerCase();
+    const enrichedOrders = includeOrderDetails ? details.map(detail => {
+      const snapshot = byId.get(String(detail.salesOrderId || detail._id)) || {};
+      return { ...snapshot, ...detail,
+        orderDate: snapshot.orderDate || detail.orderDate,
+        salesPersonName: snapshot.salesPersonName || snapshot.salesPersonId?.name || detail.salesPersonName,
+        salesPersonEmail: snapshot.salesPersonEmail || snapshot.salesPersonId?.email || "",
+        supplyFinish: snapshot.supplyFinish || detail.supplyCondition || "",
+      };
+    }) : details;
+    const visibleOrders = term ? enrichedOrders.filter(order =>
+      [order.companyName, order.poNumber, order.salesPersonName].some(value => String(value || "").toLowerCase().includes(term))
+    ) : enrichedOrders;
 
     return {
       generatedAt:
@@ -2484,9 +2520,8 @@ const getHouseOrderDetails =
       grades:
         analytics.grades,
 
-      orders:
-        analytics.orders ||
-        [],
+      orders: visibleOrders,
+      filteredOrderCount: visibleOrders.length,
 
       dataQuality:
         analytics
@@ -2556,60 +2591,118 @@ const getSteelMillAnalysis =
    INDIVIDUAL MILL DETAIL
 ========================================================= */
 
-const getSteelMillOrderDetails =
-  async ({
-    month,
-    months = 1,
-    steelMill,
-  } = {}) => {
-    if (!steelMill) {
-      throw new Error(
-        "steelMill is required."
-      );
-    }
+// const getSteelMillOrderDetails =
+//   async ({
+//     month,
+//     months = 1,
+//     steelMill,
+//   } = {}) => {
+//     if (!steelMill) {
+//       throw new Error(
+//         "steelMill is required."
+//       );
+//     }
 
-    const analytics =
-      await getManagementOrderAnalytics({
-        month,
-        months,
+//     const analytics =
+//       await getManagementOrderAnalytics({
+//         month,
+//         months,
 
-        trackingOrderType:
-          STEEL_MILL_TYPE,
+//         trackingOrderType:
+//           STEEL_MILL_TYPE,
 
-        steelMill,
+//         steelMill,
 
-        includeDetails:
-          true,
-      });
+//         includeDetails:
+//           true,
+//       });
 
-    return {
-      generatedAt:
-        analytics.generatedAt,
+//     return {
+//       generatedAt:
+//         analytics.generatedAt,
 
-      period:
-        analytics.period,
+//       period:
+//         analytics.period,
 
-      steelMill,
+//       steelMill,
 
-      summary:
-        analytics.summary
-          .steelMill,
+//       summary:
+//         analytics.summary
+//           .steelMill,
 
-      grades:
-        analytics.grades,
+//       grades:
+//         analytics.grades,
 
-      orders:
-        analytics.orders ||
-        [],
+//       orders:
+//         analytics.orders ||
+//         [],
 
-      dataQuality:
-        analytics
-          .dataQuality,
+//       dataQuality:
+//         analytics
+//           .dataQuality,
 
-      warnings:
-        analytics.warnings,
-    };
+//       warnings:
+//         analytics.warnings,
+//     };
+//   };
+
+const getSteelMillOrderDetails = async ({
+  month,
+  months = 1,
+  steelMill,
+} = {}) => {
+  const selectedMill = cleanText(steelMill);
+
+  if (!selectedMill) {
+    throw new Error("steelMill is required.");
+  }
+
+  const normalizedMill =
+    selectedMill.toLowerCase() === "not specified"
+      ? "Not Specified"
+      : selectedMill;
+
+  const analytics =
+    await getManagementOrderAnalytics({
+      month,
+      months,
+
+      trackingOrderType:
+        STEEL_MILL_TYPE,
+
+      steelMill:
+        normalizedMill,
+
+      includeDetails:
+        true,
+    });
+
+  return {
+    generatedAt:
+      analytics.generatedAt,
+
+    period:
+      analytics.period,
+
+    steelMill:
+      normalizedMill,
+
+    summary:
+      analytics.summary.steelMill,
+
+    grades:
+      analytics.grades,
+
+    orders:
+      analytics.orders || [],
+
+    dataQuality:
+      analytics.dataQuality,
+
+    warnings:
+      analytics.warnings,
   };
+};
 
 
 /* =========================================================

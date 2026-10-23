@@ -136,6 +136,7 @@ const getAllSalesOrders = async (req, res) => {
       req.user
     );
 
+    res.set("Cache-Control", "private, no-store");
     res.status(200).json({
       success: true,
       data: result.salesOrders,
