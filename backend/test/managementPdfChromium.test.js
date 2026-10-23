@@ -20,6 +20,7 @@ function loadService(failPdf = false) {
     },
   };
   const mocks = {
+    "../util/prepareManagementPdfFonts": async () => {},
     puppeteer: { launch: async config => {
       assert.equal(active, 0, 'only one PDF browser may run');
       active++;

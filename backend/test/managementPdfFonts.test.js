@@ -21,3 +21,19 @@ test('default H.O. logo is embedded so offline PDF generation does not produce a
   try { assert.match(house(), /src="data:image\/png;base64,/); }
   finally { if (old !== undefined) process.env.COMPANY_LOGO_URL = old; }
 });
+
+test('font preparation explicitly loads regular and bold and rejects a missing embedded face', async () => {
+  const prepare = require('../util/prepareManagementPdfFonts');
+  const previous = global.document;
+  const loaded = [];
+  try {
+    global.document = { fonts: { ready: Promise.resolve(), load: async spec => { loaded.push(spec); return [{ status: 'loaded' }]; } } };
+    await prepare({ evaluate: callback => callback() });
+    assert.deepEqual(loaded, ['400 12px "RobotoEmbedded"', '700 12px "RobotoEmbedded"']);
+    global.document.fonts.load = async () => [];
+    await assert.rejects(prepare({ evaluate: callback => callback() }), /Embedded Roboto 400 failed/);
+  } finally {
+    if (previous === undefined) delete global.document;
+    else global.document = previous;
+  }
+});

@@ -1,3 +1,4 @@
+const prepareManagementPdfFonts = require("../util/prepareManagementPdfFonts");
 // backend/services/steelAnalyticsPdfService.js
 
 const fs =
@@ -1200,18 +1201,7 @@ const generateSteelAnalyticsPdf =
            * Embedded Roboto must finish loading
            * before Chromium prints.
            */
-          try {
-            await page.evaluateHandle(
-              "document.fonts.ready"
-            );
-          } catch (
-            error
-          ) {
-            console.log(
-              "STEEL ANALYTICS PDF FONT WAIT SKIPPED =>",
-              error.message
-            );
-          }
+          await prepareManagementPdfFonts(page);
 
           /*
            * Same small stabilization delay

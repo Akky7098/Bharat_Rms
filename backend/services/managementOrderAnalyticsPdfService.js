@@ -1,3 +1,4 @@
+const prepareManagementPdfFonts = require("../util/prepareManagementPdfFonts");
 const pdfChromiumOptions = require("../util/pdfChromiumOptions");
 const puppeteer =
   require("puppeteer");
@@ -466,7 +467,7 @@ const generateHouseOrderAnalysisPdf =
               html,
               {
                 waitUntil:
-                  "networkidle0",
+                  "domcontentloaded",
 
                 timeout:
                   60000,
@@ -475,23 +476,13 @@ const generateHouseOrderAnalysisPdf =
 
           await page
             .emulateMediaType(
-              "print"
+              "screen"
             );
 
           /*
            * Wait for fonts before PDF.
            */
-          await page.evaluate(
-            async () => {
-              if (
-                document.fonts &&
-                document.fonts.ready
-              ) {
-                await document
-                  .fonts.ready;
-              }
-            }
-          );
+          await prepareManagementPdfFonts(page);
 
           const pdfBuffer =
             await page.pdf({
@@ -893,7 +884,7 @@ const generateSteelMillOrderAnalysisPdf =
               html,
               {
                 waitUntil:
-                  "networkidle0",
+                  "domcontentloaded",
 
                 timeout:
                   60000,
@@ -903,7 +894,7 @@ const generateSteelMillOrderAnalysisPdf =
 
           await page
             .emulateMediaType(
-              "print"
+              "screen"
             );
 
 
@@ -911,17 +902,7 @@ const generateSteelMillOrderAnalysisPdf =
              WAIT FOR FONTS
           ============================================= */
 
-          await page.evaluate(
-            async () => {
-              if (
-                document.fonts &&
-                document.fonts.ready
-              ) {
-                await document
-                  .fonts.ready;
-              }
-            }
-          );
+          await prepareManagementPdfFonts(page);
 
 
           /* =============================================
