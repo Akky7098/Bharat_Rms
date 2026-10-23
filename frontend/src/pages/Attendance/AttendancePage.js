@@ -5,6 +5,7 @@ import React, {
 } from "react";
 
 import {
+  getAttendanceEmployees,
   getTodayAttendance,
   getAttendanceList,
   checkInAttendance,
@@ -13,16 +14,15 @@ import {
   approveAttendanceRegularization,
   rejectAttendanceRegularization,
   applyAttendanceLeave,
+  applyShortLeave,
   getAttendanceLeaveSummary,
   getAttendanceLeaveRequests,
   applyWorkFromHome as applyAttendanceWorkFromHome,
-  getPendingWorkFromHomeRequests as getAttendanceWorkFromHomeRequests,
+  getWorkFromHomeRequests as getAttendanceWorkFromHomeRequests,
   getEmployeeAttendanceLocationHistory,
 } from "../../services/attendanceService";
 
-import {
-  getSalesPersons,
-} from "../../services/salesOrderService";
+
 
 import {
   getTimesheets,
@@ -41,7 +41,9 @@ import AttendanceDayDetails from "./components/AttendanceDayDetails";
 import AttendanceAdminOverview from "./components/AttendanceAdminOverview";
 import RegularizationQueue from "./components/RegularizationQueue";
 import RegularizationModal from "./components/RegularizationModal";
+import useAttendanceRequests from "./hooks/useAttendanceRequests";
 import LeaveModal from "./components/LeaveModal";
+import WfhApprovalDetails from "./components/WfhApprovalDetails";
 import WfhModal from "./components/WfhModal";
 import LocationHistoryModal from "./components/LocationHistoryModal";
 import ReportsCard from "./components/ReportsCard";
@@ -64,7 +66,6 @@ import {
   displayCheckIn,
   displayCheckOut,
   employeeIdOf,
-  formatDate,
   formatMinutes,
   getBrowserLocation,
   getDateKey,
@@ -396,7 +397,7 @@ export default function AttendancePage() {
             canManageUsers
           ) {
             jobs.push(
-              getSalesPersons()
+              getAttendanceEmployees()
             );
           }
 
@@ -426,6 +427,7 @@ export default function AttendancePage() {
 
           jobs.push(
             getAttendanceWorkFromHomeRequests({
+              employeeId: filters.employeeId || undefined,
               fromDate:
                 startKey,
 
@@ -463,12 +465,21 @@ export default function AttendancePage() {
             listResponse?.items ||
             [];
 
+          // A stale/historical attendance row must never reintroduce an inactive employee.
+          const rosterResponse = canManageUsers ? valueAt(3) : null;
+          const roster = rosterResponse?.data?.salesPersons || rosterResponse?.data || rosterResponse?.salesPersons || [];
+          const inactiveRoster = Array.isArray(roster) ? roster.filter(employee => employee.status === "inactive") : [];
+          const inactiveIds = new Set(inactiveRoster.map(employee => String(employee._id || employee.id)));
+          const inactiveEmails = new Set(inactiveRoster.map(employee => String(employee.email || "").trim().toLowerCase()));
+          const activeAttendanceData = Array.isArray(attendanceData) ? attendanceData.filter(record => {
+            const employee = record.employeeId;
+            return employee?.status !== "inactive" &&
+              !inactiveIds.has(String(employee?._id || employee || "")) &&
+              !inactiveEmails.has(String(employee?.email || record.employeeEmail || "").trim().toLowerCase());
+          }) : [];
+
           setAttendanceList(
-            Array.isArray(
-              attendanceData
-            )
-              ? attendanceData
-              : []
+            activeAttendanceData
           );
 
           /* ===============================================
@@ -535,7 +546,7 @@ export default function AttendancePage() {
               Array.isArray(
                 employeeData
               )
-                ? employeeData
+                ? employeeData.filter((employee) => employee.status !== "inactive")
                 : []
             );
           }
@@ -668,6 +679,7 @@ export default function AttendancePage() {
             employees || []
           ).filter(
             (employee) =>
+              employee.status !== "inactive" &&
               !isLeadership(
                 employee
               )
@@ -1332,7 +1344,7 @@ export default function AttendancePage() {
         }
 
         return (
-          attendanceList.find(
+          attendanceList.filter(
             (
               attendance
             ) =>
@@ -1341,8 +1353,7 @@ export default function AttendancePage() {
                   ?.attendanceDate
               ) ===
               dateKey
-          ) ||
-          null
+          )
         );
       },
       [
@@ -2145,9 +2156,13 @@ const handleCheckIn =
       event
     ) => {
       event.preventDefault();
+      if (leaveModal.submitting) return;
+      setLeaveModal(previous => ({ ...previous, submitting: true, error: "" }));
 
       try {
-        await applyAttendanceLeave({
+        if (leaveModal.leaveType === "short_leave") {
+          await applyShortLeave({ fromDate: leaveModal.fromDate, reason: leaveModal.reason.trim() });
+        } else await applyAttendanceLeave({
           leaveType:
             leaveModal
               .leaveType,
@@ -2186,14 +2201,9 @@ const handleCheckIn =
 
         await refreshAll();
       } catch (error) {
-        window.alert(
-          error
-            ?.response
-            ?.data
-            ?.message ||
-            error?.message ||
-            "Leave request failed."
-        );
+        setLeaveModal(previous => ({ ...previous, error: error?.response?.data?.message || error.message || "Request failed. Please retry." }));
+      } finally {
+        setLeaveModal(previous => ({ ...previous, submitting: false }));
       }
     };
 
@@ -2206,6 +2216,8 @@ const handleCheckIn =
       event
     ) => {
       event.preventDefault();
+      if (wfhModal.submitting) return;
+      setWfhModal(previous => ({ ...previous, submitting: true, error: "" }));
 
       try {
         await applyAttendanceWorkFromHome({
@@ -2239,14 +2251,9 @@ const handleCheckIn =
 
         await refreshAll();
       } catch (error) {
-        window.alert(
-          error
-            ?.response
-            ?.data
-            ?.message ||
-            error?.message ||
-            "WFH request failed."
-        );
+        setWfhModal(previous => ({ ...previous, error: error?.response?.data?.message || error.message || "Request failed. Please retry." }));
+      } finally {
+        setWfhModal(previous => ({ ...previous, submitting: false }));
       }
     };
 
@@ -2630,6 +2637,17 @@ const handleCheckIn =
         "/dashboard#dashboard";
     };
 
+  const [wfhHistoryOpen, setWfhHistoryOpen] = useState(false);
+  const approvalRequests = useAttendanceRequests(user, refreshAll, attendanceList);
+  const approvalQueueItems = [...approvalRequests.items, ...pendingRegs];
+  const approveQueueItem = item => item.requestKind ? approvalRequests.decide(item, "approve") : approveReg(item);
+  const rejectQueueItem = item => item.requestKind ? approvalRequests.decide(item, "reject") : rejectReg(item);
+  const approvalQueue = <RegularizationQueue
+    items={approvalQueueItems} actionLoading={approvalRequests.busy ? approvalRequests.busy.split(":").slice(1).join(":") : actionLoading}
+    onApprove={approveQueueItem} onReject={rejectQueueItem}
+    requestError={approvalRequests.error} requestNotice={approvalRequests.notice}
+  />;
+
   /* =========================================================
      RENDER
   ========================================================= */
@@ -2878,25 +2896,11 @@ const handleCheckIn =
                   </small>
                 </div>
 
-                <div className="att-pwa-insight-card wfh">
-                  <span>
-                    Approved WFH
-                  </span>
 
-                  <strong>
-                    {
-                      approvedWfhCount
-                    }
-                  </strong>
-
-                  <small>
-                    Selected period
-                  </small>
-                </div>
               </>
             )}
 
-            {canManageUsers && (
+            {isSuperAdmin && (
               <>
                 <div className="att-pwa-insight-card pending">
                   <span>
@@ -2905,7 +2909,7 @@ const handleCheckIn =
 
                   <strong>
                     {
-                      pendingLeaveCount
+                      approvalRequests.counts.leave ?? pendingLeaveCount
                     }
                   </strong>
 
@@ -2921,7 +2925,7 @@ const handleCheckIn =
 
                   <strong>
                     {
-                      pendingWfhCount
+                      approvalRequests.counts["work-from-home"] ?? pendingWfhCount
                     }
                   </strong>
 
@@ -2931,6 +2935,22 @@ const handleCheckIn =
                 </div>
               </>
             )}
+
+                <button type="button" className="att-pwa-insight-card wfh approved-wfh attendance-wfh-summary" onClick={() => setWfhHistoryOpen(true)} aria-label={`View ${approvedWfhCount} approved WFH requests`}>
+                  <span>
+                    Approved WFH
+                  </span>
+
+                  <strong>
+                    {
+                      approvedWfhCount
+                    }
+                  </strong>
+
+                  <small>
+                    Selected period · View details →
+                  </small>
+                </button>
           </div>
 
           {/* =================================================
@@ -3039,7 +3059,7 @@ const handleCheckIn =
                   All
                 </button>
 
-                {visibleEmployees.map(
+                {employees.map(
                   (
                     employee
                   ) => (
@@ -3431,169 +3451,7 @@ const handleCheckIn =
               SUPER ADMIN ONLY
           ================================================= */}
 
-          {canApproveRegularization &&
-            pendingRegs.length >
-              0 && (
-              <div className="att-pwa-section">
-                <div className="att-pwa-section-head">
-                  <div>
-                    <span>
-                      APPROVAL QUEUE
-                    </span>
-
-                    <h3>
-                      Regularization
-                    </h3>
-                  </div>
-
-                  <b>
-                    {
-                      pendingRegs.length
-                    }{" "}
-                    pending
-                  </b>
-                </div>
-
-                {pendingRegs.map(
-                  (
-                    attendance
-                  ) => (
-                    <div
-                      key={
-                        attendance._id
-                      }
-                      className="att-pwa-request-card"
-                    >
-                      <div className="att-pwa-request-card-head">
-                        <div>
-                          <h4>
-                            {attendance
-                              ?.employeeName ||
-                              "Employee"}
-                          </h4>
-
-                          <p>
-                            {formatDate(
-                              attendance
-                                ?.attendanceDate
-                            )}
-                          </p>
-                        </div>
-
-                        <span>
-                          Pending
-                        </span>
-                      </div>
-
-                      <div className="att-pwa-detail-grid">
-                        <div>
-                          <span>
-                            Requested In
-                          </span>
-
-                          <b>
-                            {attendance
-                              ?.regularization
-                              ?.requestedCheckIn
-                              ? displayCheckIn(
-                                  {
-                                    ...attendance,
-
-                                    regularization:
-                                      {
-                                        ...attendance
-                                          .regularization,
-
-                                        status:
-                                          "approved",
-                                      },
-                                  }
-                                )
-                              : "-"}
-                          </b>
-                        </div>
-
-                        <div>
-                          <span>
-                            Requested Out
-                          </span>
-
-                          <b>
-                            {attendance
-                              ?.regularization
-                              ?.requestedCheckOut
-                              ? displayCheckOut(
-                                  {
-                                    ...attendance,
-
-                                    regularization:
-                                      {
-                                        ...attendance
-                                          .regularization,
-
-                                        status:
-                                          "approved",
-                                      },
-                                  }
-                                )
-                              : "-"}
-                          </b>
-                        </div>
-                      </div>
-
-                      <div className="att-pwa-reason">
-                        <span>
-                          Reason
-                        </span>
-
-                        <p>
-                          {attendance
-                            ?.regularization
-                            ?.reason ||
-                            "-"}
-                        </p>
-                      </div>
-
-                      <div className="att-pwa-request-actions">
-                        <button
-                          type="button"
-                          disabled={
-                            actionLoading ===
-                            attendance._id
-                          }
-                          onClick={() =>
-                            approveReg(
-                              attendance
-                            )
-                          }
-                        >
-                          {actionLoading ===
-                          attendance._id
-                            ? "Processing..."
-                            : "Approve"}
-                        </button>
-
-                        <button
-                          type="button"
-                          className="reject"
-                          disabled={
-                            actionLoading ===
-                            attendance._id
-                          }
-                          onClick={() =>
-                            rejectReg(
-                              attendance
-                            )
-                          }
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-            )}
+          {canApproveRegularization && approvalQueue}
 
           {/* =================================================
               PWA CALENDAR
@@ -3819,9 +3677,9 @@ const handleCheckIn =
             pendingRegularizations={
               pendingRegs.length
             }
-            approvedWfhCount={
-              approvedWfhCount
-            }
+            onWfhDetails={() => setWfhHistoryOpen(true)}
+            approvedWfhCount={approvedWfhCount}
+            canApply={canMarkAttendance}
           />
 
           {/* =================================================
@@ -3871,9 +3729,7 @@ const handleCheckIn =
                 updater
               );
             }}
-            employees={
-              visibleEmployees
-            }
+            employees={employees}
             canManageUsers={
               canManageUsers
             }
@@ -3897,20 +3753,7 @@ const handleCheckIn =
 
           {!loading &&
           canApproveRegularization ? (
-            <RegularizationQueue
-              items={
-                pendingRegs
-              }
-              actionLoading={
-                actionLoading
-              }
-              onApprove={
-                approveReg
-              }
-              onReject={
-                rejectReg
-              }
-            />
+            approvalQueue
           ) : null}
 
           {/* =================================================
@@ -4093,6 +3936,8 @@ const handleCheckIn =
           Same modals used by web AND PWA.
       ===================================================== */}
 
+      <WfhApprovalDetails open={wfhHistoryOpen} onClose={() => setWfhHistoryOpen(false)} requests={wfhRequests} />
+
       <RegularizationModal
         state={
           regularize
@@ -4107,6 +3952,7 @@ const handleCheckIn =
 
       {!isSuperAdmin ? (
         <LeaveModal
+          employeeId={user._id || user.id}
           state={
             leaveModal
           }

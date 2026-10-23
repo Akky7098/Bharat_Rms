@@ -5116,3 +5116,16 @@ body.sales-order-browser-scroll-page .sales-pagination {
     max-width: 84%;
   }
 }
+/* The selected metric visibly identifies the active approval-date filter. */
+.sales-insight-card.insight-selected,
+.ios-sales-insight-card.insight-selected {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5) !important;
+  border: 2px solid #15803d !important;
+  box-shadow: 0 0 0 3px rgba(21,128,61,.12), 0 10px 24px rgba(21,128,61,.12) !important;
+}
+.sales-insight-card.insight-selected span,
+.ios-sales-insight-card.insight-selected span { color: #166534 !important; }
+.sales-insight-card.insight-selected strong,
+.ios-sales-insight-card.insight-selected strong { color: #14532d !important; }
+.sales-insight-card:focus-visible,
+.ios-sales-insight-card:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }

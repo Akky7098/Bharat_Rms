@@ -106,15 +106,15 @@ const steelMillOptions = [
     label: "S.S. Steel",
   },
   {
-    value: "Skyway , Ludhiana",
+    value: "Skyway - Ludhiana",
     label: "Skyway",
   },
   {
-    value: "kuber concast - Mandi Gobindgarh",
+    value: "Kuber Concast - Mandi Gobindgarh",
     label: "Kuber Concast",
   },
   {
-    value: "Pushpanjali strip",
+    value: "Pushpanjali Strip",
     label: "Pushpanjali Strip",
   },
   {

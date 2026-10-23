@@ -9872,3 +9872,140 @@ padding-bottom:max(
    BHARAT RMS ATTENDANCE
    FINAL PWA RESTORE + NEW HISTORY ADD-ON
 ======================================================================== */
+/* Attendance status palette: final overrides shared by desktop and PWA. */
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).complete,
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).submitted,
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).leave { background: #dcfce7 !important; border-color: #86efac !important; color: #166534 !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="complete"],
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="submitted"],
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="leave"] { background: #dcfce7 !important; border-color: #86efac !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).absent,
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).lop,
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).missing { background: #fee2e2 !important; border-color: #fca5a5 !important; color: #991b1b !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="absent"],
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="lop"],
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="missing"] { background: #fee2e2 !important; border-color: #fca5a5 !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).warning,
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).pending,
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).short,
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).leave-pending { background: #fef3c7 !important; border-color: #fcd34d !important; color: #92400e !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="warning"],
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="pending"],
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="short"],
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="leave-pending"] { background: #fef3c7 !important; border-color: #fcd34d !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).off { background: #e2e8f0 !important; border-color: #cbd5e1 !important; color: #475569 !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="off"] { background: #e2e8f0 !important; border-color: #cbd5e1 !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day, .att-pwa-calendar-day, .attendance-health-pill, .att-pwa-pill).future { background: #f8fafc !important; border-color: #e2e8f0 !important; color: #94a3b8 !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) .report-item[data-attendance-state="future"] { background: #f8fafc !important; border-color: #e2e8f0 !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day)::after { background: currentColor !important; }
+:is(.attendance-desktop-ui, .attendance-pwa-ui) :is(.calendar-day, .att-pwa-day) > strong { color: inherit !important; }
+
+/* Whole-card health colours apply to the shared web/PWA date popup. */
+.attendance-day-modal .employee-attendance-day-card[data-attendance-state="complete"],
+.attendance-day-modal .employee-attendance-day-card[data-attendance-state="leave"] { background:#dcfce7 !important; border-color:#86efac !important; }
+.attendance-day-modal .employee-attendance-day-card[data-attendance-state="absent"],
+.attendance-day-modal .employee-attendance-day-card[data-attendance-state="lop"] { background:#fee2e2 !important; border-color:#f87171 !important; }
+.attendance-day-modal .employee-attendance-day-card[data-attendance-state="missed-checkout"],
+.report-item[data-attendance-state="missed-checkout"] { background:#fff1f2 !important; border-color:#fda4af !important; }
+.attendance-day-modal .employee-attendance-day-card:is([data-attendance-state="warning"],[data-attendance-state="short"],[data-attendance-state="pending"]) { background:#fef3c7 !important; border-color:#fcd34d !important; }
+.attendance-day-modal .employee-attendance-day-card[data-attendance-state="off"] { background:#e2e8f0 !important; border-color:#cbd5e1 !important; }
+.attendance-day-modal .employee-attendance-day-card .attendance-detail-box { background:transparent; }
+:is(.attendance-health-pill,.calendar-day,.att-pwa-day,.att-pwa-calendar-day).missed-checkout { background:#fff1f2 !important; border-color:#fda4af !important; color:#9f1239 !important; }
+
+/* Messages shared by leave/WFH forms and the existing approval queue. */
+.att-earned-policy { font-size:13px !important; color:#52637a; line-height:1.6; }
+.att-request-notice { padding:12px 16px; border-radius:12px; color:#14532d; background:#f0fdf4; border:1px solid #bbf7d0; }
+.att-request-error { padding:12px 16px; border-radius:12px; color:#991b1b; background:#fff1f2; border:1px solid #fecdd3; font-size:14px; line-height:1.6; }
+.att-request-error button { color:inherit; text-decoration:underline; cursor:pointer; }
+.att-request-fieldset { min-width:0; border:0; margin:0; padding:0; }
+.attendance-wfh-form, .attendance-leave-form { width:100%; max-width:none; box-shadow:none; }
+@media(max-width:900px) {
+  .attendance-pwa-ui .attendance-admin-card { padding:16px; margin:18px 0; border-radius:20px; }
+  .attendance-pwa-ui .regularization-request-grid { grid-template-columns:minmax(0,1fr) !important; }
+  .attendance-pwa-ui .regularization-request-card { padding:16px; min-width:0; }
+  .attendance-pwa-ui .regularization-request-info p { overflow-wrap:anywhere; }
+  .attendance-pwa-ui .regularization-request-actions button { min-height:44px; }
+}
+
+/* Apply Leave includes short leave; the existing header remains the sole application entry point. */
+.attendance-leave-modal > .modal-header { background:linear-gradient(115deg,#082c31,#17603c); color:#fff; }
+.attendance-leave-modal > .modal-header :is(h3,p) { color:inherit; }
+.attendance-leave-modal .attendance-leave-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.attendance-leave-modal .attendance-leave-grid label,
+.attendance-leave-modal .attendance-leave-reason { display:flex; flex-direction:column; gap:8px; min-width:0; color:#334155; font-size:14px; font-weight:600; }
+.attendance-leave-modal :is(input,select,textarea) { width:100%; min-width:0; font:inherit; color:#17233a; border:1px solid #cbd5e1; border-radius:12px; background:#fff; padding:12px 14px; }
+.attendance-leave-modal :is(input,select,textarea):focus-visible { outline:3px solid #bbf7d0; outline-offset:1px; border-color:#15803d; }
+.attendance-leave-modal .attendance-leave-reason { margin-top:16px; }
+.att-short-preview { padding:18px; margin:18px 0; border:1px solid #bbdfcc; border-radius:15px; background:#f0f9f4; color:#174834; }
+.att-short-preview h4 { margin:0 0 14px; font-size:15px; }
+.att-short-preview dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:0; }
+.att-short-preview dl>div { min-width:0; padding:12px; border:1px solid #d8e9df; background:#fff; border-radius:10px; }
+.att-short-preview dt { font-size:12px; color:#526b5e; } .att-short-preview dd { margin:6px 0 0; font-weight:750; font-size:17px; }
+.att-short-preview p { margin:12px 0 0; line-height:1.5; font-size:13px; }
+.attendance-leave-modal .regularize-actions { display:flex; gap:12px; justify-content:flex-end; }
+.attendance-leave-modal button:disabled { opacity:.55; cursor:not-allowed; }
+@media(max-width:600px) {
+  .attendance-leave-modal .attendance-leave-form { padding:18px 16px; }
+  .attendance-leave-modal .attendance-leave-grid { gap:12px; }
+  .attendance-leave-modal .regularize-actions>button { flex:1; min-height:46px; }
+  .att-short-preview { padding:14px; }
+  .att-short-preview dd { font-size:16px; }
+}
+
+.attendance-leave-modal .att-request-error .att-lop-switch {
+  appearance:none; display:inline; background:transparent; border:0; border-radius:3px;
+  padding:0; margin:0; min-height:0; width:auto; box-shadow:none; color:#b91c1c;
+  font:inherit; font-weight:700; text-decoration:underline; text-underline-offset:3px; cursor:pointer;
+}
+.attendance-leave-modal .att-request-error .att-lop-switch:hover { color:#7f1d1d; background:transparent; }
+.attendance-leave-modal .att-request-error .att-lop-switch:focus-visible { outline:2px solid #dc2626; outline-offset:3px; }
+
+.attendance-wfh-summary { text-align:left; cursor:pointer; font:inherit; }
+.attendance-wfh-summary:focus-visible { outline:3px solid #86a7eb; outline-offset:3px; }
+.wfh-approval-history { overflow-y:auto; padding:20px; display:grid; gap:16px; }
+.wfh-approval-history .regularization-request-card { min-width:0; }
+.wfh-approval-history ol { margin:16px 0; padding-left:22px; color:#475569; font-size:13px; line-height:1.7; }
+.wfh-approval-history li { padding:5px 0; text-transform:none; }
+.wfh-approval-history li strong { text-transform:capitalize; }
+.wfh-approval-history p { overflow-wrap:anywhere; }
+.wfh-approval-history small { color:#64748b; overflow-wrap:anywhere; }
+@media(max-width:600px) { .wfh-approval-history { padding:16px; } }
+
+/* Approved WFH uses approval colours, with a compact readable audit timeline. */
+.attendance-wfh-history-modal { display:flex; flex-direction:column; width:min(820px,calc(100vw - 32px)); max-height:88dvh; overflow:hidden; }
+.attendance-wfh-history-modal>.modal-header { flex-shrink:0; }
+.attendance-wfh-history-modal .wfh-approval-history { min-height:0; padding:22px; background:#f8fafc; }
+.wfh-approval-history .wfh-approval-card { border:1px solid #dce7e2; border-left:5px solid #168153; padding:20px; background:#fff; border-radius:16px; box-shadow:0 4px 14px #13362606; }
+.wfh-approval-card .regularization-request-top { gap:14px; align-items:flex-start; }
+.wfh-approval-card .regularization-request-top h4 { margin:0 0 5px; font-size:17px; line-height:1.4; }
+.wfh-approval-history .wfh-approval-card p { font-size:14px; line-height:1.65; margin:10px 0; color:#475569; }
+.wfh-approval-history .wfh-approval-card b { color:#223b30; font-weight:650; }
+.wfh-approval-card .regularization-request-top>span { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; font-size:11px; line-height:1.4; padding:6px 10px; white-space:nowrap; }
+.wfh-approval-card[data-wfh-state="upcoming"] { border-left-color:#2563eb; }
+.wfh-approval-card[data-wfh-state="upcoming"] .regularization-request-top>span { color:#1e40af; background:#eff6ff; border-color:#bfdbfe; }
+.wfh-approval-card[data-wfh-state="completed"] { border-left-color:#94a3b8; }
+.wfh-approval-card[data-wfh-state="completed"] .regularization-request-top>span { color:#475569; background:#f1f5f9; border-color:#e2e8f0; }
+.wfh-approval-history .wfh-approval-card ol { list-style:none; border-left:2px solid #cde8da; margin:18px 0 16px 5px; padding:0 0 0 18px; }
+.wfh-approval-card li { position:relative; font-size:12px; line-height:1.6; }
+.wfh-approval-card li:before { content:""; position:absolute; left:-24px; top:12px; width:9px; height:9px; background:#168153; border:2px solid #fff; border-radius:50%; }
+.wfh-approval-card>small { display:block; border-top:1px solid #edf2ef; padding-top:12px; font-size:11px; }
+@media(max-width:600px) {
+  .attendance-wfh-history-modal { width:100% !important; max-height:92dvh !important; }
+  .attendance-wfh-history-modal .wfh-approval-history { padding:14px; }
+  .wfh-approval-history .wfh-approval-card { padding:16px; }
+  .wfh-approval-card .regularization-request-top { flex-wrap:wrap; }
+}
+
+/* Approved WFH is available to MD as well as employees in the existing PWA summary. */
+.attendance-pwa-ui .att-pwa-insight-card.approved-wfh {
+  grid-column:1 / -1 !important;
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-rows:auto auto;
+  align-items:center;
+  gap:8px 16px;
+  width:100%;
+  min-height:104px;
+}
+.attendance-pwa-ui .att-pwa-insight-card.approved-wfh>strong { grid-column:2; grid-row:1 / 3; margin:0 !important; padding-right:6px; }
+.attendance-pwa-ui .att-pwa-insight-card.approved-wfh>small { grid-column:1; }

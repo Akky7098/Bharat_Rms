@@ -2558,9 +2558,9 @@
      CHILD MUST FILL VIEWPORT
   ------------------------------------------------------- */
 
-  .dashboard.pwa-module-managementAnalysis
-  .main
-  > .management-analysis {
+.dashboard.pwa-module-managementAnalysis
+.main
+> .management-order-analysis {
 
     width: 100% !important;
 
@@ -2597,8 +2597,8 @@
     overflow: hidden !important;
   }
 
-  .dashboard.pwa-module-managementAnalysis
-  .management-analysis {
+.dashboard.pwa-module-managementAnalysis
+.management-order-analysis {
 
     width: 100% !important;
 
@@ -2611,5 +2611,116 @@
     overflow: hidden !important;
 
     border-radius: 18px;
+  }
+}
+/* =========================================================
+   FINAL DESKTOP DASHBOARD WIDTH FIX
+   KEEP AS ABSOLUTE LAST DESKTOP BLOCK
+========================================================= */
+
+@media screen and (min-width: 901px) {
+
+  html,
+  body,
+  #root {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: none !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body {
+    overflow: hidden !important;
+  }
+
+  .dashboard {
+    width: 100vw !important;
+    min-width: 100vw !important;
+    max-width: 100vw !important;
+
+    height: 100vh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+  }
+
+  .dashboard-layout {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    height: 100vh !important;
+
+    display: flex !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+  }
+
+  .dashboard-layout > .sidebar {
+    flex: 0 0 255px !important;
+
+    width: 255px !important;
+    min-width: 255px !important;
+    max-width: 255px !important;
+  }
+
+  .dashboard-layout.sidebar-collapsed
+    > .sidebar {
+    flex: 0 0 82px !important;
+
+    width: 82px !important;
+    min-width: 82px !important;
+    max-width: 82px !important;
+  }
+
+  .dashboard-main-area {
+    flex: 1 1 0% !important;
+
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    height: 100vh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+  }
+
+  .dashboard-main-area
+    > .desktop-global-header {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  .dashboard-main-area
+    > .main {
+    flex: 1 1 auto !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    margin: 0 !important;
+
+    overflow-x: hidden !important;
+  }
+
+  .dashboard-main-area
+    > .main
+    > * {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    box-sizing: border-box !important;
   }
 }

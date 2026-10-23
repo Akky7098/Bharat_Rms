@@ -1,3 +1,4 @@
+import HouseSalesOrderDetail from "../components/HouseSalesOrderDetail";
 import React, {
   useCallback,
   useEffect,
@@ -731,25 +732,26 @@ const normalizeGrade = (
 };
 
 
-const normalizeMill = (
-  row,
-  index
-) => ({
-  ...row,
 
-  mill:
-    row?.steelMill ||
-    row?.mill ||
-    row?.millName ||
-    row?.name ||
-    `Mill ${index + 1}`,
+const normalizeMill = (row, index) => {
+  const rawMill =
+    row?.steelMill ??
+    row?.mill ??
+    row?.millName ??
+    row?.name;
 
-  quantityKG:
-    getQuantityKG(row),
+  const mill =
+    String(rawMill ?? "").trim() ||
+    "Not Specified";
 
-  orderCount:
-    getOrderCount(row),
-});
+  return {
+    ...row,
+    mill,
+    quantityKG: getQuantityKG(row),
+    orderCount: getOrderCount(row),
+  };
+};
+
 
 
 function PeriodFilter({
@@ -1081,6 +1083,7 @@ function GradeChart({
 
 function OrderCard({
   order,
+  onSelect,
   showMill = false,
   showSupply = false,
 }) {
@@ -1091,8 +1094,12 @@ function OrderCard({
     getOrderQuantity(order);
 
   return (
-    <article className="moa-order-card moa-order-card-detailed">
+    <article className={`moa-order-card moa-order-card-detailed ${onSelect ? "moa-order-card-clickable" : ""}`}
+      role={onSelect ? "button" : undefined} tabIndex={onSelect ? 0 : undefined}
+      onClick={onSelect ? () => onSelect(order) : undefined}
+      onKeyDown={onSelect ? event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(order); } } : undefined}>
       <div className="moa-order-card-accent" />
+      {onSelect && <div className="moa-order-detail-link">View order &amp; PDF →</div>}
 
       <div className="moa-order-top">
         <div className="moa-order-company">
@@ -1243,6 +1250,7 @@ function OrderCard({
 
 function OrderRegister({
   orders,
+  onSelectOrder,
   selectedGrade,
   onClearGrade,
   showMill = false,
@@ -1400,6 +1408,7 @@ function OrderRegister({
                   )}-${index}`
                 }
                 order={order}
+                onSelect={onSelectOrder}
                 showMill={
                   showMill
                 }
@@ -1468,6 +1477,8 @@ function HouseDrillDown({
   months,
   loading,
 }) {
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  useEffect(() => { setSelectedOrder(null); }, [response]);
   const [
     selectedGrade,
     setSelectedGrade,
@@ -1636,6 +1647,7 @@ function HouseDrillDown({
           />
 
           <OrderRegister
+            onSelectOrder={setSelectedOrder}
             orders={
               orders
             }
@@ -1651,6 +1663,7 @@ function HouseDrillDown({
         </section>
 
       </div>
+      {selectedOrder && <HouseSalesOrderDetail order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
     </section>
   );
 }
@@ -2201,14 +2214,20 @@ function MillDrillDown({
           setLoading(true);
           setError("");
 
-          const result =
-            await getSteelMillDetail(
-              mill,
-              {
-                month,
-                months,
-              }
-            );
+          
+const selectedMill =
+  String(mill ?? "").trim() ||
+  "Not Specified";
+
+const result =
+  await getSteelMillDetail(
+    selectedMill,
+    {
+      month,
+      months,
+    }
+  );
+
 
           if (
             requestId !==
@@ -4345,112 +4364,214 @@ const normalizeMainFilters =
   ]);
 
 
-  useEffect(() => {
-    const existingState =
-      window.history.state || {};
+useEffect(() => {
+  /*
+   * =========================================================
+   * MANAGEMENT ANALYSIS BROWSER HISTORY
+   * =========================================================
+   *
+   * Required navigation:
+   *
+   * Mill Detail
+   *   ↓ back
+   * Steel Mill List
+   *   ↓ back
+   * Order Analysis Overview
+   *   ↓ back
+   * Previous Dashboard Page
+   *
+   * IMPORTANT:
+   * Do NOT replace the history entry that existed before
+   * Management Analysis opened.
+   */
 
-    const existingManagementState =
-      existingState
-        ?.managementOrderAnalysis;
+  const existingState =
+    window.history.state || {};
+
+  const existingManagementState =
+    existingState?.managementOrderAnalysis;
+
+  /*
+   * If this browser entry does not already belong to
+   * Management Analysis, ADD a new entry.
+   *
+   * This preserves Sales Order / Dashboard / whatever page
+   * the user came from underneath this entry.
+   */
+  if (!existingManagementState) {
+    window.history.pushState(
+      {
+        ...existingState,
+
+        managementOrderAnalysis: {
+          view: "overview",
+          mill: "",
+        },
+      },
+      "",
+      window.location.href
+    );
+  }
+
+  historyReadyRef.current = true;
+
+  const handlePopState = (event) => {
+    const navigation =
+      event.state?.managementOrderAnalysis;
 
     /*
-     * Register the current Management Analysis page
-     * without adding another browser-history entry.
+     * We have left Management Analysis completely.
+     *
+     * The previous dashboard/browser entry is now active.
+     * Do NOT force Management Analysis state back into it.
+     *
+     * Dashboard/hash navigation will restore the previous
+     * page. If this component is still mounted for one render,
+     * return immediately.
      */
-    if (
-      !existingManagementState
-    ) {
-      window.history.replaceState(
-        {
-          ...existingState,
-
-          managementOrderAnalysis: {
-            view: "overview",
-            mill: "",
-          },
-        },
-        ""
-      );
+    if (!navigation) {
+      return;
     }
 
-    historyReadyRef.current =
-      true;
+    detailRequestId.current += 1;
 
+    const nextView =
+      navigation.view || "overview";
 
-    const handlePopState =
-      (event) => {
-        const navigation =
-          event.state
-            ?.managementOrderAnalysis;
+    const nextMill =
+      navigation.mill || "";
 
-        /*
-         * No Management Analysis state means
-         * browser history has left this module.
-         * Do not interfere with normal dashboard/browser
-         * navigation.
-         */
-        if (!navigation) {
-          return;
-        }
+    viewRef.current = nextView;
 
-        detailRequestId.current +=
-          1;
+    selectedMillRef.current =
+      nextMill;
 
-        const nextView =
-          navigation.view ||
-          "overview";
+    setView(nextView);
 
-        const nextMill =
-          navigation.mill ||
-          "";
+    setSelectedMill(nextMill);
 
-        viewRef.current =
-          nextView;
+    /*
+     * Overview does not need drill-down response.
+     */
+    if (nextView === "overview") {
+      setDetailResponse(null);
+      setDetailLoading(false);
 
-        selectedMillRef.current =
-          nextMill;
+      return;
+    }
 
-        setView(
-          nextView
-        );
+    /*
+     * Going back:
+     *
+     * Mill Detail -> Steel Mill List
+     *
+     * Reload Steel Mill list because detailResponse may
+     * currently contain the individual mill response.
+     */
+    if (nextView === "steelMill") {
+      const requestId =
+        ++detailRequestId.current;
 
-        setSelectedMill(
-          nextMill
-        );
+      setDetailLoading(true);
+      setError("");
 
-        /*
-         * Mill detail uses its own API request,
-         * therefore existing Steel Mill list data
-         * can remain available underneath it.
-         */
-        if (
-          nextView ===
-          "overview"
-        ) {
-          setDetailResponse(
-            null
+      getSteelMillOrderAnalysis(
+        appliedFilters
+      )
+        .then((result) => {
+          if (
+            requestId !==
+            detailRequestId.current
+          ) {
+            return;
+          }
+
+          setDetailResponse(result);
+        })
+        .catch((err) => {
+          if (
+            requestId !==
+            detailRequestId.current
+          ) {
+            return;
+          }
+
+          setError(
+            err?.message ||
+              "Unable to load Steel Mill order analysis."
           );
+        })
+        .finally(() => {
+          if (
+            requestId ===
+            detailRequestId.current
+          ) {
+            setDetailLoading(false);
+          }
+        });
 
-          setDetailLoading(
-            false
+      return;
+    }
+
+    /*
+     * Going back to H.O.
+     */
+    if (nextView === "house") {
+      const requestId =
+        ++detailRequestId.current;
+
+      setDetailLoading(true);
+      setError("");
+
+      getHouseOrderAnalysis(
+        appliedFilters
+      )
+        .then((result) => {
+          if (
+            requestId !==
+            detailRequestId.current
+          ) {
+            return;
+          }
+
+          setDetailResponse(result);
+        })
+        .catch((err) => {
+          if (
+            requestId !==
+            detailRequestId.current
+          ) {
+            return;
+          }
+
+          setError(
+            err?.message ||
+              "Unable to load H.O. order analysis."
           );
-        }
-      };
+        })
+        .finally(() => {
+          if (
+            requestId ===
+            detailRequestId.current
+          ) {
+            setDetailLoading(false);
+          }
+        });
+    }
+  };
 
+  window.addEventListener(
+    "popstate",
+    handlePopState
+  );
 
-    window.addEventListener(
+  return () => {
+    window.removeEventListener(
       "popstate",
       handlePopState
     );
-
-
-    return () => {
-      window.removeEventListener(
-        "popstate",
-        handlePopState
-      );
-    };
-  }, []);
+  };
+}, [appliedFilters]);
 
 
   const pushManagementHistory =
@@ -5034,36 +5155,19 @@ const applyFilters =
     };
 
 
-   const handleHeaderBack =
-    () => {
-      detailRequestId.current +=
-        1;
+  const handleHeaderBack = () => {
+  detailRequestId.current += 1;
 
-      /*
-       * Inside Management Analysis use the same
-       * browser history as Safari/iPhone back.
-       */
-      if (
-        viewRef.current !==
-        "overview"
-      ) {
-        window.history.back();
-
-        return;
-      }
-
-      /*
-       * Already at Management Analysis root:
-       * return to Dashboard exactly as before.
-       */
-      if (
-        typeof goDashboardHome ===
-        "function"
-      ) {
-        goDashboardHome();
-      }
-    };
-
+  /*
+   * Every level uses real browser history.
+   *
+   * mill
+   *   -> steelMill
+   *   -> overview
+   *   -> previous dashboard page
+   */
+  window.history.back();
+};
 
   const filterBusy =
     loading ||
@@ -5491,3 +5595,4 @@ const applyFilters =
 
 
 export default ManagementOrderAnalysis;
+export { HouseDrillDown };

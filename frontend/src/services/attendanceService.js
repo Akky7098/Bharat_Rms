@@ -1,12 +1,7 @@
 import axios from "axios";
 
-/* ==========================================================
-   BASE URL
-
-   LOCAL TESTING
-========================================================== */
-
-// const BASE_URL = "http://localhost:5000";
+// Production API by default; explicit hosting environment overrides remain supported.
+const BASE_URL = "http://localhost:5000";
 
 /*
  * PRODUCTION
@@ -20,8 +15,11 @@ const BASE_URL =
   process.env.REACT_APP_BACKEND_URL ||
   "https://bharatspecialsteels.bharatspecialsteels.com";
 
-const ATTENDANCE_API_URL =
-  `${BASE_URL}/api/attendance`;
+// Approval, attendance and location requests must reach the same backend.
+const ATTENDANCE_API_URL = `${(process.env.REACT_APP_ATTENDANCE_BACKEND_URL ||
+  process.env.REACT_APP_ATTENDANCE_REQUEST_BACKEND_URL ||
+  BASE_URL).replace(/\/+$/, "")}/api/attendance`;
+const REQUEST_API_URL = ATTENDANCE_API_URL;
 
 /* ==========================================================
    AUTH HELPERS
@@ -201,7 +199,7 @@ export const applyAttendanceLeave =
   async (payload) => {
     const response =
       await axios.post(
-        `${ATTENDANCE_API_URL}/leave`,
+        `${REQUEST_API_URL}/leave`,
         payload,
         {
           headers:
@@ -222,17 +220,15 @@ export const getAttendanceLeaveSummary =
   ) => {
     const response =
       await axios.get(
-        `${ATTENDANCE_API_URL}/leave/summary`,
+        `${REQUEST_API_URL}/leave/summary`,
         {
           headers:
             authHeaders(),
 
           params:
-            employeeId
-              ? {
-                  employeeId,
-                }
-              : {},
+            typeof employeeId === "object"
+              ? { ...employeeId, month: employeeId.year && employeeId.month ? `${employeeId.year}-${String(employeeId.month).padStart(2, "0")}-01` : undefined }
+              : employeeId ? { employeeId } : {},
         }
       );
 
@@ -249,7 +245,7 @@ export const getAttendanceLeaveRequests =
   ) => {
     const response =
       await axios.get(
-        `${ATTENDANCE_API_URL}/leave/requests`,
+        `${REQUEST_API_URL}/leave/requests`,
         {
           headers:
             authHeaders(),
@@ -272,7 +268,7 @@ export const approveAttendanceLeave =
   ) => {
     const response =
       await axios.patch(
-        `${ATTENDANCE_API_URL}/leave/${leaveRequestId}/approve`,
+        `${REQUEST_API_URL}/leave/${leaveRequestId}/approve`,
         payload,
         {
           headers:
@@ -294,7 +290,7 @@ export const rejectAttendanceLeave =
   ) => {
     const response =
       await axios.patch(
-        `${ATTENDANCE_API_URL}/leave/${leaveRequestId}/reject`,
+        `${REQUEST_API_URL}/leave/${leaveRequestId}/reject`,
         payload,
         {
           headers:
@@ -315,7 +311,7 @@ export const cancelAttendanceLeave =
   ) => {
     const response =
       await axios.patch(
-        `${ATTENDANCE_API_URL}/leave/${leaveRequestId}/cancel`,
+        `${REQUEST_API_URL}/leave/${leaveRequestId}/cancel`,
         {},
         {
           headers:
@@ -360,7 +356,7 @@ export const applyWorkFromHome =
   ) => {
     const response =
       await axios.post(
-        `${ATTENDANCE_API_URL}/work-from-home`,
+        `${REQUEST_API_URL}/work-from-home`,
         payload,
         {
           headers:
@@ -382,7 +378,7 @@ export const approveWorkFromHome =
   ) => {
     const response =
       await axios.patch(
-        `${ATTENDANCE_API_URL}/work-from-home/${requestId}/approve`,
+        `${REQUEST_API_URL}/work-from-home/${requestId}/approve`,
         payload,
         {
           headers:
@@ -404,7 +400,7 @@ export const rejectWorkFromHome =
   ) => {
     const response =
       await axios.patch(
-        `${ATTENDANCE_API_URL}/work-from-home/${requestId}/reject`,
+        `${REQUEST_API_URL}/work-from-home/${requestId}/reject`,
         payload,
         {
           headers:
@@ -451,7 +447,7 @@ export const getPendingLeaveRequests =
   async () => {
     const response =
       await axios.get(
-        `${ATTENDANCE_API_URL}/leave/requests`,
+        `${REQUEST_API_URL}/leave/requests`,
         {
           headers:
             authHeaders(),
@@ -474,7 +470,7 @@ export const getPendingWorkFromHomeRequests =
   async () => {
     const response =
       await axios.get(
-        `${ATTENDANCE_API_URL}/work-from-home`,
+        `${REQUEST_API_URL}/work-from-home`,
         {
           headers:
             authHeaders(),
@@ -699,3 +695,34 @@ export const getEmployeeAttendanceLocationHistory =
 
     return response.data;
   };
+// Request APIs share the configured attendance backend and existing RMS session.
+export const listAttendanceRequests = async (kind, params = {}) => {
+  const path = kind === 'leave' ? 'leave/requests' : kind;
+  const response = await axios.get(`${REQUEST_API_URL}/${path}`, { headers: authHeaders(), params });
+  return response.data;
+};
+export const decideAttendanceRequest = async (kind, id, action, reason = '') => {
+  const response = await axios.patch(`${REQUEST_API_URL}/${kind}/${id}/${action}`, { reason }, { headers: authHeaders() });
+  return response.data;
+};
+export const applyShortLeave = async payload => {
+  const response = await axios.post(`${REQUEST_API_URL}/short-leave`, payload, { headers: authHeaders() });
+  return response.data;
+};
+
+export const getWorkFromHomeRequests = async (params = {}) => {
+  let page = 1;
+  let response;
+  const data = [];
+  do {
+    response = await listAttendanceRequests('work-from-home', { ...params, page, limit: 100 });
+    data.push(...(response.data || []));
+    page++;
+  } while (page <= (response.pagination?.totalPages || 1));
+  return { ...response, data };
+};
+
+export const getAttendanceEmployees = async () => {
+  const response = await axios.get(`${REQUEST_API_URL}/employees`, { headers: authHeaders() });
+  return response.data;
+};

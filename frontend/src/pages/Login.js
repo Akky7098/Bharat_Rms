@@ -1,180 +1,149 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { loginUser } from "../services/authService";
-import { disablePushNotifications } from "../services/pushNotificationService";
-import "./Login.css";
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { loginUser, loginWithGoogle, linkGoogleAccount } from '../services/authService';
+import GoogleSignInButton from '../components/GoogleSignInButton';
+import './Login.css';
+
+const GOOGLE_CLIENT_ID = (process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim();
+const loginError = (error, method) => {
+  const code = error?.response?.data?.code;
+  if (code === 'API_ROUTE_NOT_FOUND' || error?.response?.status === 404) return method === 'google' ? 'Google sign-in is unavailable on this server. Please use your email and password.' : 'Sign-in is unavailable on this server. Please try again later.';
+  if (code === 'ACCOUNT_INACTIVE') return 'Your account is inactive. Please contact your RMS administrator.';
+  if (code === 'GOOGLE_USER_NOT_REGISTERED') return 'This Google email is not registered with Bharat RMS. Use your registered account or contact your administrator.';
+  if (code === 'GOOGLE_LINK_REQUIRED') return 'Confirm your RMS email and password below to link this Google account and sign in.';
+  if (code === 'GOOGLE_LOGIN_DISABLED') return 'Google sign-in is not available yet. Please use your email and password.';
+  return error?.response?.data?.message || error?.message || 'Unable to sign in. Please try again.';
+};
 
 function Login() {
   const navigate = useNavigate();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginMethod, setLoginMethod] = useState(null);
+  const [error, setError] = useState('');
+  const busy = useRef(false);
+  const pendingGoogleCredential = useRef(null);
+  const mounted = useRef(true);
+  const isLoggingIn = Boolean(loginMethod);
 
-  // Auto restore session when PWA opens
   useEffect(() => {
+    mounted.current = true;
     try {
-      const token = localStorage.getItem("token");
-      const isLoggedIn = localStorage.getItem("isLoggedIn");
-
-      if (token && isLoggedIn === "true") {
-        navigate("/dashboard", { replace: true });
+      const notice = sessionStorage.getItem('authNotice');
+      if (notice) { setError(notice); sessionStorage.removeItem('authNotice'); }
+      if (localStorage.getItem('token') && localStorage.getItem('isLoggedIn') === 'true') {
+        navigate('/dashboard', { replace: true });
       }
-    } catch (error) {
-      console.error("Session restore failed:", error);
-    }
+    } catch { setError('Browser storage is unavailable. Please allow site storage and try again.'); }
+    return () => { mounted.current = false; };
   }, [navigate]);
 
- const clearOldSessionBeforeLogin = () => {
-  const oldToken = localStorage.getItem("token");
-
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  localStorage.removeItem("activeModule");
-  localStorage.removeItem("sidebarCollapsed");
-  localStorage.removeItem("notificationFocus");
-  localStorage.removeItem("isLoggedIn");
-  localStorage.removeItem("lastLoginTime");
-
-  sessionStorage.clear();
-
-  if (oldToken) {
-    disablePushNotifications().catch((error) => {
-      console.log("Old push cleanup failed:", error?.message || error);
-    });
-  }
-};
-
-  const saveLoginSession = (response) => {
+  const saveLoginSession = response => {
     const token = response?.data?.data?.token;
-    const loggedUser = response?.data?.data?.user;
-
-    if (!token || !loggedUser) {
-      throw new Error("Invalid login response from server");
-    }
-
-    const normalizedUser = {
-      ...loggedUser,
-      id: loggedUser.id || loggedUser._id,
-      _id: loggedUser._id || loggedUser.id,
-    };
-
-    localStorage.setItem("token", String(token));
-    localStorage.setItem("user", JSON.stringify(normalizedUser));
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("lastLoginTime", Date.now().toString());
+    const user = response?.data?.data?.user;
+    if (!token || !user || !(user.id || user._id)) throw new Error('Invalid login response from server. Please try again.');
+    const normalizedUser = { ...user, id: user.id || user._id, _id: user._id || user.id };
+    // Reset workspace context only after the server confirms a successful login.
+    ['activeModule', 'sidebarCollapsed', 'notificationFocus'].forEach(key => localStorage.removeItem(key));
+    sessionStorage.clear();
+    localStorage.setItem('token', String(token));
+    localStorage.setItem('user', JSON.stringify(normalizedUser));
+    localStorage.setItem('lastLoginTime', Date.now().toString());
+    localStorage.setItem('isLoggedIn', 'true');
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const submitLogin = async (method, request) => {
+    if (busy.current) return;
+    busy.current = true;
+    setLoginMethod(method);
+    setError('');
+    try {
+      const response = await request();
+      if (!mounted.current) return;
+      saveLoginSession(response);
+      navigate('/dashboard', { replace: true });
+    } catch (failure) {
+      if (failure?.response?.data?.code !== 'GOOGLE_LINK_REQUIRED') pendingGoogleCredential.current = null;
+      if (mounted.current) setError(loginError(failure, method));
+    } finally {
+      busy.current = false;
+      if (mounted.current) setLoginMethod(null);
+    }
+  };
 
-    if (isLoggingIn) return;
-
-    if (!email.trim() || !password.trim()) {
-      alert("Please enter email and password");
+  const handleLogin = event => {
+    event.preventDefault();
+    if (!email.trim() || !password) {
+      setError('Please enter your email address and password.');
       return;
     }
+    submitLogin('password', async () => {
+      const response = await loginUser({ email: email.trim(), password });
+      if (pendingGoogleCredential.current) {
+        const credential = pendingGoogleCredential.current;
+        pendingGoogleCredential.current = null;
+        try {
+          await linkGoogleAccount(credential, response?.data?.data?.token);
+        } catch {
+          throw new Error('Google could not be linked. You can sign in with your password again to continue, or retry Google sign-in.');
+        }
+      }
+      return response;
+    });
+  };
 
-    setIsLoggingIn(true);
-
-    try {
-       clearOldSessionBeforeLogin();
-
-      const response = await loginUser({
-        email: email.trim(),
-        password,
-      });
-
-      saveLoginSession(response);
-
-      // small delay ensures storage write completion
-      setTimeout(() => {
-        navigate("/dashboard", { replace: true });
-      }, 100);
-    } catch (error) {
-      alert(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Login failed"
-      );
-    } finally {
-      setIsLoggingIn(false);
+  const handleGoogleLogin = credential => {
+    if (busy.current) return;
+    if (typeof credential !== 'string' || !credential) {
+      setError('Google did not return a sign-in credential. Please try again.');
+      return;
     }
+    pendingGoogleCredential.current = credential;
+    submitLogin('google', () => loginWithGoogle(credential));
   };
 
   return (
-    <div
-      className="login-page"
-      style={{
-        backgroundImage: `url(/steel-bg.jpg)`,
-      }}
-    >
+    <main className="login-page" style={{ backgroundImage: 'url(/steel-bg.jpg)' }}>
       <div className="login-overlay">
-        <form className="login-card" onSubmit={handleLogin}>
+        <section className="login-card" aria-labelledby="login-title" aria-busy={isLoggingIn}>
           <div className="login-badge">Bharat RMS</div>
+          <div className="login-logo-box"><img src="/logo.png" alt="Bharat Special Steels" className="login-logo" /></div>
+          <h1 className="login-title" id="login-title">Welcome Back</h1>
 
-          <div className="login-logo-box">
-            <img
-              src="/logo.png"
-              alt="Bharat Special Steel"
-              className="login-logo"
-            />
-          </div>
+          {error && <div className="login-error" role="alert" id="login-error">{error}</div>}
+          {loginMethod === 'google' && <div className="login-progress" role="status">Verifying your Google account…</div>}
 
-          <h1 className="login-title">Welcome Back</h1>
-
-          <p className="login-subtitle">
-            Login to manage sales, dispatch, attendance and approvals.
-          </p>
-
-          <div className="login-field">
-            <label>Email Address</label>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              autoComplete="email"
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoggingIn}
-              required
-            />
-          </div>
-
-          <div className="login-field">
-            <label>Password</label>
-
-            <div className="login-password-row">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
-                value={password}
-                autoComplete="current-password"
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoggingIn}
-                required
-              />
-
-              <button
-                type="button"
-                className="login-show-btn"
-                onClick={() => setShowPassword((prev) => !prev)}
-                disabled={isLoggingIn}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
+          <form onSubmit={handleLogin} aria-label="Sign in with email and password">
+            <div className="login-field">
+              <label htmlFor="login-email">Email address</label>
+              <input id="login-email" name="email" type="email" placeholder="Enter your email" value={email}
+                autoComplete="username" inputMode="email" autoCapitalize="none" spellCheck={false}
+                onChange={event => setEmail(event.target.value)} disabled={isLoggingIn} required
+                aria-describedby={error ? 'login-error' : undefined} />
             </div>
-          </div>
+            <div className="login-field">
+              <label htmlFor="login-password">Password</label>
+              <div className="login-password-row">
+                <input id="login-password" name="password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password"
+                  value={password} autoComplete="current-password" onChange={event => setPassword(event.target.value)}
+                  disabled={isLoggingIn} required aria-describedby={error ? 'login-error' : undefined} />
+                <button type="button" className="login-show-btn" onClick={() => setShowPassword(value => !value)}
+                  disabled={isLoggingIn} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}>
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+            <button className="login-btn" type="submit" disabled={isLoggingIn}>
+              {loginMethod === 'password' ? 'Signing in…' : 'Login Securely'}
+            </button>
+          </form>
 
-          <button className="login-btn" type="submit" disabled={isLoggingIn}>
-            {isLoggingIn ? "Logging in..." : "Login Securely"}
-          </button>
-
+          <GoogleSignInButton clientId={GOOGLE_CLIENT_ID} disabled={isLoggingIn} onCredential={handleGoogleLogin} />
           <p className="login-footer">Bharat Special Steels Pvt. Ltd.</p>
-        </form>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
-
 export default Login;

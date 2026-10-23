@@ -10,6 +10,8 @@ const RegularizationQueue = ({
   actionLoading,
   onApprove,
   onReject,
+  requestError = "",
+  requestNotice = "",
 }) => {
   /* =========================================================
      EMPTY QUEUE
@@ -17,7 +19,7 @@ const RegularizationQueue = ({
 
   if (
     !Array.isArray(items) ||
-    items.length === 0
+    (items.length === 0 && !requestError && !requestNotice)
   ) {
     return null;
   }
@@ -69,7 +71,7 @@ const RegularizationQueue = ({
           </span>
 
           <h3>
-            Regularization Requests
+            Attendance Requests
           </h3>
         </div>
 
@@ -85,6 +87,8 @@ const RegularizationQueue = ({
           REQUESTS
       ====================================================== */}
 
+      {requestError && <p className="att-request-error" role="alert">{requestError}</p>}
+      {requestNotice && <p className="att-request-notice" role="status">{requestNotice}</p>}
       <div className="regularization-request-grid">
         {items.map(
           (
@@ -96,8 +100,7 @@ const RegularizationQueue = ({
               {};
 
             const requestId =
-              attendance?._id ||
-              `${attendance?.employeeName || "employee"}-${attendance?.attendanceDate || ""}`;
+              `${attendance.requestKind || "regularization"}:${attendance?._id || `${attendance?.employeeName || "employee"}-${attendance?.attendanceDate || ""}`}`;
 
             const isLoading =
               actionLoading ===
@@ -126,16 +129,13 @@ const RegularizationQueue = ({
                     </h4>
 
                     <p>
-                      {formatDate(
-                        attendance
-                          ?.attendanceDate
-                      )}
+                      {formatDate(attendance.requestKind ? attendance.fromDate : attendance.attendanceDate)}
+                      {attendance.requestKind && attendance.toDate !== attendance.fromDate ? ` – ${formatDate(attendance.toDate)}` : ""}
                     </p>
                   </div>
 
                   <span>
-                    Check In +
-                    Check Out
+                    {attendance.requestKind === "work-from-home" ? "Work From Home" : attendance.requestKind === "short-leave" ? "Short Leave" : attendance.requestKind === "leave" ? (attendance.leaveType === "loss_of_pay" ? "Loss of Pay" : "Paid Leave") : "Check In + Check Out"}
                   </span>
                 </div>
 
@@ -144,7 +144,7 @@ const RegularizationQueue = ({
                 =========================================== */}
 
                 <div className="regularization-request-info">
-                  <p>
+                  {!attendance.requestKind && <><p>
                     <b>
                       Requested In:
                     </b>{" "}
@@ -164,25 +164,22 @@ const RegularizationQueue = ({
                     )}
                   </p>
 
+                  </>}
                   <p>
                     <b>
                       Reason:
                     </b>{" "}
-                    {request
-                      ?.reason ||
+                    {(attendance.requestKind ? attendance.reason : request?.reason) ||
                       "-"}
                   </p>
 
-                  {request
-                    ?.requestedAt ? (
+                  {attendance.requestKind && attendance.duration && <p><b>Duration:</b> {attendance.duration.replaceAll("_", " ")}</p>}
+                  {(attendance.requestKind ? attendance.appliedAt || attendance.createdAt : request?.requestedAt) ? (
                     <p>
                       <b>
                         Requested At:
                       </b>{" "}
-                      {formatTime(
-                        request
-                          .requestedAt
-                      )}
+                      {formatTime(attendance.requestKind ? attendance.appliedAt || attendance.createdAt : request.requestedAt)}
                     </p>
                   ) : null}
                 </div>

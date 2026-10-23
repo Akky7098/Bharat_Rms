@@ -15003,3 +15003,8 @@ tbody tr:hover
       60px !important;
   }
 }
+.moa-order-card-clickable { cursor: pointer; transition: border-color .16s ease, box-shadow .16s ease; }
+.moa-order-card-clickable:hover { border-color: #818cf8; box-shadow: 0 8px 24px rgba(79,70,229,.1); }
+.moa-order-card-clickable:focus-visible { outline: 3px solid #6366f1; outline-offset: 3px; }
+.moa-order-detail-link { margin-bottom: 10px; text-align: right; font-size: 12px; font-weight: 700; color: #4f46e5; }
+@media (prefers-reduced-motion: reduce) { .moa-order-card-clickable { transition: none; } }

@@ -74,9 +74,7 @@ const AttendanceHeader = ({
         </h2>
 
         <p>
-          Attendance, leave, WFH,
-          regularization and location audit
-          in one production view.
+          Check attendance and manage leave and work-from-home requests.
         </p>
 
         {userName ? (

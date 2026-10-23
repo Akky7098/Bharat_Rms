@@ -896,6 +896,20 @@ export const getHealth = (
     };
   }
 
+  if (Array.isArray(attendance)) {
+    if (!attendance.length) return getHealth(null, dateKey, todayKey);
+    const activeRecords = attendance.filter(record => record?.employeeId?.status !== "inactive");
+    if (!activeRecords.length) return { label: "No active attendance", className: "future" };
+    const states = activeRecords.map(record => getHealth(record, dateKey, todayKey));
+    if (states.some(state => ["absent", "lop"].includes(state.className))) {
+      return { label: "Team: absence recorded", className: "absent" };
+    }
+    if (states.some(state => ["warning", "pending", "short", "missing", "missed-checkout"].includes(state.className))) {
+      return { label: "Team: attendance needs attention", className: "warning" };
+    }
+    return { label: "All saved attendance complete", className: "complete" };
+  }
+
   if (
     attendance
       ?.attendanceStatus ===
@@ -940,7 +954,7 @@ export const getHealth = (
               "No Record",
 
             className:
-              "missing",
+              "absent",
           }
     );
   }
@@ -960,34 +974,39 @@ export const getHealth = (
     };
   }
 
+  if (attendance?.attendanceStatus === "absent") {
+    return { label: "Absent", className: "absent" };
+  }
+
+  if (attendance?.shortLeave?.status === "approved") {
+    return { label: "Short Leave Approved", className: "leave" };
+  }
+
+  const approved = attendance?.regularization?.status === "approved";
+  const checkIn = (approved && attendance.regularization.requestedCheckIn) || attendance?.checkIn?.time;
+  const checkOut = (approved && attendance.regularization.requestedCheckOut) || attendance?.checkOut?.time;
+
   if (
-    attendance
-      ?.checkIn
-      ?.time &&
-    !attendance
-      ?.checkOut
-      ?.time
+    checkIn &&
+    !checkOut
   ) {
     return {
       label:
-        "Missing Checkout",
+        dateKey < todayKey ? "Missing Checkout" : "Checked In",
 
       className:
-        "missing",
+        dateKey < todayKey ? "missed-checkout" : "warning",
     };
   }
 
-  if (
-    Number(
-      attendance
-        ?.totalWorkingMinutes ||
-        0
-    ) <
-      REQUIRED_WORK_MINUTES &&
-    attendance
-      ?.checkOut
-      ?.time
-  ) {
+  const elapsedMinutes = checkIn && checkOut
+    ? Math.max(0, (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 60000)
+    : 0;
+  const workedMinutes = Number.isFinite(elapsedMinutes) && checkIn && checkOut
+    ? elapsedMinutes
+    : Number(attendance?.totalWorkingMinutes || 0);
+
+  if (workedMinutes < REQUIRED_WORK_MINUTES && checkOut) {
     return {
       label:
         "Short Hours",
@@ -998,12 +1017,8 @@ export const getHealth = (
   }
 
   if (
-    attendance
-      ?.checkIn
-      ?.time &&
-    attendance
-      ?.checkOut
-      ?.time
+    checkIn &&
+    checkOut
   ) {
     return {
       label:

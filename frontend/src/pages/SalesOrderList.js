@@ -1,8 +1,10 @@
+import { getSalesOrderPeriods } from "../utils/salesOrderPeriods";
 import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -38,6 +40,9 @@ const isSalesPerson = userRole === "user";
 
   const [salesOrders, setSalesOrders] = useState([]);
   const [salesPersons, setSalesPersons] = useState([]);
+  const salesRequest = useRef(0);
+  const invalidateSalesRequest = useCallback(() => { salesRequest.current++; }, []);
+  const [selectedInsightCard, setSelectedInsightCard] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
     const [activeTab, setActiveTab] = useState(
@@ -106,6 +111,7 @@ const [discussionError, setDiscussionError] = useState("");
     totalApprovedOrders: 0,
     totalApprovedValue: 0,
   },
+  monthApproved: { totalApprovedOrders: 0, totalApprovedValue: 0 },
   filteredApproved: {
     totalApprovedOrders: 0,
     totalApprovedValue: 0,
@@ -163,6 +169,7 @@ const getActionButtonText = () => {
 };
 
   const fetchSalesOrders = useCallback(async () => {
+  const request = ++salesRequest.current;
   try {
     const cleanFilters = {};
 
@@ -171,6 +178,7 @@ const getActionButtonText = () => {
     });
 
     const response = await getAllSalesOrders(cleanFilters);
+    if (request !== salesRequest.current) return;
 
     const payload = response?.salesOrders
       ? response
@@ -185,6 +193,7 @@ const getActionButtonText = () => {
     totalApprovedOrders: 0,
     totalApprovedValue: 0,
   },
+  monthApproved: payload?.summary?.monthApproved || payload?.summary?.filteredApproved || { totalApprovedOrders: 0, totalApprovedValue: 0 },
   filteredApproved: payload?.summary?.filteredApproved || {
     totalApprovedOrders: 0,
     totalApprovedValue: 0,
@@ -200,6 +209,7 @@ const getActionButtonText = () => {
       }
     );
   } catch (error) {
+    if (request !== salesRequest.current) return;
     console.log(error);
     alert(error.response?.data?.message || "Failed to load sales orders");
   }
@@ -217,7 +227,8 @@ const getActionButtonText = () => {
 
   useEffect(() => {
     fetchSalesOrders();
-  }, [fetchSalesOrders]);
+    return invalidateSalesRequest;
+  }, [fetchSalesOrders, invalidateSalesRequest]);
 
 
   useEffect(() => {
@@ -272,6 +283,7 @@ const getActionButtonText = () => {
   };
 
    const clearFilters = () => {
+    setSelectedInsightCard(null);
     setFilters({
       page: 1,
       limit: 30,
@@ -318,6 +330,10 @@ const getActionButtonText = () => {
 
     return [1, "...", current - 1, current, current + 1, "...", total];
   };
+
+ const getListDate = order => order.approvalStatus === "approved"
+  ? order.managerApproval?.approvedAt || order.orderDate || order.createdAt
+  : order.orderDate || order.createdAt;
 
  const formatDateTimeParts = (date) => {
   if (!date) {
@@ -931,37 +947,18 @@ const stopRowClick = (e) => {
   e.stopPropagation();
 };
 
-const filterTodayOrders = () => {
-  const today = new Date().toISOString().split("T")[0];
-
+const filterApprovedPeriod = (period, card) => {
+  const dates = getSalesOrderPeriods()[period];
+  setSelectedInsightCard(card);
   setActiveTab("approved");
-  setFilters((prev) => ({
-    ...prev,
-    page: 1,
-    approvalTab: "approved",
-    fromDate: today,
-    toDate: today,
-  }));
+  setFilters(previous => ({ ...previous, ...dates, page: 1, approvalTab: "approved" }));
 };
-
-const filterCurrentMonthOrders = () => {
-  const now = new Date();
-  const fromDate = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
-
-  const toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    .toISOString()
-    .split("T")[0];
-
-  setActiveTab("approved");
-  setFilters((prev) => ({
-    ...prev,
-    page: 1,
-    approvalTab: "approved",
-    fromDate,
-    toDate,
-  }));
+const filterTodayOrders = card => filterApprovedPeriod("today", card);
+const filterCurrentMonthOrders = card => filterApprovedPeriod("month", card);
+const isInsightSelected = card => {
+  if (selectedInsightCard !== card || activeTab !== "approved") return false;
+  const period = getSalesOrderPeriods()[card.startsWith("today") ? "today" : "month"];
+  return filters.fromDate === period.fromDate && filters.toDate === period.toDate;
 };
 
 const renderOrderActions = (order, mode = "desktop") => {
@@ -1179,8 +1176,9 @@ const renderOrderActions = (order, mode = "desktop") => {
   <div className="ios-sales-insight-grid">
     <button
       type="button"
-      className="ios-sales-insight-card today-orders"
-      onClick={filterTodayOrders}
+      className={`ios-sales-insight-card today-orders ${isInsightSelected("today-orders") ? "insight-selected" : ""}`}
+      aria-pressed={isInsightSelected("today-orders")}
+      onClick={() => filterTodayOrders("today-orders")}
     >
       <span>
         Today Orders
@@ -1198,8 +1196,9 @@ const renderOrderActions = (order, mode = "desktop") => {
 
     <button
       type="button"
-      className="ios-sales-insight-card today-revenue"
-      onClick={filterTodayOrders}
+      className={`ios-sales-insight-card today-revenue ${isInsightSelected("today-revenue") ? "insight-selected" : ""}`}
+      aria-pressed={isInsightSelected("today-revenue")}
+      onClick={() => filterTodayOrders("today-revenue")}
     >
       <span>
         Today Revenue
@@ -1219,18 +1218,16 @@ const renderOrderActions = (order, mode = "desktop") => {
 
     <button
       type="button"
-      className="ios-sales-insight-card month-orders"
-      onClick={filterCurrentMonthOrders}
+      className={`ios-sales-insight-card month-orders ${isInsightSelected("month-orders") ? "insight-selected" : ""}`}
+      aria-pressed={isInsightSelected("month-orders")}
+      onClick={() => filterCurrentMonthOrders("month-orders")}
     >
       <span>
-        {filters.fromDate ||
-        filters.toDate
-          ? "Filtered Orders"
-          : "Monthly Orders"}
+        Monthly Orders
       </span>
 
       <strong>
-        {salesSummary.filteredApproved
+        {salesSummary.monthApproved
           .totalApprovedOrders || 0}
       </strong>
 
@@ -1241,19 +1238,17 @@ const renderOrderActions = (order, mode = "desktop") => {
 
     <button
       type="button"
-      className="ios-sales-insight-card month-revenue"
-      onClick={filterCurrentMonthOrders}
+      className={`ios-sales-insight-card month-revenue ${isInsightSelected("month-revenue") ? "insight-selected" : ""}`}
+      aria-pressed={isInsightSelected("month-revenue")}
+      onClick={() => filterCurrentMonthOrders("month-revenue")}
     >
       <span>
-        {filters.fromDate ||
-        filters.toDate
-          ? "Filtered Revenue"
-          : "Monthly Revenue"}
+        Monthly Revenue
       </span>
 
       <strong>
         {formatSummaryCurrency(
-          salesSummary.filteredApproved
+          salesSummary.monthApproved
             .totalApprovedValue
         )}
       </strong>
@@ -1467,11 +1462,11 @@ const renderOrderActions = (order, mode = "desktop") => {
 
                       <div className="sales-order-datetime">
   <span className="sales-order-date">
-    {formatDateTimeParts(order.orderDate || order.createdAt).date}
+    {formatDateTimeParts(getListDate(order)).date}
   </span>
 
   <span className="sales-order-time">
-    {formatDateTimeParts(order.orderDate || order.createdAt).time}
+    {formatDateTimeParts(getListDate(order)).time}
   </span>
 </div>
                     </div>
@@ -1611,8 +1606,9 @@ const renderOrderActions = (order, mode = "desktop") => {
           <div className="sales-insight-strip">
     <button
     type="button"
-    className="sales-insight-card today-order sales-click-card"
-    onClick={filterTodayOrders}
+    className={`sales-insight-card today-order sales-click-card ${isInsightSelected("today-orders") ? "insight-selected" : ""}`}
+      aria-pressed={isInsightSelected("today-orders")}
+    onClick={() => filterTodayOrders("today-orders")}
   >
     <span>Today Orders</span>
     <strong>
@@ -1622,8 +1618,9 @@ const renderOrderActions = (order, mode = "desktop") => {
 
   <button
   type="button"
-  className="sales-insight-card today-revenue sales-click-card"
-  onClick={filterTodayOrders}
+  className={`sales-insight-card today-revenue sales-click-card ${isInsightSelected("today-revenue") ? "insight-selected" : ""}`}
+      aria-pressed={isInsightSelected("today-revenue")}
+  onClick={() => filterTodayOrders("today-revenue")}
 >
   <span>Today Revenue</span>
   <strong>
@@ -1635,34 +1632,32 @@ const renderOrderActions = (order, mode = "desktop") => {
 
  <button
   type="button"
-  className="sales-insight-card month-order sales-click-card"
-  onClick={filterCurrentMonthOrders}
+  className={`sales-insight-card month-order sales-click-card ${isInsightSelected("month-orders") ? "insight-selected" : ""}`}
+      aria-pressed={isInsightSelected("month-orders")}
+  onClick={() => filterCurrentMonthOrders("month-orders")}
 >
   <span>
-    {filters.fromDate || filters.toDate
-      ? "Filtered Orders"
-      : "Monthly Orders"}
+    Monthly Orders
   </span>
 
   <strong>
-    {salesSummary.filteredApproved.totalApprovedOrders || 0}
+    {salesSummary.monthApproved.totalApprovedOrders || 0}
   </strong>
 </button>
 
   <button
   type="button"
-  className="sales-insight-card month-revenue sales-click-card"
-  onClick={filterCurrentMonthOrders}
+  className={`sales-insight-card month-revenue sales-click-card ${isInsightSelected("month-revenue") ? "insight-selected" : ""}`}
+      aria-pressed={isInsightSelected("month-revenue")}
+  onClick={() => filterCurrentMonthOrders("month-revenue")}
 >
   <span>
-    {filters.fromDate || filters.toDate
-      ? "Filtered Revenue"
-      : "Monthly Revenue"}
+    Monthly Revenue
   </span>
 
   <strong>
     {formatSummaryCurrency(
-      salesSummary.filteredApproved.totalApprovedValue
+      salesSummary.monthApproved.totalApprovedValue
     )}
   </strong>
 </button>
@@ -1740,7 +1735,7 @@ const renderOrderActions = (order, mode = "desktop") => {
           <table className="sales-order-table">
             <thead>
               <tr>
-                <th className="sticky-col sticky-head col-date">Date</th>
+                <th className="sticky-col sticky-head col-date">{activeTab === "approved" ? "Approval Date" : "Date"}</th>
 
                 {canViewSalesPersonFilter && (
                   <th className="sticky-col sticky-head col-sales">
@@ -1782,11 +1777,11 @@ const renderOrderActions = (order, mode = "desktop") => {
                      <td className="sticky-col col-date">
   <div className="sales-order-datetime">
     <span className="sales-order-date">
-      {formatDateTimeParts(order.orderDate || order.createdAt).date}
+      {formatDateTimeParts(getListDate(order)).date}
     </span>
 
     <span className="sales-order-time">
-      {formatDateTimeParts(order.orderDate || order.createdAt).time}
+      {formatDateTimeParts(getListDate(order)).time}
     </span>
   </div>
 </td>
@@ -2286,4 +2281,5 @@ function IosInfo({ label, value, full }) {
   );
 }
 
+export { SalesOrderDetailModal };
 export default SalesOrderList;

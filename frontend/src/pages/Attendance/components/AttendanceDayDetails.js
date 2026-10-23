@@ -227,6 +227,7 @@ const AttendanceDayDetails = ({
             return (
               <article
                 className="employee-attendance-day-card"
+                data-attendance-state={health.className}
                 key={
                   employeeId ||
                   employee?.email ||

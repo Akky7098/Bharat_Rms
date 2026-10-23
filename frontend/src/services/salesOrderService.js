@@ -6,7 +6,11 @@ const BASE_URL =
 
 const API_URL = `${BASE_URL}/api/sales-order`;
 const ENQUIRY_API_URL = `${BASE_URL}/api/enquiry`;
-const USER_API_URL = `${BASE_URL}/api/user`;
+// Reads and writes default to the configured production backend.
+const READ_BASE_URL = (process.env.REACT_APP_SALES_ORDER_READ_BACKEND_URL ||
+  BASE_URL).replace(/\/+$/, "");
+const READ_API_URL = `${READ_BASE_URL}/api/sales-order`;
+const USER_API_URL = `${READ_BASE_URL}/api/user`;
 
 const getToken = () => localStorage.getItem("token");
 
@@ -30,7 +34,7 @@ export const createSalesOrder = async (data) => {
 
 // GET ALL
 export const getAllSalesOrders = async (params = {}) => {
-  const response = await axios.get(API_URL, {
+  const response = await axios.get(READ_API_URL, {
     headers: authHeaders(),
     params,
   });

@@ -1,10 +1,13 @@
 import React from "react";
+import useAttendanceDialog from "../hooks/useAttendanceDialog";
+import { getDateKey } from "../utils/attendanceHelpers";
 
 const WfhModal = ({
   state,
   setState,
   onSubmit,
 }) => {
+  const dialog = useAttendanceDialog(state?.open, state?.submitting, () => setState(previous => ({ ...previous, open: false })));
   /* =========================================================
      CLOSED
   ========================================================= */
@@ -143,6 +146,7 @@ const WfhModal = ({
     >
       <div
         className="timesheet-modal attendance-wfh-modal"
+        ref={dialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby="attendance-wfh-title"
@@ -166,13 +170,7 @@ const WfhModal = ({
               Work From Home
             </h3>
 
-            <p>
-              Request WFH.
-              Attendance location
-              will continue to be
-              captured during active
-              attendance.
-            </p>
+            <p>MD Sir reviews your request. WFH applies only to the approved dates.</p>
           </div>
 
           <button
@@ -203,6 +201,7 @@ const WfhModal = ({
               INFORMATION
           ================================================= */}
 
+          {state.error && <p className="att-request-error" role="alert">{state.error}</p>}
           <div className="attendance-wfh-info-banner">
             <span
               aria-hidden="true"
@@ -216,10 +215,7 @@ const WfhModal = ({
               </strong>
 
               <p>
-                Approval is separate
-                from attendance
-                Check In, Check Out
-                and location audit.
+                Continue to check in and out as usual. Your normal work mode resumes after the approved dates.
               </p>
             </div>
           </div>
@@ -236,6 +232,7 @@ const WfhModal = ({
 
               <input
                 type="date"
+                min={getDateKey(new Date())}
                 required
                 value={
                   fromDate

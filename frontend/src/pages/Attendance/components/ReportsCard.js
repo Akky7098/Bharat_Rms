@@ -112,6 +112,7 @@ const ReportsCard = ({
             return (
               <div
                 className="report-item"
+                data-attendance-state={health.className}
                 key={
                   attendance?._id ||
                   `${employeeName}-${dateKey}`

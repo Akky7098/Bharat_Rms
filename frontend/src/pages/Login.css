@@ -1,4 +1,4 @@
-* {
+.login-page, .login-page * {
   box-sizing: border-box;
 }
 
@@ -258,3 +258,50 @@
     width: 170px;
   }
 }
+/* Google sign-in addition: preserve the original login form styling. */
+.login-page, .login-overlay { min-height: 100dvh; }
+.login-title { margin-bottom: 26px; }
+.login-field input { min-width: 0; font-family: inherit; }
+.login-password-row:focus-within { box-shadow: 0 0 0 4px rgba(250,204,21,.28); }
+.login-password-row input:focus { box-shadow: none; }
+.login-show-btn { min-width: 42px; min-height: 44px; padding: 0; font-family: inherit; }
+.login-btn { font-family: inherit; }
+.login-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0 16px; color: #dbeafe; font-size: 12px; font-weight: 600; }
+.login-divider::before, .login-divider::after { content: ''; height: 1px; flex: 1; background: rgba(255,255,255,.2); }
+.login-google-slot {
+  position: relative; width: 100%; min-height: 54px; padding: 6px;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 18px;
+  box-shadow: 0 4px 14px rgba(2,6,23,.12);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.login-google-slot[data-state="ready"]:hover {
+  border-color: #b8c9d5; box-shadow: 0 6px 20px rgba(2,6,23,.2);
+}
+.login-google-slot:focus-within {
+  outline: 3px solid rgba(250,204,21,.5); outline-offset: 3px;
+}
+.login-google-button { width: 100%; min-height: 40px; }
+.login-google-button[inert] { pointer-events: none; opacity: .65; }
+.login-google-fallback { position: absolute; inset: 0; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid rgba(255,255,255,.3); border-radius: 17px; background: #f8fafc; font-size: 12px; line-height: 18px; color: #475569; text-align: center; }
+.login-google-fallback button { border: 0; background: transparent; color: #166534; font: inherit; text-decoration: underline; cursor: pointer; white-space: nowrap; }
+.login-error { margin-bottom: 18px; padding: 12px 14px; background: #fff1f2; color: #9f1239; border: 1px solid #fda4af; border-radius: 14px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.login-progress { margin-bottom: 12px; color: #fde68a; font-size: 13px; text-align: center; }
+.login-page button:focus-visible { outline: 3px solid #fde047; outline-offset: 4px; }
+@media (max-width: 768px) {
+  .login-card { padding-top: 24px; padding-bottom: 22px; }
+  .login-badge { margin-bottom: 14px; }
+  .login-logo-box { margin-bottom: 16px; }
+  .login-title { margin-bottom: 24px; }
+  .login-field { margin-bottom: 14px; }
+  .login-divider { margin: 18px 0 14px; }
+  .login-footer { margin-top: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .login-btn { transition: none; } }
+
+/* Match the Google control and existing fields, independent of other page forms. */
+.login-card > form { display: block; width: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .login-google-slot { transition: none; } }
+
+/* Keep Google's iframe content from determining the available button width. */
+.login-google-section { width: 100%; min-width: 0; }
+.login-google-button { min-width: 0; contain: inline-size; }

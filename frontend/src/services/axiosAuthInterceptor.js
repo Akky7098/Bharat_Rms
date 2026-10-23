@@ -54,6 +54,8 @@ const clearAuthStorage = () => {
     "userId",
     "userName",
     "email",
+    "isLoggedIn",
+    "lastLoginTime",
   ];
 
   authKeys.forEach((key) => {
@@ -187,7 +189,13 @@ axios.interceptors.response.use(
         )
       );
 
+    const isInactiveSession = status === 403 && code === "ACCOUNT_INACTIVE" && Boolean(localStorage.getItem("token"));
+    if (isInactiveSession) {
+      sessionStorage.setItem("authNotice", "Your account is inactive. Please contact your RMS administrator.");
+    }
+
     if (
+      isInactiveSession ||
       isAuthFailure ||
       isLegacyExpired403
     ) {

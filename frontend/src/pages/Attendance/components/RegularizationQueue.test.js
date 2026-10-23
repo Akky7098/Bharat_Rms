@@ -1,0 +1,63 @@
+import React from 'react';
+import { render, screen, fireEvent, within, renderHook, waitFor, act } from '@testing-library/react';
+import RegularizationQueue from './RegularizationQueue';
+import useAttendanceRequests from '../hooks/useAttendanceRequests';
+import { listAttendanceRequests, decideAttendanceRequest } from '../../../services/attendanceService';
+jest.mock('../../../services/attendanceService', () => ({ listAttendanceRequests: jest.fn(), decideAttendanceRequest: jest.fn() }));
+const regularization = { _id: 'reg', employeeName: 'Existing Employee', attendanceDate: '2026-10-23', regularization: { requestedCheckIn: '2026-10-23T04:00:00Z', requestedCheckOut: '2026-10-23T13:00:00Z', reason: 'Forgot checkout' } };
+const wfh = { _id: 'wfh', employeeName: 'WFH Employee', requestKind: 'work-from-home', fromDate: '2026-10-25', toDate: '2026-10-27', reason: 'Home work', status: 'pending' };
+const revision = [], refresh = jest.fn();
+beforeEach(() => { jest.clearAllMocks(); listAttendanceRequests.mockImplementation(async kind => ({ data: kind === 'work-from-home' ? [wfh] : [], pagination: { totalPages: 1 } })); decideAttendanceRequest.mockResolvedValue({ data: { whatsapp: { sent: true } } }); });
+test('all request types use one original approval queue with existing card and action classes', () => {
+  const approve = jest.fn(), reject = jest.fn();
+  const leave = { ...wfh, _id: 'paid', employeeName: 'Leave Employee', requestKind: 'leave', leaveType: 'paid_leave', duration: 'full_day' };
+  const lop = { ...leave, _id: 'lop', leaveType: 'loss_of_pay' };
+  const short = { ...wfh, _id: 'short', requestKind: 'short-leave' };
+  const { container } = render(<RegularizationQueue items={[regularization, wfh, leave, lop, short]} onApprove={approve} onReject={reject} />);
+  expect(screen.getAllByText('APPROVAL QUEUE')).toHaveLength(1);
+  expect(container.querySelectorAll('.regularization-request-card')).toHaveLength(5);
+  expect(screen.getByText('Requested In:')).toBeInTheDocument();
+  expect(screen.getByText('Work From Home')).toBeInTheDocument();
+  expect(screen.getByText('Paid Leave')).toBeInTheDocument();
+  expect(screen.getByText('Loss of Pay')).toBeInTheDocument();
+  expect(screen.getByText('Short Leave')).toBeInTheDocument();
+  const card = screen.getByText('Work From Home').closest('article');
+  fireEvent.click(within(card).getByRole('button', { name: 'Approve' }));
+  expect(approve).toHaveBeenCalledWith(wfh);
+  fireEvent.click(within(card).getByRole('button', { name: 'Reject' }));
+  expect(reject).toHaveBeenCalledWith(wfh);
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Next|Refresh requests|Review approval/ })).not.toBeInTheDocument();
+});
+test('pending WFH is loaded alongside other request kinds without choosing a tab', async () => {
+  let approved = false;
+  listAttendanceRequests.mockImplementation(async kind => ({ data: kind === 'work-from-home' && !approved ? [wfh] : [], pagination: { totalPages: 1 } }));
+  decideAttendanceRequest.mockImplementation(async () => { approved = true; return { data: { whatsapp: { sent: true } } }; });
+  const { result } = renderHook(() => useAttendanceRequests({ role: 'super_admin' }, refresh, revision));
+  await waitFor(() => expect(result.current.items).toHaveLength(1));
+  expect(result.current.items[0].requestKind).toBe('work-from-home');
+  for (const kind of ['leave', 'work-from-home', 'short-leave']) expect(listAttendanceRequests).toHaveBeenCalledWith(kind, { status: 'pending', page: 1, limit: 100 });
+  await act(async () => { await result.current.decide(wfh, 'approve'); });
+  expect(decideAttendanceRequest).toHaveBeenCalledWith('work-from-home', 'wfh', 'approve', '');
+  expect(refresh).toHaveBeenCalledTimes(1);
+  expect(result.current.items).toHaveLength(0);
+});
+test('pending request pagination is fully loaded, and employees do not fetch approval queues', async () => {
+  const employee = renderHook(() => useAttendanceRequests({ role: 'admin' }, refresh, revision));
+  expect(listAttendanceRequests).not.toHaveBeenCalled(); employee.unmount();
+  listAttendanceRequests.mockImplementation(async (kind, params) => ({ data: kind === 'leave' ? [{ ...wfh, _id: `page-${params.page}` }] : [], pagination: { totalPages: kind === 'leave' ? 2 : 1 } }));
+  const { result } = renderHook(() => useAttendanceRequests({ role: 'super_admin' }, refresh, revision));
+  await waitFor(() => expect(result.current.items).toHaveLength(2));
+  expect(result.current.counts.leave).toBe(2);
+});
+
+test('rejection uses the existing reason prompt and cancellation sends no decision', async () => {
+  const prompt = jest.spyOn(window, 'prompt').mockReturnValueOnce(null).mockReturnValueOnce('Please change the dates');
+  const { result } = renderHook(() => useAttendanceRequests({ role: 'super_admin' }, refresh, revision));
+  await waitFor(() => expect(result.current.items).toHaveLength(1));
+  await act(async () => { await result.current.decide(wfh, 'reject'); });
+  expect(decideAttendanceRequest).not.toHaveBeenCalled();
+  await act(async () => { await result.current.decide(wfh, 'reject'); });
+  expect(decideAttendanceRequest).toHaveBeenCalledWith('work-from-home', 'wfh', 'reject', 'Please change the dates');
+  prompt.mockRestore();
+});

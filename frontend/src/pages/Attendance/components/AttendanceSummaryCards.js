@@ -1,6 +1,8 @@
 import React from "react";
 
 const AttendanceSummaryCards = ({
+  onWfhDetails,
+  canApply = true,
   todayAttendance,
   leaveSummary,
   pendingRegularizations = 0,
@@ -15,6 +17,7 @@ const AttendanceSummaryCards = ({
     {};
 
   const paidLeaveRemaining =
+    balance?.availablePaidLeave ??
     balance?.paidLeaveRemaining ??
     balance?.remaining ??
     "-";
@@ -114,7 +117,7 @@ const AttendanceSummaryCards = ({
 
       {/* PAID LEAVE */}
 
-      <article className="attendance-summary-card leave">
+      {canApply && <article className="attendance-summary-card leave">
         <span>
           Paid Leave
         </span>
@@ -126,7 +129,7 @@ const AttendanceSummaryCards = ({
         <small>
           Available balance
         </small>
-      </article>
+      </article>}
 
       {/* REGULARIZATION */}
 
@@ -148,7 +151,7 @@ const AttendanceSummaryCards = ({
 
       {/* WFH */}
 
-      <article className="attendance-summary-card wfh">
+      <button type="button" onClick={onWfhDetails} className="attendance-summary-card wfh attendance-wfh-summary" aria-label={`View ${wfhCount} approved WFH requests`}>
         <span>
           WFH
         </span>
@@ -158,9 +161,9 @@ const AttendanceSummaryCards = ({
         </strong>
 
         <small>
-          Approved in selected period
+          Approved in selected period · View details →
         </small>
-      </article>
+      </button>
     </section>
   );
 };
