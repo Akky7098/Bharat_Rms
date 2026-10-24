@@ -18,6 +18,15 @@ const buildDispatchWhatsappMessage = (dispatch, event) => [
   `*Payment details*\nDue date: ${date(dispatch.revisedPaymentDueDate || dispatch.paymentDueDate)}\nOutstanding: ${money(dispatch.pendingAmount)}\nTerms: ${text(dispatch.paymentTerms || `${dispatch.paymentDueDays || 0} days`)}`,
   contact(dispatch), signature,
 ].join('\n\n');
+const buildPaymentReceivedWhatsappMessage = (dispatch, payment) => [
+  Number(dispatch.pendingAmount || 0) <= 0 ? '✅ *Payment Completed*' : '💰 *Payment Received*',
+  `Dear ${text(dispatch.contactPersonName || 'Customer')},\n${text(dispatch.companyName)}`,
+  `Thank you. We have recorded your payment against invoice ${text(dispatch.invoiceNumber)}.\nPlease find the updated payment summary below.`,
+  `*Payment summary*\nPayment received now: ${money(payment.amount)}\nTotal paid amount: ${money(dispatch.paidAmount)}\nPending amount: ${money(dispatch.pendingAmount)}\nStatus: ${Number(dispatch.pendingAmount || 0) <= 0 ? 'Paid' : 'Partial Payment'}`,
+  invoiceDetails(dispatch),
+  `Payment received on: ${date(payment.receivedAt)}\nPayment due date: ${date(dispatch.revisedPaymentDueDate || dispatch.paymentDueDate)}`,
+  contact(dispatch), signature,
+].join('\n\n');
 const buildPaymentWhatsappMessages = (dispatch, type, overdueDays, invoices = [dispatch], now = new Date()) => {
   const { outstanding, oldestDays } = accountPaymentState(invoices, now);
   if (!outstanding.length) return [];
@@ -82,4 +91,11 @@ const sendPaymentReminderWhatsapp = (dispatch, type, overdueDays, invoices, now 
   const company = String(dispatch.companyName || '').trim().toLowerCase().replace(/\s+/g, ' ');
   return sendClaimed(dispatch, 'payment_reminder', `${dayKey(now)}|${company}`, buildPaymentWhatsappMessages(dispatch, type, overdueDays, invoices, now));
 };
-module.exports = { sendDispatchWhatsapp, sendPaymentReminderWhatsapp, buildDispatchWhatsappMessage, buildPaymentWhatsappMessages };
+const sendPaymentReceivedWhatsapp = (dispatch, payment) => {
+  if (!payment?._id || !Number.isFinite(Number(payment.amount)) || Number(payment.amount) <= 0) {
+    return Promise.resolve({ status: 'skipped', reason: 'invalid_payment' });
+  }
+  // Each saved payment has its own ID: two equal instalments remain distinct.
+  return sendClaimed(dispatch, 'payment_received', `${dispatch._id}|${payment._id}`, [buildPaymentReceivedWhatsappMessage(dispatch, payment)]);
+};
+module.exports = { sendDispatchWhatsapp, sendPaymentReminderWhatsapp, sendPaymentReceivedWhatsapp, buildDispatchWhatsappMessage, buildPaymentWhatsappMessages, buildPaymentReceivedWhatsappMessage };

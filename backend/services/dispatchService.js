@@ -4,7 +4,7 @@ const path = require("path");
 
 const Dispatch = require("../model/dispatchModel");
 const SalesOrder = require("../model/salesOrderModel");
-const { sendDispatchWhatsapp } = require("./dispatchWhatsappService");
+const { sendDispatchWhatsapp, sendPaymentReceivedWhatsapp } = require("./dispatchWhatsappService");
 
 const {
   sendDispatchCreatedEmail,
@@ -3193,6 +3193,7 @@ const updateDispatchPayment = async (
 
         await dispatch.save();
       }
+      await sendPaymentReceivedWhatsapp(dispatch, dispatch.paymentHistory[lastPaymentIndex]);
     }
 
     return dispatch;

@@ -82,3 +82,32 @@ test('large company statements split without dropping invoice details', () => {
   assert.ok(messages.every(message => message.length < 5000));
   for (let i = 0; i < 40; i++) assert.ok(messages.some(message => message.includes(` INV-${i}*`)));
 });
+
+test('payment received confirms the latest instalment and remaining balance to the customer', async () => {
+  const api = fixture();
+  const row = { ...invoice, paidAmount: 50000, pendingAmount: 68000 };
+  const payment = { _id: 'payment-1', amount: 50000, receivedAt: now };
+  await api.sendPaymentReceivedWhatsapp(row, payment);
+  assert.equal(api.sent[0].number, invoice.contactPersonNumber);
+  assert.match(api.sent[0].message, /💰 \*Payment Received\*/);
+  assert.match(api.sent[0].message, /Payment received now: ₹50,000/);
+  assert.match(api.sent[0].message, /Total paid amount: ₹50,000/);
+  assert.match(api.sent[0].message, /Pending amount: ₹68,000/);
+  assert.match(api.sent[0].message, /Status: Partial Payment/);
+  await api.sendPaymentReceivedWhatsapp(row, payment);
+  assert.equal(api.sent.length, 1);
+  await api.sendPaymentReceivedWhatsapp({ ...row, paidAmount: 100000, pendingAmount: 18000 }, { ...payment, _id: 'payment-2' });
+  assert.equal(api.sent.length, 2, 'equal amounts under different saved payments must both notify');
+});
+test('full payment confirms completed status and failures remain isolated', async () => {
+  const api = fixture();
+  const row = { ...invoice, paidAmount: 118000, pendingAmount: 0 };
+  const payment = { _id: 'final-payment', amount: 68000, receivedAt: now };
+  const message = api.buildPaymentReceivedWhatsappMessage(row, payment);
+  assert.match(message, /✅ \*Payment Completed\*/);
+  assert.match(message, /Pending amount: ₹0\nStatus: Paid/);
+  assert.equal((await api.sendPaymentReceivedWhatsapp(row, { ...payment, amount: 0 })).status, 'skipped');
+  assert.equal((await api.sendPaymentReceivedWhatsapp(row, { amount: 100 })).status, 'skipped');
+  api.fail();
+  assert.equal((await api.sendPaymentReceivedWhatsapp(row, payment)).status, 'failed');
+});
