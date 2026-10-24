@@ -441,6 +441,7 @@ const processPaymentReminders =
           1,
       });
 
+    const whatsappCounts = { sent: 0, failed: 0, skipped: 0 };
     let sentCount = 0;
     let failedCount = 0;
     let skippedCount = 0;
@@ -480,6 +481,13 @@ const processPaymentReminders =
         } catch (error) {
           if (error.code === 11000) { skippedCount += group.invoices.length; continue; }
           throw error;
+        }
+        // WhatsApp has a separate recipient/day claim and cannot fail email delivery.
+        // Send once per customer mobile even if it appears under multiple email contacts.
+        const recipients = new Map(group.invoices.map(invoice => [String(invoice.contactPersonNumber || "").replace(/\D/g, ""), invoice]));
+        for (const contactInvoice of recipients.values()) {
+          const result = await require("./dispatchWhatsappService").sendPaymentReminderWhatsapp(contactInvoice, type, late, companyInvoices, now);
+          whatsappCounts[result.status]++;
         }
         const mailInfo = await sendPaymentReminderEmail(representative, type, late, companyInvoices);
         await PaymentReminderDelivery.updateOne({ _id: claimId }, { $set: { status: "sent", messageId: mailInfo.messageId } });
@@ -524,6 +532,7 @@ const processPaymentReminders =
 
       forcedOverdueRun:
         forceAllOverdue,
+      whatsapp: whatsappCounts,
     };
   };
 

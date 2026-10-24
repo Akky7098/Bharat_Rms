@@ -4,6 +4,7 @@ const path = require("path");
 
 const Dispatch = require("../model/dispatchModel");
 const SalesOrder = require("../model/salesOrderModel");
+const { sendDispatchWhatsapp } = require("./dispatchWhatsappService");
 
 const {
   sendDispatchCreatedEmail,
@@ -1620,6 +1621,8 @@ const createDispatch =
       }
 
 
+      await sendDispatchWhatsapp(createdDispatch, "dispatched");
+      if (createdDispatch.dispatchStatus === "delivered") await sendDispatchWhatsapp(createdDispatch, "delivered");
       return (
         createdDispatch
       );
@@ -2969,6 +2972,9 @@ const updateDispatchPayment = async (
       );
 
     await dispatch.save();
+    if (hasDispatchStatusChange && incomingDispatchStatus === "delivered") {
+      await sendDispatchWhatsapp(dispatch, "delivered");
+    }
 
     /*
      * Revised-date internal notification.
@@ -3230,6 +3236,7 @@ const updateDispatchStatus = async (dispatchId, body, user) => {
   }
 
   await dispatch.save();
+  if (body.dispatchStatus === "delivered") await sendDispatchWhatsapp(dispatch, "delivered");
 
   await safeCreateNotification({
     module: "dispatch",

@@ -28,24 +28,7 @@ const {
   initBaileysClient,
 } = require("./util/baileysClient");
 
-/*
- * =========================================================
- * OLD WHATSAPP WEB DISABLED
- *
- * WhatsApp Web requires permanent Chromium/Puppeteer.
- * Keep the code in the project for rollback/reference,
- * but do not initialize it.
- * =========================================================
- */
-
-/*
-const startWhatsappHealthCron =
-  require("./cron/whatsappHealthCron");
-
-const {
-  initWhatsappClient,
-} = require("./util/whatsappClient");
-*/
+const startWhatsappHealthCron = require("./cron/whatsappHealthCron");
 
 const startSalesOrderApprovalReminderCron =
   require("./cron/salesOrderApprovalReminderCron");
@@ -321,15 +304,6 @@ const startApp = async () => {
           );
 
           /* ===============================================
-             OLD WHATSAPP WEB
-
-             DISABLED.
-             DO NOT START CHROMIUM.
-          =============================================== */
-
-          // initWhatsappClient();
-
-          /* ===============================================
              NEW BAILEYS WHATSAPP
 
              No Chromium.
@@ -386,12 +360,12 @@ const startApp = async () => {
           // startSalesDailyInsightCron();
 
           /* ===============================================
-             OLD WHATSAPP WEB HEALTH CRON
+             BAILEYS HEALTH CRON
 
-             Must remain disabled.
+             Recover missing/disconnected owners without Chromium.
           =============================================== */
 
-          // startWhatsappHealthCron();
+          startWhatsappHealthCron();
 
           console.log(
             "All enabled background jobs started."

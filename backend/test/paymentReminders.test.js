@@ -8,7 +8,7 @@ const now = new Date('2026-10-23T06:00:00Z');
 const invoice = { companyName: 'Example & Co', contactPersonEmail: 'accounts@example.com', contactPersonName: '<Customer>', invoiceNumber: '<INV-1>', invoiceValue: 1000, pendingAmount: 500, paymentDueDate: '2026-10-17T06:00:00Z', paymentReminder: {} };
 function mailService() {
   const sent = [];
-  const context = { module: { exports: {} }, process: { env: {} }, require: name => {
+  const context = { module: { exports: {} }, Date: class extends Date { constructor(...args) { super(...(args.length ? args : [now])); } }, process: { env: {} }, require: name => {
     if (name === '../util/mailTransporter') return { sendMail: async message => { sent.push(message); return { messageId: 'sample' }; } };
     if (name === '../util/paymentReminderPolicy') return policy;
     throw new Error(name);
@@ -59,6 +59,7 @@ test('company/contact consolidation and database claims prevent repeat sends', a
     if (name === '../model/dispatchModel') return { updateMany: async () => ({}), find: () => ({ sort: async () => records }) };
     if (name === './dispatchReminderMailService') return { sendPaymentReminderEmail: async (...args) => { mails.push(args); return { messageId: 'test' }; } };
     if (name === './notificationService') return {};
+    if (name === './dispatchWhatsappService') return { sendPaymentReminderWhatsapp: async () => ({ status: 'failed' }) };
     throw new Error(name);
   } };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../services/dispatchReminderService.js'), 'utf8'), context);
@@ -68,8 +69,9 @@ test('company/contact consolidation and database claims prevent repeat sends', a
   await run();
   assert.equal(mails.length, 0, 'a new due-today invoice must not reset the oldest debt cadence');
   records[0].paymentDueDate = new Date(Date.now() - 18 * 86400000);
-  await Promise.all([run(), run()]);
-  assert.equal(mails.length, 1);
+  const results = await Promise.all([run(), run()]);
+  assert.equal(results.reduce((sum, result) => sum + result.whatsapp.failed, 0), 1);
+  assert.equal(mails.length, 1, 'email is still sent when WhatsApp fails');
   assert.equal(mails[0][1], 'overdue');
   assert.equal(mails[0][2], 18);
   assert.equal(mails[0][3].length, 2);

@@ -44,6 +44,9 @@ const runPaymentReminderJob = async ({
         `Sent=${result.sent}`,
         `Failed=${result.failed}`,
         `Skipped=${result.skipped}`,
+        `WhatsAppSent=${result.whatsapp?.sent || 0}`,
+        `WhatsAppFailed=${result.whatsapp?.failed || 0}`,
+        `WhatsAppSkipped=${result.whatsapp?.skipped || 0}`,
         `StatusMatched=${result.statusMatched}`,
         `StatusUpdated=${result.statusUpdated}`,
       ].join(" | ")
@@ -63,7 +66,7 @@ const runPaymentReminderJob = async ({
 };
 
 /**
- * Runs every day at exactly 11:00 AM IST.
+ * Runs every day at exactly 11:00 PM IST.
  */
 const startPaymentReminderCron = () => {
   if (started) {
@@ -77,12 +80,12 @@ const startPaymentReminderCron = () => {
   started = true;
 
   cron.schedule(
-    "0 11 * * *",
+    "0 23 * * *",
     async () => {
       try {
         await runPaymentReminderJob({
           forceAllOverdue: false,
-          source: "daily-11am-ist",
+          source: "daily-11pm-ist",
         });
       } catch (error) {
         console.error(
@@ -97,7 +100,7 @@ const startPaymentReminderCron = () => {
   );
 
   console.log(
-    "Payment reminder cron scheduled for every day at 11:00 AM IST"
+    "Payment reminder cron scheduled for every day at 11:00 PM IST"
   );
 };
 

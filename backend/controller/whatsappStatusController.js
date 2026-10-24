@@ -1,9 +1,9 @@
 const QRCode = require("qrcode");
 
 const {
-  forceCheckWhatsappStatus,
-  restartWhatsappClient,
-} = require("../util/whatsappClient");
+  getBaileysStatus: forceCheckWhatsappStatus,
+  initBaileysClient: restartWhatsappClient,
+} = require("../util/baileysClient");
 
 /* =========================================================
    WHATSAPP STATUS API
@@ -114,6 +114,7 @@ const showWhatsappQrPage = async (req, res) => {
     ===================================================== */
 
     if (
+      status.state === "CONNECTING" ||
       status.state === "INITIALIZING" ||
       status.state === "RESTARTING"
     ) {
@@ -167,7 +168,7 @@ const showWhatsappQrPage = async (req, res) => {
               <h2>WhatsApp Starting...</h2>
 
               <p>
-                WhatsApp Chromium is currently starting.
+                WhatsApp connection is currently starting.
               </p>
 
               <p>
@@ -364,7 +365,7 @@ const showWhatsappQrPage = async (req, res) => {
             <h2>WhatsApp Not Connected</h2>
 
             <p>
-              WhatsApp Chromium is currently unavailable.
+              WhatsApp connection is currently unavailable.
             </p>
 
             <div class="state">

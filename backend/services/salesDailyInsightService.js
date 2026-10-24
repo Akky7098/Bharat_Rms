@@ -3,7 +3,7 @@ const Enquiry = require("../model/enquiryModel");
 const ColdCall = require("../model/coldCallModel");
 const SalesOrder = require("../model/salesOrderModel");
 const transporter = require("../util/mailTransporter");
-const { getWhatsappClient, isWhatsappReady } = require("../util/whatsappClient");
+const { getBaileysSocket, sendTextToGroup } = require("../util/baileysClient");
 const CronLock = require("../model/cronLockModel");
 const {
   generateTeamSalesCoachingReport,
@@ -77,14 +77,13 @@ const getEmployeeName = (emp) => emp?.name || "Unknown";
 const sendWhatsapp = async (message) => {
   if (!SALES_GROUP_ID) return;
 
-  const ready = await isWhatsappReady();
+  const ready = Boolean(getBaileysSocket());
   if (!ready) {
     console.log("Sales daily insight WhatsApp skipped: client not ready");
     return;
   }
 
-  const client = getWhatsappClient();
-  return client.sendMessage(SALES_GROUP_ID, message);
+  return sendTextToGroup(SALES_GROUP_ID, message);
 };
 
 const getSalesEmployees = async () => {

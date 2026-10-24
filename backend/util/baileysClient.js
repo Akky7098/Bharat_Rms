@@ -70,6 +70,8 @@ let ownerHeartbeatTimer =
 let isOwner = false;
 
 let baileysModule = null;
+// Fences pending initialization and reconnect callbacks when ownership changes.
+let lifecycleGeneration = 0;
 
 /*
  * Prevent multiple logout-reset operations
@@ -279,7 +281,7 @@ const isPidAlive =
     pid
   ) => {
     if (
-      !pid
+      !Number.isInteger(Number(pid)) || Number(pid) <= 0
     ) {
       return false;
     }
@@ -293,12 +295,39 @@ const isPidAlive =
       );
 
       return true;
-    } catch (
-      error
-    ) {
-      return false;
+    } catch (error) {
+      return error.code === "EPERM";
     }
   };
+
+const ownership = require("./baileysOwnership")(
+  OWNER_LOCK_FILE, process.pid, isPidAlive, readJson
+);
+const ownsLock = () => ownership.isOwner();
+const freshTimestamp = value => {
+  const age = Date.now() - new Date(value).getTime();
+  return Number.isFinite(age) && age >= 0 && age < OWNER_STALE_MS;
+};
+const stopActingAsOwner = () => {
+  lifecycleGeneration++;
+  isOwner = false;
+  isConnecting = false;
+  connectionState = "DISCONNECTED";
+  latestQr = null;
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+  if (ownerHeartbeatTimer) clearInterval(ownerHeartbeatTimer);
+  ownerHeartbeatTimer = null;
+  const old = sock; sock = null;
+  try { old?.ws?.close?.(); }
+  catch (error) { console.error("BAILEYS SOCKET CLOSE ERROR =>", error.message); }
+};
+const ensureCurrentOwnership = () => {
+  if (!isOwner) return false;
+  if (ownsLock() && hasFreshOwner()) return true;
+  stopActingAsOwner();
+  return false;
+};
 
 /* =========================================================
    BAILEYS IMPORT
@@ -332,6 +361,7 @@ const writeStatus =
     connectionState =
       state;
 
+    if (!ensureCurrentOwnership()) return;
     writeJson(
       STATUS_FILE,
       {
@@ -344,10 +374,8 @@ const writeStatus =
         qr:
           latestQr,
 
-        ownerPid:
-          isOwner
-            ? process.pid
-            : null,
+        ownerPid: process.pid,
+        ownerToken: ownership.token,
 
         updatedAt:
           new Date()
@@ -360,30 +388,17 @@ const writeStatus =
 
 const getSharedStatus =
   () => {
-    const status =
-      readJson(
-        STATUS_FILE
-      );
-
-    if (
-      !status
-    ) {
-      return {
-        ready:
-          false,
-
-        state:
-          "NOT_STARTED",
-
-        qr:
-          null,
-
-        ownerPid:
-          null,
-      };
+    const status = readJson(STATUS_FILE);
+    const owner = readJson(OWNER_LOCK_FILE);
+    if (!owner || !isPidAlive(owner.pid) || !freshTimestamp(owner.heartbeatAt) ||
+        Number(status?.ownerPid) !== Number(owner.pid) || status?.ownerToken !== owner.token || !owner.token) {
+      return { ready: false, state: "NO_OWNER", qr: null, ownerPid: null };
     }
+    if (!freshTimestamp(status?.updatedAt)) {
+      return { ready: false, state: "STALE_STATUS", qr: null, ownerPid: owner.pid };
+    }
+    return { ...status, ready: status.state === "CONNECTED" && status.ready === true };
 
-    return status;
   };
 
 /* =========================================================
@@ -411,25 +426,8 @@ const hasFreshOwner =
       return false;
     }
 
-    const heartbeatTime =
-      new Date(
-        owner.heartbeatAt ||
-        owner.startedAt
-      ).getTime();
+    return freshTimestamp(owner.heartbeatAt);
 
-    if (
-      !Number.isFinite(
-        heartbeatTime
-      )
-    ) {
-      return false;
-    }
-
-    return (
-      Date.now() -
-        heartbeatTime <
-      OWNER_STALE_MS
-    );
   };
 
 const startOwnerHeartbeat =
@@ -440,37 +438,18 @@ const startOwnerHeartbeat =
       return;
     }
 
-    const update =
-      () => {
-        if (
-          !isOwner
-        ) {
-          return;
+    const update = () => {
+      if (!isOwner) return;
+      try {
+        ownership.heartbeat();
+        if (ensureCurrentOwnership()) {
+          writeStatus(connectionState, { user: sock?.user?.id || null });
         }
-
-        const existing =
-          readJson(
-            OWNER_LOCK_FILE
-          );
-
-        writeJson(
-          OWNER_LOCK_FILE,
-          {
-            pid:
-              process.pid,
-
-            startedAt:
-              existing
-                ?.startedAt ||
-              new Date()
-                .toISOString(),
-
-            heartbeatAt:
-              new Date()
-                .toISOString(),
-          }
-        );
-      };
+      } catch (error) {
+        console.error("BAILEYS HEARTBEAT ERROR =>", error.message);
+        ensureCurrentOwnership();
+      }
+    };
 
     update();
 
@@ -484,126 +463,24 @@ const startOwnerHeartbeat =
       .unref?.();
   };
 
-const acquireOwnership =
-  () => {
-    ensureDirectory(
-      BAILEYS_RUNTIME_PATH
-    );
+const acquireOwnership = () => {
+  ensureDirectory(BAILEYS_RUNTIME_PATH);
+  if (isOwner && ensureCurrentOwnership()) return true;
+  if (!ownership.acquire()) return false;
+  isOwner = true;
+  startOwnerHeartbeat();
+  return true;
+};
 
-    if (
-      isOwner
-    ) {
-      return true;
-    }
-
-    const existing =
-      readJson(
-        OWNER_LOCK_FILE
-      );
-
-    if (
-      existing &&
-      hasFreshOwner()
-    ) {
-      return (
-        Number(
-          existing.pid
-        ) ===
-        Number(
-          process.pid
-        )
-      );
-    }
-
-    removeFile(
-      OWNER_LOCK_FILE
-    );
-
-    writeJson(
-      OWNER_LOCK_FILE,
-      {
-        pid:
-          process.pid,
-
-        startedAt:
-          new Date()
-            .toISOString(),
-
-        heartbeatAt:
-          new Date()
-            .toISOString(),
-      }
-    );
-
-    const verification =
-      readJson(
-        OWNER_LOCK_FILE
-      );
-
-    if (
-      Number(
-        verification?.pid
-      ) !==
-      Number(
-        process.pid
-      )
-    ) {
-      return false;
-    }
-
-    isOwner =
-      true;
-
-    console.log(
-      "BAILEYS OWNERSHIP ACQUIRED =>",
-      process.pid
-    );
-
-    startOwnerHeartbeat();
-
-    return true;
-  };
-
-const releaseOwnership =
-  () => {
-    if (
-      !isOwner
-    ) {
-      return;
-    }
-
-    const owner =
-      readJson(
-        OWNER_LOCK_FILE
-      );
-
-    if (
-      Number(
-        owner?.pid
-      ) ===
-      Number(
-        process.pid
-      )
-    ) {
-      removeFile(
-        OWNER_LOCK_FILE
-      );
-    }
-
-    if (
-      ownerHeartbeatTimer
-    ) {
-      clearInterval(
-        ownerHeartbeatTimer
-      );
-
-      ownerHeartbeatTimer =
-        null;
-    }
-
-    isOwner =
-      false;
-  };
+const releaseOwnership = () => {
+  if (!isOwner) return;
+  try { ownership.release(); }
+  finally {
+    if (ownerHeartbeatTimer) clearInterval(ownerHeartbeatTimer);
+    ownerHeartbeatTimer = null;
+    isOwner = false;
+  }
+};
 
 /* =========================================================
    RECONNECT
@@ -614,18 +491,13 @@ const scheduleReconnect =
     delay =
       RECONNECT_DELAY_MS
   ) => {
-    if (
-      reconnectTimer
-    ) {
-      return;
-    }
-
+    if (!ensureCurrentOwnership() || reconnectTimer) return;
+    const generation = lifecycleGeneration;
     reconnectTimer =
       setTimeout(
         async () => {
-          reconnectTimer =
-            null;
-
+          reconnectTimer = null;
+          if (generation !== lifecycleGeneration || !ensureCurrentOwnership()) return;
           try {
             await initBaileysClient();
           } catch (
@@ -651,12 +523,13 @@ const scheduleReconnect =
 
    IMPORTANT:
    Only call this when WhatsApp explicitly reports
-   DisconnectReason.loggedOut, or when the QR page requests
-   a fresh pairing while status is already LOGGED_OUT.
+   DisconnectReason.loggedOut in the current owning socket.
+   Shared status and QR-page requests never authorize auth deletion.
 ========================================================= */
 
 const clearLoggedOutAuth =
-  async () => {
+  async (reason) => {
+    if (!baileysModule?.DisconnectReason || reason !== baileysModule.DisconnectReason.loggedOut || !ensureCurrentOwnership()) return;
     if (
       isResettingAuth
     ) {
@@ -682,19 +555,9 @@ const clearLoggedOutAuth =
           null;
       }
 
-      if (
-        sock
-      ) {
-        try {
-          sock.ws?.close?.();
-        } catch (
-          error
-        ) {}
-
-        sock =
-          null;
-      }
-
+      const old = sock; sock = null;
+      try { old?.ws?.close?.(); } catch (error) {}
+      if (!ensureCurrentOwnership()) return;
       isConnecting =
         false;
 
@@ -728,30 +591,9 @@ const clearLoggedOutAuth =
    Used by /qr when current state is LOGGED_OUT.
 ========================================================= */
 
-const startFreshQrSession =
-  async () => {
-    /*
-     * Only the owner process is allowed to modify
-     * the auth directory.
-     */
-    if (
-      !acquireOwnership()
-    ) {
-      console.log(
-        "BAILEYS FRESH QR SKIPPED - ANOTHER WORKER OWNS CONNECTION"
-      );
-
-      return null;
-    }
-
-    await clearLoggedOutAuth();
-
-    await sleep(
-      500
-    );
-
-    return initBaileysClient();
-  };
+// Preserve the compatibility entry point, but never clear auth on an HTTP
+// request or on the strength of shared status alone. Only explicit logout does.
+const startFreshQrSession = async () => initBaileysClient();
 
 /* =========================================================
    INITIALIZE
@@ -783,8 +625,9 @@ const initBaileysClient =
       return sock;
     }
 
-    isConnecting =
-      true;
+    const generation = lifecycleGeneration;
+    const stillCurrent = () => generation === lifecycleGeneration && ensureCurrentOwnership();
+    isConnecting = true;
 
     latestQr =
       null;
@@ -798,8 +641,8 @@ const initBaileysClient =
         BAILEYS_AUTH_PATH
       );
 
-      const baileys =
-        await loadBaileys();
+      const baileys = await loadBaileys();
+      if (!stillCurrent()) return null;
 
       const {
         default:
@@ -822,12 +665,14 @@ const initBaileysClient =
         await useMultiFileAuthState(
           BAILEYS_AUTH_PATH
         );
+      if (!stillCurrent()) return null;
 
       const {
         version,
       } =
         await fetchLatestWaWebVersion();
 
+      if (!stillCurrent()) return null;
       console.log(
         "BAILEYS WA VERSION =>",
         version.join(".")
@@ -881,7 +726,11 @@ const initBaileysClient =
 
       newSock.ev.on(
         "creds.update",
-        saveCreds
+        async () => {
+          if (sock !== newSock || !stillCurrent()) return;
+          try { await saveCreds(); }
+          catch (error) { console.error("BAILEYS SAVE CREDS ERROR =>", error.message); }
+        }
       );
 
       /* =====================================================
@@ -899,6 +748,7 @@ const initBaileysClient =
             qr,
           } =
             update;
+          if (sock !== newSock || !stillCurrent()) return;
 
           /*
            * QR RECEIVED
@@ -945,12 +795,10 @@ const initBaileysClient =
             connection ===
             "open"
           ) {
-            latestQr =
-              null;
-
-            isConnecting =
-              false;
-
+            latestQr = null;
+            isConnecting = false;
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            reconnectTimer = null;
             writeStatus(
               "CONNECTED",
               {
@@ -1036,7 +884,7 @@ const initBaileysClient =
               );
 
               try {
-                await clearLoggedOutAuth();
+                await clearLoggedOutAuth(DisconnectReason.loggedOut);
 
                 scheduleReconnect(
                   QR_RECONNECT_DELAY_MS
@@ -1100,19 +948,17 @@ const initBaileysClient =
        * Socket creation is complete, but connection
        * may still be CONNECTING / QR_REQUIRED.
        */
-      isConnecting =
-        false;
-
       return newSock;
     } catch (
       error
     ) {
-      isConnecting =
-        false;
+      if (!stillCurrent()) return null;
+      isConnecting = false;
 
-      sock =
-        null;
-
+      const failedSock = sock;
+      sock = null;
+      try { failedSock?.ws?.close?.(); }
+      catch (closeError) { console.error("BAILEYS SOCKET CLOSE ERROR =>", closeError.message); }
       writeStatus(
         "ERROR",
         {
@@ -1139,12 +985,11 @@ const initBaileysClient =
 const getBaileysStatus =
   () => {
     if (
-      isOwner
+      ensureCurrentOwnership()
     ) {
       return {
         ready:
-          connectionState ===
-          "CONNECTED",
+          connectionState === "CONNECTED" && Boolean(sock),
 
         state:
           connectionState,
@@ -1167,9 +1012,7 @@ const getBaileysStatus =
 const getBaileysSocket =
   () => {
     if (
-      connectionState !==
-        "CONNECTED" ||
-      !sock
+      !ensureCurrentOwnership() || connectionState !== "CONNECTED" || !sock
     ) {
       return null;
     }
@@ -1367,42 +1210,18 @@ const getParticipatingGroups =
    DISCONNECT WITHOUT LOGOUT
 ========================================================= */
 
-const disconnectBaileys =
-  async () => {
-    if (
-      reconnectTimer
-    ) {
-      clearTimeout(
-        reconnectTimer
-      );
-
-      reconnectTimer =
-        null;
-    }
-
-    if (
-      sock
-    ) {
-      try {
-        sock.ws?.close?.();
-      } catch (
-        error
-      ) {}
-    }
-
-    sock =
-      null;
-
-    latestQr =
-      null;
-
-    connectionState =
-      "DISCONNECTED";
-
-    writeStatus(
-      "DISCONNECTED"
-    );
-  };
+const disconnectBaileys = async () => {
+  if (!ensureCurrentOwnership()) return;
+  lifecycleGeneration++;
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+  const old = sock; sock = null;
+  isConnecting = false;
+  latestQr = null;
+  writeStatus("DISCONNECTED");
+  try { old?.ws?.close?.(); }
+  catch (error) { console.error("BAILEYS SOCKET CLOSE ERROR =>", error.message); }
+};
 
 /* =========================================================
    LOGOUT
@@ -1437,21 +1256,17 @@ const logoutBaileys =
    PROCESS CLEANUP
 ========================================================= */
 
-const cleanup =
-  () => {
-    if (
-      reconnectTimer
-    ) {
-      clearTimeout(
-        reconnectTimer
-      );
-
-      reconnectTimer =
-        null;
-    }
-
-    releaseOwnership();
-  };
+const cleanup = () => {
+  lifecycleGeneration++;
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+  const old = sock; sock = null;
+  isConnecting = false;
+  if (isOwner && ownsLock()) writeStatus("DISCONNECTED");
+  try { old?.ws?.close?.(); }
+  catch (error) { console.error("BAILEYS SOCKET CLOSE ERROR =>", error.message); }
+  finally { releaseOwnership(); }
+};
 
 process.once(
   "SIGTERM",
@@ -1496,4 +1311,6 @@ module.exports = {
   normalizePhoneJid,
 
   normalizeGroupJid,
+  isBaileysOwner: ensureCurrentOwnership,
+  hasActiveBaileysOwner: hasFreshOwner,
 };
