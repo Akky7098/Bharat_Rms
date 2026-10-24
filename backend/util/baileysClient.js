@@ -310,6 +310,7 @@ const freshTimestamp = value => {
 };
 const stopActingAsOwner = () => {
   lifecycleGeneration++;
+  messageOutbox.stop();
   isOwner = false;
   isConnecting = false;
   connectionState = "DISCONNECTED";
@@ -328,6 +329,12 @@ const ensureCurrentOwnership = () => {
   stopActingAsOwner();
   return false;
 };
+
+const messageOutbox = require("./baileysOutbox")({
+  directory: path.join(BAILEYS_RUNTIME_PATH, "message-outbox"),
+  getSocket: () => getBaileysSocket(),
+  isOwner: ensureCurrentOwnership,
+});
 
 /* =========================================================
    BAILEYS IMPORT
@@ -809,6 +816,7 @@ const initBaileysClient =
               }
             );
 
+            messageOutbox.start();
             console.log(
               "BAILEYS WHATSAPP CONNECTED"
             );
@@ -823,8 +831,8 @@ const initBaileysClient =
             connection ===
             "close"
           ) {
-            isConnecting =
-              false;
+            isConnecting = false;
+            messageOutbox.stop();
 
             if (
               sock ===
@@ -1024,6 +1032,14 @@ const getBaileysSocket =
    SEND TEXT
 ========================================================= */
 
+const sendBaileysMessage = async (jid, content) => {
+  const socket = getBaileysSocket();
+  if (socket) return socket.sendMessage(jid, content);
+  const status = getSharedStatus();
+  if (!status.ready) throw new Error(`Baileys WhatsApp is not connected (${status.state}).`);
+  return messageOutbox.enqueue(jid, content);
+};
+
 const sendTextMessage =
   async (
     jid,
@@ -1045,23 +1061,8 @@ const sendTextMessage =
       );
     }
 
-    const currentSock =
-      getBaileysSocket();
+    return sendBaileysMessage(jid, { text });
 
-    if (
-      !currentSock
-    ) {
-      throw new Error(
-        "Baileys WhatsApp is not connected."
-      );
-    }
-
-    return currentSock.sendMessage(
-      jid,
-      {
-        text,
-      }
-    );
   };
 
 /* =========================================================
@@ -1213,6 +1214,7 @@ const getParticipatingGroups =
 const disconnectBaileys = async () => {
   if (!ensureCurrentOwnership()) return;
   lifecycleGeneration++;
+  messageOutbox.stop();
   if (reconnectTimer) clearTimeout(reconnectTimer);
   reconnectTimer = null;
   const old = sock; sock = null;
@@ -1258,6 +1260,7 @@ const logoutBaileys =
 
 const cleanup = () => {
   lifecycleGeneration++;
+  messageOutbox.stop();
   if (reconnectTimer) clearTimeout(reconnectTimer);
   reconnectTimer = null;
   const old = sock; sock = null;
@@ -1297,6 +1300,7 @@ module.exports = {
   getBaileysSocket,
 
   sendTextMessage,
+  sendBaileysMessage,
 
   sendTextToPhone,
 

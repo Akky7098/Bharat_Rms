@@ -24,7 +24,7 @@ function fixture(t, fail = false) {
   source = source.replace(/await import\(\s*"@whiskeysockets\/baileys"\s*\)/, 'await Promise.resolve(mockBaileys)');
   vm.runInNewContext(source, {
     module, exports: module.exports, mockBaileys: mock,
-    require: name => name === 'pino' ? () => ({}) : name === './baileysOwnership' ? ownership : require(name),
+    require: name => name === 'pino' ? () => ({}) : name === './baileysOwnership' ? ownership : name === './baileysOutbox' ? () => ({ start() {}, stop() {}, enqueue: async () => ({ key: { id: 'forwarded' } }) }) : require(name),
     process: { pid: process.pid, env: { BAILEYS_RUNTIME_PATH: dir, BAILEYS_AUTH_PATH: path.join(dir, 'auth') }, kill: (...args) => process.kill(...args), once: (event, callback) => { hooks[event] = callback; } },
     console: { log() {}, error() {} },
     setInterval: callback => { const timer = { callback, unref() {} }; intervals.push(timer); return timer; }, clearInterval: timer => { timer.cancelled = true; },
@@ -227,4 +227,13 @@ test('two real Node workers cannot concurrently acquire the connection lock', { 
   const results = workers.map(worker => new Promise(resolve => worker.once('message', resolve)));
   workers.forEach(worker => worker.send('acquire'));
   assert.equal((await Promise.all(results)).filter(result => result.acquired).length, 1);
+});
+
+test('text send forwards to a connected owner when this worker has no socket', async t => {
+  const { api, dir } = fixture(t);
+  const owner = { pid: process.pid, token: 'remote-owner', heartbeatAt: new Date().toISOString() };
+  fs.writeFileSync(path.join(dir, 'owner.json'), JSON.stringify(owner));
+  fs.writeFileSync(path.join(dir, 'status.json'), JSON.stringify({ state: 'CONNECTED', ready: true, ownerPid: owner.pid, ownerToken: owner.token, updatedAt: new Date().toISOString() }));
+  assert.equal(api.getBaileysSocket(), null);
+  assert.equal((await api.sendTextMessage('test@g.us', 'mock-only')).key.id, 'forwarded');
 });

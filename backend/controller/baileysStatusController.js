@@ -3,6 +3,7 @@ const QRCode =
 
 const {
   getBaileysStatus,
+  isBaileysOwner,
   initBaileysClient,
   startFreshQrSession,
   getParticipatingGroups,
@@ -47,6 +48,8 @@ const getStatus =
             true,
 
           ...status,
+          workerPid: process.pid,
+          isConnectionOwner: isBaileysOwner(),
 
           /*
            * Never expose raw QR payload through

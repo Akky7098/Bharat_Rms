@@ -4,7 +4,7 @@ const path = require("path");
 const {
   sendTextToPhone,
   sendTextToGroup,
-  getBaileysSocket,
+  sendBaileysMessage,
   normalizePhoneJid,
   normalizeGroupJid,
 } = require("../util/baileysClient");
@@ -114,19 +114,6 @@ const getSafeFilePath = (filePath) => {
    BAILEYS CONNECTION CHECK
 ========================================================= */
 
-const getConnectedSocket = () => {
-  const socket =
-    getBaileysSocket();
-
-  if (!socket) {
-    throw new Error(
-      "Baileys WhatsApp is not connected."
-    );
-  }
-
-  return socket;
-};
-
 /* =========================================================
    SEND PDF DOCUMENT
 
@@ -143,9 +130,6 @@ const sendPdfDocument = async (
   caption,
   fileName = "Sales_Order.pdf"
 ) => {
-  const socket =
-    getConnectedSocket();
-
   if (
     !pdfFilePath ||
     !fs.existsSync(pdfFilePath)
@@ -169,7 +153,7 @@ const sendPdfDocument = async (
     );
   }
 
-  await socket.sendMessage(
+  await sendBaileysMessage(
     jid,
     {
       document:
@@ -509,10 +493,7 @@ const sendPlainWhatsappMessage =
         "@s.whatsapp.net"
       )
     ) {
-      const socket =
-        getConnectedSocket();
-
-      await socket.sendMessage(
+      await sendBaileysMessage(
         chatId,
         {
           text:
