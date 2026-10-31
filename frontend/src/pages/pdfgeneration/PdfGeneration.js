@@ -1,3 +1,4 @@
+import MobilePageSearch from "../../components/MobilePageSearch";
 import React, {
   useCallback,
   useEffect,
@@ -730,23 +731,10 @@ const PdfGeneration = ({
      DASHBOARD BACK
   ======================================================= */
 
-  const goDashboardModules =
-    () => {
-      if (
-        window
-          .__openDashboardModule
-      ) {
-        window
-          .__openDashboardModule(
-            "dashboard"
-          );
-
-        return;
-      }
-
-      window.location.href =
-        "/dashboard#dashboard";
-    };
+  const goDashboardModules = () => {
+    if (window.__goDashboardHome) window.__goDashboardHome();
+    else window.location.href = "/dashboard#dashboard";
+  };
 
   /* =======================================================
      RENDER
@@ -785,6 +773,7 @@ const PdfGeneration = ({
         </div>
 
         <div className="pdfgen-header-actions">
+          <MobilePageSearch target=".pdfgen-filter-search input" label="Search generated documents" />
           <button
             type="button"
             className={`pdfgen-refresh-btn ${

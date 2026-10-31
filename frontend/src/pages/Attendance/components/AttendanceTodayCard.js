@@ -1,3 +1,4 @@
+import { shortLeaveClock } from '../utils/shortLeave';
 import React from "react";
 
 import {
@@ -116,6 +117,8 @@ const AttendanceTodayCard = ({
             )}
           </b>
         </p>
+
+        {attendance?.shortLeave?.status === 'approved' && attendance.shortLeave.startTime && <p className="attendance-short-approved-window"><strong>Approved short leave:</strong> {shortLeaveClock(attendance.shortLeave.startTime)} – {shortLeaveClock(attendance.shortLeave.endTime)} IST · {attendance.shortLeave.minutes} minutes</p>}
 
         {/* ===================================================
             REGULARIZATION STATUS

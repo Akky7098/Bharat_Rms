@@ -1,3 +1,4 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import {
   useCallback,
   useEffect,
@@ -31,12 +32,12 @@ import MtcForm from "./MtcForm";
 //   "https://bharatspecialsteels.bharatspecialsteels.com";
 
 // LOCAL MTC TESTING
-const API_ORIGIN =
-  "http://localhost:5004";
+// const API_ORIGIN =
+//   "http://localhost:5004";
 
 // PRODUCTION
-// const API_ORIGIN =
-//   "https://bharatspecialsteels.bharatspecialsteels.com";
+const API_ORIGIN =
+  "https://bharatspecialsteels.bharatspecialsteels.com";
 
 const EMPTY_FILTERS = {
   companyName: "",
@@ -484,6 +485,7 @@ function MtcPage() {
 
         const response =
           await getMtcCertificates({
+            search: appliedFilters.search || "",
             companyName:
               appliedFilters.companyName ||
               "",
@@ -584,10 +586,13 @@ function MtcPage() {
         return false;
       }
 
+      const universal = String(filters.search || "").trim().toLowerCase();
+      if (universal && ![item.messers, item.customerName, item.companyName, item.orderNo, item.tcNo, item.invoiceNo, item.heatLotNo].some(value => String(value || "").toLowerCase().includes(universal))) return false;
       return true;
     });
   }, [
     mtcList,
+    filters.search,
     filters.companyName,
     filters.mtcProvider,
   ]);
@@ -1032,7 +1037,9 @@ function MtcPage() {
                 </p>
               </div>
 
-              <button
+              <MobilePageSearch moduleKey="mtc" value={filters.search || ""} onChange={search => { const next = { ...filters, search }; setFilters(next); fetchMtcList(next); }} suggestions={mtcList.flatMap(item => [item.companyName, item.messers, item.tcNo])} label="Search certificates" placeholder="Search company, TC, order or heat number…" />
+
+            <button
                 type="button"
                 className={`ios-mtc-refresh ${
                   refreshing

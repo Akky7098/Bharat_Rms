@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getDateKey } from '../utils/attendanceHelpers';
-import { shortLeaveDetails } from '../utils/shortLeave';
+import { shortLeaveDetails, plannedShortLeaveDetails } from '../utils/shortLeave';
 import useAttendanceDialog from '../hooks/useAttendanceDialog';
 import { getAttendanceLeaveSummary, getAttendanceList } from '../../../services/attendanceService';
 export const requestedLeaveUnits = (from, to, duration) => {
@@ -29,9 +29,7 @@ export default function LeaveModal({ state, setState, summary, onSubmit, employe
       if (!active) return;
       const record = response.data?.[0] || null;
       setAttendance({ date, record, loading: false, error: '' });
-      if (shortLeaveDetails(record, date).eligible) {
-        setState(previous => previous.fromDate === date ? { ...previous, leaveType: 'short_leave', duration: 'full_day', toDate: date } : previous);
-      }
+
     }).catch(error => { if (active) setAttendance({ date, record: null, loading: false, error: error?.response?.data?.message || 'Unable to load attendance for this date.' }); });
     return () => { active = false; };
   }, [state?.open, state?.fromDate, employeeId, setState]);
@@ -53,7 +51,9 @@ export default function LeaveModal({ state, setState, summary, onSubmit, employe
   const paid = state.leaveType === 'paid_leave';
   const short = state.leaveType === 'short_leave';
   const details = shortLeaveDetails(attendance.record, state.fromDate);
-  const shortReady = attendance.date === state.fromDate && !attendance.loading && !attendance.error && details.eligible;
+  const planned = short && state.shortLeaveMode !== 'attendance';
+  const plannedDetails = plannedShortLeaveDetails(state.fromDate, state.startTime ?? '09:30', state.endTime ?? '11:30');
+  const shortReady = planned ? plannedDetails.valid : attendance.date === state.fromDate && !attendance.loading && !attendance.error && details.eligible;
   const insufficient = paid && Number.isFinite(remaining) && units > remaining;
   const invalidRange = state.toDate < state.fromDate || (state.duration !== 'full_day' && state.fromDate !== state.toDate) || state.toDate?.slice(0, 4) !== year;
   const update = (field, value) => setState(previous => ({ ...previous, [field]: value, error: '' }));
@@ -69,13 +69,27 @@ export default function LeaveModal({ state, setState, summary, onSubmit, employe
         </div>}
         {!short && <p className="att-earned-policy">{year} allowance: {balance.earnedPaidLeave ?? '—'} earned of 12 maximum. One initial day, then one per 20 completed attendance days. Unused earned leave carries across months in this year.</p>}
         <fieldset disabled={!!state.submitting} className="att-request-fieldset"><div className="attendance-leave-grid">
-          <label>Leave type<select value={state.leaveType} onChange={event => setState(previous => ({ ...previous, leaveType: event.target.value, toDate: event.target.value === 'short_leave' ? previous.fromDate : previous.toDate, duration: event.target.value === 'short_leave' ? 'full_day' : previous.duration, error: '' }))}><option value="paid_leave">Paid leave</option><option value="loss_of_pay">Loss of Pay (LOP)</option><option value="short_leave">Short leave</option></select></label>
+          <label>Leave type<select value={state.leaveType} onChange={event => setState(previous => ({ ...previous, leaveType: event.target.value, shortLeaveMode: event.target.value === 'short_leave' ? 'planned' : previous.shortLeaveMode, startTime: previous.startTime || '09:30', endTime: previous.endTime || '11:30', toDate: event.target.value === 'short_leave' ? previous.fromDate : previous.toDate, duration: event.target.value === 'short_leave' ? 'full_day' : previous.duration, error: '' }))}><option value="paid_leave">Paid leave</option><option value="loss_of_pay">Loss of Pay (LOP)</option><option value="short_leave">Short leave</option></select></label>
           {!short && <label>Duration<select value={state.duration} onChange={event => setState(previous => ({ ...previous, duration: event.target.value, toDate: event.target.value === 'full_day' ? previous.toDate : previous.fromDate }))}><option value="full_day">Full day</option><option value="first_half">First half</option><option value="second_half">Second half</option></select></label>}
-          <label>{short ? "Attendance date" : "From date"}<input type="date" required max={short ? getDateKey(new Date()) : undefined} value={state.fromDate} onChange={event => setState(previous => ({ ...previous, fromDate: event.target.value, toDate: previous.leaveType === 'short_leave' || previous.duration !== 'full_day' || previous.toDate < event.target.value ? event.target.value : previous.toDate, error: '' }))}/></label>
+          {short && <label>Short leave basis<select value={planned ? 'planned' : 'attendance'} onChange={event => update('shortLeaveMode', event.target.value)}><option value="planned">Plan by date and time</option><option value="attendance">Use recorded checkout</option></select></label>}
+          <label>{short ? (planned ? "Short leave date" : "Attendance date") : "From date"}<input type="date" required min={planned ? getDateKey(new Date()) : undefined} max={short && !planned ? getDateKey(new Date()) : undefined} value={state.fromDate} onChange={event => setState(previous => ({ ...previous, fromDate: event.target.value, toDate: previous.leaveType === 'short_leave' || previous.duration !== 'full_day' || previous.toDate < event.target.value ? event.target.value : previous.toDate, error: '' }))}/></label>
           {!short && <label>To date<input type="date" required min={state.fromDate} max={`${year}-12-31`} value={state.toDate} disabled={state.duration !== 'full_day'} onChange={event => update('toDate', event.target.value)}/></label>}
         </div>
         {!short && <p className="att-earned-policy">{units} {units === 1 ? 'day' : 'days'} requested. Sundays are excluded. {state.leaveType === 'loss_of_pay' ? 'This is unpaid leave.' : ''}</p>}
-        {short && <section className="att-short-preview" aria-label="Short leave attendance">
+        {planned && <section className="att-short-preview" aria-label="Planned short leave">
+          <h4>Office hours · 9:30 AM–6:30 PM IST</h4>
+          <div className="att-short-presets">
+            {[['Late arrival', '09:30', '11:30'], ['Midday break', '12:00', '15:00'], ['Early departure', '16:00', '18:30']].map(([label, startTime, endTime]) => <button type="button" key={label} onClick={() => setState(previous => ({ ...previous, startTime, endTime, error: '' }))}>{label}</button>)}
+          </div>
+          <div className="attendance-leave-grid">
+            <label>Short leave starts<input type="time" required min="09:30" max="18:30" step="60" value={state.startTime ?? '09:30'} onChange={event => update('startTime', event.target.value)}/></label>
+            <label>Short leave ends<input type="time" required min="09:30" max="18:30" step="60" value={state.endTime ?? '11:30'} onChange={event => update('endTime', event.target.value)}/></label>
+          </div>
+          <p><strong>{plannedDetails.label}</strong> · {plannedDetails.duration}</p>
+          <p>Apply in advance; check-in and checkout are not required to request this time. Actual attendance is recorded separately.</p>
+          {plannedDetails.error && <p role="alert">{plannedDetails.error}</p>}
+        </section>}
+        {short && !planned && <section className="att-short-preview" aria-label="Short leave attendance">
           <h4>Short leave · {state.fromDate}</h4>
           {attendance.loading || attendance.date !== state.fromDate ? <p role="status">Loading attendance…</p> : attendance.error ? <p role="alert">{attendance.error}</p> : <>
             <dl><div><dt>Check in</dt><dd>{details.time(details.checkIn)}</dd></div><div><dt>Check out</dt><dd>{details.time(details.checkOut)}</dd></div><div><dt>Workday ends</dt><dd>6:30 PM</dd></div><div><dt>Short leave time</dt><dd>{details.duration}</dd></div></dl>
@@ -86,7 +100,7 @@ export default function LeaveModal({ state, setState, summary, onSubmit, employe
         {insufficient && <p className="att-request-error" role="alert">You have {remaining} earned paid days available. Reduce the dates or <button className="att-lop-switch" type="button" onClick={() => update('leaveType', 'loss_of_pay')}>apply for Loss of Pay</button>.</p>}
         <label className="attendance-leave-reason">Reason<textarea required rows={4} maxLength={2000} value={state.reason} onChange={event => update('reason', event.target.value)} placeholder="Tell MD Sir why you need leave"/></label>
         </fieldset>
-        <div className="regularize-actions"><button className="regularize-cancel-btn" type="button" onClick={close} disabled={state.submitting}>Cancel</button><button className="attendance-leave-submit-btn" type="submit" disabled={state.submitting || attendance.loading || (short ? !shortReady : invalidRange || !units) || !state.reason.trim() || insufficient || (paid && (loadingBalance || !liveBalance || !!balanceError))}>{state.submitting ? 'Submitting…' : 'Send for approval'}</button></div>
+        <div className="regularize-actions"><button className="regularize-cancel-btn" type="button" onClick={close} disabled={state.submitting}>Cancel</button><button className="attendance-leave-submit-btn" type="submit" disabled={state.submitting || (!planned && attendance.loading) || (short ? !shortReady : invalidRange || !units) || !state.reason.trim() || insufficient || (paid && (loadingBalance || !liveBalance || !!balanceError))}>{state.submitting ? 'Submitting…' : 'Send for approval'}</button></div>
       </form>
     </section>
   </div>;

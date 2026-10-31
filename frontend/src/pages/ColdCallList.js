@@ -1,3 +1,4 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { getAllColdCalls, getSalesPersons } from "../services/coldCallService";
 import "./ColdCallList.css";
@@ -30,6 +31,7 @@ const ColdCallList = ({ dashboardFilters, goDashboardHome }) => {
     const [filters, setFilters] = useState(() => ({
     page: 1,
     limit: 50,
+    search: "",
     salesPersonId: dashboardFilters?.salesPersonId || "",
     fromDate: dashboardFilters?.fromDate || "",
     toDate: dashboardFilters?.toDate || "",
@@ -114,6 +116,7 @@ const ColdCallList = ({ dashboardFilters, goDashboardHome }) => {
       fromDate: "",
       toDate: "",
       activityType: "",
+      search: "",
     });
   };
 
@@ -244,6 +247,8 @@ const ColdCallList = ({ dashboardFilters, goDashboardHome }) => {
               <p>Track calls, visits and email activities</p>
             </div>
 
+            <MobilePageSearch moduleKey="cold-call" value={filters.search || ""} onChange={search => setFilters(previous => ({ ...previous, search, page: 1 }))} label="Search calls and visits" placeholder="Search company, contact or phone…" />
+
             <button
               type="button"
               className={`ios-cold-refresh ${iosRefreshing ? "spinning" : ""}`}
@@ -270,6 +275,7 @@ const ColdCallList = ({ dashboardFilters, goDashboardHome }) => {
         <div className="ios-cold-content">
           <div className="ios-cold-filter-card">
             <h3>Activity Filter</h3>
+
 
             <div className="ios-cold-chip-row">
               {activityOptions.map((item) => {

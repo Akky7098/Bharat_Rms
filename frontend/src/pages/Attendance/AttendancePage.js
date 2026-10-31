@@ -1,3 +1,4 @@
+import MobilePageSearch from "../../components/MobilePageSearch";
 import React, {
   useCallback,
   useMemo,
@@ -2105,9 +2106,9 @@ const handleCheckIn =
 
   const rejectReg =
     async (
-      attendance
+      attendance, suppliedReason
     ) => {
-      const reason =
+      const reason = suppliedReason !== undefined ? suppliedReason :
         window.prompt(
           "Rejection reason:"
         );
@@ -2161,7 +2162,7 @@ const handleCheckIn =
 
       try {
         if (leaveModal.leaveType === "short_leave") {
-          await applyShortLeave({ fromDate: leaveModal.fromDate, reason: leaveModal.reason.trim() });
+          await applyShortLeave({ fromDate: leaveModal.fromDate, reason: leaveModal.reason.trim(), shortLeaveMode: leaveModal.shortLeaveMode || 'planned', ...(leaveModal.shortLeaveMode !== 'attendance' ? { startTime: leaveModal.startTime ?? '09:30', endTime: leaveModal.endTime ?? '11:30' } : {}) });
         } else await applyAttendanceLeave({
           leaveType:
             leaveModal
@@ -2641,7 +2642,7 @@ const handleCheckIn =
   const approvalRequests = useAttendanceRequests(user, refreshAll, attendanceList);
   const approvalQueueItems = [...approvalRequests.items, ...pendingRegs];
   const approveQueueItem = item => item.requestKind ? approvalRequests.decide(item, "approve") : approveReg(item);
-  const rejectQueueItem = item => item.requestKind ? approvalRequests.decide(item, "reject") : rejectReg(item);
+  const rejectQueueItem = (item, reason) => item.requestKind ? approvalRequests.decide(item, "reject", reason) : rejectReg(item, reason);
   const approvalQueue = <RegularizationQueue
     items={approvalQueueItems} actionLoading={approvalRequests.busy ? approvalRequests.busy.split(":").slice(1).join(":") : actionLoading}
     onApprove={approveQueueItem} onReject={rejectQueueItem}
@@ -2694,6 +2695,8 @@ const handleCheckIn =
                 WFH and location audit
               </p>
             </div>
+
+            <MobilePageSearch target="#attendance-employee-filter, #attendance-month-filter" label="Search attendance by employee and period" />
 
             <button
               type="button"

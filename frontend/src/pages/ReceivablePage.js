@@ -1,3 +1,4 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -81,7 +82,7 @@ function ReceivablePage() {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.page, filters.riskStatus, filters.paymentStatus]);
+  }, [filters.page, filters.riskStatus, filters.paymentStatus, filters.companyName]);
 
   const handleSearch = () => {
     setFilters((prev) => ({ ...prev, page: 1 }));
@@ -168,6 +169,8 @@ function ReceivablePage() {
               <h2>Receivables</h2>
               <span>Customer outstanding, overdue and risk tracking</span>
             </div>
+
+            <MobilePageSearch moduleKey="receivables" value={filters.companyName || ""} onChange={companyName => setFilters(previous => ({ ...previous, companyName, page: 1 }))} label="Search receivables" placeholder="Search customer name…" />
 
             <button type="button" className="rcv-pwa-refresh" onClick={loadData}>
               ↻

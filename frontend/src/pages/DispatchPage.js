@@ -1,8 +1,10 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
   useState,
+  useRef,
 } from "react";
 import "./Dispatch.css";
 import DispatchForm from "./DispatchForm";
@@ -276,7 +278,9 @@ const getDueDateTrackingRemark = (
 };
 
 
+const dispatchLoadSequence = useRef(0);
 const loadDispatches = useCallback(async () => {
+  const sequence = ++dispatchLoadSequence.current;
   try {
     setLoading(true);
 
@@ -293,6 +297,7 @@ const loadDispatches = useCallback(async () => {
     });
 
     const response = await getDispatches(cleanFilters);
+    if (sequence !== dispatchLoadSequence.current) return;
 
     setDispatches(response?.data || []);
 
@@ -326,12 +331,13 @@ const loadDispatches = useCallback(async () => {
       }
     );
   } catch (error) {
+    if (sequence !== dispatchLoadSequence.current) return;
     alert(
       error.response?.data?.message ||
         "Failed to load dispatch data"
     );
   } finally {
-    setLoading(false);
+    if (sequence === dispatchLoadSequence.current) setLoading(false);
   }
 }, [filters]);
 
@@ -1076,7 +1082,9 @@ const renderInsights = (mode = "desktop") => {
                 <p>Bill, LR and payment follow-up</p>
               </div>
 
-              <button
+              <MobilePageSearch moduleKey="dispatch" value={filters.search || ""} onChange={search => setFilters(previous => ({ ...previous, search, page: 1 }))} suggestions={dispatches.flatMap(item => [item.companyName, item.invoiceNumber])} label="Search dispatch" placeholder="Search company, invoice, contact or LR…" />
+
+            <button
                 type="button"
                 className={`ios-dispatch-refresh ${refreshing ? "spinning" : ""}`}
                 onClick={refreshDispatches}

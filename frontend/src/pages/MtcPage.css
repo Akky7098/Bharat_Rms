@@ -805,4 +805,6 @@
   .ios-mtc-card-provider-sbe_germany {
     border-left-color: #f79009;
   }
+}@media (max-width: 768px) {
+  .ios-mtc-header-row { grid-template-columns: 34px minmax(0, 1fr) 40px 34px; }
 }

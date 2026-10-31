@@ -6442,3 +6442,58 @@
     overflow: hidden !important;
   }
 }
+
+/* Database reports: readable type, restrained cards and compact next questions. */
+.bharat-ai-panel.bharat-ai-panel-next {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f8fafc;
+  color: #172b3a;
+  -webkit-font-smoothing: antialiased;
+}
+.bharat-ai-panel .bharat-ai-response-content {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #334155;
+  overflow-wrap: anywhere;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px 16px 16px 16px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .025);
+}
+.bharat-ai-panel .bharat-ai-response-content p { margin: 0 0 10px; }
+.bharat-ai-panel .bharat-ai-response-content p:last-child { margin-bottom: 0; }
+.bharat-ai-panel .bharat-ai-response-content h4 { font-size: 15px; line-height: 1.5; color: #0f3e40; margin: 20px 0 10px; }
+.bharat-ai-panel .bharat-ai-report-scope {
+  display: inline-flex; background: #ecfdf5; color: #16614a; border: 1px solid #d1fae5;
+  padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 650; margin-bottom: 14px;
+}
+.bharat-ai-panel .bharat-ai-report-metric {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 18px;
+  padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px;
+}
+.bharat-ai-panel .bharat-ai-report-metric strong { color: #0f172a; font-size: 15px; font-variant-numeric: tabular-nums; text-align: right; }
+.bharat-ai-panel .bharat-ai-assistant-name { font-size: 12px; font-weight: 650; color: #475569; margin-bottom: 9px; }
+.bharat-ai-panel .bharat-ai-message-time { font-size: 11px; color: #64748b; margin-top: 8px; }
+.bharat-ai-panel .bharat-ai-user-bubble { font-size: 14px; line-height: 1.6; background: #123c43; box-shadow: none; }
+.bharat-ai-panel .bharat-ai-inline-suggestions-modern { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.bharat-ai-panel .bharat-ai-inline-suggestions-modern button {
+  width: auto; flex: 0 1 auto; padding: 7px 10px; border-radius: 8px;
+  font-size: 11px; line-height: 1.4; color: #475569; background: #fff; border: 1px solid #e2e8f0;
+}
+.bharat-ai-panel .bharat-ai-inline-suggestions-modern button:hover { background: #f0fdfa; border-color: #99c7bd; padding-left: 10px; }
+.bharat-ai-panel textarea { font: inherit; font-size: 14px; line-height: 1.6; }
+@media (max-width: 600px) {
+  .bharat-ai-panel .bharat-ai-response-content { padding: 13px; font-size: 14px; }
+  .bharat-ai-panel .bharat-ai-assistant-row { gap: 7px; }
+  .bharat-ai-panel .bharat-ai-assistant-avatar { width: 26px; height: 26px; flex-basis: 26px; }
+  .bharat-ai-panel .bharat-ai-report-metric { gap: 10px; }
+}
+
+.bharat-ai-panel .bharat-ai-response-content .bharat-ai-record-heading {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+  margin-top: 20px;
+  font-weight: 650;
+  line-height: 1.6;
+}

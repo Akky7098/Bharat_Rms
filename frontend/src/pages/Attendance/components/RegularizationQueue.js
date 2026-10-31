@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
+import { shortLeaveClock } from "../utils/shortLeave";
+import AttendanceDecisionModal from "./AttendanceDecisionModal";
 
 import {
   formatDate,
@@ -13,13 +15,14 @@ const RegularizationQueue = ({
   requestError = "",
   requestNotice = "",
 }) => {
+  const [decision, setDecision] = useState(null);
+
   /* =========================================================
      EMPTY QUEUE
   ========================================================= */
 
   if (
-    !Array.isArray(items) ||
-    (items.length === 0 && !requestError && !requestNotice)
+    !Array.isArray(items)
   ) {
     return null;
   }
@@ -28,31 +31,8 @@ const RegularizationQueue = ({
      SAFE HANDLERS
   ========================================================= */
 
-  const handleApprove = (
-    attendance
-  ) => {
-    if (
-      typeof onApprove ===
-      "function"
-    ) {
-      onApprove(
-        attendance
-      );
-    }
-  };
-
-  const handleReject = (
-    attendance
-  ) => {
-    if (
-      typeof onReject ===
-      "function"
-    ) {
-      onReject(
-        attendance
-      );
-    }
-  };
+  const handleApprove = attendance => { if (!actionLoading) setDecision({ item: attendance, action: "approve" }); };
+  const handleReject = attendance => { if (!actionLoading) setDecision({ item: attendance, action: "reject" }); };
 
   /* =========================================================
      RENDER
@@ -60,6 +40,7 @@ const RegularizationQueue = ({
 
   return (
     <section className="attendance-admin-card">
+      {decision && <AttendanceDecisionModal item={decision.item} action={decision.action} onClose={() => setDecision(null)} onConfirm={decision.action === "approve" ? onApprove : onReject} />}
       {/* =====================================================
           HEADER
       ====================================================== */}
@@ -89,6 +70,9 @@ const RegularizationQueue = ({
 
       {requestError && <p className="att-request-error" role="alert">{requestError}</p>}
       {requestNotice && <p className="att-request-notice" role="status">{requestNotice}</p>}
+      {items.length === 0 && !requestError && (
+        <p className="empty-state" role="status">No pending attendance requests.</p>
+      )}
       <div className="regularization-request-grid">
         {items.map(
           (
@@ -144,6 +128,7 @@ const RegularizationQueue = ({
                 =========================================== */}
 
                 <div className="regularization-request-info">
+                  {attendance.requestKind === "short-leave" && attendance.startTime && <p><b>Requested time:</b> {shortLeaveClock(attendance.startTime)} – {shortLeaveClock(attendance.endTime)} IST · {attendance.shortLeaveMinutes} minutes</p>}
                   {!attendance.requestKind && <><p>
                     <b>
                       Requested In:

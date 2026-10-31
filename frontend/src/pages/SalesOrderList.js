@@ -1,3 +1,4 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import { getSalesOrderPeriods } from "../utils/salesOrderPeriods";
 import React, {
   useCallback,
@@ -19,6 +20,8 @@ import {
   deleteSalesOrder,
 } from "../services/salesOrderService";
 import "./SalesOrderList.css";
+import "./SalesOrderPremium.css";
+import { ArrowLeft, RefreshCw, Plus, SlidersHorizontal } from "lucide-react";
 import SalesOrderForm from "./SalesOrderForm";
 
 const BACKEND_URL =
@@ -53,10 +56,7 @@ const isSalesPerson = userRole === "user";
    const [showIosFilters, setShowIosFilters] =
   useState(false);
 
-const [
-  showIosCompanySearch,
-  setShowIosCompanySearch,
-] = useState(false);
+
 
 const [selectedOrderDetail, setSelectedOrderDetail] =
   useState(null);
@@ -1071,7 +1071,7 @@ const renderOrderActions = (order, mode = "desktop") => {
 };
 
   return (
-    <div className={`sales-order-page-root ${canViewSalesPersonFilter ? "admin-view" : "user-view"}`}>
+    <div className={`sales-order-page-root sales-premium ${canViewSalesPersonFilter ? "admin-view" : "user-view"}`}>
       <div className="sales-order-pwa-shell">
         <div className="ios-sales-page">
           <div className="ios-sales-header ios-sales-header-compact">
@@ -1082,7 +1082,7 @@ const renderOrderActions = (order, mode = "desktop") => {
       onClick={goDashboardModules}
       aria-label="Back to dashboard"
     >
-      ‹
+      <ArrowLeft size={19} strokeWidth={1.8} />
     </button>
 
     <div className="ios-sales-header-copy">
@@ -1096,23 +1096,7 @@ const renderOrderActions = (order, mode = "desktop") => {
     </div>
 
     <div className="ios-sales-header-actions">
-      <button
-        type="button"
-        className={`ios-sales-search-btn ${
-          showIosCompanySearch
-            ? "active"
-            : ""
-        }`}
-        onClick={() =>
-          setShowIosCompanySearch(
-            (previous) => !previous
-          )
-        }
-        aria-label="Search company"
-        title="Search company"
-      >
-        ⌕
-      </button>
+      <MobilePageSearch moduleKey="sales-order" value={filters.companyName || ""} onChange={companyName => setFilters(previous => ({ ...previous, companyName, page: 1 }))} suggestions={salesOrders.map(order => order.companyName)} label="Search sales orders" placeholder="Search company name..." />
 
       <button
         type="button"
@@ -1125,47 +1109,12 @@ const renderOrderActions = (order, mode = "desktop") => {
         disabled={iosRefreshing}
         aria-label="Refresh sales orders"
       >
-        ↻
+        <RefreshCw size={18} strokeWidth={1.8} />
       </button>
     </div>
   </div>
 
-  {showIosCompanySearch && (
-    <div className="ios-sales-company-search">
-      <span className="ios-sales-search-icon">
-        ⌕
-      </span>
 
-      <input
-        type="search"
-        name="companyName"
-        value={
-          filters.companyName || ""
-        }
-        onChange={handleFilterChange}
-        placeholder="Search company name..."
-        autoFocus
-        disabled={actionSubmitting}
-      />
-
-      {filters.companyName && (
-        <button
-          type="button"
-          className="ios-sales-search-clear"
-          onClick={() =>
-            setFilters((previous) => ({
-              ...previous,
-              companyName: "",
-              page: 1,
-            }))
-          }
-          aria-label="Clear company search"
-        >
-          ×
-        </button>
-      )}
-    </div>
-  )}
 </div>
 
          <div className="ios-sales-content">
@@ -1264,7 +1213,7 @@ const renderOrderActions = (order, mode = "desktop") => {
     className="ios-sales-new-btn ios-sales-new-btn-content"
     onClick={openNewForm}
   >
-    + New Sales Order
+    <Plus size={18} strokeWidth={2} aria-hidden="true" /> New Sales Order
   </button>
 
   <div className="ios-sales-tab-card">
@@ -1309,7 +1258,7 @@ const renderOrderActions = (order, mode = "desktop") => {
       setShowIosFilters(true)
     }
   >
-    <span>☷</span>
+    <SlidersHorizontal size={15} strokeWidth={1.8} aria-hidden="true" />
     More Filters
   </button>
 
@@ -1451,7 +1400,7 @@ const renderOrderActions = (order, mode = "desktop") => {
                                    <div
                     key={order._id}
                     className="ios-sales-card sales-click-row"
-                    style={{ borderLeftColor: meta.border }}
+                    style={{ borderLeftColor: meta.border, "--sales-status-color": meta.border }}
                     onClick={() => openOrderDetail(order)}
                   >
                     <div className="ios-sales-card-top">

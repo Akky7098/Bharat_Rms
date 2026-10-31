@@ -1,3 +1,4 @@
+import MobilePageSearch from "../../components/MobilePageSearch";
 import React, {
   useCallback,
   useEffect,
@@ -64,7 +65,7 @@ const setTrackingIdInUrl = (
   }
 
   window.history.pushState(
-    {},
+    { ...window.history.state, rmsTrackingDetail: true },
     "",
     url
   );
@@ -579,6 +580,10 @@ const OrderTrackingPage = ({
 
   const closeTracking =
     () => {
+      if (window.history.state?.rmsTrackingDetail) {
+        window.history.back();
+        return;
+      }
       const url =
         new URL(
           window.location.href
@@ -589,7 +594,7 @@ const OrderTrackingPage = ({
       );
 
       window.history.replaceState(
-        {},
+        { ...window.history.state, rmsTrackingDetail: false },
         "",
         url
       );
@@ -901,7 +906,9 @@ const OrderTrackingPage = ({
 
         {/* REFRESH */}
 
-        <button
+        <MobilePageSearch target=".ot-search input" label="Search customer, PO, SO or material" />
+
+            <button
           type="button"
           className="
             ot-btn
@@ -985,7 +992,7 @@ const OrderTrackingPage = ({
 
           {/* SEARCH */}
 
-          <div className="ot-search">
+          <div className="ot-search mobile-search-original">
 
             <Search
               size={17}

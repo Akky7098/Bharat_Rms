@@ -15,8 +15,12 @@ import axios from "axios";
    Uncomment this on production and comment local URL above.
 ========================================================= */
 
-const BHARAT_AI_API_URL =
-  "https://bharatspecialsteels.bharatspecialsteels.com/api/bharat-ai";
+// Production endpoint retained for switching back after local verification:
+// "https://bharatspecialsteels.bharatspecialsteels.com/api/bharat-ai"
+const BHARAT_AI_API_URL = process.env.REACT_APP_BHARAT_CHAT_API_URL ||
+  (process.env.NODE_ENV === "production"
+    ? "https://bharatspecialsteels.bharatspecialsteels.com/api/bharat-ai"
+    : "http://localhost:5000/api/bharat-ai");
 
 /* =========================================================
    TOKEN

@@ -1,3 +1,4 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import HouseSalesOrderDetail from "../components/HouseSalesOrderDetail";
 import React, {
   useCallback,
@@ -4392,14 +4393,12 @@ useEffect(() => {
     existingState?.managementOrderAnalysis;
 
   /*
-   * If this browser entry does not already belong to
-   * Management Analysis, ADD a new entry.
-   *
-   * This preserves Sales Order / Dashboard / whatever page
-   * the user came from underneath this entry.
+   * Mark the existing module entry as the overview. Adding another
+   * overview entry would make Back appear to stay on the same screen.
+   * Nested analysis views still push their own entries.
    */
   if (!existingManagementState) {
-    window.history.pushState(
+    window.history.replaceState(
       {
         ...existingState,
 
@@ -5157,6 +5156,10 @@ const applyFilters =
 
   const handleHeaderBack = () => {
   detailRequestId.current += 1;
+  if (view === "overview" && typeof goDashboardHome === "function") {
+    goDashboardHome();
+    return;
+  }
 
   /*
    * Every level uses real browser history.
@@ -5358,6 +5361,7 @@ const applyFilters =
   )}
 
   <div className="moa-unified-header-actions">
+    <MobilePageSearch target=".management-order-analysis .moa-search input, .management-order-analysis .moa-small-search input, .management-order-analysis .moa-mill-order-search input, .management-order-analysis input[placeholder*='Search company']" label="Search current analysis" />
     {view ===
       "house" && (
       <button

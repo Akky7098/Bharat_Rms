@@ -1,16 +1,6 @@
 import axios from "axios";
 
 // Production API by default; explicit hosting environment overrides remain supported.
-const BASE_URL = "http://localhost:5000";
-
-/*
- * PRODUCTION
- *
- * Production backend.
- *
- * REACT_APP_BACKEND_URL can override this when required.
- */
-
 const BASE_URL =
   process.env.REACT_APP_BACKEND_URL ||
   "https://bharatspecialsteels.bharatspecialsteels.com";

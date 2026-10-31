@@ -5,6 +5,9 @@ import React, {
 } from "react";
 
 import "./Dashboard.css";
+import "./DashboardLauncher.css";
+import MobilePageSearch from "../components/MobilePageSearch";
+import { syncModuleHistory, returnToModuleLauncher } from "../utils/moduleNavigation";
 
 import {
   LogOut,
@@ -12,6 +15,10 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  LayoutDashboard, CalendarCheck2, ClipboardList, ShoppingBag, Truck,
+  ChartNoAxesCombined, PackageSearch, Timer, Wallet, PhoneCall,
+  FolderOpen, FileBadge2, ListTodo, Headset, Files, ChevronRight,
+
 } from "lucide-react";
 
 import DashboardHome from "./DashboardHome";
@@ -51,7 +58,18 @@ import {
   disablePushNotifications,
 } from "../services/pushNotificationService";
 
+import "./ModulePremium.css";
+
+const launcherIcons = {
+  dashboard: LayoutDashboard, attendance: CalendarCheck2, sheet: ClipboardList,
+  salesOrder: ShoppingBag, dispatch: Truck, managementAnalysis: ChartNoAxesCombined,
+  orderTracking: PackageSearch, timesheet: Timer, receivables: Wallet,
+  coldCall: PhoneCall, documents: FolderOpen, mtc: FileBadge2,
+  support: ListTodo, itSupport: Headset, pdfGenerator: Files,
+};
+
 function Dashboard() {
+  const [moduleSearch, setModuleSearch] = useState("");
   /* =========================================================
      USER
   ========================================================= */
@@ -564,6 +582,7 @@ if (
 
         itSupport:
           "it-support",
+        pdfGenerator: "pdf-generator",
       };
 
       const targetHash =
@@ -572,44 +591,7 @@ if (
         ] ||
         "dashboard";
 
-      const currentRawHash =
-        window.location.hash.replace(
-          "#",
-          ""
-        );
-
-      const currentModule =
-        currentRawHash.split(
-          "?"
-        )[0];
-
-      const currentQuery =
-        currentRawHash.includes(
-          "?"
-        )
-          ? `?${
-              currentRawHash.split(
-                "?"
-              )[1]
-            }`
-          : "";
-
-      const shouldKeepDashboardQuery =
-        currentModule ===
-          targetHash &&
-        currentQuery.includes(
-          "source=dashboard"
-        );
-
-      window.history.replaceState(
-        null,
-        "",
-        `/dashboard#${targetHash}${
-          shouldKeepDashboardQuery
-            ? currentQuery
-            : ""
-        }`
-      );
+      syncModuleHistory(targetHash);
 
       localStorage.setItem(
         "activeModule",
@@ -693,6 +675,7 @@ if (
   () => {
     const handleHashChange =
       () => {
+        setModulePayload(null);
         setActive(
           getInitialActive()
         );
@@ -721,20 +704,16 @@ if (
      DASHBOARD MODULES
   ========================================================= */
 
-  const goDashboardModules =
-    () => {
-      setModulePayload(
-        null
-      );
+  const goDashboardModules = useCallback(() => {
+    setModulePayload(null);
+    setMobileMenuOpen(false);
+    returnToModuleLauncher(setActive);
+  }, []);
 
-      setActive(
-        "dashboard"
-      );
-
-      setMobileMenuOpen(
-        false
-      );
-    };
+  useEffect(() => {
+    window.__goDashboardHome = goDashboardModules;
+    return () => { delete window.__goDashboardHome; };
+  }, [goDashboardModules]);
 
   /* =========================================================
      LOGOUT
@@ -862,66 +841,6 @@ if (
       null
     );
 
-      const hashMap = {
-        dashboard:
-          "dashboard",
-
-        dashboardHome:
-          "dashboard-home",
-
-        attendance:
-          "attendance",
-
-        sheet:
-          "enquiry",
-
-        salesOrder:
-          "sales-order",
-
-          managementAnalysis:
-  "management-analysis",
-
-        dispatch:
-          "dispatch",
-
-        orderTracking:
-          "order-tracking",
-
-        timesheet:
-          "timesheet",
-
-        receivables:
-          "receivables",
-
-        coldCall:
-          "cold-call",
-
-        documents:
-          "documents",
-
-        mtc:
-          "mtc",
-
-        support:
-          "support",
-
-        itSupport:
-          "it-support",
-          pdfGenerator:
-  "pdf-generator",
-      };
-
-      window.history.replaceState(
-        null,
-        "",
-        `/dashboard#${
-          hashMap[
-            key
-          ] ||
-          "dashboard"
-        }`
-      );
-
       setActive(
         key
       );
@@ -973,7 +892,7 @@ if (
         active ===
         "dashboard"
           ? "dashboard ios-dashboard-screen"
-          : `dashboard pwa-module-${active}`
+          : `dashboard ${active === "salesOrder" ? "" : "module-premium"} pwa-module-${active}`
       }
     >
       {/* =====================================================
@@ -1379,79 +1298,32 @@ if (
     {active ===
       "dashboard" && (
             <>
-              <div className="ios-dashboard-home">
+              <div className="ios-dashboard-home rms-launcher">
                 <div className="ios-dashboard-header">
+                  <span className="launcher-header-art" aria-hidden="true"><span /></span>
                   <div className="ios-dashboard-top-row">
-  <div className="ios-dashboard-logo-box">
-    <img
-      src="/logo.png"
-      alt="BSSPL Logo"
-    />
-  </div>
-
-  <div className="ios-dashboard-header-actions">
-
-  {/* Bharat AI */}
-  <div className="ios-dashboard-bharat-ai">
-    <BharatIntelligence headerMode />
-  </div>
-
-  {/* Notification */}
-  <div className="ios-dashboard-notification">
-    <NotificationBell />
-  </div>
-
-  {/* Logout */}
-  <button
-    className="ios-dashboard-logout"
-    onClick={handleLogout}
-    type="button"
-  >
-    Logout
-  </button>
-
-</div>
-</div>
-
-                  <p className="ios-welcome">
-                    Welcome back,
-                  </p>
-
-                  <h1>
-                    {user?.name ||
-                      "User"}
-                  </h1>
-
-                  <p className="ios-role">
-                    {user?.role ||
-                      "Employee"}{" "}
-                    · Bharat RMS
-                  </p>
-
-                  <div className="ios-summary-card">
-                    <div>
-                      <span>
-                        Today’s Workspace
-                      </span>
-
-                      <strong>
-                        Manage your steel business faster
-                      </strong>
+                    <div className="ios-dashboard-logo-box">
+                      <img src="/logo.png" alt="Bharat Special Steels" />
                     </div>
-
-                    <b>
-                      ⚡
-                    </b>
+                    <div className="ios-dashboard-header-actions">
+                      <MobilePageSearch moduleKey="dashboard" value={moduleSearch} onChange={setModuleSearch} suggestions={menuItems.map(item => item.label)} label="Search modules" placeholder="Find a module…" />
+                      <div className="ios-dashboard-notification"><NotificationBell /></div>
+                      <button className="ios-dashboard-logout" onClick={handleLogout} type="button" aria-label="Log out" title="Log out"><LogOut size={17} strokeWidth={1.8} /></button>
+                    </div>
+                  </div>
+                  <div className="launcher-greeting">
+                    <p className="ios-welcome">Welcome back</p>
+                    <div className="launcher-identity-row">
+                      <h1>{user?.name || "Your workspace"}<span className="launcher-greeting-dot" aria-hidden="true">.</span></h1>
+                      <div className="launcher-assistant"><BharatIntelligence headerMode /></div>
+                    </div>
+                    <p className="ios-role"><span className="launcher-role-dot" aria-hidden="true" />{(user?.role || "Employee").replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase())}<span className="launcher-role-separator">/</span>Bharat RMS</p>
                   </div>
                 </div>
-
                 <div className="ios-dashboard-content">
-                  <h2>
-                    Modules
-                  </h2>
-
+                  <div className="launcher-section-heading"><div><span>EVERYTHING IN ONE PLACE</span><h2>Your modules</h2></div><span className="launcher-module-count">{menuItems.filter(item => `${item.label} ${item.desc || ''}`.toLowerCase().includes(moduleSearch.trim().toLowerCase())).length} apps</span></div>
                   <div className="ios-module-grid">
-                    {menuItems.map(
+                    {menuItems.filter(item => `${item.label} ${item.desc || ''}`.toLowerCase().includes(moduleSearch.trim().toLowerCase())).map(
                       (
                         item
                       ) => (
@@ -1459,7 +1331,7 @@ if (
                           key={
                             item.key
                           }
-                          className="ios-module-card"
+                          className={`ios-module-card launcher-module-${item.key}`}
                           onClick={() =>
                             handleIosModuleClick(
                               item.key
@@ -1467,15 +1339,11 @@ if (
                           }
                           type="button"
                         >
-                          <span className="ios-module-icon">
-                            {
-                              item.icon
-                            }
-                          </span>
+                          <span className="launcher-card-top"><span className="ios-module-icon">{React.createElement(launcherIcons[item.key] || Files, { size: 23, strokeWidth: 1.8 })}</span><ChevronRight className="launcher-card-chevron" size={16} aria-hidden="true" /></span>
 
                           <strong>
                             {
-                              item.label
+                              item.key === 'support' ? 'Tasks & Delegation' : item.label
                             }
                           </strong>
 
@@ -1488,6 +1356,8 @@ if (
                       )
                     )}
                   </div>
+                  {moduleSearch && !menuItems.some(item => `${item.label} ${item.desc || ''}`.toLowerCase().includes(moduleSearch.trim().toLowerCase())) && <p className="launcher-empty">No modules found. Try another name.</p>}
+                  <p className="launcher-footer">BHARAT SPECIAL STEELS<span>Your business. One workspace.</span></p>
                 </div>
               </div>
 
@@ -1587,7 +1457,7 @@ if (
 
           {active ===
             "orderTracking" && (
-            <OrderTrackingPage />
+            <OrderTrackingPage onBack={goDashboardModules} />
           )}
 
           {/* =================================================

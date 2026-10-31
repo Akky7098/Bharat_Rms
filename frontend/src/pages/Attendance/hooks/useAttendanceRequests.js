@@ -30,11 +30,11 @@ export default function useAttendanceRequests(user, refreshAttendance, revision)
   }, [enabled]);
   const cancelLoad = useCallback(() => { sequence.current++; }, []);
   useEffect(() => { load(); return cancelLoad; }, [load, revision, cancelLoad]);
-  const decide = async (item, action) => {
+  const decide = async (item, action, suppliedReason) => {
     if (!enabled || mutation.current) return;
     let reason = '';
     if (action === 'reject') {
-      reason = window.prompt('Rejection reason:');
+      reason = suppliedReason === undefined ? window.prompt('Rejection reason:') : suppliedReason;
       if (reason === null) return;
       if (!reason.trim()) { setError('Enter a rejection reason.'); return; }
     }
@@ -44,7 +44,7 @@ export default function useAttendanceRequests(user, refreshAttendance, revision)
       setNotice(response.data?.whatsapp?.sent === false ? response.data.whatsapp.message : `Request ${action === 'approve' ? 'approved' : 'rejected'}.`);
       setItems(previous => previous.filter(row => row._id !== item._id || row.requestKind !== item.requestKind));
       await load(); await refresh.current();
-    } catch (failure) { setError(messageOf(failure)); }
+    } catch (failure) { setError(messageOf(failure)); return false; }
     finally { mutation.current = false; setBusy(''); }
   };
   return { items, error, notice, busy, decide, counts: Object.fromEntries(kinds.map(kind => [kind, items.filter(item => item.requestKind === kind).length])) };

@@ -15008,3 +15008,167 @@ tbody tr:hover
 .moa-order-card-clickable:focus-visible { outline: 3px solid #6366f1; outline-offset: 3px; }
 .moa-order-detail-link { margin-bottom: 10px; text-align: right; font-size: 12px; font-weight: 700; color: #4f46e5; }
 @media (prefers-reduced-motion: reduce) { .moa-order-card-clickable { transition: none; } }
+
+/* ==========================================
+   MANAGEMENT ORDER ANALYSIS
+   HEADER TEXT VISIBILITY FIX
+   Only changes header text colors
+   ========================================== */
+
+/* Main header title - Order Analysis */
+.management-order-analysis .moa-app-header .moa-app-title > strong {
+  color: #ffffff !important;
+}
+
+/* Header top label - MANAGEMENT ANALYSIS */
+.management-order-analysis .moa-app-header .moa-app-title > span {
+  color: #e0e7ff !important;
+}
+
+/* Header subtitle - Sales order intelligence */
+.management-order-analysis .moa-app-header .moa-app-title > small {
+  color: #f1f5f9 !important;
+}
+
+
+/* ==========================================
+   FINAL FIX - MOBILE PURPLE HEADER TEXT
+   Only text colors, no layout changes
+   ========================================== */
+
+@media (max-width: 900px) {
+
+  /* MANAGEMENT ANALYSIS */
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header
+  .moa-app-title > span {
+    color: #e0e7ff !important;
+  }
+
+  /* Order Analysis */
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header
+  .moa-app-title > strong {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+
+  /* Sales order intelligence */
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header
+  .moa-app-title > small {
+    color: #f1f5f9 !important;
+    -webkit-text-fill-color: #f1f5f9 !important;
+  }
+}
+
+/* ==========================================
+   BHARAT RMS - PREMIUM RED HEADER
+   Mobile header only
+   ========================================== */
+
+@media (max-width: 900px) {
+
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header {
+
+    background:
+      linear-gradient(
+        135deg,
+        #651727 0%,
+        #8b2039 35%,
+        #b63d55 70%,
+        #dc7081 100%
+      ) !important;
+
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+
+    border-bottom:
+      1px solid rgba(255,255,255,0.18) !important;
+  }
+
+  /* Decorative design on right side */
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header::before {
+    content: "";
+    position: absolute;
+    top: -55px;
+    right: -65px;
+    width: 230px;
+    height: 230px;
+
+    background:
+      linear-gradient(
+        135deg,
+        rgba(255,255,255,0.11),
+        rgba(255,255,255,0.02)
+      );
+
+    transform: rotate(35deg);
+    border-radius: 35px;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Soft secondary geometric highlight */
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header::after {
+    content: "";
+    position: absolute;
+    right: -90px;
+    bottom: -110px;
+    width: 240px;
+    height: 240px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Main title */
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header
+  .moa-app-title > strong {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+
+  /* Small heading */
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header
+  .moa-app-title > span {
+    color: #ffd9e1 !important;
+  }
+
+  /* Subtitle */
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header
+  .moa-app-title > small {
+    color: #ffe1e7 !important;
+  }
+
+  /* Filter labels */
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header
+  .moa-field > span,
+
+  .dashboard.module-premium
+  .management-order-analysis
+  .moa-unified-header
+  .moa-period-block > span {
+    color: #ffd9e1 !important;
+  }
+
+}

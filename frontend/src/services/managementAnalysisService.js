@@ -30,10 +30,6 @@ import axios from "axios";
 /*
  * LOCAL DEVELOPMENT:
  *
- * const BASE_URL =
- *   process.env.REACT_APP_BACKEND_URL ||
- *   "http://localhost:5000";
- *
  * PRODUCTION:
  *
  * REACT_APP_API_URL should NOT end with /api
@@ -44,11 +40,8 @@ import axios from "axios";
  */
 
 
-  const BASE_URL =
-    "http://localhost:5000";
-// const BASE_URL =
-//   process.env.REACT_APP_API_URL ||
-//   "https://bharatspecialsteels.bharatspecialsteels.com";
+const BASE_URL = (process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL ||
+  "https://bharatspecialsteels.bharatspecialsteels.com").replace(/\/+$/, "");
 
 
 const API_URL =

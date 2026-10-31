@@ -1,3 +1,4 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import React, { useCallback, useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -1297,6 +1298,8 @@ const EnquiryList = ({
                   enquiry record(s)
                 </p>
               </div>
+
+              <MobilePageSearch moduleKey="enquiry" value={filters.search || ""} onChange={search => setFilters(previous => ({ ...previous, search, page: 1 }))} label="Search enquiries" placeholder="Search company, enquiry, contact or grade…" />
 
               <button
                 type="button"

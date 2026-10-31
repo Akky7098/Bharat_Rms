@@ -1,3 +1,4 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Plus,
@@ -490,7 +491,9 @@ function ITSupportPage() {
           </p>
         </div>
 
-        <button
+        <MobilePageSearch moduleKey="it-support" value={filters.search || ""} onChange={search => setFilters(previous => ({ ...previous, search, page: 1 }))} label="Search IT support" placeholder="Search ticket, title or employee…" />
+
+            <button
           className={`it-support-refresh ${
             refreshing ? "refreshing" : ""
           }`}
@@ -609,7 +612,7 @@ function ITSupportPage() {
       {activeTab === "tickets" && (
         <>
           <section className="it-support-actions">
-            <div className="it-support-search">
+            <div className="it-support-search mobile-search-original">
               <Search size={16} />
 
               <input

@@ -9808,4 +9808,6 @@ button.ot-journey-node::-moz-focus-inner {
     min-height: 42px !important;
   }
 
+}@media (max-width: 768px) {
+  .ot-page-head { grid-template-columns: 40px minmax(0, 1fr) 40px 40px !important; }
 }

@@ -558,6 +558,7 @@ const ResponseContent = ({
       if (heading) {
         elements.push(
           <h4
+            className={/^\d+\.\s/.test(heading[1]) ? "bharat-ai-record-heading" : undefined}
             key={`heading-${index}`}
           >
             {
@@ -569,6 +570,15 @@ const ResponseContent = ({
         return;
       }
 
+      if (/^(Company scope|Your records only)$/.test(line)) {
+        elements.push(<span className="bharat-ai-report-scope" key={`scope-${index}`}>{line}</span>);
+        return;
+      }
+      const metric = line.match(/^([A-Za-z][A-Za-z ]{2,38}):\s*(₹[\d,.]+|[\d,.]+(?:%| KG| MT| records| days)?)$/);
+      if (metric) {
+        elements.push(<div className="bharat-ai-report-metric" key={`metric-${index}`}><span>{metric[1]}</span><strong>{metric[2]}</strong></div>);
+        return;
+      }
       elements.push(
         <p
           key={`paragraph-${index}`}
@@ -933,7 +943,7 @@ const Message = ({
               .length >
               0 && (
               <div className="bharat-ai-inline-suggestions bharat-ai-inline-suggestions-modern">
-                {message.suggestions.map(
+                {message.suggestions.slice(0, 3).map(
                   (
                     suggestion
                   ) => (
@@ -984,71 +994,12 @@ const Welcome = ({
     );
 
   const suggestions = [
-    {
-      eyebrow:
-        "Business",
-
-      title:
-        "What needs attention today?",
-
-      prompt:
-        "What needs attention today?",
-    },
-
-    {
-      eyebrow:
-        "Sales",
-
-      title:
-        "Analyze my sales this month",
-
-      prompt:
-        "Analyze my sales this month and tell me what needs improvement.",
-    },
-
-    {
-      eyebrow:
-        "Steel knowledge",
-
-      title:
-        "Why is DB6 ESR expensive?",
-
-      prompt:
-        "Why is DB6 ESR expensive? Explain it practically for a salesperson.",
-    },
-
-    {
-      eyebrow:
-        "Technical",
-
-      title:
-        "Explain DB6 chemistry",
-
-      prompt:
-        "Explain DB6 chemical composition and the role of each alloying element.",
-    },
-
-    {
-      eyebrow:
-        "Operations",
-
-      title:
-        "Which orders are delayed?",
-
-      prompt:
-        "Which orders are currently delayed and which need priority attention?",
-    },
-
-    {
-      eyebrow:
-        "Payments",
-
-      title:
-        "Show overdue payments",
-
-      prompt:
-        "Show overdue payments and tell me which need priority follow-up.",
-    },
+    { eyebrow: "Sales", title: "Revenue in the last one month", prompt: "What is revenue of last one month?" },
+    { eyebrow: "Orders", title: "Pending orders this month", prompt: "List pending sales orders this month" },
+    { eyebrow: "Attendance", title: "Today's attendance", prompt: "Attendance today" },
+    { eyebrow: "Timesheets", title: "My work report today", prompt: "My timesheet today" },
+    { eyebrow: "Operations", title: "Tomorrow's dispatch plan", prompt: "Dispatch plan tomorrow" },
+    { eyebrow: "Payments", title: "Overdue customers", prompt: "Show overdue payments" },
   ];
 
   return (
@@ -1086,12 +1037,9 @@ const Welcome = ({
       </div>
 
       <p className="bharat-ai-welcome-subtitle bharat-ai-welcome-subtitle-next">
-        Ask about your business,
-        customers, steel,
-        metallurgy, calculations,
-        Bharat documents or
-        anything you need help
-        understanding.
+        Ask about sales, orders, dispatch plans, attendance,
+        timesheets and payments. Use a date or period such as
+        “last one month” and an employee’s full name when needed.
       </p>
 
       <div className="bharat-ai-capability-row">
@@ -1100,7 +1048,7 @@ const Welcome = ({
             name="brain"
             size={12}
           />
-          Business + Knowledge
+          Live business records
         </span>
 
         <span>
@@ -2474,10 +2422,10 @@ const fileInputRef =
           if (
             hasMessages
           ) {
-            return "Ask a follow-up…";
+            return "Ask a database question with a date and name…";
           }
 
-          return "Ask anything… business, steel, calculations or knowledge";
+          return "Ask about sales, dispatch plans, attendance or timesheets…";
         },
         [
           hasMessages,
@@ -2534,12 +2482,12 @@ const fileInputRef =
                   </h3>
 
                   <span className="bharat-ai-beta bharat-ai-beta-next">
-                    AI
+                    Data
                   </span>
                 </div>
 
                 <p>
-                  Business · Knowledge · Decisions
+                  Database · Reports · Your access
                 </p>
               </div>
             </div>

@@ -7,8 +7,9 @@ jest.mock('../../../services/attendanceService', () => ({ listAttendanceRequests
 const regularization = { _id: 'reg', employeeName: 'Existing Employee', attendanceDate: '2026-10-23', regularization: { requestedCheckIn: '2026-10-23T04:00:00Z', requestedCheckOut: '2026-10-23T13:00:00Z', reason: 'Forgot checkout' } };
 const wfh = { _id: 'wfh', employeeName: 'WFH Employee', requestKind: 'work-from-home', fromDate: '2026-10-25', toDate: '2026-10-27', reason: 'Home work', status: 'pending' };
 const revision = [], refresh = jest.fn();
-beforeEach(() => { jest.clearAllMocks(); listAttendanceRequests.mockImplementation(async kind => ({ data: kind === 'work-from-home' ? [wfh] : [], pagination: { totalPages: 1 } })); decideAttendanceRequest.mockResolvedValue({ data: { whatsapp: { sent: true } } }); });
-test('all request types use one original approval queue with existing card and action classes', () => {
+beforeEach(() => { jest.spyOn(window, 'confirm').mockReturnValue(true); jest.clearAllMocks(); listAttendanceRequests.mockImplementation(async kind => ({ data: kind === 'work-from-home' ? [wfh] : [], pagination: { totalPages: 1 } })); decideAttendanceRequest.mockResolvedValue({ data: { whatsapp: { sent: true } } }); });
+afterEach(() => jest.restoreAllMocks());
+test('all request types use one original approval queue with existing card and action classes', async () => {
   const approve = jest.fn(), reject = jest.fn();
   const leave = { ...wfh, _id: 'paid', employeeName: 'Leave Employee', requestKind: 'leave', leaveType: 'paid_leave', duration: 'full_day' };
   const lop = { ...leave, _id: 'lop', leaveType: 'loss_of_pay' };
@@ -23,9 +24,15 @@ test('all request types use one original approval queue with existing card and a
   expect(screen.getByText('Short Leave')).toBeInTheDocument();
   const card = screen.getByText('Work From Home').closest('article');
   fireEvent.click(within(card).getByRole('button', { name: 'Approve' }));
-  expect(approve).toHaveBeenCalledWith(wfh);
+  expect(approve).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm approval' }));
+  await waitFor(() => expect(approve).toHaveBeenCalledWith(wfh, ''));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   fireEvent.click(within(card).getByRole('button', { name: 'Reject' }));
-  expect(reject).toHaveBeenCalledWith(wfh);
+  fireEvent.change(screen.getByLabelText('Rejection reason'), { target: { value: 'Change dates' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm rejection' }));
+  await waitFor(() => expect(reject).toHaveBeenCalledWith(wfh, 'Change dates'));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /Next|Refresh requests|Review approval/ })).not.toBeInTheDocument();
 });
@@ -60,4 +67,22 @@ test('rejection uses the existing reason prompt and cancellation sends no decisi
   await act(async () => { await result.current.decide(wfh, 'reject'); });
   expect(decideAttendanceRequest).toHaveBeenCalledWith('work-from-home', 'wfh', 'reject', 'Please change the dates');
   prompt.mockRestore();
+});
+
+test('cancelled approval and rejection do not call handlers', () => {
+  const approve = jest.fn(), reject = jest.fn();
+  render(<RegularizationQueue items={[wfh]} onApprove={approve} onReject={reject} />);
+  for (const action of ['Approve', 'Reject']) {
+    fireEvent.click(screen.getByRole('button', { name: action }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('WFH Employee');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  }
+  expect(approve).not.toHaveBeenCalled(); expect(reject).not.toHaveBeenCalled();
+});
+
+test('approval queue remains visible when there are no pending requests', () => {
+  render(<RegularizationQueue items={[]} />);
+  expect(screen.getByText('APPROVAL QUEUE')).toBeInTheDocument();
+  expect(screen.getByText('No pending attendance requests.')).toBeInTheDocument();
 });

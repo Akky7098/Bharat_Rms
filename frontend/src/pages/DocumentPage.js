@@ -1,3 +1,4 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import { useEffect, useMemo, useState } from "react";
 import {
   FolderPlus,
@@ -357,6 +358,7 @@ function DocumentPage() {
                   : "Brochures, formats, certificates and files"}
               </p>
             </div>
+            <MobilePageSearch moduleKey="documents" value={search} onChange={setSearch} label="Search documents" placeholder={activeFolder ? "Search documents…" : "Search folders…"} />
           </div>
 
           {!activeFolder && isAdmin && (
@@ -381,7 +383,7 @@ function DocumentPage() {
         </div>
 
         <div className="doc-pwa-content">
-          <div className="doc-pwa-search">
+          <div className="doc-pwa-search mobile-search-original">
             <span>🔍</span>
             <input
               type="text"

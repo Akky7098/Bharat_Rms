@@ -1,3 +1,4 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { getTimesheets } from "../services/timesheetService";
 import { getSalesPersons } from "../services/salesOrderService";
@@ -339,6 +340,8 @@ const TimesheetPage = () => {
               <h2>Work Reports</h2>
               <p>Daily summary, challenges and next-day planning</p>
             </div>
+
+            <MobilePageSearch target=".ts-pwa-filter-card button, .ts-pwa-filter-card select" label="Search work reports by employee and period" />
 
             <button
               type="button"

@@ -1,3 +1,4 @@
+import MobilePageSearch from "../components/MobilePageSearch";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   Plus,
@@ -413,7 +414,9 @@ function SupportPage() {
                 <p>Tasks, tickets and delegation</p>
               </div>
 
-              <button
+              <MobilePageSearch moduleKey="support" value={filters.search || ""} onChange={search => setFilters(previous => ({ ...previous, search, page: 1 }))} label="Search support tickets" placeholder="Search ticket, title or employee…" />
+
+            <button
                 type="button"
                 className={`ios-support-refresh ${refreshing ? "spinning" : ""}`}
                 onClick={refreshAll}

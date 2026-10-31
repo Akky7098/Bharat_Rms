@@ -2724,3 +2724,24 @@
     box-sizing: border-box !important;
   }
 }
+/* Same mobile action slot across module headers: back, title, search, refresh. */
+@media (max-width: 768px) {
+  .attendance-pwa-ui .att-pwa-header-row,
+  .ios-mtc-header-row,
+  .ot-page-head {
+    grid-template-columns: 40px minmax(0, 1fr) 40px 40px !important;
+  }
+  .ts-pwa-header-row > div,
+  .rcv-pwa-header-row > div,
+  .ios-cold-header-row > div,
+  .ios-support-title,
+  .ios-enquiry-title-box,
+  .doc-pwa-header-row > div,
+  .it-support-header-content { min-width: 0; flex: 1; }
+  .ios-cold-filter-card input[type="search"] {
+    box-sizing: border-box; width: 100%; min-height: 42px;
+    margin: 8px 0; padding: 10px 12px; border: 1px solid #dbe3ed;
+    border-radius: 12px; font: inherit; background: #fff; color: #17243a;
+  }
+}
+.mobile-module-search { box-sizing: border-box; width: 100%; margin-bottom: 14px; padding: 12px; font-size: 16px; border: 1px solid #dbe3ed; border-radius: 12px; background: #fff; color: #17243a; }
