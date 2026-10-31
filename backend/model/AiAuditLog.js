@@ -39,6 +39,9 @@ const aiAuditLogSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    intent: { type: String, default: "" },
+    outcome: { type: String, enum: ["answered", "clarification", "unsupported", "error"], default: undefined, index: true },
+    normalizedQuestion: { type: String, maxlength: 2000, default: "" },
     provider: {
       type: String,
       trim: true,

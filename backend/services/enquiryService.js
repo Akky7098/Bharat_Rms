@@ -872,7 +872,8 @@ const getAllEnquiries = async (query, user) => {
     baseFilter.enquiryDate.$lte = getEndOfMonth();
   }
 
-  const searchText = String(companyName || search || "").trim();
+  const searchText = String(search || companyName || "").trim();
+  if (companyName && search) baseFilter.companyName = new RegExp(escapeRegex(String(companyName).trim()), "i");
 
   if (searchText) {
     const regex = new RegExp(escapeRegex(searchText), "i");

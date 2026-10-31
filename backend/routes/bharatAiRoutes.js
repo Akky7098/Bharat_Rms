@@ -30,6 +30,8 @@ router.get(
   getBharatAiCurrentUser
 );
 
+router.get('/question-review', protect, require('../controller/bharatQuestionReviewController').reviewDatabaseQuestions);
+
 /* =========================================================
    BHARAT INTELLIGENCE CHAT
 

@@ -345,6 +345,8 @@ const attendanceSchema = new mongoose.Schema(
     },
 
     shortLeave: {
+      mode: { type: String, enum: ['planned', 'attendance'] },
+      startTime: String, endTime: String, minutes: Number,
       status: { type: String, enum: ['approved'] },
       requestId: { type: mongoose.Schema.Types.ObjectId, ref: 'AttendanceRequest' },
       approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

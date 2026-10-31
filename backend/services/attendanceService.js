@@ -1093,6 +1093,11 @@ const checkIn = async (
     );
   }
 
+  // A future-approved request is attached when attendance is actually marked.
+  // Do not create placeholder future attendance or overwrite the real check-in.
+  const approvedShortLeave = await require("../model/attendanceRequestModel").findOne({
+    employeeId: getUserId(user), kind: "short_leave", status: "approved", fromDate: today, toDate: today,
+  }).lean();
   const attendance =
     await Attendance.findOneAndUpdate(
       {
@@ -1103,6 +1108,7 @@ const checkIn = async (
       },
       {
         $set: {
+          ...(approvedShortLeave ? { shortLeave: require("../util/shortLeavePolicy").attendanceData(approvedShortLeave) } : {}),
           employeeId:
             getUserId(user),
 
@@ -2742,8 +2748,8 @@ const applyLeave = async (
   if (getISTDateKey(fromDate).slice(0, 4) !== getISTDateKey(toDate).slice(0, 4)) {
     throw createServiceError("Submit separate leave requests for each calendar year.", 400);
   }
-  if (await require("../model/attendanceRequestModel").exists({ employeeId, kind: "work_from_home", status: { $in: ["pending", "approved"] }, fromDate: { $lte: toDate }, toDate: { $gte: fromDate } })) {
-    throw createServiceError("A WFH request already exists for these dates.", 409);
+  if (await require("../model/attendanceRequestModel").exists({ employeeId, kind: { $in: ["work_from_home", "short_leave"] }, status: { $in: ["pending", "approved"] }, fromDate: { $lte: toDate }, toDate: { $gte: fromDate } })) {
+    throw createServiceError("A WFH or short-leave request already exists for these dates.", 409);
   }
   if (leaveType === "paid_leave") {
     const balance = await getLeaveBalance({ employeeId, monthDate: fromDate });
@@ -3248,7 +3254,7 @@ const approveLeave = async (
   );
 
   if (!(await User.exists({ _id: leaveRequest.employeeId, status: { $ne: "inactive" } }))) throw createServiceError("Employee is inactive.", 409);
-  if (await require("../model/attendanceRequestModel").exists({ employeeId: leaveRequest.employeeId, kind: "work_from_home", status: "approved", fromDate: { $lte: leaveRequest.toDate }, toDate: { $gte: leaveRequest.fromDate } })) throw createServiceError("Approved WFH conflicts with these dates.", 409);
+  if (await require("../model/attendanceRequestModel").exists({ employeeId: leaveRequest.employeeId, kind: { $in: ["work_from_home", "short_leave"] }, status: "approved", fromDate: { $lte: leaveRequest.toDate }, toDate: { $gte: leaveRequest.fromDate } })) throw createServiceError("Approved WFH or short leave conflicts with these dates.", 409);
   if (leaveRequest.leaveType === "paid_leave") {
     const balance = await getLeaveBalance({ employeeId: leaveRequest.employeeId, monthDate: leaveRequest.fromDate, excludeLeaveId: leaveRequest._id });
     if (balance.availablePaidLeave < require("../util/paidLeavePolicy").units(leaveRequest)) throw createServiceError("Insufficient earned paid leave. Apply Loss of Pay instead.", 400);

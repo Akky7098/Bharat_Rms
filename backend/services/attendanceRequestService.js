@@ -1,3 +1,4 @@
+const { validateWindow, attendanceData } = require('../util/shortLeavePolicy');
 const Request = require('../model/attendanceRequestModel');
 const Attendance = require('../model/attendanceModel');
 const Leave = require('../model/leaveRequestModel');
@@ -17,7 +18,7 @@ const notify = async (request, event, actor) => {
   try {
     await require('./notificationService').createNotification({
       module: 'attendance', event, title: event === 'attendance_requested' ? 'Attendance approval required' : 'Attendance request updated',
-      message: `${request.employeeName}: ${request.kind.replaceAll('_', ' ')} ${key(request.fromDate)}${key(request.fromDate) === key(request.toDate) ? '' : ` to ${key(request.toDate)}`} — ${request.status}.`,
+      message: `${request.employeeName}: ${request.kind.replaceAll('_', ' ')} ${key(request.fromDate)}${key(request.fromDate) === key(request.toDate) ? '' : ` to ${key(request.toDate)}`}${request.kind === 'short_leave' && request.startTime ? `, ${request.startTime}–${request.endTime} IST (${request.shortLeaveMinutes} minutes)` : ''} — ${request.status}.`,
       targetRoles: event === 'attendance_requested' ? ['super_admin'] : [],
       targetUserIds: event === 'attendance_requested' ? [] : [request.employeeId],
       createdBy: idOf(actor), referenceId: request._id, referenceModel: 'AttendanceRequest', actionUrl: '/dashboard#attendance', priority: 'high',
@@ -46,17 +47,24 @@ const apply = async (kind, body, user) => {
   if (!reason || reason.length > 2000) fail('A reason of up to 2000 characters is required.');
   const employeeId = idOf(user);
   if (kind === 'work_from_home' && key(fromDate) < key(new Date())) fail('WFH requests must start today or later.');
+  let shortFields = {};
   if (kind === 'short_leave') {
     if (+fromDate !== +toDate) fail('Short leave is for one date only.');
-    const attendance = await Attendance.findOne({ employeeId, attendanceDate: fromDate }).lean();
-    if (!attendance?.checkIn?.time || !attendance?.checkOut?.time) fail('Check in and check out before requesting short leave.');
-    const minutes = (new Date(attendance.checkOut.time) - new Date(attendance.checkIn.time)) / 60000;
-    if (minutes >= 540 || minutes <= 0) fail('Short leave requires a completed day below nine hours.');
+    if (body.shortLeaveMode && !['planned', 'attendance'].includes(body.shortLeaveMode)) fail('Invalid short-leave mode.');
+    if (body.shortLeaveMode === 'planned' || (!body.shortLeaveMode && (body.startTime !== undefined || body.endTime !== undefined))) {
+      shortFields = validateWindow(fromDate, body.startTime, body.endTime);
+    } else {
+      const attendance = await Attendance.findOne({ employeeId, attendanceDate: fromDate }).lean();
+      if (!attendance?.checkIn?.time || !attendance?.checkOut?.time) fail('Check in and check out before requesting short leave.');
+      const minutes = (new Date(attendance.checkOut.time) - new Date(attendance.checkIn.time)) / 60000;
+      if (minutes >= 540 || minutes <= 0) fail('Short leave requires a completed day below nine hours.');
+      shortFields = { shortLeaveMode: 'attendance' };
+    }
   }
   if (await Leave.exists({ employeeId, isActive: true, status: { $in: ['pending', 'approved'] }, fromDate: { $lte: toDate }, toDate: { $gte: fromDate } })) fail('Leave already exists for these dates.', 409);
   if (await Request.exists({ employeeId, kind, status: { $in: ['pending', 'approved'] }, fromDate: { $lte: toDate }, toDate: { $gte: fromDate } })) fail('A request already exists for these dates.', 409);
   let request;
-  try { request = await Request.create({ employeeId, employeeName: user.name, kind, fromDate, toDate, reason, employeeEmail: user.email, employeeRole: user.role,
+  try { request = await Request.create({ ...shortFields, employeeId, employeeName: user.name, kind, fromDate, toDate, reason, employeeEmail: user.email, employeeRole: user.role,
       history: [{ action: 'applied', performedBy: employeeId, performedByName: user.name, at: new Date(), comment: reason }] }); }
   catch (error) { if (error.code === 11000) fail('A request already exists for these dates.', 409); throw error; }
   await notify(request, 'attendance_requested', user);
@@ -87,21 +95,25 @@ const decide = async (kind, requestId, approved, body, user) => {
   if (!(await User.exists({ _id: request.employeeId, status: { $ne: 'inactive' } }))) fail('Employee is inactive.', 409);
   if (approved && await Leave.exists({ employeeId: request.employeeId, isActive: true, status: 'approved', fromDate: { $lte: request.toDate }, toDate: { $gte: request.fromDate } })) fail('Approved leave conflicts with these dates.', 409);
   let shortAttendance;
-  if (approved && kind === 'short_leave') {
+  let plannedFields = {};
+  if (approved && kind === 'short_leave' && request.shortLeaveMode === 'planned') {
+    plannedFields = validateWindow(request.fromDate, request.startTime, request.endTime, { allowPast: true });
+  }
+  if (approved && kind === 'short_leave' && request.shortLeaveMode !== 'planned') {
     shortAttendance = await Attendance.findOne({ employeeId: request.employeeId, attendanceDate: request.fromDate }).lean();
     const minutes = (new Date(shortAttendance?.checkOut?.time) - new Date(shortAttendance?.checkIn?.time)) / 60000;
     if (!Number.isFinite(minutes) || minutes <= 0 || minutes >= 540) fail('Short-leave attendance is no longer eligible.', 409);
   }
-  const updated = await Request.findOneAndUpdate({ _id: requestId, status: 'pending' }, { $set: { status: approved ? 'approved' : 'rejected', decidedBy: idOf(user), decidedByName: user.name, decidedAt: new Date(), decisionReason: String(body.reason || body.comment || '').slice(0, 2000) }, $push: { history: { action: approved ? 'approved' : 'rejected', performedBy: idOf(user), performedByName: user.name, at: new Date(), comment: String(body.reason || body.comment || '').slice(0, 2000) } } }, { new: true });
+  const updated = await Request.findOneAndUpdate({ _id: requestId, status: 'pending' }, { $set: { ...plannedFields, status: approved ? 'approved' : 'rejected', decidedBy: idOf(user), decidedByName: user.name, decidedAt: new Date(), decisionReason: String(body.reason || body.comment || '').slice(0, 2000) }, $push: { history: { action: approved ? 'approved' : 'rejected', performedBy: idOf(user), performedByName: user.name, at: new Date(), comment: String(body.reason || body.comment || '').slice(0, 2000) } } }, { new: true });
   if (!updated) fail('Request already processed.', 409);
   if (approved && kind === 'work_from_home') {
     await Attendance.updateMany({ employeeId: updated.employeeId, attendanceDate: { $gte: updated.fromDate, $lte: updated.toDate }, attendanceSource: { $ne: 'leave' } }, { $set: { workMode: 'work_from_home' } });
   }
   if (approved && kind === 'short_leave') {
-    await Attendance.updateOne({ _id: shortAttendance._id }, { $set: { shortLeave: { status: 'approved', requestId: updated._id, approvedBy: idOf(user), approvedAt: updated.decidedAt } } });
+    await Attendance.updateOne({ employeeId: updated.employeeId, attendanceDate: updated.fromDate }, { $set: { shortLeave: attendanceData(updated) } });
   }
   await notify(updated, 'attendance_decided', user);
-  const whatsapp = approved ? await announceApproval(updated, kind === 'work_from_home' ? 'work from home' : `short leave (check-in ${new Date(shortAttendance.checkIn.time).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}, checkout ${new Date(shortAttendance.checkOut.time).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })})`) : undefined;
+  const whatsapp = approved ? await announceApproval(updated, kind === 'work_from_home' ? 'work from home' : updated.shortLeaveMode === 'planned' ? `short leave (${updated.startTime}–${updated.endTime} IST, ${updated.shortLeaveMinutes} minutes)` : `short leave (check-in ${new Date(shortAttendance.checkIn.time).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}, checkout ${new Date(shortAttendance.checkOut.time).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })})`) : undefined;
   if (whatsapp) {
     try { await Request.updateOne({ _id: updated._id }, { $set: { whatsappDelivery: { ...whatsapp, attemptedAt: new Date() } } }); }
     catch (error) { console.error('Attendance WhatsApp delivery audit:', error.message); }

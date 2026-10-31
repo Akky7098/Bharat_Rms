@@ -1702,6 +1702,7 @@ const getAllDispatches = async (query, user) => {
     salesPersonId,
     companyName,
     invoiceNumber,
+    search,
     fromDate,
     toDate,
     cardFilter,
@@ -1794,6 +1795,11 @@ const getAllDispatches = async (query, user) => {
       new mongoose.Types.ObjectId(
         salesPersonId
       );
+  }
+
+  if (typeof search === "string" && search.trim()) {
+    const pattern = { $regex: escapeRegex(search.trim().slice(0, 200)), $options: "i" };
+    commonMatch.$and = [...(commonMatch.$and || []), { $or: ["companyName", "invoiceNumber", "contactPersonName", "contactPersonNumber", "lrNumber", "poNumber"].map(field => ({ [field]: pattern })) }];
   }
 
   if (companyName) {

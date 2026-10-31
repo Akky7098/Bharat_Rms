@@ -1,0 +1,3867 @@
+[
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "to": "2026-10-27",
+    "id": "Q001",
+    "family": 1,
+    "style": "plain",
+    "question": "sales today"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "to": "2026-10-27",
+    "id": "Q002",
+    "family": 1,
+    "style": "polite",
+    "question": "please sales today"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "to": "2026-10-27",
+    "id": "Q003",
+    "family": 1,
+    "style": "uppercase",
+    "question": "SALES TODAY"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "to": "2026-10-27",
+    "id": "Q004",
+    "family": 1,
+    "style": "spacing",
+    "question": "could you   sales  today"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "to": "2026-10-27",
+    "id": "Q005",
+    "family": 1,
+    "style": "misspelling",
+    "question": "tell me salse tadays"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26",
+    "id": "Q006",
+    "family": 2,
+    "style": "plain",
+    "question": "revenue yesterday"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26",
+    "id": "Q007",
+    "family": 2,
+    "style": "polite",
+    "question": "please revenue yesterday"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26",
+    "id": "Q008",
+    "family": 2,
+    "style": "uppercase",
+    "question": "REVENUE YESTERDAY"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26",
+    "id": "Q009",
+    "family": 2,
+    "style": "spacing",
+    "question": "could you   revenue  yesterday"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26",
+    "id": "Q010",
+    "family": 2,
+    "style": "misspelling",
+    "question": "tell me reveneu yestarday"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-27",
+    "id": "Q011",
+    "family": 3,
+    "style": "plain",
+    "question": "turnover this month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-27",
+    "id": "Q012",
+    "family": 3,
+    "style": "polite",
+    "question": "please turnover this month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-27",
+    "id": "Q013",
+    "family": 3,
+    "style": "uppercase",
+    "question": "TURNOVER THIS MONTH"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-27",
+    "id": "Q014",
+    "family": 3,
+    "style": "spacing",
+    "question": "could you   turnover  this  month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-27",
+    "id": "Q015",
+    "family": 3,
+    "style": "misspelling",
+    "question": "tell me turnover this mnth"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-27",
+    "to": "2026-10-27",
+    "id": "Q016",
+    "family": 4,
+    "style": "plain",
+    "question": "revenue last one month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-27",
+    "to": "2026-10-27",
+    "id": "Q017",
+    "family": 4,
+    "style": "polite",
+    "question": "please revenue last one month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-27",
+    "to": "2026-10-27",
+    "id": "Q018",
+    "family": 4,
+    "style": "uppercase",
+    "question": "REVENUE LAST ONE MONTH"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-27",
+    "to": "2026-10-27",
+    "id": "Q019",
+    "family": 4,
+    "style": "spacing",
+    "question": "could you   revenue  last  one  month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-27",
+    "to": "2026-10-27",
+    "id": "Q020",
+    "family": 4,
+    "style": "misspelling",
+    "question": "tell me reveneu last one mnth"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-07-27",
+    "to": "2026-10-27",
+    "id": "Q021",
+    "family": 5,
+    "style": "plain",
+    "question": "sales last 3 months"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-07-27",
+    "to": "2026-10-27",
+    "id": "Q022",
+    "family": 5,
+    "style": "polite",
+    "question": "please sales last 3 months"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-07-27",
+    "to": "2026-10-27",
+    "id": "Q023",
+    "family": 5,
+    "style": "uppercase",
+    "question": "SALES LAST 3 MONTHS"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-07-27",
+    "to": "2026-10-27",
+    "id": "Q024",
+    "family": 5,
+    "style": "spacing",
+    "question": "could you   sales  last  3  months"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-07-27",
+    "to": "2026-10-27",
+    "id": "Q025",
+    "family": 5,
+    "style": "misspelling",
+    "question": "tell me salse last 3 months"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30",
+    "id": "Q026",
+    "family": 6,
+    "style": "plain",
+    "question": "sales last month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30",
+    "id": "Q027",
+    "family": 6,
+    "style": "polite",
+    "question": "please sales last month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30",
+    "id": "Q028",
+    "family": 6,
+    "style": "uppercase",
+    "question": "SALES LAST MONTH"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30",
+    "id": "Q029",
+    "family": 6,
+    "style": "spacing",
+    "question": "could you   sales  last  month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30",
+    "id": "Q030",
+    "family": 6,
+    "style": "misspelling",
+    "question": "tell me salse last mnth"
+  },
+  {
+    "intent": "sales_summary",
+    "self": true,
+    "from": "2026-10-26",
+    "id": "Q031",
+    "family": 7,
+    "style": "plain",
+    "question": "my sales this week"
+  },
+  {
+    "intent": "sales_summary",
+    "self": true,
+    "from": "2026-10-26",
+    "id": "Q032",
+    "family": 7,
+    "style": "polite",
+    "question": "please my sales this week"
+  },
+  {
+    "intent": "sales_summary",
+    "self": true,
+    "from": "2026-10-26",
+    "id": "Q033",
+    "family": 7,
+    "style": "uppercase",
+    "question": "MY SALES THIS WEEK"
+  },
+  {
+    "intent": "sales_summary",
+    "self": true,
+    "from": "2026-10-26",
+    "id": "Q034",
+    "family": 7,
+    "style": "spacing",
+    "question": "could you   my  sales  this  week"
+  },
+  {
+    "intent": "sales_summary",
+    "self": true,
+    "from": "2026-10-26",
+    "id": "Q035",
+    "family": 7,
+    "style": "misspelling",
+    "question": "tell me my salse this week"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-19",
+    "to": "2026-10-25",
+    "id": "Q036",
+    "family": 8,
+    "style": "plain",
+    "question": "sales last week"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-19",
+    "to": "2026-10-25",
+    "id": "Q037",
+    "family": 8,
+    "style": "polite",
+    "question": "please sales last week"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-19",
+    "to": "2026-10-25",
+    "id": "Q038",
+    "family": 8,
+    "style": "uppercase",
+    "question": "SALES LAST WEEK"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-19",
+    "to": "2026-10-25",
+    "id": "Q039",
+    "family": 8,
+    "style": "spacing",
+    "question": "could you   sales  last  week"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-19",
+    "to": "2026-10-25",
+    "id": "Q040",
+    "family": 8,
+    "style": "misspelling",
+    "question": "tell me salse last week"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30",
+    "id": "Q041",
+    "family": 9,
+    "style": "plain",
+    "question": "sales September 2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30",
+    "id": "Q042",
+    "family": 9,
+    "style": "polite",
+    "question": "please sales September 2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30",
+    "id": "Q043",
+    "family": 9,
+    "style": "uppercase",
+    "question": "SALES SEPTEMBER 2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30",
+    "id": "Q044",
+    "family": 9,
+    "style": "spacing",
+    "question": "could you   sales  September  2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30",
+    "id": "Q045",
+    "family": 9,
+    "style": "misspelling",
+    "question": "tell me salse September 2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26",
+    "id": "Q046",
+    "family": 10,
+    "style": "plain",
+    "question": "sales 26 Oct 2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26",
+    "id": "Q047",
+    "family": 10,
+    "style": "polite",
+    "question": "please sales 26 Oct 2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26",
+    "id": "Q048",
+    "family": 10,
+    "style": "uppercase",
+    "question": "SALES 26 OCT 2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26",
+    "id": "Q049",
+    "family": 10,
+    "style": "spacing",
+    "question": "could you   sales  26  Oct  2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26",
+    "id": "Q050",
+    "family": 10,
+    "style": "misspelling",
+    "question": "tell me salse 26 Oct 2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20",
+    "id": "Q051",
+    "family": 11,
+    "style": "plain",
+    "question": "sales 2026-10-01 to 2026-10-20"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20",
+    "id": "Q052",
+    "family": 11,
+    "style": "polite",
+    "question": "please sales 2026-10-01 to 2026-10-20"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20",
+    "id": "Q053",
+    "family": 11,
+    "style": "uppercase",
+    "question": "SALES 2026-10-01 TO 2026-10-20"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20",
+    "id": "Q054",
+    "family": 11,
+    "style": "spacing",
+    "question": "could you   sales  2026-10-01  to  2026-10-20"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20",
+    "id": "Q055",
+    "family": 11,
+    "style": "misspelling",
+    "question": "tell me salse 2026-10-01 to 2026-10-20"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20",
+    "id": "Q056",
+    "family": 12,
+    "style": "plain",
+    "question": "sales 01/10/2026 to 20/10/2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20",
+    "id": "Q057",
+    "family": 12,
+    "style": "polite",
+    "question": "please sales 01/10/2026 to 20/10/2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20",
+    "id": "Q058",
+    "family": 12,
+    "style": "uppercase",
+    "question": "SALES 01/10/2026 TO 20/10/2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20",
+    "id": "Q059",
+    "family": 12,
+    "style": "spacing",
+    "question": "could you   sales  01/10/2026  to  20/10/2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20",
+    "id": "Q060",
+    "family": 12,
+    "style": "misspelling",
+    "question": "tell me salse 01/10/2026 to 20/10/2026"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-21",
+    "to": "2026-10-27",
+    "id": "Q061",
+    "family": 13,
+    "style": "plain",
+    "question": "sales past seven days"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-21",
+    "to": "2026-10-27",
+    "id": "Q062",
+    "family": 13,
+    "style": "polite",
+    "question": "please sales past seven days"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-21",
+    "to": "2026-10-27",
+    "id": "Q063",
+    "family": 13,
+    "style": "uppercase",
+    "question": "SALES PAST SEVEN DAYS"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-21",
+    "to": "2026-10-27",
+    "id": "Q064",
+    "family": 13,
+    "style": "spacing",
+    "question": "could you   sales  past  seven  days"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-21",
+    "to": "2026-10-27",
+    "id": "Q065",
+    "family": 13,
+    "style": "misspelling",
+    "question": "tell me salse past seven days"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "id": "Q066",
+    "family": 14,
+    "style": "plain",
+    "question": "Deepak Arya sales this month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "id": "Q067",
+    "family": 14,
+    "style": "polite",
+    "question": "please Deepak Arya sales this month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "id": "Q068",
+    "family": 14,
+    "style": "uppercase",
+    "question": "DEEPAK ARYA SALES THIS MONTH"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "id": "Q069",
+    "family": 14,
+    "style": "spacing",
+    "question": "could you   Deepak  Arya  sales  this  month"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "id": "Q070",
+    "family": 14,
+    "style": "misspelling",
+    "question": "tell me Deepak Arya salse this mnth"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "id": "Q071",
+    "family": 15,
+    "style": "plain",
+    "question": "aaj sales kitna hai"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "id": "Q072",
+    "family": 15,
+    "style": "polite",
+    "question": "please aaj sales kitna hai"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "id": "Q073",
+    "family": 15,
+    "style": "uppercase",
+    "question": "AAJ SALES KITNA HAI"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "id": "Q074",
+    "family": 15,
+    "style": "spacing",
+    "question": "could you   aaj  sales  kitna  hai"
+  },
+  {
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "id": "Q075",
+    "family": 15,
+    "style": "misspelling",
+    "question": "tell me aaj salse kitna hai"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "pending",
+    "id": "Q076",
+    "family": 16,
+    "style": "plain",
+    "question": "pending sales orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "pending",
+    "id": "Q077",
+    "family": 16,
+    "style": "polite",
+    "question": "please pending sales orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "pending",
+    "id": "Q078",
+    "family": 16,
+    "style": "uppercase",
+    "question": "PENDING SALES ORDERS THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "pending",
+    "id": "Q079",
+    "family": 16,
+    "style": "spacing",
+    "question": "could you   pending  sales  orders  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "pending",
+    "id": "Q080",
+    "family": 16,
+    "style": "misspelling",
+    "question": "tell me pendng salse ordres this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "rejected",
+    "id": "Q081",
+    "family": 17,
+    "style": "plain",
+    "question": "list rejected orders last week"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "rejected",
+    "id": "Q082",
+    "family": 17,
+    "style": "polite",
+    "question": "please list rejected orders last week"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "rejected",
+    "id": "Q083",
+    "family": 17,
+    "style": "uppercase",
+    "question": "LIST REJECTED ORDERS LAST WEEK"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "rejected",
+    "id": "Q084",
+    "family": 17,
+    "style": "spacing",
+    "question": "could you   list  rejected  orders  last  week"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "rejected",
+    "id": "Q085",
+    "family": 17,
+    "style": "misspelling",
+    "question": "tell me list rejcted ordres last week"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "approved",
+    "id": "Q086",
+    "family": 18,
+    "style": "plain",
+    "question": "approved order details today"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "approved",
+    "id": "Q087",
+    "family": 18,
+    "style": "polite",
+    "question": "please approved order details today"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "approved",
+    "id": "Q088",
+    "family": 18,
+    "style": "uppercase",
+    "question": "APPROVED ORDER DETAILS TODAY"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "approved",
+    "id": "Q089",
+    "family": 18,
+    "style": "spacing",
+    "question": "could you   approved  order  details  today"
+  },
+  {
+    "intent": "sales_orders",
+    "status": "approved",
+    "id": "Q090",
+    "family": 18,
+    "style": "misspelling",
+    "question": "tell me aproved ordar detials tadays"
+  },
+  {
+    "intent": "sales_orders",
+    "location": "faridabad",
+    "id": "Q091",
+    "family": 19,
+    "style": "plain",
+    "question": "order detail from Faridabad this month"
+  },
+  {
+    "intent": "sales_orders",
+    "location": "faridabad",
+    "id": "Q092",
+    "family": 19,
+    "style": "polite",
+    "question": "please order detail from Faridabad this month"
+  },
+  {
+    "intent": "sales_orders",
+    "location": "faridabad",
+    "id": "Q093",
+    "family": 19,
+    "style": "uppercase",
+    "question": "ORDER DETAIL FROM FARIDABAD THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "location": "faridabad",
+    "id": "Q094",
+    "family": 19,
+    "style": "spacing",
+    "question": "could you   order  detail  from  Faridabad  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "location": "faridabad",
+    "id": "Q095",
+    "family": 19,
+    "style": "misspelling",
+    "question": "tell me ordar deatil from Faridabad this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "location": "new delhi",
+    "id": "Q096",
+    "family": 20,
+    "style": "plain",
+    "question": "order details from New Delhi last month"
+  },
+  {
+    "intent": "sales_orders",
+    "location": "new delhi",
+    "id": "Q097",
+    "family": 20,
+    "style": "polite",
+    "question": "please order details from New Delhi last month"
+  },
+  {
+    "intent": "sales_orders",
+    "location": "new delhi",
+    "id": "Q098",
+    "family": 20,
+    "style": "uppercase",
+    "question": "ORDER DETAILS FROM NEW DELHI LAST MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "location": "new delhi",
+    "id": "Q099",
+    "family": 20,
+    "style": "spacing",
+    "question": "could you   order  details  from  New  Delhi  last  month"
+  },
+  {
+    "intent": "sales_orders",
+    "location": "new delhi",
+    "id": "Q100",
+    "family": 20,
+    "style": "misspelling",
+    "question": "tell me ordar detials from New Delhi last mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "allTime": true,
+    "id": "Q101",
+    "family": 21,
+    "style": "plain",
+    "question": "Kesari Alloy orders"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "allTime": true,
+    "id": "Q102",
+    "family": 21,
+    "style": "polite",
+    "question": "please Kesari Alloy orders"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "allTime": true,
+    "id": "Q103",
+    "family": 21,
+    "style": "uppercase",
+    "question": "KESARI ALLOY ORDERS"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "allTime": true,
+    "id": "Q104",
+    "family": 21,
+    "style": "spacing",
+    "question": "could you   Kesari  Alloy  orders"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "allTime": true,
+    "id": "Q105",
+    "family": 21,
+    "style": "misspelling",
+    "question": "tell me keshari Alloy ordres"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "id": "Q106",
+    "family": 22,
+    "style": "plain",
+    "question": "Keshari Alloys orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "id": "Q107",
+    "family": 22,
+    "style": "polite",
+    "question": "please Keshari Alloys orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "id": "Q108",
+    "family": 22,
+    "style": "uppercase",
+    "question": "KESHARI ALLOYS ORDERS THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "id": "Q109",
+    "family": 22,
+    "style": "spacing",
+    "question": "could you   Keshari  Alloys  orders  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "id": "Q110",
+    "family": 22,
+    "style": "misspelling",
+    "question": "tell me Keshari Alloys ordres this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "from": "2026-07-27",
+    "id": "Q111",
+    "family": 23,
+    "style": "plain",
+    "question": "order in Keshri Alloy mill last 3 month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "from": "2026-07-27",
+    "id": "Q112",
+    "family": 23,
+    "style": "polite",
+    "question": "please order in Keshri Alloy mill last 3 month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "from": "2026-07-27",
+    "id": "Q113",
+    "family": 23,
+    "style": "uppercase",
+    "question": "ORDER IN KESHRI ALLOY MILL LAST 3 MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "from": "2026-07-27",
+    "id": "Q114",
+    "family": 23,
+    "style": "spacing",
+    "question": "could you   order  in  Keshri  Alloy  mill  last  3  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "from": "2026-07-27",
+    "id": "Q115",
+    "family": 23,
+    "style": "misspelling",
+    "question": "tell me ordar in Keshri Alloy mill last 3 mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "AV Alloys - Mandi Gobindgarh",
+    "id": "Q116",
+    "family": 24,
+    "style": "plain",
+    "question": "AV Alloy order details last 3 months"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "AV Alloys - Mandi Gobindgarh",
+    "id": "Q117",
+    "family": 24,
+    "style": "polite",
+    "question": "please AV Alloy order details last 3 months"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "AV Alloys - Mandi Gobindgarh",
+    "id": "Q118",
+    "family": 24,
+    "style": "uppercase",
+    "question": "AV ALLOY ORDER DETAILS LAST 3 MONTHS"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "AV Alloys - Mandi Gobindgarh",
+    "id": "Q119",
+    "family": 24,
+    "style": "spacing",
+    "question": "could you   AV  Alloy  order  details  last  3  months"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "AV Alloys - Mandi Gobindgarh",
+    "id": "Q120",
+    "family": 24,
+    "style": "misspelling",
+    "question": "tell me AV Alloy ordar detials last 3 months"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Punjab General",
+    "id": "Q121",
+    "family": 25,
+    "style": "plain",
+    "question": "Punjab General orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Punjab General",
+    "id": "Q122",
+    "family": 25,
+    "style": "polite",
+    "question": "please Punjab General orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Punjab General",
+    "id": "Q123",
+    "family": 25,
+    "style": "uppercase",
+    "question": "PUNJAB GENERAL ORDERS THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Punjab General",
+    "id": "Q124",
+    "family": 25,
+    "style": "spacing",
+    "question": "could you   Punjab  General  orders  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Punjab General",
+    "id": "Q125",
+    "family": 25,
+    "style": "misspelling",
+    "question": "tell me Punjab General ordres this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Polystud Lifting",
+    "id": "Q126",
+    "family": 26,
+    "style": "plain",
+    "question": "Polystud orders last month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Polystud Lifting",
+    "id": "Q127",
+    "family": 26,
+    "style": "polite",
+    "question": "please Polystud orders last month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Polystud Lifting",
+    "id": "Q128",
+    "family": 26,
+    "style": "uppercase",
+    "question": "POLYSTUD ORDERS LAST MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Polystud Lifting",
+    "id": "Q129",
+    "family": 26,
+    "style": "spacing",
+    "question": "could you   Polystud  orders  last  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Polystud Lifting",
+    "id": "Q130",
+    "family": 26,
+    "style": "misspelling",
+    "question": "tell me Polystud ordres last mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Jassar Forging",
+    "id": "Q131",
+    "family": 27,
+    "style": "plain",
+    "question": "Jassar orders this week"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Jassar Forging",
+    "id": "Q132",
+    "family": 27,
+    "style": "polite",
+    "question": "please Jassar orders this week"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Jassar Forging",
+    "id": "Q133",
+    "family": 27,
+    "style": "uppercase",
+    "question": "JASSAR ORDERS THIS WEEK"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Jassar Forging",
+    "id": "Q134",
+    "family": 27,
+    "style": "spacing",
+    "question": "could you   Jassar  orders  this  week"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Jassar Forging",
+    "id": "Q135",
+    "family": 27,
+    "style": "misspelling",
+    "question": "tell me Jassar ordres this week"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "S.S. Steel - Sirhind",
+    "id": "Q136",
+    "family": 28,
+    "style": "plain",
+    "question": "SS Steel orders today"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "S.S. Steel - Sirhind",
+    "id": "Q137",
+    "family": 28,
+    "style": "polite",
+    "question": "please SS Steel orders today"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "S.S. Steel - Sirhind",
+    "id": "Q138",
+    "family": 28,
+    "style": "uppercase",
+    "question": "SS STEEL ORDERS TODAY"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "S.S. Steel - Sirhind",
+    "id": "Q139",
+    "family": 28,
+    "style": "spacing",
+    "question": "could you   SS  Steel  orders  today"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "S.S. Steel - Sirhind",
+    "id": "Q140",
+    "family": 28,
+    "style": "misspelling",
+    "question": "tell me SS Steel ordres tadays"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Skyway - Ludhiana",
+    "id": "Q141",
+    "family": 29,
+    "style": "plain",
+    "question": "Skyway orders this year"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Skyway - Ludhiana",
+    "id": "Q142",
+    "family": 29,
+    "style": "polite",
+    "question": "please Skyway orders this year"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Skyway - Ludhiana",
+    "id": "Q143",
+    "family": 29,
+    "style": "uppercase",
+    "question": "SKYWAY ORDERS THIS YEAR"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Skyway - Ludhiana",
+    "id": "Q144",
+    "family": 29,
+    "style": "spacing",
+    "question": "could you   Skyway  orders  this  year"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Skyway - Ludhiana",
+    "id": "Q145",
+    "family": 29,
+    "style": "misspelling",
+    "question": "tell me Skyway ordres this year"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kuber Concast - Mandi Gobindgarh",
+    "id": "Q146",
+    "family": 30,
+    "style": "plain",
+    "question": "Kuber Concast orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kuber Concast - Mandi Gobindgarh",
+    "id": "Q147",
+    "family": 30,
+    "style": "polite",
+    "question": "please Kuber Concast orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kuber Concast - Mandi Gobindgarh",
+    "id": "Q148",
+    "family": 30,
+    "style": "uppercase",
+    "question": "KUBER CONCAST ORDERS THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kuber Concast - Mandi Gobindgarh",
+    "id": "Q149",
+    "family": 30,
+    "style": "spacing",
+    "question": "could you   Kuber  Concast  orders  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kuber Concast - Mandi Gobindgarh",
+    "id": "Q150",
+    "family": 30,
+    "style": "misspelling",
+    "question": "tell me Kuber Concast ordres this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Pushpanjali Strip",
+    "id": "Q151",
+    "family": 31,
+    "style": "plain",
+    "question": "Pushpanjali orders last month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Pushpanjali Strip",
+    "id": "Q152",
+    "family": 31,
+    "style": "polite",
+    "question": "please Pushpanjali orders last month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Pushpanjali Strip",
+    "id": "Q153",
+    "family": 31,
+    "style": "uppercase",
+    "question": "PUSHPANJALI ORDERS LAST MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Pushpanjali Strip",
+    "id": "Q154",
+    "family": 31,
+    "style": "spacing",
+    "question": "could you   Pushpanjali  orders  last  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Pushpanjali Strip",
+    "id": "Q155",
+    "family": 31,
+    "style": "misspelling",
+    "question": "tell me Pushpanjali ordres last mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Shakti Rolling - Mandi Gobindgarh",
+    "id": "Q156",
+    "family": 32,
+    "style": "plain",
+    "question": "Shakti Rolling orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Shakti Rolling - Mandi Gobindgarh",
+    "id": "Q157",
+    "family": 32,
+    "style": "polite",
+    "question": "please Shakti Rolling orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Shakti Rolling - Mandi Gobindgarh",
+    "id": "Q158",
+    "family": 32,
+    "style": "uppercase",
+    "question": "SHAKTI ROLLING ORDERS THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Shakti Rolling - Mandi Gobindgarh",
+    "id": "Q159",
+    "family": 32,
+    "style": "spacing",
+    "question": "could you   Shakti  Rolling  orders  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Shakti Rolling - Mandi Gobindgarh",
+    "id": "Q160",
+    "family": 32,
+    "style": "misspelling",
+    "question": "tell me Shakti Rolling ordres this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "East India - Durgapur",
+    "id": "Q161",
+    "family": 33,
+    "style": "plain",
+    "question": "East India orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "East India - Durgapur",
+    "id": "Q162",
+    "family": 33,
+    "style": "polite",
+    "question": "please East India orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "East India - Durgapur",
+    "id": "Q163",
+    "family": 33,
+    "style": "uppercase",
+    "question": "EAST INDIA ORDERS THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "East India - Durgapur",
+    "id": "Q164",
+    "family": 33,
+    "style": "spacing",
+    "question": "could you   East  India  orders  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "East India - Durgapur",
+    "id": "Q165",
+    "family": 33,
+    "style": "misspelling",
+    "question": "tell me East India ordres this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Behari Lal - Mandi Gobindgarh",
+    "id": "Q166",
+    "family": 34,
+    "style": "plain",
+    "question": "Behari Lal orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Behari Lal - Mandi Gobindgarh",
+    "id": "Q167",
+    "family": 34,
+    "style": "polite",
+    "question": "please Behari Lal orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Behari Lal - Mandi Gobindgarh",
+    "id": "Q168",
+    "family": 34,
+    "style": "uppercase",
+    "question": "BEHARI LAL ORDERS THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Behari Lal - Mandi Gobindgarh",
+    "id": "Q169",
+    "family": 34,
+    "style": "spacing",
+    "question": "could you   Behari  Lal  orders  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Behari Lal - Mandi Gobindgarh",
+    "id": "Q170",
+    "family": 34,
+    "style": "misspelling",
+    "question": "tell me Behari Lal ordres this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "grade": "EN353",
+    "id": "Q171",
+    "family": 35,
+    "style": "plain",
+    "question": "Kesari Alloys EN353 orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "grade": "EN353",
+    "id": "Q172",
+    "family": 35,
+    "style": "polite",
+    "question": "please Kesari Alloys EN353 orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "grade": "EN353",
+    "id": "Q173",
+    "family": 35,
+    "style": "uppercase",
+    "question": "KESARI ALLOYS EN353 ORDERS THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "grade": "EN353",
+    "id": "Q174",
+    "family": 35,
+    "style": "spacing",
+    "question": "could you   Kesari  Alloys  EN353  orders  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "grade": "EN353",
+    "id": "Q175",
+    "family": 35,
+    "style": "misspelling",
+    "question": "tell me keshari Alloys EN353 ordres this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "grade": "EN19",
+    "id": "Q176",
+    "family": 36,
+    "style": "plain",
+    "question": "EN19 orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "grade": "EN19",
+    "id": "Q177",
+    "family": 36,
+    "style": "polite",
+    "question": "please EN19 orders this month"
+  },
+  {
+    "intent": "sales_orders",
+    "grade": "EN19",
+    "id": "Q178",
+    "family": 36,
+    "style": "uppercase",
+    "question": "EN19 ORDERS THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "grade": "EN19",
+    "id": "Q179",
+    "family": 36,
+    "style": "spacing",
+    "question": "could you   EN19  orders  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "grade": "EN19",
+    "id": "Q180",
+    "family": 36,
+    "style": "misspelling",
+    "question": "tell me EN19 ordres this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "grade": "H13",
+    "id": "Q181",
+    "family": 37,
+    "style": "plain",
+    "question": "H13 order details last month"
+  },
+  {
+    "intent": "sales_orders",
+    "grade": "H13",
+    "id": "Q182",
+    "family": 37,
+    "style": "polite",
+    "question": "please H13 order details last month"
+  },
+  {
+    "intent": "sales_orders",
+    "grade": "H13",
+    "id": "Q183",
+    "family": 37,
+    "style": "uppercase",
+    "question": "H13 ORDER DETAILS LAST MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "grade": "H13",
+    "id": "Q184",
+    "family": 37,
+    "style": "spacing",
+    "question": "could you   H13  order  details  last  month"
+  },
+  {
+    "intent": "sales_orders",
+    "grade": "H13",
+    "id": "Q185",
+    "family": 37,
+    "style": "misspelling",
+    "question": "tell me H13 ordar detials last mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "company": "example engineering",
+    "id": "Q186",
+    "family": 38,
+    "style": "plain",
+    "question": "orders for company \"Example Engineering\" this month"
+  },
+  {
+    "intent": "sales_orders",
+    "company": "example engineering",
+    "id": "Q187",
+    "family": 38,
+    "style": "polite",
+    "question": "please orders for company \"Example Engineering\" this month"
+  },
+  {
+    "intent": "sales_orders",
+    "company": "example engineering",
+    "id": "Q188",
+    "family": 38,
+    "style": "uppercase",
+    "question": "ORDERS FOR COMPANY \"EXAMPLE ENGINEERING\" THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "company": "example engineering",
+    "id": "Q189",
+    "family": 38,
+    "style": "spacing",
+    "question": "could you   orders  for  company  \"Example  Engineering\"  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "company": "example engineering",
+    "id": "Q190",
+    "family": 38,
+    "style": "misspelling",
+    "question": "tell me ordres for company \"Example Engineering\" this mnth"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "location": "faridabad",
+    "id": "Q191",
+    "family": 39,
+    "style": "plain",
+    "question": "Kesari Alloys order details from Faridabad this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "location": "faridabad",
+    "id": "Q192",
+    "family": 39,
+    "style": "polite",
+    "question": "please Kesari Alloys order details from Faridabad this month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "location": "faridabad",
+    "id": "Q193",
+    "family": 39,
+    "style": "uppercase",
+    "question": "KESARI ALLOYS ORDER DETAILS FROM FARIDABAD THIS MONTH"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "location": "faridabad",
+    "id": "Q194",
+    "family": 39,
+    "style": "spacing",
+    "question": "could you   Kesari  Alloys  order  details  from  Faridabad  this  month"
+  },
+  {
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "location": "faridabad",
+    "id": "Q195",
+    "family": 39,
+    "style": "misspelling",
+    "question": "tell me keshari Alloys ordar detials from Faridabad this mnth"
+  },
+  {
+    "intent": "sales_summary",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "id": "Q196",
+    "family": 40,
+    "style": "plain",
+    "question": "Kesari Alloys total sales this month"
+  },
+  {
+    "intent": "sales_summary",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "id": "Q197",
+    "family": 40,
+    "style": "polite",
+    "question": "please Kesari Alloys total sales this month"
+  },
+  {
+    "intent": "sales_summary",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "id": "Q198",
+    "family": 40,
+    "style": "uppercase",
+    "question": "KESARI ALLOYS TOTAL SALES THIS MONTH"
+  },
+  {
+    "intent": "sales_summary",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "id": "Q199",
+    "family": 40,
+    "style": "spacing",
+    "question": "could you   Kesari  Alloys  total  sales  this  month"
+  },
+  {
+    "intent": "sales_summary",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "id": "Q200",
+    "family": 40,
+    "style": "misspelling",
+    "question": "tell me keshari Alloys total salse this mnth"
+  },
+  {
+    "intent": "top_customers",
+    "limit": 5,
+    "id": "Q201",
+    "family": 41,
+    "style": "plain",
+    "question": "top 5 customers this month"
+  },
+  {
+    "intent": "top_customers",
+    "limit": 5,
+    "id": "Q202",
+    "family": 41,
+    "style": "polite",
+    "question": "please top 5 customers this month"
+  },
+  {
+    "intent": "top_customers",
+    "limit": 5,
+    "id": "Q203",
+    "family": 41,
+    "style": "uppercase",
+    "question": "TOP 5 CUSTOMERS THIS MONTH"
+  },
+  {
+    "intent": "top_customers",
+    "limit": 5,
+    "id": "Q204",
+    "family": 41,
+    "style": "spacing",
+    "question": "could you   top  5  customers  this  month"
+  },
+  {
+    "intent": "top_customers",
+    "limit": 5,
+    "id": "Q205",
+    "family": 41,
+    "style": "misspelling",
+    "question": "tell me top 5 customers this mnth"
+  },
+  {
+    "intent": "top_customers",
+    "id": "Q206",
+    "family": 42,
+    "style": "plain",
+    "question": "best customers this year"
+  },
+  {
+    "intent": "top_customers",
+    "id": "Q207",
+    "family": 42,
+    "style": "polite",
+    "question": "please best customers this year"
+  },
+  {
+    "intent": "top_customers",
+    "id": "Q208",
+    "family": 42,
+    "style": "uppercase",
+    "question": "BEST CUSTOMERS THIS YEAR"
+  },
+  {
+    "intent": "top_customers",
+    "id": "Q209",
+    "family": 42,
+    "style": "spacing",
+    "question": "could you   best  customers  this  year"
+  },
+  {
+    "intent": "top_customers",
+    "id": "Q210",
+    "family": 42,
+    "style": "misspelling",
+    "question": "tell me best customers this year"
+  },
+  {
+    "intent": "top_customers",
+    "limit": 10,
+    "id": "Q211",
+    "family": 43,
+    "style": "plain",
+    "question": "top 10 customers last month"
+  },
+  {
+    "intent": "top_customers",
+    "limit": 10,
+    "id": "Q212",
+    "family": 43,
+    "style": "polite",
+    "question": "please top 10 customers last month"
+  },
+  {
+    "intent": "top_customers",
+    "limit": 10,
+    "id": "Q213",
+    "family": 43,
+    "style": "uppercase",
+    "question": "TOP 10 CUSTOMERS LAST MONTH"
+  },
+  {
+    "intent": "top_customers",
+    "limit": 10,
+    "id": "Q214",
+    "family": 43,
+    "style": "spacing",
+    "question": "could you   top  10  customers  last  month"
+  },
+  {
+    "intent": "top_customers",
+    "limit": 10,
+    "id": "Q215",
+    "family": 43,
+    "style": "misspelling",
+    "question": "tell me top 10 customers last mnth"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q216",
+    "family": 44,
+    "style": "plain",
+    "question": "attendance today"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q217",
+    "family": 44,
+    "style": "polite",
+    "question": "please attendance today"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q218",
+    "family": 44,
+    "style": "uppercase",
+    "question": "ATTENDANCE TODAY"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q219",
+    "family": 44,
+    "style": "spacing",
+    "question": "could you   attendance  today"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q220",
+    "family": 44,
+    "style": "misspelling",
+    "question": "tell me attandance tadays"
+  },
+  {
+    "intent": "attendance",
+    "attendanceList": true,
+    "id": "Q221",
+    "family": 45,
+    "style": "plain",
+    "question": "all persons today attendance check in time"
+  },
+  {
+    "intent": "attendance",
+    "attendanceList": true,
+    "id": "Q222",
+    "family": 45,
+    "style": "polite",
+    "question": "please all persons today attendance check in time"
+  },
+  {
+    "intent": "attendance",
+    "attendanceList": true,
+    "id": "Q223",
+    "family": 45,
+    "style": "uppercase",
+    "question": "ALL PERSONS TODAY ATTENDANCE CHECK IN TIME"
+  },
+  {
+    "intent": "attendance",
+    "attendanceList": true,
+    "id": "Q224",
+    "family": 45,
+    "style": "spacing",
+    "question": "could you   all  persons  today  attendance  check  in  time"
+  },
+  {
+    "intent": "attendance",
+    "attendanceList": true,
+    "id": "Q225",
+    "family": 45,
+    "style": "misspelling",
+    "question": "tell me all persons tadays attandance check in time"
+  },
+  {
+    "intent": "attendance",
+    "attendanceList": true,
+    "id": "Q226",
+    "family": 46,
+    "style": "plain",
+    "question": "everyone check out time today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceList": true,
+    "id": "Q227",
+    "family": 46,
+    "style": "polite",
+    "question": "please everyone check out time today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceList": true,
+    "id": "Q228",
+    "family": 46,
+    "style": "uppercase",
+    "question": "EVERYONE CHECK OUT TIME TODAY"
+  },
+  {
+    "intent": "attendance",
+    "attendanceList": true,
+    "id": "Q229",
+    "family": 46,
+    "style": "spacing",
+    "question": "could you   everyone  check  out  time  today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceList": true,
+    "id": "Q230",
+    "family": 46,
+    "style": "misspelling",
+    "question": "tell me everyone check out time tadays"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "present",
+    "id": "Q231",
+    "family": 47,
+    "style": "plain",
+    "question": "who is present today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "present",
+    "id": "Q232",
+    "family": 47,
+    "style": "polite",
+    "question": "please who is present today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "present",
+    "id": "Q233",
+    "family": 47,
+    "style": "uppercase",
+    "question": "WHO IS PRESENT TODAY"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "present",
+    "id": "Q234",
+    "family": 47,
+    "style": "spacing",
+    "question": "could you   who  is  present  today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "present",
+    "id": "Q235",
+    "family": 47,
+    "style": "misspelling",
+    "question": "tell me who is present tadays"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "absent",
+    "id": "Q236",
+    "family": 48,
+    "style": "plain",
+    "question": "who is absent today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "absent",
+    "id": "Q237",
+    "family": 48,
+    "style": "polite",
+    "question": "please who is absent today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "absent",
+    "id": "Q238",
+    "family": 48,
+    "style": "uppercase",
+    "question": "WHO IS ABSENT TODAY"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "absent",
+    "id": "Q239",
+    "family": 48,
+    "style": "spacing",
+    "question": "could you   who  is  absent  today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "absent",
+    "id": "Q240",
+    "family": 48,
+    "style": "misspelling",
+    "question": "tell me who is absent tadays"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "on_leave",
+    "id": "Q241",
+    "family": 49,
+    "style": "plain",
+    "question": "who is on leave today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "on_leave",
+    "id": "Q242",
+    "family": 49,
+    "style": "polite",
+    "question": "please who is on leave today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "on_leave",
+    "id": "Q243",
+    "family": 49,
+    "style": "uppercase",
+    "question": "WHO IS ON LEAVE TODAY"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "on_leave",
+    "id": "Q244",
+    "family": 49,
+    "style": "spacing",
+    "question": "could you   who  is  on  leave  today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "on_leave",
+    "id": "Q245",
+    "family": 49,
+    "style": "misspelling",
+    "question": "tell me who is on leave tadays"
+  },
+  {
+    "intent": "attendance",
+    "self": true,
+    "id": "Q246",
+    "family": 50,
+    "style": "plain",
+    "question": "my attendance yesterday"
+  },
+  {
+    "intent": "attendance",
+    "self": true,
+    "id": "Q247",
+    "family": 50,
+    "style": "polite",
+    "question": "please my attendance yesterday"
+  },
+  {
+    "intent": "attendance",
+    "self": true,
+    "id": "Q248",
+    "family": 50,
+    "style": "uppercase",
+    "question": "MY ATTENDANCE YESTERDAY"
+  },
+  {
+    "intent": "attendance",
+    "self": true,
+    "id": "Q249",
+    "family": 50,
+    "style": "spacing",
+    "question": "could you   my  attendance  yesterday"
+  },
+  {
+    "intent": "attendance",
+    "self": true,
+    "id": "Q250",
+    "family": 50,
+    "style": "misspelling",
+    "question": "tell me my attandance yestarday"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q251",
+    "family": 51,
+    "style": "plain",
+    "question": "Deepak Arya attendance today"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q252",
+    "family": 51,
+    "style": "polite",
+    "question": "please Deepak Arya attendance today"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q253",
+    "family": 51,
+    "style": "uppercase",
+    "question": "DEEPAK ARYA ATTENDANCE TODAY"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q254",
+    "family": 51,
+    "style": "spacing",
+    "question": "could you   Deepak  Arya  attendance  today"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q255",
+    "family": 51,
+    "style": "misspelling",
+    "question": "tell me Deepak Arya attandance tadays"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q256",
+    "family": 52,
+    "style": "plain",
+    "question": "attendance last week"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q257",
+    "family": 52,
+    "style": "polite",
+    "question": "please attendance last week"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q258",
+    "family": 52,
+    "style": "uppercase",
+    "question": "ATTENDANCE LAST WEEK"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q259",
+    "family": 52,
+    "style": "spacing",
+    "question": "could you   attendance  last  week"
+  },
+  {
+    "intent": "attendance",
+    "id": "Q260",
+    "family": 52,
+    "style": "misspelling",
+    "question": "tell me attandance last week"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "checked_out",
+    "id": "Q261",
+    "family": 53,
+    "style": "plain",
+    "question": "show employees checked out today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "checked_out",
+    "id": "Q262",
+    "family": 53,
+    "style": "polite",
+    "question": "please show employees checked out today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "checked_out",
+    "id": "Q263",
+    "family": 53,
+    "style": "uppercase",
+    "question": "SHOW EMPLOYEES CHECKED OUT TODAY"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "checked_out",
+    "id": "Q264",
+    "family": 53,
+    "style": "spacing",
+    "question": "could you   show  employees  checked  out  today"
+  },
+  {
+    "intent": "attendance",
+    "attendanceStatus": "checked_out",
+    "id": "Q265",
+    "family": 53,
+    "style": "misspelling",
+    "question": "tell me show emplyees checked out tadays"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q266",
+    "family": 54,
+    "style": "plain",
+    "question": "my timesheet today"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q267",
+    "family": 54,
+    "style": "polite",
+    "question": "please my timesheet today"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q268",
+    "family": 54,
+    "style": "uppercase",
+    "question": "MY TIMESHEET TODAY"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q269",
+    "family": 54,
+    "style": "spacing",
+    "question": "could you   my  timesheet  today"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q270",
+    "family": 54,
+    "style": "misspelling",
+    "question": "tell me my timeshet tadays"
+  },
+  {
+    "intent": "timesheets",
+    "id": "Q271",
+    "family": 55,
+    "style": "plain",
+    "question": "Deepak Arya timesheet yesterday"
+  },
+  {
+    "intent": "timesheets",
+    "id": "Q272",
+    "family": 55,
+    "style": "polite",
+    "question": "please Deepak Arya timesheet yesterday"
+  },
+  {
+    "intent": "timesheets",
+    "id": "Q273",
+    "family": 55,
+    "style": "uppercase",
+    "question": "DEEPAK ARYA TIMESHEET YESTERDAY"
+  },
+  {
+    "intent": "timesheets",
+    "id": "Q274",
+    "family": 55,
+    "style": "spacing",
+    "question": "could you   Deepak  Arya  timesheet  yesterday"
+  },
+  {
+    "intent": "timesheets",
+    "id": "Q275",
+    "family": 55,
+    "style": "misspelling",
+    "question": "tell me Deepak Arya timeshet yestarday"
+  },
+  {
+    "intent": "timesheets",
+    "id": "Q276",
+    "family": 56,
+    "style": "plain",
+    "question": "Deepak Yadav work report last week"
+  },
+  {
+    "intent": "timesheets",
+    "id": "Q277",
+    "family": 56,
+    "style": "polite",
+    "question": "please Deepak Yadav work report last week"
+  },
+  {
+    "intent": "timesheets",
+    "id": "Q278",
+    "family": 56,
+    "style": "uppercase",
+    "question": "DEEPAK YADAV WORK REPORT LAST WEEK"
+  },
+  {
+    "intent": "timesheets",
+    "id": "Q279",
+    "family": 56,
+    "style": "spacing",
+    "question": "could you   Deepak  Yadav  work  report  last  week"
+  },
+  {
+    "intent": "timesheets",
+    "id": "Q280",
+    "family": 56,
+    "style": "misspelling",
+    "question": "tell me Deepak Yadav work report last week"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q281",
+    "family": 57,
+    "style": "plain",
+    "question": "my time sheet this month"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q282",
+    "family": 57,
+    "style": "polite",
+    "question": "please my time sheet this month"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q283",
+    "family": 57,
+    "style": "uppercase",
+    "question": "MY TIME SHEET THIS MONTH"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q284",
+    "family": 57,
+    "style": "spacing",
+    "question": "could you   my  time  sheet  this  month"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q285",
+    "family": 57,
+    "style": "misspelling",
+    "question": "tell me my time sheet this mnth"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q286",
+    "family": 58,
+    "style": "plain",
+    "question": "mera timesheet aaj"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q287",
+    "family": 58,
+    "style": "polite",
+    "question": "please mera timesheet aaj"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q288",
+    "family": 58,
+    "style": "uppercase",
+    "question": "MERA TIMESHEET AAJ"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q289",
+    "family": 58,
+    "style": "spacing",
+    "question": "could you   mera  timesheet  aaj"
+  },
+  {
+    "intent": "timesheets",
+    "self": true,
+    "id": "Q290",
+    "family": 58,
+    "style": "misspelling",
+    "question": "tell me mera timeshet aaj"
+  },
+  {
+    "intent": "dispatch_summary",
+    "id": "Q291",
+    "family": 59,
+    "style": "plain",
+    "question": "dispatch summary today"
+  },
+  {
+    "intent": "dispatch_summary",
+    "id": "Q292",
+    "family": 59,
+    "style": "polite",
+    "question": "please dispatch summary today"
+  },
+  {
+    "intent": "dispatch_summary",
+    "id": "Q293",
+    "family": 59,
+    "style": "uppercase",
+    "question": "DISPATCH SUMMARY TODAY"
+  },
+  {
+    "intent": "dispatch_summary",
+    "id": "Q294",
+    "family": 59,
+    "style": "spacing",
+    "question": "could you   dispatch  summary  today"
+  },
+  {
+    "intent": "dispatch_summary",
+    "id": "Q295",
+    "family": 59,
+    "style": "misspelling",
+    "question": "tell me disptach summary tadays"
+  },
+  {
+    "intent": "dispatch_summary",
+    "id": "Q296",
+    "family": 60,
+    "style": "plain",
+    "question": "dispatch last month"
+  },
+  {
+    "intent": "dispatch_summary",
+    "id": "Q297",
+    "family": 60,
+    "style": "polite",
+    "question": "please dispatch last month"
+  },
+  {
+    "intent": "dispatch_summary",
+    "id": "Q298",
+    "family": 60,
+    "style": "uppercase",
+    "question": "DISPATCH LAST MONTH"
+  },
+  {
+    "intent": "dispatch_summary",
+    "id": "Q299",
+    "family": 60,
+    "style": "spacing",
+    "question": "could you   dispatch  last  month"
+  },
+  {
+    "intent": "dispatch_summary",
+    "id": "Q300",
+    "family": 60,
+    "style": "misspelling",
+    "question": "tell me disptach last mnth"
+  },
+  {
+    "intent": "dispatch_summary",
+    "self": true,
+    "id": "Q301",
+    "family": 61,
+    "style": "plain",
+    "question": "my dispatch summary this week"
+  },
+  {
+    "intent": "dispatch_summary",
+    "self": true,
+    "id": "Q302",
+    "family": 61,
+    "style": "polite",
+    "question": "please my dispatch summary this week"
+  },
+  {
+    "intent": "dispatch_summary",
+    "self": true,
+    "id": "Q303",
+    "family": 61,
+    "style": "uppercase",
+    "question": "MY DISPATCH SUMMARY THIS WEEK"
+  },
+  {
+    "intent": "dispatch_summary",
+    "self": true,
+    "id": "Q304",
+    "family": 61,
+    "style": "spacing",
+    "question": "could you   my  dispatch  summary  this  week"
+  },
+  {
+    "intent": "dispatch_summary",
+    "self": true,
+    "id": "Q305",
+    "family": 61,
+    "style": "misspelling",
+    "question": "tell me my disptach summary this week"
+  },
+  {
+    "intent": "dispatch_plan",
+    "from": "2026-10-28",
+    "id": "Q306",
+    "family": 62,
+    "style": "plain",
+    "question": "dispatch plan tomorrow"
+  },
+  {
+    "intent": "dispatch_plan",
+    "from": "2026-10-28",
+    "id": "Q307",
+    "family": 62,
+    "style": "polite",
+    "question": "please dispatch plan tomorrow"
+  },
+  {
+    "intent": "dispatch_plan",
+    "from": "2026-10-28",
+    "id": "Q308",
+    "family": 62,
+    "style": "uppercase",
+    "question": "DISPATCH PLAN TOMORROW"
+  },
+  {
+    "intent": "dispatch_plan",
+    "from": "2026-10-28",
+    "id": "Q309",
+    "family": 62,
+    "style": "spacing",
+    "question": "could you   dispatch  plan  tomorrow"
+  },
+  {
+    "intent": "dispatch_plan",
+    "from": "2026-10-28",
+    "id": "Q310",
+    "family": 62,
+    "style": "misspelling",
+    "question": "tell me disptach plan tommorow"
+  },
+  {
+    "intent": "dispatch_plan",
+    "id": "Q311",
+    "family": 63,
+    "style": "plain",
+    "question": "upcoming shipments this week"
+  },
+  {
+    "intent": "dispatch_plan",
+    "id": "Q312",
+    "family": 63,
+    "style": "polite",
+    "question": "please upcoming shipments this week"
+  },
+  {
+    "intent": "dispatch_plan",
+    "id": "Q313",
+    "family": 63,
+    "style": "uppercase",
+    "question": "UPCOMING SHIPMENTS THIS WEEK"
+  },
+  {
+    "intent": "dispatch_plan",
+    "id": "Q314",
+    "family": 63,
+    "style": "spacing",
+    "question": "could you   upcoming  shipments  this  week"
+  },
+  {
+    "intent": "dispatch_plan",
+    "id": "Q315",
+    "family": 63,
+    "style": "misspelling",
+    "question": "tell me upcoming shipments this week"
+  },
+  {
+    "intent": "dispatch_plan",
+    "id": "Q316",
+    "family": 64,
+    "style": "plain",
+    "question": "shipping schedule today"
+  },
+  {
+    "intent": "dispatch_plan",
+    "id": "Q317",
+    "family": 64,
+    "style": "polite",
+    "question": "please shipping schedule today"
+  },
+  {
+    "intent": "dispatch_plan",
+    "id": "Q318",
+    "family": 64,
+    "style": "uppercase",
+    "question": "SHIPPING SCHEDULE TODAY"
+  },
+  {
+    "intent": "dispatch_plan",
+    "id": "Q319",
+    "family": 64,
+    "style": "spacing",
+    "question": "could you   shipping  schedule  today"
+  },
+  {
+    "intent": "dispatch_plan",
+    "id": "Q320",
+    "family": 64,
+    "style": "misspelling",
+    "question": "tell me shipping schedule tadays"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q321",
+    "family": 65,
+    "style": "plain",
+    "question": "list delivered dispatches this month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q322",
+    "family": 65,
+    "style": "polite",
+    "question": "please list delivered dispatches this month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q323",
+    "family": 65,
+    "style": "uppercase",
+    "question": "LIST DELIVERED DISPATCHES THIS MONTH"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q324",
+    "family": 65,
+    "style": "spacing",
+    "question": "could you   list  delivered  dispatches  this  month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q325",
+    "family": 65,
+    "style": "misspelling",
+    "question": "tell me list deliverd dispatches this mnth"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q326",
+    "family": 66,
+    "style": "plain",
+    "question": "partial dispatch details last month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q327",
+    "family": 66,
+    "style": "polite",
+    "question": "please partial dispatch details last month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q328",
+    "family": 66,
+    "style": "uppercase",
+    "question": "PARTIAL DISPATCH DETAILS LAST MONTH"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q329",
+    "family": 66,
+    "style": "spacing",
+    "question": "could you   partial  dispatch  details  last  month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q330",
+    "family": 66,
+    "style": "misspelling",
+    "question": "tell me partial disptach detials last mnth"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q331",
+    "family": 67,
+    "style": "plain",
+    "question": "paid dispatch details this month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q332",
+    "family": 67,
+    "style": "polite",
+    "question": "please paid dispatch details this month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q333",
+    "family": 67,
+    "style": "uppercase",
+    "question": "PAID DISPATCH DETAILS THIS MONTH"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q334",
+    "family": 67,
+    "style": "spacing",
+    "question": "could you   paid  dispatch  details  this  month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q335",
+    "family": 67,
+    "style": "misspelling",
+    "question": "tell me paid disptach detials this mnth"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q336",
+    "family": 68,
+    "style": "plain",
+    "question": "cancelled dispatch details this month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q337",
+    "family": 68,
+    "style": "polite",
+    "question": "please cancelled dispatch details this month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q338",
+    "family": 68,
+    "style": "uppercase",
+    "question": "CANCELLED DISPATCH DETAILS THIS MONTH"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q339",
+    "family": 68,
+    "style": "spacing",
+    "question": "could you   cancelled  dispatch  details  this  month"
+  },
+  {
+    "intent": "dispatch_orders",
+    "id": "Q340",
+    "family": 68,
+    "style": "misspelling",
+    "question": "tell me cancelled disptach detials this mnth"
+  },
+  {
+    "intent": "tracking_orders",
+    "id": "Q341",
+    "family": 69,
+    "style": "plain",
+    "question": "order tracking"
+  },
+  {
+    "intent": "tracking_orders",
+    "id": "Q342",
+    "family": 69,
+    "style": "polite",
+    "question": "please order tracking"
+  },
+  {
+    "intent": "tracking_orders",
+    "id": "Q343",
+    "family": 69,
+    "style": "uppercase",
+    "question": "ORDER TRACKING"
+  },
+  {
+    "intent": "tracking_orders",
+    "id": "Q344",
+    "family": 69,
+    "style": "spacing",
+    "question": "could you   order  tracking"
+  },
+  {
+    "intent": "tracking_orders",
+    "id": "Q345",
+    "family": 69,
+    "style": "misspelling",
+    "question": "tell me ordar trackng"
+  },
+  {
+    "intent": "tracking_orders",
+    "id": "Q346",
+    "family": 70,
+    "style": "plain",
+    "question": "orders on hold"
+  },
+  {
+    "intent": "tracking_orders",
+    "id": "Q347",
+    "family": 70,
+    "style": "polite",
+    "question": "please orders on hold"
+  },
+  {
+    "intent": "tracking_orders",
+    "id": "Q348",
+    "family": 70,
+    "style": "uppercase",
+    "question": "ORDERS ON HOLD"
+  },
+  {
+    "intent": "tracking_orders",
+    "id": "Q349",
+    "family": 70,
+    "style": "spacing",
+    "question": "could you   orders  on  hold"
+  },
+  {
+    "intent": "tracking_orders",
+    "id": "Q350",
+    "family": 70,
+    "style": "misspelling",
+    "question": "tell me ordres on hold"
+  },
+  {
+    "intent": "delayed_orders",
+    "id": "Q351",
+    "family": 71,
+    "style": "plain",
+    "question": "which orders are delayed"
+  },
+  {
+    "intent": "delayed_orders",
+    "id": "Q352",
+    "family": 71,
+    "style": "polite",
+    "question": "please which orders are delayed"
+  },
+  {
+    "intent": "delayed_orders",
+    "id": "Q353",
+    "family": 71,
+    "style": "uppercase",
+    "question": "WHICH ORDERS ARE DELAYED"
+  },
+  {
+    "intent": "delayed_orders",
+    "id": "Q354",
+    "family": 71,
+    "style": "spacing",
+    "question": "could you   which  orders  are  delayed"
+  },
+  {
+    "intent": "delayed_orders",
+    "id": "Q355",
+    "family": 71,
+    "style": "misspelling",
+    "question": "tell me which ordres are delayed"
+  },
+  {
+    "intent": "receivables",
+    "id": "Q356",
+    "family": 72,
+    "style": "plain",
+    "question": "overdue payments"
+  },
+  {
+    "intent": "receivables",
+    "id": "Q357",
+    "family": 72,
+    "style": "polite",
+    "question": "please overdue payments"
+  },
+  {
+    "intent": "receivables",
+    "id": "Q358",
+    "family": 72,
+    "style": "uppercase",
+    "question": "OVERDUE PAYMENTS"
+  },
+  {
+    "intent": "receivables",
+    "id": "Q359",
+    "family": 72,
+    "style": "spacing",
+    "question": "could you   overdue  payments"
+  },
+  {
+    "intent": "receivables",
+    "id": "Q360",
+    "family": 72,
+    "style": "misspelling",
+    "question": "tell me overdu paymnt"
+  },
+  {
+    "intent": "receivables",
+    "id": "Q361",
+    "family": 73,
+    "style": "plain",
+    "question": "outstanding dues"
+  },
+  {
+    "intent": "receivables",
+    "id": "Q362",
+    "family": 73,
+    "style": "polite",
+    "question": "please outstanding dues"
+  },
+  {
+    "intent": "receivables",
+    "id": "Q363",
+    "family": 73,
+    "style": "uppercase",
+    "question": "OUTSTANDING DUES"
+  },
+  {
+    "intent": "receivables",
+    "id": "Q364",
+    "family": 73,
+    "style": "spacing",
+    "question": "could you   outstanding  dues"
+  },
+  {
+    "intent": "receivables",
+    "id": "Q365",
+    "family": 73,
+    "style": "misspelling",
+    "question": "tell me outstandng dues"
+  },
+  {
+    "intent": "receivables",
+    "self": true,
+    "id": "Q366",
+    "family": 74,
+    "style": "plain",
+    "question": "my receivables"
+  },
+  {
+    "intent": "receivables",
+    "self": true,
+    "id": "Q367",
+    "family": 74,
+    "style": "polite",
+    "question": "please my receivables"
+  },
+  {
+    "intent": "receivables",
+    "self": true,
+    "id": "Q368",
+    "family": 74,
+    "style": "uppercase",
+    "question": "MY RECEIVABLES"
+  },
+  {
+    "intent": "receivables",
+    "self": true,
+    "id": "Q369",
+    "family": 74,
+    "style": "spacing",
+    "question": "could you   my  receivables"
+  },
+  {
+    "intent": "receivables",
+    "self": true,
+    "id": "Q370",
+    "family": 74,
+    "style": "misspelling",
+    "question": "tell me my receivables"
+  },
+  {
+    "intent": "enquiries",
+    "id": "Q371",
+    "family": 75,
+    "style": "plain",
+    "question": "enquiries this month"
+  },
+  {
+    "intent": "enquiries",
+    "id": "Q372",
+    "family": 75,
+    "style": "polite",
+    "question": "please enquiries this month"
+  },
+  {
+    "intent": "enquiries",
+    "id": "Q373",
+    "family": 75,
+    "style": "uppercase",
+    "question": "ENQUIRIES THIS MONTH"
+  },
+  {
+    "intent": "enquiries",
+    "id": "Q374",
+    "family": 75,
+    "style": "spacing",
+    "question": "could you   enquiries  this  month"
+  },
+  {
+    "intent": "enquiries",
+    "id": "Q375",
+    "family": 75,
+    "style": "misspelling",
+    "question": "tell me enqury this mnth"
+  },
+  {
+    "intent": "enquiries",
+    "id": "Q376",
+    "family": 76,
+    "style": "plain",
+    "question": "inquiries last week"
+  },
+  {
+    "intent": "enquiries",
+    "id": "Q377",
+    "family": 76,
+    "style": "polite",
+    "question": "please inquiries last week"
+  },
+  {
+    "intent": "enquiries",
+    "id": "Q378",
+    "family": 76,
+    "style": "uppercase",
+    "question": "INQUIRIES LAST WEEK"
+  },
+  {
+    "intent": "enquiries",
+    "id": "Q379",
+    "family": 76,
+    "style": "spacing",
+    "question": "could you   inquiries  last  week"
+  },
+  {
+    "intent": "enquiries",
+    "id": "Q380",
+    "family": 76,
+    "style": "misspelling",
+    "question": "tell me inquiries last week"
+  },
+  {
+    "intent": "activity",
+    "id": "Q381",
+    "family": 77,
+    "style": "plain",
+    "question": "cold calls yesterday"
+  },
+  {
+    "intent": "activity",
+    "id": "Q382",
+    "family": 77,
+    "style": "polite",
+    "question": "please cold calls yesterday"
+  },
+  {
+    "intent": "activity",
+    "id": "Q383",
+    "family": 77,
+    "style": "uppercase",
+    "question": "COLD CALLS YESTERDAY"
+  },
+  {
+    "intent": "activity",
+    "id": "Q384",
+    "family": 77,
+    "style": "spacing",
+    "question": "could you   cold  calls  yesterday"
+  },
+  {
+    "intent": "activity",
+    "id": "Q385",
+    "family": 77,
+    "style": "misspelling",
+    "question": "tell me cold calls yestarday"
+  },
+  {
+    "intent": "activity",
+    "id": "Q386",
+    "family": 78,
+    "style": "plain",
+    "question": "visits today"
+  },
+  {
+    "intent": "activity",
+    "id": "Q387",
+    "family": 78,
+    "style": "polite",
+    "question": "please visits today"
+  },
+  {
+    "intent": "activity",
+    "id": "Q388",
+    "family": 78,
+    "style": "uppercase",
+    "question": "VISITS TODAY"
+  },
+  {
+    "intent": "activity",
+    "id": "Q389",
+    "family": 78,
+    "style": "spacing",
+    "question": "could you   visits  today"
+  },
+  {
+    "intent": "activity",
+    "id": "Q390",
+    "family": 78,
+    "style": "misspelling",
+    "question": "tell me visits tadays"
+  },
+  {
+    "intent": "management_analysis",
+    "id": "Q391",
+    "family": 79,
+    "style": "plain",
+    "question": "management analysis this month"
+  },
+  {
+    "intent": "management_analysis",
+    "id": "Q392",
+    "family": 79,
+    "style": "polite",
+    "question": "please management analysis this month"
+  },
+  {
+    "intent": "management_analysis",
+    "id": "Q393",
+    "family": 79,
+    "style": "uppercase",
+    "question": "MANAGEMENT ANALYSIS THIS MONTH"
+  },
+  {
+    "intent": "management_analysis",
+    "id": "Q394",
+    "family": 79,
+    "style": "spacing",
+    "question": "could you   management  analysis  this  month"
+  },
+  {
+    "intent": "management_analysis",
+    "id": "Q395",
+    "family": 79,
+    "style": "misspelling",
+    "question": "tell me managment analisis this mnth"
+  },
+  {
+    "intent": "logistics_analysis",
+    "id": "Q396",
+    "family": 80,
+    "style": "plain",
+    "question": "logistics analysis last month"
+  },
+  {
+    "intent": "logistics_analysis",
+    "id": "Q397",
+    "family": 80,
+    "style": "polite",
+    "question": "please logistics analysis last month"
+  },
+  {
+    "intent": "logistics_analysis",
+    "id": "Q398",
+    "family": 80,
+    "style": "uppercase",
+    "question": "LOGISTICS ANALYSIS LAST MONTH"
+  },
+  {
+    "intent": "logistics_analysis",
+    "id": "Q399",
+    "family": 80,
+    "style": "spacing",
+    "question": "could you   logistics  analysis  last  month"
+  },
+  {
+    "intent": "logistics_analysis",
+    "id": "Q400",
+    "family": 80,
+    "style": "misspelling",
+    "question": "tell me logisitcs analisis last mnth"
+  },
+  {
+    "intent": "executive_summary",
+    "id": "Q401",
+    "family": 81,
+    "style": "plain",
+    "question": "executive overview this month"
+  },
+  {
+    "intent": "executive_summary",
+    "id": "Q402",
+    "family": 81,
+    "style": "polite",
+    "question": "please executive overview this month"
+  },
+  {
+    "intent": "executive_summary",
+    "id": "Q403",
+    "family": 81,
+    "style": "uppercase",
+    "question": "EXECUTIVE OVERVIEW THIS MONTH"
+  },
+  {
+    "intent": "executive_summary",
+    "id": "Q404",
+    "family": 81,
+    "style": "spacing",
+    "question": "could you   executive  overview  this  month"
+  },
+  {
+    "intent": "executive_summary",
+    "id": "Q405",
+    "family": 81,
+    "style": "misspelling",
+    "question": "tell me executive overview this mnth"
+  },
+  {
+    "clarify": true,
+    "id": "Q406",
+    "family": 82,
+    "style": "plain",
+    "question": "sales kal"
+  },
+  {
+    "clarify": true,
+    "id": "Q407",
+    "family": 82,
+    "style": "polite",
+    "question": "please sales kal"
+  },
+  {
+    "clarify": true,
+    "id": "Q408",
+    "family": 82,
+    "style": "uppercase",
+    "question": "SALES KAL"
+  },
+  {
+    "clarify": true,
+    "id": "Q409",
+    "family": 82,
+    "style": "spacing",
+    "question": "could you   sales  kal"
+  },
+  {
+    "clarify": true,
+    "id": "Q410",
+    "family": 82,
+    "style": "misspelling",
+    "question": "tell me salse kal"
+  },
+  {
+    "clarify": true,
+    "id": "Q411",
+    "family": 83,
+    "style": "plain",
+    "question": "sales 2026-02-30"
+  },
+  {
+    "clarify": true,
+    "id": "Q412",
+    "family": 83,
+    "style": "polite",
+    "question": "please sales 2026-02-30"
+  },
+  {
+    "clarify": true,
+    "id": "Q413",
+    "family": 83,
+    "style": "uppercase",
+    "question": "SALES 2026-02-30"
+  },
+  {
+    "clarify": true,
+    "id": "Q414",
+    "family": 83,
+    "style": "spacing",
+    "question": "could you   sales  2026-02-30"
+  },
+  {
+    "clarify": true,
+    "id": "Q415",
+    "family": 83,
+    "style": "misspelling",
+    "question": "tell me salse 2026-02-30"
+  },
+  {
+    "clarify": true,
+    "id": "Q416",
+    "family": 84,
+    "style": "plain",
+    "question": "sales 31 Feb 2026"
+  },
+  {
+    "clarify": true,
+    "id": "Q417",
+    "family": 84,
+    "style": "polite",
+    "question": "please sales 31 Feb 2026"
+  },
+  {
+    "clarify": true,
+    "id": "Q418",
+    "family": 84,
+    "style": "uppercase",
+    "question": "SALES 31 FEB 2026"
+  },
+  {
+    "clarify": true,
+    "id": "Q419",
+    "family": 84,
+    "style": "spacing",
+    "question": "could you   sales  31  Feb  2026"
+  },
+  {
+    "clarify": true,
+    "id": "Q420",
+    "family": 84,
+    "style": "misspelling",
+    "question": "tell me salse 31 Feb 2026"
+  },
+  {
+    "clarify": true,
+    "id": "Q421",
+    "family": 85,
+    "style": "plain",
+    "question": "sales 2026-10-27 to 2026-10-01"
+  },
+  {
+    "clarify": true,
+    "id": "Q422",
+    "family": 85,
+    "style": "polite",
+    "question": "please sales 2026-10-27 to 2026-10-01"
+  },
+  {
+    "clarify": true,
+    "id": "Q423",
+    "family": 85,
+    "style": "uppercase",
+    "question": "SALES 2026-10-27 TO 2026-10-01"
+  },
+  {
+    "clarify": true,
+    "id": "Q424",
+    "family": 85,
+    "style": "spacing",
+    "question": "could you   sales  2026-10-27  to  2026-10-01"
+  },
+  {
+    "clarify": true,
+    "id": "Q425",
+    "family": 85,
+    "style": "misspelling",
+    "question": "tell me salse 2026-10-27 to 2026-10-01"
+  },
+  {
+    "clarify": true,
+    "id": "Q426",
+    "family": 86,
+    "style": "plain",
+    "question": "orders in imaginary mill"
+  },
+  {
+    "clarify": true,
+    "id": "Q427",
+    "family": 86,
+    "style": "polite",
+    "question": "please orders in imaginary mill"
+  },
+  {
+    "clarify": true,
+    "id": "Q428",
+    "family": 86,
+    "style": "uppercase",
+    "question": "ORDERS IN IMAGINARY MILL"
+  },
+  {
+    "clarify": true,
+    "id": "Q429",
+    "family": 86,
+    "style": "spacing",
+    "question": "could you   orders  in  imaginary  mill"
+  },
+  {
+    "clarify": true,
+    "id": "Q430",
+    "family": 86,
+    "style": "misspelling",
+    "question": "tell me ordres in imaginary mill"
+  },
+  {
+    "clarify": true,
+    "id": "Q431",
+    "family": 87,
+    "style": "plain",
+    "question": "Kesari Alloys and AV Alloys orders"
+  },
+  {
+    "clarify": true,
+    "id": "Q432",
+    "family": 87,
+    "style": "polite",
+    "question": "please Kesari Alloys and AV Alloys orders"
+  },
+  {
+    "clarify": true,
+    "id": "Q433",
+    "family": 87,
+    "style": "uppercase",
+    "question": "KESARI ALLOYS AND AV ALLOYS ORDERS"
+  },
+  {
+    "clarify": true,
+    "id": "Q434",
+    "family": 87,
+    "style": "spacing",
+    "question": "could you   Kesari  Alloys  and  AV  Alloys  orders"
+  },
+  {
+    "clarify": true,
+    "id": "Q435",
+    "family": 87,
+    "style": "misspelling",
+    "question": "tell me keshari Alloys and AV Alloys ordres"
+  },
+  {
+    "clarify": true,
+    "id": "Q436",
+    "family": 88,
+    "style": "plain",
+    "question": "sales profit this month"
+  },
+  {
+    "clarify": true,
+    "id": "Q437",
+    "family": 88,
+    "style": "polite",
+    "question": "please sales profit this month"
+  },
+  {
+    "clarify": true,
+    "id": "Q438",
+    "family": 88,
+    "style": "uppercase",
+    "question": "SALES PROFIT THIS MONTH"
+  },
+  {
+    "clarify": true,
+    "id": "Q439",
+    "family": 88,
+    "style": "spacing",
+    "question": "could you   sales  profit  this  month"
+  },
+  {
+    "clarify": true,
+    "id": "Q440",
+    "family": 88,
+    "style": "misspelling",
+    "question": "tell me salse profit this mnth"
+  },
+  {
+    "clarify": true,
+    "id": "Q441",
+    "family": 89,
+    "style": "plain",
+    "question": "sales above 1 lakh this month"
+  },
+  {
+    "clarify": true,
+    "id": "Q442",
+    "family": 89,
+    "style": "polite",
+    "question": "please sales above 1 lakh this month"
+  },
+  {
+    "clarify": true,
+    "id": "Q443",
+    "family": 89,
+    "style": "uppercase",
+    "question": "SALES ABOVE 1 LAKH THIS MONTH"
+  },
+  {
+    "clarify": true,
+    "id": "Q444",
+    "family": 89,
+    "style": "spacing",
+    "question": "could you   sales  above  1  lakh  this  month"
+  },
+  {
+    "clarify": true,
+    "id": "Q445",
+    "family": 89,
+    "style": "misspelling",
+    "question": "tell me salse above 1 lakh this mnth"
+  },
+  {
+    "clarify": true,
+    "id": "Q446",
+    "family": 90,
+    "style": "plain",
+    "question": "compare sales this month and last month"
+  },
+  {
+    "clarify": true,
+    "id": "Q447",
+    "family": 90,
+    "style": "polite",
+    "question": "please compare sales this month and last month"
+  },
+  {
+    "clarify": true,
+    "id": "Q448",
+    "family": 90,
+    "style": "uppercase",
+    "question": "COMPARE SALES THIS MONTH AND LAST MONTH"
+  },
+  {
+    "clarify": true,
+    "id": "Q449",
+    "family": 90,
+    "style": "spacing",
+    "question": "could you   compare  sales  this  month  and  last  month"
+  },
+  {
+    "clarify": true,
+    "id": "Q450",
+    "family": 90,
+    "style": "misspelling",
+    "question": "tell me compare salse this mnth and last mnth"
+  },
+  {
+    "clarify": true,
+    "id": "Q451",
+    "family": 91,
+    "style": "plain",
+    "question": "leave balance today"
+  },
+  {
+    "clarify": true,
+    "id": "Q452",
+    "family": 91,
+    "style": "polite",
+    "question": "please leave balance today"
+  },
+  {
+    "clarify": true,
+    "id": "Q453",
+    "family": 91,
+    "style": "uppercase",
+    "question": "LEAVE BALANCE TODAY"
+  },
+  {
+    "clarify": true,
+    "id": "Q454",
+    "family": 91,
+    "style": "spacing",
+    "question": "could you   leave  balance  today"
+  },
+  {
+    "clarify": true,
+    "id": "Q455",
+    "family": 91,
+    "style": "misspelling",
+    "question": "tell me leave balance tadays"
+  },
+  {
+    "clarify": true,
+    "id": "Q456",
+    "family": 92,
+    "style": "plain",
+    "question": "pending wfh requests"
+  },
+  {
+    "clarify": true,
+    "id": "Q457",
+    "family": 92,
+    "style": "polite",
+    "question": "please pending wfh requests"
+  },
+  {
+    "clarify": true,
+    "id": "Q458",
+    "family": 92,
+    "style": "uppercase",
+    "question": "PENDING WFH REQUESTS"
+  },
+  {
+    "clarify": true,
+    "id": "Q459",
+    "family": 92,
+    "style": "spacing",
+    "question": "could you   pending  wfh  requests"
+  },
+  {
+    "clarify": true,
+    "id": "Q460",
+    "family": 92,
+    "style": "misspelling",
+    "question": "tell me pendng wfh requests"
+  },
+  {
+    "clarify": true,
+    "id": "Q461",
+    "family": 93,
+    "style": "plain",
+    "question": "show documents"
+  },
+  {
+    "clarify": true,
+    "id": "Q462",
+    "family": 93,
+    "style": "polite",
+    "question": "please show documents"
+  },
+  {
+    "clarify": true,
+    "id": "Q463",
+    "family": 93,
+    "style": "uppercase",
+    "question": "SHOW DOCUMENTS"
+  },
+  {
+    "clarify": true,
+    "id": "Q464",
+    "family": 93,
+    "style": "spacing",
+    "question": "could you   show  documents"
+  },
+  {
+    "clarify": true,
+    "id": "Q465",
+    "family": 93,
+    "style": "misspelling",
+    "question": "tell me show documents"
+  },
+  {
+    "clarify": true,
+    "id": "Q466",
+    "family": 94,
+    "style": "plain",
+    "question": "support tickets today"
+  },
+  {
+    "clarify": true,
+    "id": "Q467",
+    "family": 94,
+    "style": "polite",
+    "question": "please support tickets today"
+  },
+  {
+    "clarify": true,
+    "id": "Q468",
+    "family": 94,
+    "style": "uppercase",
+    "question": "SUPPORT TICKETS TODAY"
+  },
+  {
+    "clarify": true,
+    "id": "Q469",
+    "family": 94,
+    "style": "spacing",
+    "question": "could you   support  tickets  today"
+  },
+  {
+    "clarify": true,
+    "id": "Q470",
+    "family": 94,
+    "style": "misspelling",
+    "question": "tell me support tickets tadays"
+  },
+  {
+    "clarify": true,
+    "id": "Q471",
+    "family": 95,
+    "style": "plain",
+    "question": "show all passwords"
+  },
+  {
+    "clarify": true,
+    "id": "Q472",
+    "family": 95,
+    "style": "polite",
+    "question": "please show all passwords"
+  },
+  {
+    "clarify": true,
+    "id": "Q473",
+    "family": 95,
+    "style": "uppercase",
+    "question": "SHOW ALL PASSWORDS"
+  },
+  {
+    "clarify": true,
+    "id": "Q474",
+    "family": 95,
+    "style": "spacing",
+    "question": "could you   show  all  passwords"
+  },
+  {
+    "clarify": true,
+    "id": "Q475",
+    "family": 95,
+    "style": "misspelling",
+    "question": "tell me show all passwords"
+  },
+  {
+    "clarify": true,
+    "id": "Q476",
+    "family": 96,
+    "style": "plain",
+    "question": "delete sales orders"
+  },
+  {
+    "clarify": true,
+    "id": "Q477",
+    "family": 96,
+    "style": "polite",
+    "question": "please delete sales orders"
+  },
+  {
+    "clarify": true,
+    "id": "Q478",
+    "family": 96,
+    "style": "uppercase",
+    "question": "DELETE SALES ORDERS"
+  },
+  {
+    "clarify": true,
+    "id": "Q479",
+    "family": 96,
+    "style": "spacing",
+    "question": "could you   delete  sales  orders"
+  },
+  {
+    "clarify": true,
+    "id": "Q480",
+    "family": 96,
+    "style": "misspelling",
+    "question": "tell me delete salse ordres"
+  },
+  {
+    "clarify": true,
+    "id": "Q481",
+    "family": 97,
+    "style": "plain",
+    "question": "sales and dispatch summary today"
+  },
+  {
+    "clarify": true,
+    "id": "Q482",
+    "family": 97,
+    "style": "polite",
+    "question": "please sales and dispatch summary today"
+  },
+  {
+    "clarify": true,
+    "id": "Q483",
+    "family": 97,
+    "style": "uppercase",
+    "question": "SALES AND DISPATCH SUMMARY TODAY"
+  },
+  {
+    "clarify": true,
+    "id": "Q484",
+    "family": 97,
+    "style": "spacing",
+    "question": "could you   sales  and  dispatch  summary  today"
+  },
+  {
+    "clarify": true,
+    "id": "Q485",
+    "family": 97,
+    "style": "misspelling",
+    "question": "tell me salse and disptach summary tadays"
+  },
+  {
+    "clarify": true,
+    "id": "Q486",
+    "family": 98,
+    "style": "plain",
+    "question": "orders from Faridabad and Delhi this month"
+  },
+  {
+    "clarify": true,
+    "id": "Q487",
+    "family": 98,
+    "style": "polite",
+    "question": "please orders from Faridabad and Delhi this month"
+  },
+  {
+    "clarify": true,
+    "id": "Q488",
+    "family": 98,
+    "style": "uppercase",
+    "question": "ORDERS FROM FARIDABAD AND DELHI THIS MONTH"
+  },
+  {
+    "clarify": true,
+    "id": "Q489",
+    "family": 98,
+    "style": "spacing",
+    "question": "could you   orders  from  Faridabad  and  Delhi  this  month"
+  },
+  {
+    "clarify": true,
+    "id": "Q490",
+    "family": 98,
+    "style": "misspelling",
+    "question": "tell me ordres from Faridabad and Delhi this mnth"
+  },
+  {
+    "clarify": true,
+    "id": "Q491",
+    "family": 99,
+    "style": "plain",
+    "question": "top 0 customers"
+  },
+  {
+    "clarify": true,
+    "id": "Q492",
+    "family": 99,
+    "style": "polite",
+    "question": "please top 0 customers"
+  },
+  {
+    "clarify": true,
+    "id": "Q493",
+    "family": 99,
+    "style": "uppercase",
+    "question": "TOP 0 CUSTOMERS"
+  },
+  {
+    "clarify": true,
+    "id": "Q494",
+    "family": 99,
+    "style": "spacing",
+    "question": "could you   top  0  customers"
+  },
+  {
+    "clarify": true,
+    "id": "Q495",
+    "family": 99,
+    "style": "misspelling",
+    "question": "tell me top 0 customers"
+  },
+  {
+    "intent": "receivables",
+    "ledger": "receipts",
+    "id": "Q496",
+    "family": 100,
+    "style": "plain",
+    "question": "payments received today"
+  },
+  {
+    "intent": "receivables",
+    "ledger": "receipts",
+    "id": "Q497",
+    "family": 100,
+    "style": "polite",
+    "question": "please payments received today"
+  },
+  {
+    "intent": "receivables",
+    "ledger": "receipts",
+    "id": "Q498",
+    "family": 100,
+    "style": "uppercase",
+    "question": "PAYMENTS RECEIVED TODAY"
+  },
+  {
+    "intent": "receivables",
+    "ledger": "receipts",
+    "id": "Q499",
+    "family": 100,
+    "style": "spacing",
+    "question": "could you   payments  received  today"
+  },
+  {
+    "intent": "receivables",
+    "ledger": "receipts",
+    "id": "Q500",
+    "family": 100,
+    "style": "misspelling",
+    "question": "tell me paymnt received tadays"
+  }
+]

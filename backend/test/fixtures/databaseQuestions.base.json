@@ -1,0 +1,475 @@
+[
+  {
+    "q": "sales today",
+    "intent": "sales_summary",
+    "from": "2026-10-27",
+    "to": "2026-10-27"
+  },
+  {
+    "q": "revenue yesterday",
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26"
+  },
+  {
+    "q": "turnover this month",
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-27"
+  },
+  {
+    "q": "revenue last one month",
+    "intent": "sales_summary",
+    "from": "2026-09-27",
+    "to": "2026-10-27"
+  },
+  {
+    "q": "sales last 3 months",
+    "intent": "sales_summary",
+    "from": "2026-07-27",
+    "to": "2026-10-27"
+  },
+  {
+    "q": "sales last month",
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30"
+  },
+  {
+    "q": "my sales this week",
+    "intent": "sales_summary",
+    "self": true,
+    "from": "2026-10-26"
+  },
+  {
+    "q": "sales last week",
+    "intent": "sales_summary",
+    "from": "2026-10-19",
+    "to": "2026-10-25"
+  },
+  {
+    "q": "sales September 2026",
+    "intent": "sales_summary",
+    "from": "2026-09-01",
+    "to": "2026-09-30"
+  },
+  {
+    "q": "sales 26 Oct 2026",
+    "intent": "sales_summary",
+    "from": "2026-10-26",
+    "to": "2026-10-26"
+  },
+  {
+    "q": "sales 2026-10-01 to 2026-10-20",
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20"
+  },
+  {
+    "q": "sales 01/10/2026 to 20/10/2026",
+    "intent": "sales_summary",
+    "from": "2026-10-01",
+    "to": "2026-10-20"
+  },
+  {
+    "q": "sales past seven days",
+    "intent": "sales_summary",
+    "from": "2026-10-21",
+    "to": "2026-10-27"
+  },
+  {
+    "q": "Deepak Arya sales this month",
+    "intent": "sales_summary",
+    "from": "2026-10-01"
+  },
+  {
+    "q": "aaj sales kitna hai",
+    "intent": "sales_summary",
+    "from": "2026-10-27"
+  },
+  {
+    "q": "pending sales orders this month",
+    "intent": "sales_orders",
+    "status": "pending"
+  },
+  {
+    "q": "list rejected orders last week",
+    "intent": "sales_orders",
+    "status": "rejected"
+  },
+  {
+    "q": "approved order details today",
+    "intent": "sales_orders",
+    "status": "approved"
+  },
+  {
+    "q": "order detail from Faridabad this month",
+    "intent": "sales_orders",
+    "location": "faridabad"
+  },
+  {
+    "q": "order details from New Delhi last month",
+    "intent": "sales_orders",
+    "location": "new delhi"
+  },
+  {
+    "q": "Kesari Alloy orders",
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "allTime": true
+  },
+  {
+    "q": "Keshari Alloys orders this month",
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi"
+  },
+  {
+    "q": "order in Keshri Alloy mill last 3 month",
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "from": "2026-07-27"
+  },
+  {
+    "q": "AV Alloy order details last 3 months",
+    "intent": "sales_orders",
+    "mill": "AV Alloys - Mandi Gobindgarh"
+  },
+  {
+    "q": "Punjab General orders this month",
+    "intent": "sales_orders",
+    "mill": "Punjab General"
+  },
+  {
+    "q": "Polystud orders last month",
+    "intent": "sales_orders",
+    "mill": "Polystud Lifting"
+  },
+  {
+    "q": "Jassar orders this week",
+    "intent": "sales_orders",
+    "mill": "Jassar Forging"
+  },
+  {
+    "q": "SS Steel orders today",
+    "intent": "sales_orders",
+    "mill": "S.S. Steel - Sirhind"
+  },
+  {
+    "q": "Skyway orders this year",
+    "intent": "sales_orders",
+    "mill": "Skyway - Ludhiana"
+  },
+  {
+    "q": "Kuber Concast orders this month",
+    "intent": "sales_orders",
+    "mill": "Kuber Concast - Mandi Gobindgarh"
+  },
+  {
+    "q": "Pushpanjali orders last month",
+    "intent": "sales_orders",
+    "mill": "Pushpanjali Strip"
+  },
+  {
+    "q": "Shakti Rolling orders this month",
+    "intent": "sales_orders",
+    "mill": "Shakti Rolling - Mandi Gobindgarh"
+  },
+  {
+    "q": "East India orders this month",
+    "intent": "sales_orders",
+    "mill": "East India - Durgapur"
+  },
+  {
+    "q": "Behari Lal orders this month",
+    "intent": "sales_orders",
+    "mill": "Behari Lal - Mandi Gobindgarh"
+  },
+  {
+    "q": "Kesari Alloys EN353 orders this month",
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "grade": "EN353"
+  },
+  {
+    "q": "EN19 orders this month",
+    "intent": "sales_orders",
+    "grade": "EN19"
+  },
+  {
+    "q": "H13 order details last month",
+    "intent": "sales_orders",
+    "grade": "H13"
+  },
+  {
+    "q": "orders for company \"Example Engineering\" this month",
+    "intent": "sales_orders",
+    "company": "example engineering"
+  },
+  {
+    "q": "Kesari Alloys order details from Faridabad this month",
+    "intent": "sales_orders",
+    "mill": "Kesari Alloys - Bhiwadi",
+    "location": "faridabad"
+  },
+  {
+    "q": "Kesari Alloys total sales this month",
+    "intent": "sales_summary",
+    "mill": "Kesari Alloys - Bhiwadi"
+  },
+  {
+    "q": "top 5 customers this month",
+    "intent": "top_customers",
+    "limit": 5
+  },
+  {
+    "q": "best customers this year",
+    "intent": "top_customers"
+  },
+  {
+    "q": "top 10 customers last month",
+    "intent": "top_customers",
+    "limit": 10
+  },
+  {
+    "q": "attendance today",
+    "intent": "attendance"
+  },
+  {
+    "q": "all persons today attendance check in time",
+    "intent": "attendance",
+    "attendanceList": true
+  },
+  {
+    "q": "everyone check out time today",
+    "intent": "attendance",
+    "attendanceList": true
+  },
+  {
+    "q": "who is present today",
+    "intent": "attendance",
+    "attendanceStatus": "present"
+  },
+  {
+    "q": "who is absent today",
+    "intent": "attendance",
+    "attendanceStatus": "absent"
+  },
+  {
+    "q": "who is on leave today",
+    "intent": "attendance",
+    "attendanceStatus": "on_leave"
+  },
+  {
+    "q": "my attendance yesterday",
+    "intent": "attendance",
+    "self": true
+  },
+  {
+    "q": "Deepak Arya attendance today",
+    "intent": "attendance"
+  },
+  {
+    "q": "attendance last week",
+    "intent": "attendance"
+  },
+  {
+    "q": "show employees checked out today",
+    "intent": "attendance",
+    "attendanceStatus": "checked_out"
+  },
+  {
+    "q": "my timesheet today",
+    "intent": "timesheets",
+    "self": true
+  },
+  {
+    "q": "Deepak Arya timesheet yesterday",
+    "intent": "timesheets"
+  },
+  {
+    "q": "Deepak Yadav work report last week",
+    "intent": "timesheets"
+  },
+  {
+    "q": "my time sheet this month",
+    "intent": "timesheets",
+    "self": true
+  },
+  {
+    "q": "mera timesheet aaj",
+    "intent": "timesheets",
+    "self": true
+  },
+  {
+    "q": "dispatch summary today",
+    "intent": "dispatch_summary"
+  },
+  {
+    "q": "dispatch last month",
+    "intent": "dispatch_summary"
+  },
+  {
+    "q": "my dispatch summary this week",
+    "intent": "dispatch_summary",
+    "self": true
+  },
+  {
+    "q": "dispatch plan tomorrow",
+    "intent": "dispatch_plan",
+    "from": "2026-10-28"
+  },
+  {
+    "q": "upcoming shipments this week",
+    "intent": "dispatch_plan"
+  },
+  {
+    "q": "shipping schedule today",
+    "intent": "dispatch_plan"
+  },
+  {
+    "q": "list delivered dispatches this month",
+    "intent": "dispatch_orders"
+  },
+  {
+    "q": "partial dispatch details last month",
+    "intent": "dispatch_orders"
+  },
+  {
+    "q": "paid dispatch details this month",
+    "intent": "dispatch_orders"
+  },
+  {
+    "q": "cancelled dispatch details this month",
+    "intent": "dispatch_orders"
+  },
+  {
+    "q": "order tracking",
+    "intent": "tracking_orders"
+  },
+  {
+    "q": "orders on hold",
+    "intent": "tracking_orders"
+  },
+  {
+    "q": "which orders are delayed",
+    "intent": "delayed_orders"
+  },
+  {
+    "q": "overdue payments",
+    "intent": "receivables"
+  },
+  {
+    "q": "outstanding dues",
+    "intent": "receivables"
+  },
+  {
+    "q": "my receivables",
+    "intent": "receivables",
+    "self": true
+  },
+  {
+    "q": "enquiries this month",
+    "intent": "enquiries"
+  },
+  {
+    "q": "inquiries last week",
+    "intent": "enquiries"
+  },
+  {
+    "q": "cold calls yesterday",
+    "intent": "activity"
+  },
+  {
+    "q": "visits today",
+    "intent": "activity"
+  },
+  {
+    "q": "management analysis this month",
+    "intent": "management_analysis"
+  },
+  {
+    "q": "logistics analysis last month",
+    "intent": "logistics_analysis"
+  },
+  {
+    "q": "executive overview this month",
+    "intent": "executive_summary"
+  },
+  {
+    "q": "sales kal",
+    "clarify": true
+  },
+  {
+    "q": "sales 2026-02-30",
+    "clarify": true
+  },
+  {
+    "q": "sales 31 Feb 2026",
+    "clarify": true
+  },
+  {
+    "q": "sales 2026-10-27 to 2026-10-01",
+    "clarify": true
+  },
+  {
+    "q": "orders in imaginary mill",
+    "clarify": true
+  },
+  {
+    "q": "Kesari Alloys and AV Alloys orders",
+    "clarify": true
+  },
+  {
+    "q": "sales profit this month",
+    "clarify": true
+  },
+  {
+    "q": "sales above 1 lakh this month",
+    "clarify": true
+  },
+  {
+    "q": "compare sales this month and last month",
+    "clarify": true
+  },
+  {
+    "q": "leave balance today",
+    "clarify": true
+  },
+  {
+    "q": "pending wfh requests",
+    "clarify": true
+  },
+  {
+    "q": "show documents",
+    "clarify": true
+  },
+  {
+    "q": "support tickets today",
+    "clarify": true
+  },
+  {
+    "q": "show all passwords",
+    "clarify": true
+  },
+  {
+    "q": "delete sales orders",
+    "clarify": true
+  },
+  {
+    "q": "sales and dispatch summary today",
+    "clarify": true
+  },
+  {
+    "q": "orders from Faridabad and Delhi this month",
+    "clarify": true
+  },
+  {
+    "q": "top 0 customers",
+    "clarify": true
+  },
+  {
+    "q": "payments received today",
+    "intent": "receivables",
+    "ledger": "receipts"
+  }
+]

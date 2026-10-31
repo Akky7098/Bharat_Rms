@@ -66,7 +66,7 @@ const runPaymentReminderJob = async ({
 };
 
 /**
- * Runs every day at exactly 11:00 PM IST.
+ * Runs every day at exactly 11:00 AM IST.
  */
 const startPaymentReminderCron = () => {
   if (started) {
@@ -80,12 +80,12 @@ const startPaymentReminderCron = () => {
   started = true;
 
   cron.schedule(
-    "0 23 * * *",
+    "0 11 * * *",
     async () => {
       try {
         await runPaymentReminderJob({
           forceAllOverdue: false,
-          source: "daily-11pm-ist",
+          source: "daily-11am-ist",
         });
       } catch (error) {
         console.error(
@@ -100,7 +100,7 @@ const startPaymentReminderCron = () => {
   );
 
   console.log(
-    "Payment reminder cron scheduled for every day at 11:00 PM IST"
+    "Payment reminder cron scheduled for every day at 11:00 AM IST"
   );
 };
 

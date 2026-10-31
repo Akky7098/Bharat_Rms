@@ -2423,6 +2423,11 @@ const buildMtcListQuery = (
   filters = {}
 ) => {
   const query = {};
+  if (typeof filters.search === "string" && filters.search.trim()) {
+    const literal = filters.search.trim().slice(0, 200).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    query.$and = [{ $or: ["messers", "companyName", "customerName", "orderNo", "tcNo", "invoiceNo", "heatLotNo"].map(field => ({ [field]: { $regex: literal, $options: "i" } })) }];
+  }
+
 
   if (
     filters.companyName

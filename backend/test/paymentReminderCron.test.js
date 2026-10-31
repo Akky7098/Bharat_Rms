@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-test('email and WhatsApp share one daily 11 PM IST payment reminder job', async () => {
+test('email and WhatsApp share one daily 11 AM IST payment reminder job', async () => {
   const module = { exports: {} }, schedules = [], logs = [];
   let calls = 0;
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../cron/paymentReminderCron.js'), 'utf8'), {
@@ -16,7 +16,7 @@ test('email and WhatsApp share one daily 11 PM IST payment reminder job', async 
   });
   module.exports(); module.exports();
   assert.equal(schedules.length, 1);
-  assert.equal(schedules[0].expression, '0 23 * * *');
+  assert.equal(schedules[0].expression, '0 11 * * *');
   assert.equal(schedules[0].options.timezone, 'Asia/Kolkata');
   await schedules[0].callback();
   assert.equal(calls, 1);

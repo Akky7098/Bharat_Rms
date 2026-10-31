@@ -1,11 +1,10 @@
 const User =
   require("../model/userModel");
 
-const {
-  askBharatAi,
-} = require(
-  "../services/bharat-ai/bharatAiService"
-);
+// Database mode is the default; do not load the paid AI dependency in this mode.
+const askBharatAi = (args) => process.env.BHARAT_CHAT_MODE === "ai"
+  ? require("../services/bharat-ai/bharatAiService").askBharatAi(args)
+  : require("../services/bharat-ai/databaseChatService").askDatabase(args);
 
 /* =========================================================
    CHAT WITH BHARAT INTELLIGENCE

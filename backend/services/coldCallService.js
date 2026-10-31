@@ -29,6 +29,7 @@ const getAllColdCalls = async (query, user) => {
     fromDate,
     toDate,
     activityType,
+    search,
   } = query;
 
   const filter = {};
@@ -57,6 +58,12 @@ const getAllColdCalls = async (query, user) => {
       endDate.setHours(23, 59, 59, 999);
       filter.date.$lte = endDate;
     }
+  }
+
+  if (typeof search === "string" && search.trim()) {
+    const literal = search.trim().slice(0, 200).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    filter.$or = ["companyName", "contactPersonName", "contactPersonNumber"]
+      .map(field => ({ [field]: { $regex: literal, $options: "i" } }));
   }
 
   const skip = (Number(page) - 1) * Number(limit);

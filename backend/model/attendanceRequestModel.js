@@ -5,6 +5,9 @@ const schema = new mongoose.Schema({
   kind: { type: String, enum: ['work_from_home', 'short_leave'], required: true },
   fromDate: { type: Date, required: true }, toDate: { type: Date, required: true },
   reason: { type: String, required: true, maxlength: 2000 },
+  shortLeaveMode: { type: String, enum: ['planned', 'attendance'] },
+  startTime: String, endTime: String, // HH:mm in Asia/Kolkata
+  shortLeaveMinutes: { type: Number, min: 1, max: 539 },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   decidedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   employeeEmail: String, employeeRole: String,
