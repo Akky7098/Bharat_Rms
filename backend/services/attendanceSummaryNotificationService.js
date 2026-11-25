@@ -1,3 +1,4 @@
+const { deliverAttendanceDigestOnce } = require("./attendanceDigestDeliveryService");
 const Attendance = require("../model/attendanceModel");
 const User = require("../model/userModel");
 const transporter = require("../util/mailTransporter");
@@ -147,7 +148,8 @@ const normalizeId = (
 
 const sendWhatsAppText =
   async (
-    message
+    message,
+    slot
   ) => {
     if (
       !WHATSAPP_GROUP_ID
@@ -160,10 +162,10 @@ const sendWhatsAppText =
     }
 
     try {
-      await sendTextToGroup(
-        WHATSAPP_GROUP_ID,
-        message
-      );
+      const sent = await deliverAttendanceDigestOnce({
+        slot, recipient: WHATSAPP_GROUP_ID, message, send: sendTextToGroup,
+      });
+      if (!sent) return false;
 
       console.log(
         "Attendance WhatsApp sent successfully"
@@ -1082,24 +1084,25 @@ const sendMorningAttendanceDigest =
     await sendWhatsAppText(
       buildMorningWhatsAppMessage(
         data
-      )
+      ),
+      "morning"
     );
 
-    await sendEmailReport({
-      title:
-        "Morning Attendance Snapshot",
+    // await sendEmailReport({
+    //   title:
+    //     "Morning Attendance Snapshot",
 
-      subtitle:
-        `${formatDate(
-          data.date
-        )} · 10:15 AM`,
+    //   subtitle:
+    //     `${formatDate(
+    //       data.date
+    //     )} · 10:15 AM`,
 
-      rows:
-        data.rows,
+    //   rows:
+    //     data.rows,
 
-      type:
-        "Morning",
-    });
+    //   type:
+    //     "Morning",
+    // });
 
     return {
       checked:
@@ -1131,28 +1134,29 @@ const sendEveningAttendanceDigest =
     await sendWhatsAppText(
       buildEveningWhatsAppMessage(
         data
-      )
+      ),
+      "evening"
     );
 
     console.log(
       "Evening WhatsApp step completed"
     );
 
-    await sendEmailReport({
-      title:
-        "Evening Attendance Closing Summary",
+    // await sendEmailReport({
+    //   title:
+    //     "Evening Attendance Closing Summary",
 
-      subtitle:
-        `${formatDate(
-          data.date
-        )} · 7:00 PM`,
+    //   subtitle:
+    //     `${formatDate(
+    //       data.date
+    //     )} · 7:00 PM`,
 
-      rows:
-        data.rows,
+    //   rows:
+    //     data.rows,
 
-      type:
-        "Evening",
-    });
+    //   type:
+    //     "Evening",
+    // });
 
     console.log(
       "Evening email sent"
